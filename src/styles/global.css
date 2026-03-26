@@ -1,0 +1,239 @@
+@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Rubik:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-sans text-ink bg-mist antialiased;
+    background-image:
+      radial-gradient(circle at 12% 14%, rgba(22, 163, 74, 0.18), transparent 38%),
+      radial-gradient(circle at 88% 6%, rgba(220, 38, 38, 0.18), transparent 35%),
+      radial-gradient(circle at 75% 70%, rgba(245, 158, 11, 0.12), transparent 40%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(245, 243, 239, 1));
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: "Rubik", "Public Sans", system-ui, sans-serif;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+
+  h1 {
+    @apply text-4xl md:text-6xl leading-[1.05];
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl leading-tight;
+  }
+
+  h3 {
+    @apply text-2xl leading-snug;
+  }
+
+  p {
+    @apply text-base md:text-lg leading-relaxed text-slate-700;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition duration-200;
+    font-family: "Rubik", "Public Sans", system-ui, sans-serif;
+  }
+
+  .btn-primary {
+    @apply btn shadow-soft hover:-translate-y-0.5 hover:shadow-lift;
+    background-color: #24292e;
+    color: #f9dbad;
+  }
+
+  .btn-secondary {
+    @apply btn border border-ink shadow-soft hover:-translate-y-0.5 hover:shadow-lift;
+    background-color: #f1f1f1;
+    color: #24292e;
+  }
+
+  .btn-ghost {
+    @apply btn text-ink hover:bg-white/70;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-2 rounded-xl border border-white/40 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 shadow-sm;
+  }
+
+  .surface {
+    @apply rounded-xl bg-white/80 p-6 shadow-soft backdrop-blur;
+  }
+
+  .surface-strong {
+    @apply rounded-xl bg-white p-8 shadow-lift;
+  }
+
+  .section-frame {
+    @apply rounded-xl border border-white/60 bg-white/70 p-8 shadow-soft backdrop-blur;
+  }
+
+  .headline-mark {
+    background: linear-gradient(transparent 58%, rgba(30, 64, 175, 0.18) 0);
+    box-decoration-break: clone;
+    padding: 0 0.14em;
+  }
+
+  .subheadline-line {
+    @apply text-balance text-base font-medium text-ink md:text-lg;
+  }
+
+  .type-rotator {
+    @apply inline-block font-semibold text-slate-900;
+    min-width: min(30ch, 100%);
+    text-align: left;
+  }
+
+  .type-rotator-text {
+    position: relative;
+    display: inline-block;
+  }
+
+  .type-rotator-text::before {
+    content: "";
+    position: absolute;
+    inset: -0.18em 0 -0.08em 0;
+    background: linear-gradient(90deg, rgba(224, 231, 255, 0.15), rgba(224, 231, 255, 0.7) 50%, rgba(224, 231, 255, 0.2));
+    filter: blur(5px);
+    box-shadow: 0 0 14px rgba(224, 231, 255, 0.35);
+    border-radius: 999px;
+    z-index: -1;
+  }
+
+  .type-caret {
+    display: inline-block;
+    width: 0.2ch;
+    height: 1.1em;
+    margin-left: 0.15ch;
+    background: #1f2937;
+    animation: caretBlink 1.6s step-end infinite;
+    vertical-align: -0.15em;
+  }
+
+  .tab-btn {
+    @apply rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 transition;
+  }
+
+  .tab-btn[aria-selected="true"] {
+    @apply border-accent bg-accent text-white shadow-soft;
+  }
+
+  .nav-link {
+    @apply rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-white/70 hover:text-ink;
+  }
+
+  .lang-chip {
+    @apply flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 text-xs text-slate-700 shadow-sm;
+  }
+
+  .lang-icon {
+    @apply flex h-6 w-6 items-center justify-center rounded-md bg-slate-100;
+  }
+
+  .lang-logo {
+    width: 16px;
+    height: 16px;
+  }
+
+  .status-supported {
+    @apply text-diffAdd;
+  }
+
+  .status-soon {
+    @apply text-diffModify;
+  }
+
+  .accordion-panel {
+    @apply mt-2 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-3 text-xs text-slate-600;
+  }
+
+  .panzoom {
+    @apply relative overflow-hidden rounded-xl border border-white/50 bg-white shadow-lift;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .panzoom-sharp {
+    @apply rounded-lg;
+  }
+
+  .panzoom-grabbing {
+    cursor: grabbing;
+  }
+
+  .panzoom-content {
+    transform-origin: 0 0;
+  }
+}
+
+@layer utilities {
+  .animate-fade-up {
+    animation: fadeUp 0.7s ease-out both;
+  }
+
+  .animate-fade-up-delay {
+    animation: fadeUp 0.7s ease-out both;
+    animation-delay: 0.15s;
+  }
+
+  .animate-fade-up-delay-2 {
+    animation: fadeUp 0.7s ease-out both;
+    animation-delay: 0.3s;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-up-delay,
+  .animate-fade-up-delay-2 {
+    animation: none;
+  }
+
+  .type-caret {
+    animation: none;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes caretBlink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}

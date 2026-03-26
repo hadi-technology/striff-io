@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="260" viewBox="0 0 260 260" role="img" aria-label="Striffs icon">
+  <!-- Colors -->
+  <!-- Box: #24292e | Header: #6B7280 | Green: #bef5cb | Red: #fdaeb7 | Blue: #3B82F6 -->
+
+  <!-- triangle connectors -->
+  <g fill="none" stroke="#24292e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">
+    <path d="M86 94 L178 112 L108 182 Z"></path>
+  </g>
+
+  <!-- Box 1 (top-left) -->
+  <g transform="translate(42,66)">
+    <rect x="0" y="0" width="96" height="48" rx="12" ry="8" fill="#24292e"></rect>
+    <!-- integrated header -->
+    <path d="M0 0 h96 v16 h-96 z" fill="#6B7280"></path>
+
+    <!-- class lines -->
+    <g stroke-linecap="round" stroke-width="4.5" opacity="0.95">
+      <line x1="12" y1="24" x2="76" y2="24" stroke="#bef5cb"></line>
+      <line x1="12" y1="32" x2="58" y2="32" stroke="#fdaeb7"></line>
+      <line x1="12" y1="40" x2="84" y2="40" stroke="#3B82F6"></line>
+    </g>
+  </g>
+
+  <!-- Box 2 (right) -->
+  <g transform="translate(154,96)">
+    <rect x="0" y="0" width="100" height="48" rx="12" ry="8" fill="#24292e"></rect>
+    <path d="M0 0 h100 v16 h-100 z" fill="#6B7280"></path>
+
+    <g stroke-linecap="round" stroke-width="4.5" opacity="0.95">
+      <line x1="12" y1="24" x2="72" y2="24" stroke="#fdaeb7"></line>
+      <line x1="12" y1="32" x2="86" y2="32" stroke="#bef5cb"></line>
+      <line x1="12" y1="40" x2="54" y2="40" stroke="#bef5cb"></line>
+    </g>
+  </g>
+
+  <!-- Box 3 (bottom-left) -->
+  <g transform="translate(66,164)">
+    <rect x="0" y="0" width="108" height="52" rx="12" ry="8" fill="#24292e"></rect>
+    <path d="M0 0 h108 v18 h-108 z" fill="#6B7280"></path>
+
+    <g stroke-linecap="round" stroke-width="4.8" opacity="0.95">
+      <line x1="12" y1="28" x2="86" y2="28" stroke="#bef5cb"></line>
+      <line x1="12" y1="38" x2="70" y2="38" stroke="#fdaeb7"></line>
+      <line x1="12" y1="48" x2="92" y2="48" stroke="#3B82F6"></line>
+    </g>
+  </g>
+</svg>

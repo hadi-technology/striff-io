@@ -1,0 +1,655 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const pluginReleased = false;
+const discussionsUrl = "https://github.com/hadi-technology/striff-lib/discussions";
+const feedbackUrl = "https://github.com/hadi-technology/striff-io/discussions/1";
+
+const navLinks = [
+  { label: "Why Striffs", href: "#why" },
+  { label: "How to Read", href: "#how" },
+  { label: "Extension", href: "#plugin" }
+];
+
+const rotatingPhrases = [
+  "guide AI-generated code.",
+  "catch architectural drift.",
+  "understand system-level impact.",
+  "reason about structural changes."
+];
+
+const callouts = [
+  {
+    number: "①",
+    title: "Change coloring",
+    description:
+      "Green = added, red = removed, amber = modified, gray = unchanged context.",
+    top: "12%",
+    left: "14%"
+  },
+  {
+    number: "②",
+    title: "UML-based class structure",
+    description:
+      "Classes and relationships are rendered in a familiar UML-style layout.",
+    top: "18%",
+    left: "63%"
+  },
+  {
+    number: "③",
+    title: "Object-oriented metrics",
+    description:
+      "Selected metrics highlight growth, coupling, and architectural hot spots.",
+    top: "48%",
+    left: "22%"
+  },
+  {
+    number: "④",
+    title: "Class comments",
+    description:
+      "Docstrings and comments surface intent and design rationale.",
+    top: "52%",
+    left: "58%"
+  },
+  {
+    number: "⑤",
+    title: "Summarized components",
+    description:
+      "Unchanged or irrelevant parts collapse to preserve readability.",
+    top: "76%",
+    left: "78%"
+  }
+];
+
+const carouselItems = callouts.map((callout) => ({
+  ...callout,
+  src: "/diagram-placeholder.svg"
+}));
+
+const languageSupport = [
+  {
+    name: "Java",
+    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg",
+    status: "Supported",
+    statusClass: "status-supported"
+  },
+  {
+    name: "C#",
+    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg",
+    status: "Coming soon",
+    statusClass: "status-soon"
+  },
+  {
+    name: "Go",
+    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg",
+    status: "Coming soon",
+    statusClass: "status-soon"
+  },
+  {
+    name: "Python",
+    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
+    status: "Coming soon",
+    statusClass: "status-soon"
+  },
+  {
+    name: "TypeScript",
+    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg",
+    status: "Coming soon",
+    statusClass: "status-soon"
+  }
+];
+
+const benefits = [
+  {
+    title: "Detect architectural drift early",
+    body: "Spot widening dependencies and design drift before they become refactors."
+  },
+  {
+    title: "Guide agent-generated code",
+    body: "Give automation guardrails by reviewing structure, not just syntax."
+  },
+  {
+    title: "Review intent, not just output",
+    body: "Understand what a change means for the system, not just the file diff."
+  },
+  {
+    title: "Make large PRs navigable",
+    body: "Compress context so reviewers can focus on high-impact areas first."
+  }
+];
+
+const pluginButtons = pluginReleased
+  ? [
+      { label: "Chrome Web Store", href: "#" },
+      { label: "Firefox Add-ons", href: "#" },
+      { label: "Edge Add-ons", href: "#" }
+    ]
+  : [
+      { label: "Join waitlist", href: "#" },
+      { label: "View demo", href: "#" },
+      { label: "GitHub", href: "#" }
+    ];
+---
+
+<BaseLayout
+  title="Striff - Structural diffs for modern code reviews"
+  description="Striffs visualize how pull requests change your system's architecture so you can guide AI-generated code."
+>
+  <header class="sticky top-0 z-50 border-b border-white/40 bg-white/70 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <a href="#" class="flex items-center gap-3 text-lg font-semibold tracking-tight text-ink">
+        <img src="/download.svg" alt="Striff logo" class="h-9 w-9" />
+        <span>Striff</span>
+      </a>
+      <nav class="hidden items-center gap-2 md:flex">
+        {navLinks.map((link) => (
+          <a class="nav-link" href={link.href}>
+            {link.label}
+          </a>
+        ))}
+        <a class="nav-link" href={feedbackUrl}>Feedback</a>
+        <a class="flex items-center gap-2 hover:text-ink" href="https://github.com/hadi-technology/striff-lib" aria-label="Striff GitHub">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" />
+          </svg>
+          GitHub
+        </a>
+      </nav>
+      <div class="hidden md:flex">
+        <a class="btn-primary" href="#plugin">Get the Plugin</a>
+      </div>
+      <button
+        class="md:hidden"
+        data-menu-toggle
+        aria-label="Toggle navigation"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+      >
+        <span class="sr-only">Open menu</span>
+        <div class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-ink shadow-sm">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="4" y1="7" x2="20" y2="7" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="17" x2="20" y2="17" />
+          </svg>
+        </div>
+      </button>
+    </div>
+    <div
+      id="mobile-menu"
+      data-mobile-menu
+      class="hidden border-t border-white/50 bg-white/80 px-6 py-4 md:hidden"
+    >
+      <div class="flex flex-col gap-2">
+        {navLinks.map((link) => (
+          <a class="nav-link" href={link.href}>
+            {link.label}
+          </a>
+        ))}
+        <a class="nav-link" href={feedbackUrl}>Feedback</a>
+        <a class="flex items-center gap-2 hover:text-ink" href="https://github.com/hadi-technology/striff-lib">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" />
+          </svg>
+          GitHub
+        </a>
+        <a class="btn-primary w-full" href="#plugin">Get the Plugin</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="relative overflow-hidden pb-16 pt-20">
+      <div class="mx-auto flex max-w-4xl flex-col items-center gap-10 px-6 text-center">
+        <div class="space-y-8 animate-fade-up">
+          <div class="space-y-6">
+            <h1 class="text-balance">Structural diffs for modern code reviews</h1>
+            <p class="subheadline-line">
+              Striffs™ visualize how pull requests change your system's architecture so you can:{" "}
+              <span class="type-rotator" data-type-rotator aria-live="polite">
+                <span class="type-rotator-text">{rotatingPhrases[0]}</span>
+                <span class="type-caret" aria-hidden="true"></span>
+              </span>
+            </p>
+          </div>
+          <div class="flex flex-wrap justify-center gap-4">
+            <a class="btn-primary" href="#plugin">Get the Plugin</a>
+            <a class="btn-secondary" href="#how">Learn how it works</a>
+          </div>
+        </div>
+        <div class="w-full">
+          <div class="panzoom panzoom-sharp mx-auto max-w-3xl" data-panzoom>
+            <div class="panzoom-content relative w-full" data-panzoom-content>
+              <img
+                src="/diagram-placeholder.svg"
+                alt="Striff diagram"
+                class="block h-full w-full object-cover"
+                loading="lazy"
+              />
+              <div class="pointer-events-none absolute inset-0 hidden md:block">
+                {callouts.map((callout) => (
+                  <div
+                    class="absolute flex h-10 w-10 items-center justify-center rounded-full border border-white/80 bg-white/90 text-sm font-semibold text-ink shadow-soft backdrop-blur"
+                    style={`top: ${callout.top}; left: ${callout.left};`}
+                  >
+                    {callout.number}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 w-full">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Language support
+            </p>
+            <div class="mt-3 flex flex-wrap justify-center gap-3">
+              {languageSupport.map((lang) => (
+                <div class="lang-chip">
+                  <span class="lang-icon" aria-hidden="true">
+                    <img
+                      class="lang-logo"
+                      src={lang.logoUrl}
+                      alt={`${lang.name} logo`}
+                      loading="lazy"
+                    />
+                  </span>
+                  <div>
+                    <p class="text-xs font-semibold text-ink">{lang.name}</p>
+                    <p class={`text-[10px] uppercase tracking-[0.18em] ${lang.statusClass}`}>
+                      {lang.status}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div class="grid w-full max-w-3xl gap-4 sm:grid-cols-2">
+          <div class="surface border-t-4 border-accent text-left">
+            <p class="text-sm font-semibold text-slate-500">Built for reviewers</p>
+            <p class="mt-2 text-lg font-semibold text-ink">
+              Replace line diffs with architectural clarity.
+            </p>
+          </div>
+          <div class="surface border-t-4 border-accent text-left">
+            <p class="text-sm font-semibold text-slate-500">Made for agents</p>
+            <p class="mt-2 text-lg font-semibold text-ink">
+              Keep automated coding aligned with intent.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="why" class="scroll-mt-24 pb-12 pt-20">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-start">
+          <div class="space-y-5">
+            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
+              Why Striffs
+            </p>
+            <h2 class="text-balance">Line diffs are legacy tooling.</h2>
+            <p>
+              <span class="font-semibold text-ink">Agent-based coding tools accelerate architectural drift.</span>
+              Reviewers need to see structure, not just code.
+              <span class="font-semibold text-ink">Striffs are the diff tool for automated programming.</span>
+            </p>
+          </div>
+          <div class="grid gap-6 sm:grid-cols-2">
+            {benefits.map((benefit) => (
+              <div class="surface-strong">
+                <h3 class="text-xl">{benefit.title}</h3>
+                <p class="mt-3 text-sm text-slate-600">{benefit.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" class="scroll-mt-24 pb-12 pt-20">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="space-y-6">
+          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
+            How to read a Striff
+          </p>
+          <h2 class="text-balance">Reference guide for every diagram.</h2>
+          <p>
+            Each Striff is a <span class="font-semibold text-ink">structural diff diagram</span>
+            derived from <span class="font-semibold text-ink">code changes</span>.
+          </p>
+        </div>
+        <div class="mt-10">
+          <div class="surface space-y-4" data-carousel>
+            <div class="grid gap-6 md:grid-cols-[0.35fr_0.65fr] md:items-start">
+              <div class="flex flex-col gap-3">
+                {carouselItems.map((item, index) => (
+                  <div>
+                    <button
+                      class="tab-btn w-full text-left"
+                      type="button"
+                      data-carousel-tab
+                      data-index={index}
+                      aria-selected={index === 0 ? "true" : "false"}
+                      aria-expanded={index === 0 ? "true" : "false"}
+                      aria-controls={`accordion-${index}`}
+                    >
+                      {item.number} {item.title}
+                    </button>
+                    <div
+                      id={`accordion-${index}`}
+                      class={index === 0 ? "accordion-panel" : "accordion-panel hidden"}
+                      data-carousel-info
+                    >
+                      <p>{item.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div class="relative">
+                {carouselItems.map((item, index) => (
+                  <div
+                    class={index === 0 ? "block" : "hidden"}
+                    data-carousel-panel
+                  >
+                    <div class="panzoom border border-ink" data-panzoom>
+                      <div class="panzoom-content relative w-full" data-panzoom-content>
+                        <img
+                          src={item.src}
+                          alt={`Striff diagram: ${item.title}`}
+                          class="block h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="plugin" class="scroll-mt-24 pb-20 pt-20">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="section-frame">
+          <div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div class="space-y-5">
+              <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
+                Get the plugin
+              </p>
+              <h2 class="text-balance">Get the Striff browser extension</h2>
+              <p>
+                Install the extension to generate <span class="font-semibold text-ink">Striff diagrams</span>
+                directly inside your code review workflow.
+              </p>
+            </div>
+            <div class="space-y-4">
+              <div class="surface">
+                <p class="text-sm font-semibold text-slate-500">
+                  {pluginReleased ? "Available now" : "Not released yet"}
+                </p>
+                <p class="mt-2 text-sm text-slate-600">
+                  {pluginReleased
+                    ? "Install for your browser of choice and start reviewing with structure."
+                    : "Join the waitlist or explore the demo while we prepare launch."}
+                </p>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-2">
+                {pluginButtons.map((button, index) => (
+                  <a
+                    class={index === 0 ? "btn-primary" : "btn-secondary"}
+                    href={button.href}
+                  >
+                    {button.label}
+                  </a>
+                ))}
+              </div>
+              <a class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600 hover:text-ink" href={discussionsUrl}>
+                Request a feature on GitHub Discussions
+              </a>
+              <p class="text-xs text-slate-500">
+                Toggle release state by editing the <code>pluginReleased</code> flag in
+                <code>src/pages/index.astro</code>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-white/60 bg-white/70 py-10">
+    <div class="mx-auto flex max-w-6xl flex-col gap-6 px-6 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
+      <div class="font-semibold text-ink">Striff</div>
+      <div class="flex flex-wrap items-center gap-6">
+        <a class="flex items-center gap-2 hover:text-ink" href="https://github.com/hadi-technology/striff-lib" aria-label="Striff GitHub">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" />
+          </svg>
+          GitHub
+        </a>
+        <a class="hover:text-ink" href={feedbackUrl}>Feedback</a>
+        <a class="hover:text-ink" href="#">Contact</a>
+        <a class="hover:text-ink" href="#">Privacy</a>
+      </div>
+      <div class="text-xs text-slate-500">
+        Striff is a trademark of HADI Technology.
+      </div>
+    </div>
+  </footer>
+
+  <script is:inline define:vars={{ rotatingPhrases }}>
+    const toggle = document.querySelector("[data-menu-toggle]");
+    const menu = document.querySelector("[data-mobile-menu]");
+
+    if (toggle && menu) {
+      toggle.addEventListener("click", () => {
+        const isHidden = menu.classList.toggle("hidden");
+        toggle.setAttribute("aria-expanded", String(!isHidden));
+      });
+
+      menu.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", () => {
+          menu.classList.add("hidden");
+          toggle.setAttribute("aria-expanded", "false");
+        });
+      });
+    }
+
+    const initPanzoom = (container) => {
+      const content = container.querySelector("[data-panzoom-content]");
+      if (!content) return;
+
+      let state = { x: 0, y: 0, scale: 1 };
+      let isPanning = false;
+      let start = { x: 0, y: 0 };
+
+      const apply = () => {
+        content.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+      };
+
+      const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+      apply();
+
+      container.addEventListener(
+        "wheel",
+        (event) => {
+          event.preventDefault();
+          const rect = container.getBoundingClientRect();
+          const cursorX = event.clientX - rect.left;
+          const cursorY = event.clientY - rect.top;
+          const scaleDelta = Math.exp(-event.deltaY * 0.0012);
+          const nextScale = clamp(state.scale * scaleDelta, 0.6, 3.2);
+
+          const dx = (cursorX - state.x) / state.scale;
+          const dy = (cursorY - state.y) / state.scale;
+
+          state.scale = nextScale;
+          state.x = cursorX - dx * state.scale;
+          state.y = cursorY - dy * state.scale;
+
+          apply();
+        },
+        { passive: false }
+      );
+
+      container.addEventListener("pointerdown", (event) => {
+        isPanning = true;
+        container.classList.add("panzoom-grabbing");
+        start = { x: event.clientX - state.x, y: event.clientY - state.y };
+        container.setPointerCapture(event.pointerId);
+      });
+
+      container.addEventListener("pointermove", (event) => {
+        if (!isPanning) return;
+        state.x = event.clientX - start.x;
+        state.y = event.clientY - start.y;
+        apply();
+      });
+
+      const endPan = () => {
+        isPanning = false;
+        container.classList.remove("panzoom-grabbing");
+      };
+
+      container.addEventListener("pointerup", endPan);
+      container.addEventListener("pointerleave", endPan);
+      container.addEventListener("pointercancel", endPan);
+    };
+
+    document.querySelectorAll("[data-panzoom]").forEach(initPanzoom);
+
+    document.querySelectorAll("[data-carousel]").forEach((carousel) => {
+      const tabs = Array.from(carousel.querySelectorAll("[data-carousel-tab]"));
+      const panels = Array.from(carousel.querySelectorAll("[data-carousel-panel]"));
+      const infoPanels = Array.from(carousel.querySelectorAll("[data-carousel-info]"));
+
+      const setActive = (index) => {
+        tabs.forEach((tab, tabIndex) => {
+          const isActive = tabIndex === index;
+          tab.setAttribute("aria-selected", isActive ? "true" : "false");
+          tab.setAttribute("aria-expanded", isActive ? "true" : "false");
+        });
+        panels.forEach((panel, panelIndex) => {
+          panel.classList.toggle("hidden", panelIndex !== index);
+        });
+        infoPanels.forEach((panel, panelIndex) => {
+          panel.classList.toggle("hidden", panelIndex !== index);
+        });
+      };
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => setActive(index));
+      });
+
+      setActive(0);
+    });
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    const initTypeRotator = (rotator) => {
+      if (!rotatingPhrases.length) return;
+      const textEl = rotator.querySelector(".type-rotator-text") || rotator;
+
+      let phraseIndex = 0;
+      let charIndex = rotatingPhrases[0].length;
+      let isDeleting = true;
+      let timeoutId = null;
+
+      const typeSpeed = 45;
+      const deleteSpeed = 30;
+      const holdTime = 5200;
+      const pauseAfterDelete = 250;
+
+      const stop = () => {
+        if (!timeoutId) return;
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      };
+
+      const tick = () => {
+        if (document.hidden || prefersReducedMotion.matches) {
+          stop();
+          return;
+        }
+
+        const phrase = rotatingPhrases[phraseIndex];
+        if (!isDeleting) {
+          charIndex += 1;
+          textEl.textContent = phrase.slice(0, charIndex);
+          if (charIndex >= phrase.length) {
+            isDeleting = true;
+            timeoutId = setTimeout(tick, holdTime);
+            return;
+          }
+          timeoutId = setTimeout(tick, typeSpeed);
+          return;
+        }
+
+        charIndex -= 1;
+        textEl.textContent = phrase.slice(0, charIndex);
+        if (charIndex <= 0) {
+          isDeleting = false;
+          phraseIndex = (phraseIndex + 1) % rotatingPhrases.length;
+          timeoutId = setTimeout(tick, pauseAfterDelete);
+          return;
+        }
+        timeoutId = setTimeout(tick, deleteSpeed);
+      };
+
+      const start = (delay = 0) => {
+        if (timeoutId) return;
+        if (prefersReducedMotion.matches) {
+          textEl.textContent = rotatingPhrases[0];
+          return;
+        }
+        timeoutId = setTimeout(tick, delay);
+      };
+
+      const handleVisibility = () => {
+        if (document.hidden) {
+          stop();
+        } else {
+          start();
+        }
+      };
+
+      document.addEventListener("visibilitychange", handleVisibility);
+
+      const handleMotionChange = (event) => {
+        if (event.matches) {
+          stop();
+          textEl.textContent = rotatingPhrases[0];
+          phraseIndex = 0;
+          charIndex = rotatingPhrases[0].length;
+          isDeleting = true;
+        } else {
+          start(holdTime);
+        }
+      };
+
+      if (prefersReducedMotion.addEventListener) {
+        prefersReducedMotion.addEventListener("change", handleMotionChange);
+      } else if (prefersReducedMotion.addListener) {
+        prefersReducedMotion.addListener(handleMotionChange);
+      }
+
+      textEl.textContent = rotatingPhrases[0];
+      start(holdTime);
+    };
+
+    document.querySelectorAll("[data-type-rotator]").forEach(initTypeRotator);
+  </script>
+</BaseLayout>

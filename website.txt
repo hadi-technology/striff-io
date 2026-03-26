@@ -1,0 +1,208 @@
+Striff.io Website – Implementation Plan
+Goal
+
+Build a modern, Material-inspired, mobile-first marketing website for striff.io that explains what Striffs are, why they matter, and how to read a Striff diagram.
+
+This site is the canonical explanation of Striffs.
+
+Tech stack
+
+Astro
+
+Tailwind CSS
+
+Material-inspired UI (rounded surfaces, elevation, motion)
+
+Static site (no backend)
+
+Core requirements
+
+Mobile-first, responsive
+
+Clear primary CTA to get the browser plugin
+
+Sample Striff diagram displayed prominently
+
+Diagram callouts explaining semantics
+
+Clean, skimmable content that doubles as reference documentation
+
+Page structure (single-page site)
+1. Header
+
+Sticky header with subtle blur/elevation
+
+Logo: “Striff”
+
+Nav links (anchor scroll):
+
+Why
+
+How to read
+
+Plugin
+
+Primary CTA button: Get the Plugin
+
+Mobile hamburger menu
+
+2. Hero (top of page)
+
+Headline (H1):
+
+Structural diffs for modern code review
+
+Subheadline:
+
+Striffs visualize how pull requests change your system’s architecture—so humans can guide automation, not chase it.
+
+Buttons:
+
+Primary: Get the Plugin
+
+Secondary: Learn how it works
+
+3. Sample Striff Diagram (directly under hero)
+
+Large diagram image centered
+
+Responsive container
+
+Numbered callouts overlaid on diagram (①–⑤)
+
+Compact legend:
+
+Green: Added
+
+Red: Removed
+
+Amber: Modified
+
+Gray: Context
+
+Callouts must correspond to the “How to Read” section.
+
+On mobile:
+
+Callouts collapse into a list below the image
+
+4. Why Striffs
+
+Purpose: Explain why this exists, especially in the age of AI-generated code.
+
+Content must communicate:
+
+Line-by-line diffs are legacy tooling
+
+Agent-based coding tools accelerate architectural drift
+
+Reviewers need to see structure, not just code
+
+Striffs are the diff tool for automated programming
+
+Layout:
+
+Short intro paragraph
+
+4 benefit cards:
+
+Detect architectural drift early
+
+Guide agent-generated code
+
+Review intent, not just output
+
+Make large PRs navigable
+
+5. How to Read a Striff (reference section)
+
+This section doubles as documentation.
+
+Intro line:
+
+Each Striff is a structural diff diagram derived from code changes.
+
+Numbered explanations (matching diagram callouts):
+
+① Change coloring
+Green = added, red = removed, amber = modified, gray = unchanged context
+
+② UML-based class structure
+Classes and relationships rendered in a familiar UML-style layout
+
+③ Object-oriented metrics
+Selected metrics highlight growth, coupling, and architectural hot spots
+
+④ Class comments
+Docstrings and comments surface intent and design rationale
+
+⑤ Summarized components (…)
+Unchanged or irrelevant parts collapsed to preserve readability
+
+UI behavior:
+
+Desktop: list + diagram
+
+Mobile: accordion
+
+6. Get the Plugin
+
+Section includes:
+
+Headline: “Get the Striff browser extension”
+
+Short supporting text
+
+Two states (config flag):
+
+Not released: Join waitlist / View demo / GitHub
+
+Released: Install buttons per browser
+
+Buttons must feel primary and prominent.
+
+7. Footer
+
+Links: GitHub, Contact, Privacy
+
+Minimal, clean
+
+Design language
+
+Material-inspired:
+
+Rounded cards
+
+Elevation shadows
+
+Smooth hover/press states
+
+Clean typography
+
+Neutral background + accent color
+
+Motion only where it adds clarity
+
+Deliverable expectations
+
+The LLM should output:
+
+A complete Astro + Tailwind project
+
+Responsive, polished UI
+
+Placeholder diagram image wired correctly
+
+Clean, readable component structure
+
+No references to external blog content
+
+Final note to the implementer
+
+This site is both:
+
+A marketing page
+
+A reference for understanding Striffs
+
+Favor clarity over cleverness.
