@@ -1,14 +1,22 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import StriffLiveDemo from "../components/StriffLiveDemo.tsx";
+import { readFileSync } from "node:fs";
 
 const pluginReleased = false;
-const discussionsUrl = "https://github.com/hadi-technology/striff-lib/discussions";
 const feedbackUrl = "https://github.com/hadi-technology/striff-io/discussions/1";
+const howDiagramSvg = readFileSync(
+  new URL("../../public/hero-diagram-v2.svg", import.meta.url),
+  "utf8"
+)
+  .replace(/viewBox="[^"]*"/, 'viewBox="0 0 1899 1742"')
+  .replace('preserveAspectRatio="none"', 'preserveAspectRatio="xMidYMid meet"')
+  .replace("<svg ", '<svg class="how-svg-asset" ');
 
 const navLinks = [
   { label: "Why Striffs", href: "#why" },
   { label: "How to Read", href: "#how" },
-  { label: "Extension", href: "#plugin" }
+  { label: "GitHub Integration", href: "#github" }
 ];
 
 const rotatingPhrases = [
@@ -18,58 +26,125 @@ const rotatingPhrases = [
   "reason about structural changes."
 ];
 
+const heroLegend = [
+  { label: "Added", swatchClass: "hero-legend-swatch-add" },
+  { label: "Modified", swatchClass: "hero-legend-swatch-modify" },
+  { label: "Removed", swatchClass: "hero-legend-swatch-remove" }
+];
+
 const callouts = [
   {
-    number: "①",
+    icon: "palette",
     title: "Change coloring",
     description:
-      "Green = added, red = removed, amber = modified, gray = unchanged context.",
-    top: "12%",
-    left: "14%"
+      "Each change type gets a distinct color so you can instantly scan for what matters.",
+    details: [
+      { label: "Added", color: "#bef5cb", desc: "New classes, methods, or relationships" },
+      { label: "Removed", color: "#fdaeb7", desc: "Deleted code or deprecated paths" },
+      { label: "Modified", color: "#b3e3f5", desc: "Changes to existing implementations" },
+      { label: "Context", color: "#e5e7eb", desc: "Unchanged code for reference" }
+    ],
+    targets: [
+      '[data-qualified-name*="RoutingConfig"]',
+      '[data-qualified-name*="ProxyHandler"]',
+      '[data-qualified-name*="RateLimiter"]'
+    ],
+    viewBox: "100 100 900 900",
+    blurOthers: false
   },
   {
-    number: "②",
+    icon: "network",
     title: "UML-based class structure",
     description:
-      "Classes and relationships are rendered in a familiar UML-style layout.",
-    top: "18%",
-    left: "63%"
+      "Classes are boxes with compartments for name, attributes, and methods. Arrows show relationships like inheritance, implementation, and dependencies.",
+    details: [
+      { label: "Solid line + arrow", desc: "Direct association or reference" },
+      { label: "Dashed line + arrow", desc: "Dependency or uses relationship" },
+      { label: "Solid line + hollow triangle", desc: "Inheritance (extends)" },
+      { label: "Dashed line + hollow triangle", desc: "Implementation (implements)" }
+    ],
+    targets: [
+      '[data-qualified-name*="ApiGateway"]',
+      '[data-qualified-name*="RequestRouter"]',
+      "#lnk13"
+    ],
+    viewBox: "600 200 700 700",
+    blurOthers: false
   },
   {
-    number: "③",
+    icon: "chart",
     title: "Object-oriented metrics",
     description:
-      "Selected metrics highlight growth, coupling, and architectural hot spots.",
-    top: "48%",
-    left: "22%"
+      "Each class displays key metrics that help assess complexity, coupling, and change impact.",
+    details: [
+      { label: "LOC", desc: "Lines of Code — measures implementation size" },
+      { label: "CBO", desc: "Coupling Between Objects — counts dependencies" },
+      { label: "DIT", desc: "Depth of Inheritance Tree — hierarchy depth" },
+      { label: "NOC", desc: "Number of Children — direct subclasses count" }
+    ],
+    targets: [
+      '[data-qualified-name*="ApiGateway"]'
+    ],
+    viewBox: "150 220 900 740",
+    blurOthers: true
   },
   {
-    number: "④",
-    title: "Class comments",
+    icon: "note",
+    title: "Review notes",
     description:
-      "Docstrings and comments surface intent and design rationale.",
-    top: "52%",
-    left: "58%"
+      "Striffs can carry architectural review notes directly on the diagram so high-risk changes are visible in context, not buried in a comment thread.",
+    details: [
+      { label: "Inline critique", desc: "Call out coupling, churn, or risky structural decisions beside the affected area" },
+      { label: "Reviewer context", desc: "Capture why a change matters before anyone reads file-by-file diffs" },
+      { label: "Actionable guidance", desc: "Point reviewers toward follow-up questions or design alternatives" }
+    ],
+    targets: [
+      "#elem_AI_REVIEW_NOTE_HERO_NOTE_1",
+      "#elem_AI_REVIEW_NOTE_HERO_NOTE_2"
+    ],
+    viewBox: "60 0 1240 860",
+    blurOthers: true
   },
   {
-    number: "⑤",
-    title: "Summarized components",
+    icon: "heat",
+    title: "Color-coded packages heat map",
     description:
-      "Unchanged or irrelevant parts collapse to preserve readability.",
-    top: "76%",
-    left: "78%"
+      "Package blocks create a structural heat map so you can see where change is concentrating across the system before you inspect individual classes.",
+    details: [
+      { label: "Package boundaries", desc: "Large tinted regions group related classes into subsystems" },
+      { label: "Change concentration", desc: "Color density shows whether a PR is local or spreading across multiple packages" },
+      { label: "Cross-package drift", desc: "Package-to-package links reveal when one change starts widening architectural reach" }
+    ],
+    targets: [
+      "#cluster_pkg_com_platform_gateway_5add1096",
+      "#cluster_pkg_com_platform_ratelimit_763488ad",
+      "#cluster_pkg_com_platform_a02afa40"
+    ],
+    viewBox: "0 180 1899 1520",
+    blurOthers: false
   }
 ];
 
 const carouselItems = callouts.map((callout) => ({
-  ...callout,
-  src: "/diagram-placeholder.svg"
+  ...callout
 }));
 
 const languageSupport = [
   {
     name: "Java",
     logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg",
+    status: "Supported",
+    statusClass: "status-supported"
+  },
+  {
+    name: "Python",
+    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
+    status: "Supported",
+    statusClass: "status-supported"
+  },
+  {
+    name: "TypeScript",
+    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg",
     status: "Supported",
     statusClass: "status-supported"
   },
@@ -82,18 +157,6 @@ const languageSupport = [
   {
     name: "Go",
     logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg",
-    status: "Coming soon",
-    statusClass: "status-soon"
-  },
-  {
-    name: "Python",
-    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
-    status: "Coming soon",
-    statusClass: "status-soon"
-  },
-  {
-    name: "TypeScript",
-    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg",
     status: "Coming soon",
     statusClass: "status-soon"
   }
@@ -118,17 +181,9 @@ const benefits = [
   }
 ];
 
-const pluginButtons = pluginReleased
-  ? [
-      { label: "Chrome Web Store", href: "#" },
-      { label: "Firefox Add-ons", href: "#" },
-      { label: "Edge Add-ons", href: "#" }
-    ]
-  : [
-      { label: "Join waitlist", href: "#" },
-      { label: "View demo", href: "#" },
-      { label: "GitHub", href: "#" }
-    ];
+const pluginButtons = [
+  { label: "Download", href: "#" }
+];
 ---
 
 <BaseLayout
@@ -148,12 +203,6 @@ const pluginButtons = pluginReleased
           </a>
         ))}
         <a class="nav-link" href={feedbackUrl}>Feedback</a>
-        <a class="flex items-center gap-2 hover:text-ink" href="https://github.com/hadi-technology/striff-lib" aria-label="Striff GitHub">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" />
-          </svg>
-          GitHub
-        </a>
       </nav>
       <div class="hidden md:flex">
         <a class="btn-primary" href="#plugin">Get the Plugin</a>
@@ -208,11 +257,11 @@ const pluginButtons = pluginReleased
   </header>
 
   <main>
-    <section class="relative overflow-hidden pb-16 pt-20">
-      <div class="mx-auto flex max-w-4xl flex-col items-center gap-10 px-6 text-center">
-        <div class="space-y-8 animate-fade-up">
-          <div class="space-y-6">
-            <h1 class="text-balance">Structural diffs for modern code reviews</h1>
+	    <section class="relative overflow-hidden pb-16 pt-20">
+	      <div class="mx-auto flex max-w-4xl flex-col items-center gap-10 px-6 text-center">
+	        <div class="space-y-8 animate-fade-up">
+	          <div class="space-y-6">
+	            <h1 class="text-balance">Structural diffs for modern code reviews</h1>
             <p class="subheadline-line">
               Striffs™ visualize how pull requests change your system's architecture so you can:{" "}
               <span class="type-rotator" data-type-rotator aria-live="polite">
@@ -225,33 +274,51 @@ const pluginButtons = pluginReleased
             <a class="btn-primary" href="#plugin">Get the Plugin</a>
             <a class="btn-secondary" href="#how">Learn how it works</a>
           </div>
-        </div>
-        <div class="w-full">
-          <div class="panzoom panzoom-sharp mx-auto max-w-3xl" data-panzoom>
-            <div class="panzoom-content relative w-full" data-panzoom-content>
-              <img
-                src="/diagram-placeholder.svg"
-                alt="Striff diagram"
-                class="block h-full w-full object-cover"
-                loading="lazy"
-              />
-              <div class="pointer-events-none absolute inset-0 hidden md:block">
-                {callouts.map((callout) => (
-                  <div
-                    class="absolute flex h-10 w-10 items-center justify-center rounded-full border border-white/80 bg-white/90 text-sm font-semibold text-ink shadow-soft backdrop-blur"
-                    style={`top: ${callout.top}; left: ${callout.left};`}
-                  >
-                    {callout.number}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div class="mt-4 w-full">
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Language support
-            </p>
-            <div class="mt-3 flex flex-wrap justify-center gap-3">
+	        </div>
+	        <div class="w-full">
+	          <div
+	            class="panzoom panzoom-sharp panzoom-hero mx-auto h-[420px] w-full max-w-5xl md:h-[540px] lg:h-[640px]"
+	            data-panzoom
+	            data-panzoom-initial-scale="1.8"
+	            data-panzoom-initial-offset-y="-92"
+	            data-panzoom-min-scale="0.7"
+	            data-panzoom-max-scale="5"
+	          >
+	            <div class="panzoom-hero__chrome" aria-hidden="true">
+	              <span></span>
+	              <span></span>
+	              <span></span>
+	            </div>
+	            <div class="panzoom-content relative h-full w-full" data-panzoom-content>
+	              <img
+	                src="/hero-diagram-v2.svg"
+	                alt="Striff diagram overview"
+	                class="block h-full w-full select-none object-contain"
+	                loading="eager"
+	                decoding="async"
+	                fetchpriority="high"
+	                draggable="false"
+		              />
+		            </div>
+		          </div>
+		          <div class="mt-5 flex flex-wrap items-center justify-center gap-2 md:mt-6">
+		            <span class="hero-legend-label">PR diff legend</span>
+		            {heroLegend.map((item) => (
+		              <span class="hero-legend-chip">
+		                <span class={`hero-legend-swatch ${item.swatchClass}`} aria-hidden="true"></span>
+		                {item.label}
+		              </span>
+		            ))}
+		          </div>
+	          <p class="mx-auto mt-5 max-w-3xl text-sm text-slate-600 md:text-base">
+	            Striffs visualize how a pull request changes system structure: what was
+	            added, what was removed, and what relationships shifted across the codebase.
+	          </p>
+	          <div class="mt-8 w-full pt-3 md:mt-10 md:pt-4">
+	            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+	              Language support
+	            </p>
+            <div class="mt-6 flex flex-wrap justify-center gap-3">
               {languageSupport.map((lang) => (
                 <div class="lang-chip">
                   <span class="lang-icon" aria-hidden="true">
@@ -288,10 +355,131 @@ const pluginButtons = pluginReleased
           </div>
         </div>
       </div>
-    </section>
+	    </section>
 
-    <section id="why" class="scroll-mt-24 pb-12 pt-20">
-      <div class="mx-auto max-w-6xl px-6">
+	    <section id="how" class="scroll-mt-24 pb-14 pt-10 md:pb-18">
+	      <div class="mx-auto max-w-6xl px-6">
+	        <div class="mb-8 max-w-2xl">
+	          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
+	            How to read a Striff
+	          </p>
+	          <h2 class="mt-3 text-balance">Learn the diagram once, read every review faster.</h2>
+	          <p class="mt-4 text-slate-600">
+	            A Striff turns changed source files into a structural diff view.
+	            Click the tabs below to learn what each signal means.
+	          </p>
+	        </div>
+	        <div class="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-start" data-carousel>
+	          <!-- Diagram side -->
+	          <div class="overflow-hidden rounded-xl border border-slate-800 bg-white">
+	            <div
+	              class="how-diagram-canvas"
+	              data-carousel-svg
+	              role="img"
+	              aria-label="Striff architectural diff guide"
+	              set:html={howDiagramSvg}
+	            ></div>
+	          </div>
+
+	          <!-- Text side -->
+		          <div>
+		            <div class="flex flex-wrap gap-2 mb-4" role="tablist">
+		              {carouselItems.map((item, index) => (
+		                <button
+		                  class="how-step-horizontal"
+		                  type="button"
+		                  role="tab"
+		                  data-carousel-tab
+		                  data-index={index}
+		                  data-targets={JSON.stringify(item.targets)}
+		                  data-viewbox={item.viewBox}
+		                  data-blur-others={item.blurOthers ? "true" : "false"}
+		                  aria-selected={index === 0 ? "true" : "false"}
+		                  aria-expanded={index === 0 ? "true" : "false"}
+		                >
+		                  <span class="how-step-horizontal-icon" aria-hidden="true">
+		                    {item.icon === "palette" && (
+		                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+		                        <path d="M12 3c-5 0-9 3.6-9 8 0 2.8 2.2 5 5 5h1.1c.8 0 1.4.6 1.4 1.4 0 1.5 1.2 2.6 2.8 2.6 4.8 0 8.7-3.6 8.7-8.5C22 6.7 17.6 3 12 3Z" />
+		                        <circle cx="7.5" cy="11" r="1" />
+		                        <circle cx="11" cy="8" r="1" />
+		                        <circle cx="15.5" cy="9.5" r="1" />
+		                      </svg>
+		                    )}
+		                    {item.icon === "network" && (
+		                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+		                        <rect x="3.5" y="4" width="6" height="4.5" rx="1.2" />
+		                        <rect x="14.5" y="4" width="6" height="4.5" rx="1.2" />
+		                        <rect x="9" y="15.5" width="6" height="4.5" rx="1.2" />
+		                        <path d="M6.5 8.5v3h11v-3M12 11.5v4" />
+		                      </svg>
+		                    )}
+		                    {item.icon === "chart" && (
+		                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+		                        <path d="M4 19.5h16" />
+		                        <rect x="5" y="11" width="3" height="6.5" rx="0.8" />
+		                        <rect x="10.5" y="7.5" width="3" height="10" rx="0.8" />
+		                        <rect x="16" y="5" width="3" height="12.5" rx="0.8" />
+		                      </svg>
+		                    )}
+		                    {item.icon === "note" && (
+		                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+		                        <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v8.7a1.5 1.5 0 0 1-1.5 1.5h-8.2L6.4 20.6a.6.6 0 0 1-1-.42v-4H5A1.5 1.5 0 0 1 3.5 14.7V6A1.5 1.5 0 0 1 5 4.5Z" />
+		                        <path d="M8 9h8M8 12h6" />
+		                      </svg>
+		                    )}
+		                    {item.icon === "heat" && (
+		                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+		                        <rect x="4" y="5" width="6" height="6" rx="1.2" />
+		                        <rect x="14" y="5" width="6" height="6" rx="1.2" />
+		                        <rect x="4" y="13" width="6" height="6" rx="1.2" />
+		                        <rect x="14" y="13" width="6" height="6" rx="1.2" />
+		                        <path d="M10 8h4M7 11v2M17 11v2M10 16h4" />
+		                      </svg>
+		                    )}
+		                  </span>
+		                  <span>{item.title}</span>
+		                </button>
+		              ))}
+		            </div>
+
+		            {carouselItems.map((item, index) => (
+		              <div
+		                class={index === 0 ? "surface-strong" : "surface-strong hidden"}
+		                data-carousel-panel
+		                role="tabpanel"
+		              >
+		                <h3 class="text-xl font-semibold">{item.title}</h3>
+		                <p class="mt-2 text-slate-600">{item.description}</p>
+		                {item.details && (
+		                  <div class="mt-4 grid gap-3 sm:grid-cols-2">
+		                    {item.details.map((detail) => (
+		                      <div class="flex items-start gap-3 rounded-lg bg-slate-50 p-3">
+		                        {detail.color && (
+		                          <span class="mt-0.5 shrink-0 h-5 w-5 rounded-full border border-black/10" style={`background: ${detail.color}`}></span>
+		                        )}
+		                        {!detail.color && (
+		                          <span class="mt-0.5 shrink-0 flex h-6 w-6 items-center justify-center rounded bg-slate-200 text-xs font-semibold text-slate-600">
+		                            {detail.label.charAt(0)}
+		                          </span>
+		                        )}
+		                        <div>
+		                          <p class="text-sm font-semibold text-slate-800">{detail.label}</p>
+		                          <p class="mt-0.5 text-xs text-slate-600">{detail.desc}</p>
+		                        </div>
+		                      </div>
+		                    ))}
+		                  </div>
+		                )}
+		              </div>
+		            ))}
+		          </div>
+		        </div>
+	      </div>
+	    </section>
+
+	    <section id="why" class="scroll-mt-24 pb-12 pt-20">
+	      <div class="mx-auto max-w-6xl px-6">
         <div class="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-start">
           <div class="space-y-5">
             <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
@@ -316,117 +504,33 @@ const pluginButtons = pluginReleased
       </div>
     </section>
 
-    <section id="how" class="scroll-mt-24 pb-12 pt-20">
-      <div class="mx-auto max-w-6xl px-6">
-        <div class="space-y-6">
-          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-            How to read a Striff
-          </p>
-          <h2 class="text-balance">Reference guide for every diagram.</h2>
-          <p>
-            Each Striff is a <span class="font-semibold text-ink">structural diff diagram</span>
-            derived from <span class="font-semibold text-ink">code changes</span>.
-          </p>
-        </div>
-        <div class="mt-10">
-          <div class="surface space-y-4" data-carousel>
-            <div class="grid gap-6 md:grid-cols-[0.35fr_0.65fr] md:items-start">
-              <div class="flex flex-col gap-3">
-                {carouselItems.map((item, index) => (
-                  <div>
-                    <button
-                      class="tab-btn w-full text-left"
-                      type="button"
-                      data-carousel-tab
-                      data-index={index}
-                      aria-selected={index === 0 ? "true" : "false"}
-                      aria-expanded={index === 0 ? "true" : "false"}
-                      aria-controls={`accordion-${index}`}
-                    >
-                      {item.number} {item.title}
-                    </button>
-                    <div
-                      id={`accordion-${index}`}
-                      class={index === 0 ? "accordion-panel" : "accordion-panel hidden"}
-                      data-carousel-info
-                    >
-                      <p>{item.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div class="relative">
-                {carouselItems.map((item, index) => (
-                  <div
-                    class={index === 0 ? "block" : "hidden"}
-                    data-carousel-panel
-                  >
-                    <div class="panzoom border border-ink" data-panzoom>
-                      <div class="panzoom-content relative w-full" data-panzoom-content>
-                        <img
-                          src={item.src}
-                          alt={`Striff diagram: ${item.title}`}
-                          class="block h-full w-full object-cover"
-                          loading="lazy"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+		    <section id="plugin" class="scroll-mt-24 pb-20 pt-20">
+	      <div class="mx-auto max-w-6xl px-6">
+	        <div class="mx-auto max-w-4xl text-center space-y-8">
+	          <div class="space-y-4">
+	            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
+	              Get the plugin
+	            </p>
+	            <h2 class="text-balance">Get the Striff browser extension</h2>
+	            <p class="mx-auto max-w-2xl text-slate-600">
+	              Install the extension to generate <span class="font-semibold text-ink">Striff diagrams</span>
+	              directly inside your code review workflow.
+	            </p>
+	            <div class="pt-2 flex flex-wrap justify-center gap-3">
+	              {pluginButtons.map((button) => (
+	                <a class="btn-primary" href={button.href}>
+	                  {button.label}
+	                </a>
+	              ))}
+	            </div>
+	          </div>
+	          <div style="background: linear-gradient(to bottom, #eef0f2, #e8eaed); padding: 16px; border-radius: 12px;">
+	            <StriffLiveDemo client:load />
+	          </div>
+	        </div>
+	      </div>
+	    </section>
 
-    <section id="plugin" class="scroll-mt-24 pb-20 pt-20">
-      <div class="mx-auto max-w-6xl px-6">
-        <div class="section-frame">
-          <div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-            <div class="space-y-5">
-              <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-                Get the plugin
-              </p>
-              <h2 class="text-balance">Get the Striff browser extension</h2>
-              <p>
-                Install the extension to generate <span class="font-semibold text-ink">Striff diagrams</span>
-                directly inside your code review workflow.
-              </p>
-            </div>
-            <div class="space-y-4">
-              <div class="surface">
-                <p class="text-sm font-semibold text-slate-500">
-                  {pluginReleased ? "Available now" : "Not released yet"}
-                </p>
-                <p class="mt-2 text-sm text-slate-600">
-                  {pluginReleased
-                    ? "Install for your browser of choice and start reviewing with structure."
-                    : "Join the waitlist or explore the demo while we prepare launch."}
-                </p>
-              </div>
-              <div class="grid gap-3 sm:grid-cols-2">
-                {pluginButtons.map((button, index) => (
-                  <a
-                    class={index === 0 ? "btn-primary" : "btn-secondary"}
-                    href={button.href}
-                  >
-                    {button.label}
-                  </a>
-                ))}
-              </div>
-              <a class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600 hover:text-ink" href={discussionsUrl}>
-                Request a feature on GitHub Discussions
-              </a>
-              <p class="text-xs text-slate-500">
-                Toggle release state by editing the <code>pluginReleased</code> flag in
-                <code>src/pages/index.astro</code>.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="border-t border-white/60 bg-white/70 py-10">
@@ -467,41 +571,59 @@ const pluginButtons = pluginReleased
       });
     }
 
-    const initPanzoom = (container) => {
-      const content = container.querySelector("[data-panzoom-content]");
-      if (!content) return;
+	    const initPanzoom = (container) => {
+	      const content = container.querySelector("[data-panzoom-content]");
+	      if (!content) return;
 
-      let state = { x: 0, y: 0, scale: 1 };
-      let isPanning = false;
-      let start = { x: 0, y: 0 };
+	      const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+	      const parseNumber = (value, fallback) => {
+	        const num = Number.parseFloat(value);
+	        return Number.isFinite(num) ? num : fallback;
+	      };
 
-      const apply = () => {
-        content.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
-      };
+	      const minScale = parseNumber(container.dataset.panzoomMinScale, 0.6);
+	      const maxScale = parseNumber(container.dataset.panzoomMaxScale, 3.2);
+	      const initialScale = clamp(
+	        parseNumber(container.dataset.panzoomInitialScale, 1),
+	        minScale,
+	        maxScale
+	      );
+	      const initialOffsetX = parseNumber(container.dataset.panzoomInitialOffsetX, 0);
+	      const initialOffsetY = parseNumber(container.dataset.panzoomInitialOffsetY, 0);
+	      const rect = container.getBoundingClientRect();
+	      let state = {
+	        scale: initialScale,
+	        x: (1 - initialScale) * rect.width * 0.5 + initialOffsetX,
+	        y: (1 - initialScale) * rect.height * 0.5 + initialOffsetY
+	      };
+	      let isPanning = false;
+	      let start = { x: 0, y: 0 };
 
-      const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+	      const apply = () => {
+	        content.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+	      };
 
-      apply();
+	      apply();
 
-      container.addEventListener(
-        "wheel",
-        (event) => {
-          event.preventDefault();
-          const rect = container.getBoundingClientRect();
-          const cursorX = event.clientX - rect.left;
-          const cursorY = event.clientY - rect.top;
-          const scaleDelta = Math.exp(-event.deltaY * 0.0012);
-          const nextScale = clamp(state.scale * scaleDelta, 0.6, 3.2);
+	      container.addEventListener(
+	        "wheel",
+	        (event) => {
+	          event.preventDefault();
+	          const rect = container.getBoundingClientRect();
+	          const cursorX = event.clientX - rect.left;
+	          const cursorY = event.clientY - rect.top;
+	          const scaleDelta = Math.exp(-event.deltaY * 0.0012);
+	          const nextScale = clamp(state.scale * scaleDelta, minScale, maxScale);
 
-          const dx = (cursorX - state.x) / state.scale;
-          const dy = (cursorY - state.y) / state.scale;
+	          const dx = (cursorX - state.x) / state.scale;
+	          const dy = (cursorY - state.y) / state.scale;
 
-          state.scale = nextScale;
-          state.x = cursorX - dx * state.scale;
-          state.y = cursorY - dy * state.scale;
+	          state.scale = nextScale;
+	          state.x = cursorX - dx * state.scale;
+	          state.y = cursorY - dy * state.scale;
 
-          apply();
-        },
+	          apply();
+	        },
         { passive: false }
       );
 
@@ -527,35 +649,62 @@ const pluginButtons = pluginReleased
       container.addEventListener("pointerup", endPan);
       container.addEventListener("pointerleave", endPan);
       container.addEventListener("pointercancel", endPan);
-    };
+	    };
 
-    document.querySelectorAll("[data-panzoom]").forEach(initPanzoom);
+	    document.querySelectorAll("[data-panzoom]").forEach(initPanzoom);
 
-    document.querySelectorAll("[data-carousel]").forEach((carousel) => {
-      const tabs = Array.from(carousel.querySelectorAll("[data-carousel-tab]"));
-      const panels = Array.from(carousel.querySelectorAll("[data-carousel-panel]"));
-      const infoPanels = Array.from(carousel.querySelectorAll("[data-carousel-info]"));
+	    document.querySelectorAll("[data-carousel]").forEach((carousel) => {
+	      const tabs = Array.from(carousel.querySelectorAll("[data-carousel-tab]"));
+	      const panels = Array.from(carousel.querySelectorAll("[data-carousel-panel]"));
+	      const svgRoot = carousel.querySelector("[data-carousel-svg]");
+	      const svg = svgRoot?.querySelector("svg");
 
-      const setActive = (index) => {
-        tabs.forEach((tab, tabIndex) => {
-          const isActive = tabIndex === index;
-          tab.setAttribute("aria-selected", isActive ? "true" : "false");
-          tab.setAttribute("aria-expanded", isActive ? "true" : "false");
-        });
-        panels.forEach((panel, panelIndex) => {
-          panel.classList.toggle("hidden", panelIndex !== index);
-        });
-        infoPanels.forEach((panel, panelIndex) => {
-          panel.classList.toggle("hidden", panelIndex !== index);
-        });
-      };
+	      const setActive = (index) => {
+	        tabs.forEach((tab, tabIndex) => {
+	          const isActive = tabIndex === index;
+	          tab.setAttribute("aria-selected", isActive ? "true" : "false");
+	          tab.setAttribute("aria-expanded", isActive ? "true" : "false");
+	        });
+	        panels.forEach((panel, panelIndex) => {
+	          panel.classList.toggle("hidden", panelIndex !== index);
+	        });
 
-      tabs.forEach((tab, index) => {
-        tab.addEventListener("click", () => setActive(index));
-      });
+	        const activeTab = tabs[index];
+	        if (svg && activeTab) {
+	          // Apply viewBox zoom with smooth transition
+	          const viewBox = activeTab.dataset.viewbox;
+	          if (viewBox) {
+	            svg.setAttribute("viewBox", viewBox);
+	          }
 
-      setActive(0);
-    });
+	          // Check if we should blur non-active elements
+	          const blurOthers = activeTab.dataset.blurOthers === "true";
+
+	          // Clear previous active state
+	          svg.classList.remove("blur-non-active");
+	          svg.querySelectorAll(".is-active").forEach((node) => node.classList.remove("is-active"));
+
+	          // Apply blur if needed
+	          if (blurOthers) {
+	            svg.classList.add("blur-non-active");
+	          }
+
+	          // Highlight active elements
+	          try {
+	            const targets = JSON.parse(activeTab.dataset.targets || "[]");
+	            targets.forEach((selector) => {
+	              svg.querySelectorAll(selector).forEach((node) => node.classList.add("is-active"));
+	            });
+	          } catch {}
+	        }
+	      };
+
+	      tabs.forEach((tab, index) => {
+	        tab.addEventListener("click", () => setActive(index));
+	      });
+
+	      setActive(0);
+	    });
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -651,5 +800,56 @@ const pluginButtons = pluginReleased
     };
 
     document.querySelectorAll("[data-type-rotator]").forEach(initTypeRotator);
+
+    // PostHog event tracking
+    (function () {
+      // Track all primary CTA button clicks (Get the Plugin / Download)
+      document.querySelectorAll("a.btn-primary").forEach(function (el) {
+        el.addEventListener("click", function () {
+          window.posthog?.capture("get_plugin_clicked", {
+            label: el.textContent.trim(),
+            href: el.getAttribute("href"),
+          });
+        });
+      });
+
+      // Track secondary CTA "Learn how it works"
+      document.querySelectorAll("a.btn-secondary").forEach(function (el) {
+        el.addEventListener("click", function () {
+          window.posthog?.capture("learn_how_clicked");
+        });
+      });
+
+      // Track GitHub and Feedback link clicks
+      document.querySelectorAll('a[href*="github.com"]').forEach(function (el) {
+        el.addEventListener("click", function () {
+          if (el.href.includes("discussions")) {
+            window.posthog?.capture("feedback_link_clicked");
+          } else {
+            window.posthog?.capture("github_link_clicked", { href: el.href });
+          }
+        });
+      });
+
+      // Track "How to Read" carousel tab clicks
+      document.querySelectorAll("[data-carousel-tab]").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          window.posthog?.capture("how_to_read_tab_clicked", {
+            tab_title: tab.textContent.trim(),
+          });
+        });
+      });
+
+      // Track first hero diagram pan/zoom interaction per page load
+      var heroPanned = false;
+      document.querySelectorAll("[data-panzoom]").forEach(function (container) {
+        container.addEventListener("pointerdown", function () {
+          if (!heroPanned) {
+            heroPanned = true;
+            window.posthog?.capture("hero_diagram_panned");
+          }
+        });
+      });
+    })();
   </script>
 </BaseLayout>

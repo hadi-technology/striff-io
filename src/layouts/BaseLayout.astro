@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import PostHog from "../components/posthog.astro";
 
 const { title = "Striff", description = "Structural diffs for modern code review." } = Astro.props;
 ---
@@ -11,6 +12,7 @@ const { title = "Striff", description = "Structural diffs for modern code review
     <meta name="description" content={description} />
     <title>{title}</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <PostHog />
   </head>
   <body>
     <slot />
