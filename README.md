@@ -2,10 +2,6 @@
 
 Marketing + reference site for Striff diagrams.
 
-## Requirements
-- Node.js 18+
-- npm
-
 ## Getting started
 
 ```bash
@@ -22,6 +18,8 @@ npm run build
 npm run preview
 ```
 
-## Notes
-- Diagram image: `public/diagram-placeholder.svg`
-- Toggle plugin state in `src/pages/index.astro` (`pluginReleased`)
+## Deployment
+
+Configured for Netlify via `netlify.toml`. Set environment variables in Netlify:
+- `PUBLIC_POSTHOG_PROJECT_TOKEN`
+- `PUBLIC_POSTHOG_HOST`
