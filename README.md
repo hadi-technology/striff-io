@@ -1,5 +1,7 @@
 # Striff.io
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/a460ac24-018e-4070-bd69-d1f7b03d88fb/deploy-status)](https://app.netlify.com/projects/striff-io/deploys)
+
 Marketing + reference site for Striff diagrams.
 
 ## Getting started
