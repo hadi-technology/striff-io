@@ -64,28 +64,49 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">6. Your Rights</h2>
+        <h2 class="text-2xl font-semibold">6. Browser Extension — Striffs for GitHub</h2>
+        <p>The <strong>Striffs for GitHub</strong> Chrome extension processes the following data when you use it on GitHub pull request pages:</p>
+        <ul class="ml-6 list-disc">
+          <li><strong>Github PR metadata</strong> — pull request page information needed to generate architectural diagrams</li>
+          <li><strong>Repository content</strong> — file paths and changed-file content from PRs, used to build diagrams</li>
+          <li><strong>Optional GitHub token</strong> — stored locally in your browser if you choose to provide one; required only for private repositories</li>
+          <li><strong>Engagement events</strong> — anonymous usage events (diagram views, interactions) sent to the Striffs backend</li>
+        </ul>
+        <h3 class="mt-4 text-xl font-semibold">Storage</h3>
+        <p>The extension stores your optional GitHub token and cached diagram data locally in your browser's extension storage. No data is sent to third parties beyond the Striffs backend for diagram generation.</p>
+        <h3 class="mt-4 text-xl font-semibold">Network Requests</h3>
+        <p>The extension communicates with:</p>
+        <ul class="ml-6 list-disc">
+          <li>GitHub endpoints needed to fetch pull request data and repository content</li>
+          <li>The Striffs backend (<code class="bg-slate-100 px-1 rounded">api.striff.io</code>) to generate diagrams, fetch configuration, and send engagement events</li>
+        </ul>
+        <h3 class="mt-4 text-xl font-semibold">User Control</h3>
+        <p>You can clear your saved token and all cached data at any time from the extension's popup menu.</p>
+      </section>
+
+      <section class="mt-8">
+        <h2 class="text-2xl font-semibold">7. Your Rights</h2>
         <p>Since we do not collect personal information, you do not need to request data deletion, correction, or access. If you have questions about our analytics practices, please contact us.</p>
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">7. Children's Privacy</h2>
+        <h2 class="text-2xl font-semibold">8. Children's Privacy</h2>
         <p>Our website is not directed to children under 13. We do not knowingly collect information from children under 13.</p>
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">8. International Visitors</h2>
+        <h2 class="text-2xl font-semibold">9. International Visitors</h2>
         <p>Our website is operated from the United States. If you are visiting from outside the United States, please be aware that your information may be transferred to and processed in the United States.</p>
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">9. Changes to This Policy</h2>
+        <h2 class="text-2xl font-semibold">10. Changes to This Policy</h2>
         <p>We may update this privacy policy from time to time. We will notify you of any material changes by posting the new policy on this page and updating the "Last updated" date.</p>
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">10. Contact Us</h2>
-        <p>If you have questions about this privacy policy, please contact us through GitHub discussions: <a href="https://github.com/hadi-technology/striff-lib/discussions" class="text-blue-600 hover:text-blue-700">github.com/hadi-technology/striff-lib/discussions</a></p>
+        <h2 class="text-2xl font-semibold">11. Contact Us</h2>
+        <p>For privacy-related inquiries, please email us at <a href="mailto:hi@haditechnology.com" class="text-blue-600 hover:text-blue-700">hi@haditechnology.com</a> or reach out through GitHub discussions: <a href="https://github.com/hadi-technology/striff-lib/discussions" class="text-blue-600 hover:text-blue-700">github.com/hadi-technology/striff-lib/discussions</a></p>
       </section>
     </div>
   </main>
