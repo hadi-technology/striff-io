@@ -1,29 +1,124 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import StriffLiveDemo from "../components/StriffLiveDemo.tsx";
 import { readFileSync } from "node:fs";
 
-const pluginReleased = false;
+const pluginReleased = true;
 const feedbackUrl = "https://github.com/hadi-technology/striff-io/discussions/1";
-const howDiagramSvg = readFileSync(
-  new URL("../../public/hero-diagram-v2.svg", import.meta.url),
+const primaryCtaLabel = "Install Plugin";
+const primaryCtaHref = "#plugin";
+const secondaryCtaLabel = "See product proof";
+const secondaryCtaHref = "#proof";
+const heroDiagramSvgRaw = readFileSync(
+  new URL("../../public/hero-diagram-main.svg", import.meta.url),
   "utf8"
-)
-  .replace(/viewBox="[^"]*"/, 'viewBox="0 0 1899 1742"')
-  .replace('preserveAspectRatio="none"', 'preserveAspectRatio="xMidYMid meet"')
-  .replace("<svg ", '<svg class="how-svg-asset" ');
+);
+
+const cropHeroSvg = (viewBox: string, className: string) =>
+  heroDiagramSvgRaw
+    .replace(/viewBox="[^"]*"/, `viewBox="${viewBox}"`)
+    .replace(/width="[^"]*"/, "")
+    .replace(/height="[^"]*"/, "")
+    .replace('preserveAspectRatio="none"', 'preserveAspectRatio="xMidYMid meet"')
+    .replace(/style="[^"]*"/, "")
+    .replace("<svg ", `<svg class="${className}" `);
+
+const whyStriffSvg = cropHeroSvg("1138 1148 468 438", "why-visual-svg");
+const howChangeComponentSvg = cropHeroSvg("1148 1148 458 156", "how-change-component-svg");
+const howReviewNoteSvg = cropHeroSvg("1324 10 390 282", "how-tab-snippet-svg");
+const howMetricsSnippetSvg = cropHeroSvg("126 436 310 94", "how-tab-snippet-svg");
+const howUmlDiagramSvg = cropHeroSvg("1088 1088 560 520", "how-tab-snippet-svg");
+
+const howChangeSnippetSvg = `
+  <div class="how-change-live-wrap">
+    ${howChangeComponentSvg}
+    <div class="how-change-legend" aria-hidden="true">
+      <span class="how-change-chip how-change-chip-add">Added()</span>
+      <span class="how-change-chip how-change-chip-modify">Modified()</span>
+      <span class="how-change-chip how-change-chip-remove">Removed()</span>
+    </div>
+  </div>
+`;
+
+const howUmlSnippetSvg = `
+  <div class="how-uml-live-wrap">
+    ${howUmlDiagramSvg}
+  </div>
+`;
 
 const navLinks = [
-  { label: "Why Striffs", href: "#why" },
-  { label: "How to Read", href: "#how" },
-  { label: "GitHub Integration", href: "#github" }
+  { label: "Why Striff", href: "#proof" },
+  { label: "Product", href: "#features" },
+  { label: "How It Works", href: "#how" },
+  { label: pluginReleased ? "Install" : "Extension", href: "#plugin" }
 ];
 
 const rotatingPhrases = [
-  "guide AI-generated code.",
-  "catch architectural drift.",
-  "understand system-level impact.",
-  "reason about structural changes."
+  "review AI-generated PRs with confidence",
+  "catch coupling drift before merge",
+  "see blast radius before reading files",
+  "focus on the riskiest system changes first"
+];
+
+const proofPills = [
+  {
+    label: "GitHub pull request review",
+    tone: "#2563eb",
+    glyph: "PR"
+  },
+  {
+    label: "Java, Python, TypeScript",
+    tone: "#0f766e",
+    glyph: "{ }"
+  },
+  {
+    label: "Inline architecture notes",
+    tone: "#b45309",
+    glyph: "AI"
+  },
+  {
+    label: "Metrics and risk signals",
+    tone: "#7c3aed",
+    glyph: "Σ"
+  }
+];
+
+const comparisonRows = [
+  {
+    left: "File diff shows what lines changed.",
+    right: "Striff shows what moved structurally: dependencies, boundaries, and blast radius."
+  },
+  {
+    left: "Conventional review starts deep in files.",
+    right: "Striff starts at the system layer and lets reviewers drill in only where risk appears."
+  },
+  {
+    left: "AI-generated PRs can look tidy line-by-line.",
+    right: "Striff exposes architecture drift, coupling shifts, and the parts of the system most likely to need attention."
+  }
+];
+
+const productPaths = [
+  {
+    eyebrow: "For Reviewers",
+    title: "Chrome extension for pull request review",
+    body: "Open structural diffs and review notes inside GitHub instead of switching between tabs, screenshots, and comments.",
+    cta: "Install Plugin",
+    href: "#plugin"
+  },
+  {
+    eyebrow: "For Teams",
+    title: "GitHub Check for architecture-aware merge gates",
+    body: "Post architectural review signals directly into PR checks and move toward policy-based enforcement on risky changes.",
+    cta: "See roadmap",
+    href: "#github-check"
+  },
+  {
+    eyebrow: "For Developers",
+    title: "API and OSS library for deeper integration",
+    body: "Generate Striffs from GitHub pull requests, uploaded code snapshots, or your own Java-based automation.",
+    cta: "View GitHub",
+    href: "https://github.com/hadi-technology/striff-lib"
+  }
 ];
 
 const heroLegend = [
@@ -36,98 +131,68 @@ const callouts = [
   {
     icon: "palette",
     title: "Change coloring",
+    accentBg: "#dff7e4",
+    accentText: "#166534",
+    snippet: howChangeSnippetSvg,
     description:
       "Each change type gets a distinct color so you can instantly scan for what matters.",
     details: [
-      { label: "Added", color: "#bef5cb", desc: "New classes, methods, or relationships" },
-      { label: "Removed", color: "#fdaeb7", desc: "Deleted code or deprecated paths" },
-      { label: "Modified", color: "#b3e3f5", desc: "Changes to existing implementations" },
-      { label: "Context", color: "#e5e7eb", desc: "Unchanged code for reference" }
-    ],
-    targets: [
-      '[data-qualified-name*="RoutingConfig"]',
-      '[data-qualified-name*="ProxyHandler"]',
-      '[data-qualified-name*="RateLimiter"]'
-    ],
-    viewBox: "100 100 900 900",
-    blurOthers: false
+      "Added marks new structure entering the system.",
+      "Modified shows existing components whose internals changed.",
+      "Removed makes deleted paths visible before they disappear into file diffs."
+    ]
   },
   {
     icon: "network",
     title: "UML-based class structure",
+    accentBg: "#e4f1f7",
+    accentText: "#0f4c81",
+    snippet: howUmlSnippetSvg,
     description:
       "Classes are boxes with compartments for name, attributes, and methods. Arrows show relationships like inheritance, implementation, and dependencies.",
     details: [
-      { label: "Solid line + arrow", desc: "Direct association or reference" },
-      { label: "Dashed line + arrow", desc: "Dependency or uses relationship" },
-      { label: "Solid line + hollow triangle", desc: "Inheritance (extends)" },
-      { label: "Dashed line + hollow triangle", desc: "Implementation (implements)" }
-    ],
-    targets: [
-      '[data-qualified-name*="ApiGateway"]',
-      '[data-qualified-name*="RequestRouter"]',
-      "#lnk13"
-    ],
-    viewBox: "600 200 700 700",
-    blurOthers: false
+      "Solid arrows represent direct references or associations.",
+      "Dashed arrows indicate looser dependencies or implementation edges.",
+      "The structure view makes boundary changes readable at a glance."
+    ]
   },
   {
     icon: "chart",
     title: "Object-oriented metrics",
+    accentBg: "#fef3d6",
+    accentText: "#92400e",
+    snippet: howMetricsSnippetSvg,
     description:
       "Each class displays key metrics that help assess complexity, coupling, and change impact.",
-    details: [
-      { label: "LOC", desc: "Lines of Code — measures implementation size" },
-      { label: "CBO", desc: "Coupling Between Objects — counts dependencies" },
-      { label: "DIT", desc: "Depth of Inheritance Tree — hierarchy depth" },
-      { label: "NOC", desc: "Number of Children — direct subclasses count" }
-    ],
-    targets: [
-      '[data-qualified-name*="ApiGateway"]'
-    ],
-    viewBox: "150 220 900 740",
-    blurOthers: true
+    metrics: [
+      { label: "NOC", icon: "branch", tone: "green", desc: "Number of children. Wider inheritance means more downstream impact." },
+      { label: "DIT", icon: "depth", tone: "blue", desc: "Depth of inheritance. Deep trees are harder to reason about safely." },
+      { label: "WMC", icon: "weight", tone: "gold", desc: "Weighted method complexity. Higher values usually mean heavier review effort." },
+      { label: "AC", icon: "inbound", tone: "rose", desc: "Afferent coupling. More incoming dependencies mean the class is harder to change safely." },
+      { label: "EC", icon: "outbound", tone: "slate", desc: "Efferent coupling. More outgoing dependencies suggest broader ripple effects." }
+    ]
   },
   {
     icon: "note",
     title: "Review notes",
+    accentBg: "#fff1dd",
+    accentText: "#9a3412",
+    snippet: howReviewNoteSvg,
     description:
       "Striffs can carry architectural review notes directly on the diagram so high-risk changes are visible in context, not buried in a comment thread.",
     details: [
-      { label: "Inline critique", desc: "Call out coupling, churn, or risky structural decisions beside the affected area" },
-      { label: "Reviewer context", desc: "Capture why a change matters before anyone reads file-by-file diffs" },
-      { label: "Actionable guidance", desc: "Point reviewers toward follow-up questions or design alternatives" }
-    ],
-    targets: [
-      "#elem_AI_REVIEW_NOTE_HERO_NOTE_1",
-      "#elem_AI_REVIEW_NOTE_HERO_NOTE_2"
-    ],
-    viewBox: "60 0 1240 860",
-    blurOthers: true
+      "Striff narrows review to the most relevant part of the change, then adds architecture-aware signals before generating notes.",
+      "Notes are cleaned up, deduplicated, and ranked so reviewers see the highest-value guidance first.",
+      "The final comments are rendered directly on the diagram, next to the package or component they refer to."
+    ]
   },
-  {
-    icon: "heat",
-    title: "Color-coded packages heat map",
-    description:
-      "Package blocks create a structural heat map so you can see where change is concentrating across the system before you inspect individual classes.",
-    details: [
-      { label: "Package boundaries", desc: "Large tinted regions group related classes into subsystems" },
-      { label: "Change concentration", desc: "Color density shows whether a PR is local or spreading across multiple packages" },
-      { label: "Cross-package drift", desc: "Package-to-package links reveal when one change starts widening architectural reach" }
-    ],
-    targets: [
-      "#cluster_pkg_com_platform_gateway_5add1096",
-      "#cluster_pkg_com_platform_ratelimit_763488ad",
-      "#cluster_pkg_com_platform_a02afa40"
-    ],
-    viewBox: "0 180 1899 1520",
-    blurOthers: false
-  }
 ];
 
 const carouselItems = callouts.map((callout) => ({
   ...callout
 }));
+const featuredHowItem = carouselItems[0];
+const secondaryHowItems = carouselItems.slice(1);
 
 const languageSupport = [
   {
@@ -149,63 +214,184 @@ const languageSupport = [
     statusClass: "status-supported"
   },
   {
-    name: "C#",
+    name: "CSharp",
     logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg",
     status: "Coming soon",
     statusClass: "status-soon"
   },
   {
-    name: "Go",
+    name: "GoLang",
     logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg",
     status: "Coming soon",
     statusClass: "status-soon"
   }
 ];
 
-const benefits = [
+const heroAudienceCards = [
   {
-    title: "Detect architectural drift early",
-    body: "Spot widening dependencies and design drift before they become refactors."
+    eyebrow: "For reviewers",
+    icon: "review",
+    accentColor: "#2563eb",
+    title: "Start with system change, then drill into files only where needed."
   },
   {
-    title: "Guide agent-generated code",
-    body: "Give automation guardrails by reviewing structure, not just syntax."
+    eyebrow: "For AI-heavy teams",
+    icon: "agent",
+    accentColor: "#16a34a",
+    title: "Keep agent-generated code aligned with architecture, not just syntax."
   },
   {
-    title: "Review intent, not just output",
-    body: "Understand what a change means for the system, not just the file diff."
-  },
-  {
-    title: "Make large PRs navigable",
-    body: "Compress context so reviewers can focus on high-impact areas first."
+    eyebrow: "For engineering leads",
+    icon: "lead",
+    accentColor: "#d97706",
+    title: "Surface coupling, drift, and risky boundaries before they become cleanup work."
   }
 ];
 
-const pluginButtons = [
-  { label: "Download", href: "#" }
+const benefits = [
+  {
+    eyebrow: "Impact First",
+    icon: "blast",
+    title: "See blast radius before reading files",
+    body: "Start with the architectural surface area of the PR, not a pile of changed files with no system context.",
+    accent: "rgb(248 113 113)"
+  },
+  {
+    eyebrow: "AI Guardrails",
+    icon: "shield",
+    title: "Review AI output at the architecture layer",
+    body: "Agent-generated changes can pass syntax review while quietly bending boundaries. Striff makes that visible.",
+    accent: "rgb(74 222 128)"
+  },
+  {
+    eyebrow: "One Artifact",
+    icon: "stack",
+    title: "Keep risk and context in one view",
+    body: "Metrics, dependency edges, and AI review notes stay on the diagram itself instead of being scattered across comments and tabs.",
+    accent: "rgb(96 165 250)"
+  },
+  {
+    eyebrow: "Large PRs",
+    icon: "focus",
+    title: "Handle large pull requests without drowning",
+    body: "When a PR spans dozens of files, Striff helps reviewers focus on the structural changes that deserve attention first.",
+    accent: "rgb(250 204 21)"
+  }
+];
+
+const featureCards = [
+  {
+    eyebrow: "Diff Lens",
+    icon: "structure",
+    accent: "linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(14, 165, 233, 0.08))",
+    accentColor: "#2563eb",
+    title: "Structural diffs instead of file noise",
+    body:
+      "Review the shape of the change first: new dependencies, moved boundaries, changed classes, and the surrounding impact."
+  },
+  {
+    eyebrow: "Review Engine",
+    icon: "spark",
+    accent: "linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(251, 191, 36, 0.08))",
+    accentColor: "#d97706",
+    title: "AI review grounded in deterministic signals",
+    body:
+      "AI review is grounded in architecture-aware signals so comments are tied to real structural risk, not generic code-review advice."
+  },
+  {
+    eyebrow: "Inline Context",
+    icon: "note",
+    accent: "linear-gradient(135deg, rgba(244, 114, 182, 0.18), rgba(251, 207, 232, 0.08))",
+    accentColor: "#db2777",
+    title: "Notes attached where the risk lives",
+    body:
+      "Review comments are rendered into the SVG itself so the architectural issue stays attached to the component or package it affects."
+  },
+  {
+    eyebrow: "Workflow Fit",
+    icon: "flow",
+    accent: "linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(134, 239, 172, 0.08))",
+    accentColor: "#16a34a",
+    title: "Built for real review flows",
+    body:
+      "Analyze GitHub pull requests or code snapshots, revisit saved results later, and keep the experience fast enough for active review."
+  }
+];
+
+const reviewFlow = [
+  {
+    step: "1",
+    eyebrow: "Input",
+    icon: "ingest",
+    accentColor: "#2563eb",
+    title: "Generate the diagram",
+    body: "Start from a pull request or two code snapshots and generate a structural view of what changed."
+  },
+  {
+    step: "2",
+    eyebrow: "Analysis",
+    icon: "radar",
+    accentColor: "#d97706",
+    title: "Spot impact and risk",
+    body: "Scan added, modified, and removed components, then use metrics and relationship changes to find the blast radius."
+  },
+  {
+    step: "3",
+    eyebrow: "Decision",
+    icon: "action",
+    accentColor: "#16a34a",
+    title: "Act on the right questions",
+    body: "Use inline review notes and heat to focus the conversation on coupling, drift, and boundary risk before merge."
+  }
+];
+
+const installCtas = [
+  { label: "Install Plugin", href: "#plugin", icon: "chrome" },
+  { label: "View on GitHub", href: "https://github.com/hadi-technology/striff-browser-extension" }
 ];
 ---
 
 <BaseLayout
-  title="Striff - Structural diffs for modern code reviews"
-  description="Striffs visualize how pull requests change your system's architecture so you can guide AI-generated code."
+  title="Striff - Architecture review for AI-era pull requests"
+  description="Striff turns pull requests into structural diffs so teams can catch coupling drift, boundary risk, and system-level impact before merge."
+  canonical="https://striff.io/"
+  ogImage="https://striff.io/hero-diagram-main.svg"
 >
-  <header class="sticky top-0 z-50 border-b border-white/40 bg-white/70 backdrop-blur">
+  <header class="sticky top-0 z-50 border-b border-white/10 bg-[#24292e] backdrop-blur">
     <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-      <a href="#" class="flex items-center gap-3 text-lg font-semibold tracking-tight text-ink">
-        <img src="/download.svg" alt="Striff logo" class="h-9 w-9" />
-        <span>Striff</span>
+      <a href="#" class="flex items-center gap-3 text-lg font-bold tracking-tight">
+        <img src="/icon.svg" alt="Striff logo" class="h-9 w-9" />
+        <span class="hidden sm:inline font-logo">Striff</span>
       </a>
+
+      <style is:global>
+        .font-logo {
+          font-family: "Rubik", system-ui, sans-serif;
+          background: linear-gradient(135deg, #fff5c0 0%, #ffec88 40%, #c9a830 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          letter-spacing: 0.02em;
+        }
+      </style>
       <nav class="hidden items-center gap-2 md:flex">
         {navLinks.map((link) => (
           <a class="nav-link" href={link.href}>
             {link.label}
           </a>
         ))}
-        <a class="nav-link" href={feedbackUrl}>Feedback</a>
+        <a class="nav-link" href="https://github.com/hadi-technology/striff-lib" target="_blank" rel="noopener noreferrer">GitHub</a>
       </nav>
       <div class="hidden md:flex">
-        <a class="btn-primary" href="#plugin">Get the Plugin</a>
+        <a class="btn-primary" href={primaryCtaHref}>
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2A10 10 0 0 1 20.66 7H12Z" fill="#EA4335" />
+            <path d="M20.66 7A10 10 0 0 1 12 22l4.33-7.5Z" fill="#FBBC04" />
+            <path d="M12 22A10 10 0 0 1 3.34 7h8.66Z" fill="#34A853" />
+            <circle cx="12" cy="12" r="4.1" fill="#4285F4" stroke="#EAF2FF" stroke-width="1" />
+          </svg>
+          {primaryCtaLabel}
+        </a>
       </div>
       <button
         class="md:hidden"
@@ -215,7 +401,7 @@ const pluginButtons = [
         aria-controls="mobile-menu"
       >
         <span class="sr-only">Open menu</span>
-        <div class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-ink shadow-sm">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-sm">
           <svg
             width="20"
             height="20"
@@ -236,7 +422,7 @@ const pluginButtons = [
     <div
       id="mobile-menu"
       data-mobile-menu
-      class="hidden border-t border-white/50 bg-white/80 px-6 py-4 md:hidden"
+      class="hidden border-t border-white/10 bg-[#24292e] px-6 py-4 md:hidden"
     >
       <div class="flex flex-col gap-2">
         {navLinks.map((link) => (
@@ -244,309 +430,735 @@ const pluginButtons = [
             {link.label}
           </a>
         ))}
-        <a class="nav-link" href={feedbackUrl}>Feedback</a>
-        <a class="flex items-center gap-2 hover:text-ink" href="https://github.com/hadi-technology/striff-lib">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <a class="nav-link" href="https://github.com/hadi-technology/striff-lib" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a class="nav-link flex items-center gap-2" href="https://github.com/hadi-technology/striff-lib">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" />
           </svg>
           GitHub
         </a>
-        <a class="btn-primary w-full" href="#plugin">Get the Plugin</a>
+        <a class="btn-primary w-full" href={primaryCtaHref}>{primaryCtaLabel}</a>
       </div>
     </div>
   </header>
 
   <main>
-	    <section class="relative overflow-hidden pb-16 pt-20">
-	      <div class="mx-auto flex max-w-4xl flex-col items-center gap-10 px-6 text-center">
+	    <section id="hero" class="scroll-mt-24 relative overflow-hidden pb-16 pt-20">
+	      <!-- Ambient glow effects -->
+	      <div class="pointer-events-none absolute inset-0 overflow-hidden">
+	        <div class="absolute -top-40 -right-40 h-80 w-80 rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #7ee89d 0%, transparent 70%);"></div>
+	        <div class="absolute -bottom-40 -left-40 h-80 w-80 rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #f0808e 0%, transparent 70%);"></div>
+	        <div class="absolute top-1/2 -right-20 h-60 w-60 rounded-full opacity-15 blur-3xl" style="background: radial-gradient(circle, #6eaaee 0%, transparent 70%);"></div>
+	      </div>
+
+	      <div class="mx-auto flex max-w-5xl flex-col items-center gap-10 px-6 text-center relative z-10">
 	        <div class="space-y-8 animate-fade-up">
 	          <div class="space-y-6">
-	            <h1 class="text-balance">Structural diffs for modern code reviews</h1>
+            <h1 class="text-balance">Architectural review for pull requests in the age of AI coding.</h1>
             <p class="subheadline-line">
-              Striffs™ visualize how pull requests change your system's architecture so you can:{" "}
+              Striff gives reviewers a system-level view of every pull request so teams can{" "}
               <span class="type-rotator" data-type-rotator aria-live="polite">
                 <span class="type-rotator-text">{rotatingPhrases[0]}</span>
                 <span class="type-caret" aria-hidden="true"></span>
               </span>
             </p>
           </div>
+          <div class="proof-pill-row">
+            {proofPills.map((pill) => (
+              <span class="proof-pill" style={`--proof-accent:${pill.tone};`}>
+                <span class="proof-pill-badge" aria-hidden="true">{pill.glyph}</span>
+                <span>{pill.label}</span>
+              </span>
+            ))}
+          </div>
           <div class="flex flex-wrap justify-center gap-4">
-            <a class="btn-primary" href="#plugin">Get the Plugin</a>
-            <a class="btn-secondary" href="#how">Learn how it works</a>
+            <a class="btn-primary" href={primaryCtaHref}>{primaryCtaLabel}</a>
+            <a class="btn-secondary" href={secondaryCtaHref}>{secondaryCtaLabel}</a>
           </div>
 	        </div>
 	        <div class="w-full">
-	          <div
-	            class="panzoom panzoom-sharp panzoom-hero mx-auto h-[420px] w-full max-w-5xl md:h-[540px] lg:h-[640px]"
-	            data-panzoom
-	            data-panzoom-initial-scale="1.8"
-	            data-panzoom-initial-offset-y="-92"
-	            data-panzoom-min-scale="0.7"
-	            data-panzoom-max-scale="5"
-	          >
-	            <div class="panzoom-hero__chrome" aria-hidden="true">
-	              <span></span>
-	              <span></span>
-	              <span></span>
-	            </div>
-	            <div class="panzoom-content relative h-full w-full" data-panzoom-content>
-	              <img
-	                src="/hero-diagram-v2.svg"
-	                alt="Striff diagram overview"
-	                class="block h-full w-full select-none object-contain"
+		          <div
+		            class="hero-diagram-frame mx-auto w-full max-w-5xl"
+		            data-panzoom
+		            data-panzoom-initial-scale="2.3105"
+                data-panzoom-initial-x="-612.455"
+                data-panzoom-initial-y="-189.536"
+		            data-panzoom-min-scale="0.5"
+		            data-panzoom-max-scale="5"
+		          >
+		            <div class="hero-diagram-chrome" aria-hidden="true">
+                  <div class="hero-chrome-left">
+                    <div class="hero-window-controls">
+		                  <span></span><span></span><span></span>
+                    </div>
+                    <div class="hero-github-context">
+                      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" />
+                      </svg>
+                      <span class="hero-github-slug">openapitools/openapi-generator</span>
+                      <span class="hero-github-pr">PR #19423</span>
+                    </div>
+                  </div>
+	                  <p class="hero-pan-hint">
+	                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+	                      <path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" />
+                      <path d="M12 9v6M9 12h6" />
+                    </svg>
+                    Scroll to zoom · Drag to pan
+                  </p>
+		            </div>
+			            <div class="hero-diagram-viewport" data-panzoom-content style="transform: translate(-612.455px, -189.536px) scale(2.3105)">
+			              <img
+		                src="/hero-diagram-main.svg"
+		                alt="Striff diagram overview"
+		                class="hero-diagram-img"
 	                loading="eager"
 	                decoding="async"
-	                fetchpriority="high"
-	                draggable="false"
-		              />
-		            </div>
-		          </div>
-		          <div class="mt-5 flex flex-wrap items-center justify-center gap-2 md:mt-6">
-		            <span class="hero-legend-label">PR diff legend</span>
-		            {heroLegend.map((item) => (
-		              <span class="hero-legend-chip">
-		                <span class={`hero-legend-swatch ${item.swatchClass}`} aria-hidden="true"></span>
-		                {item.label}
-		              </span>
-		            ))}
-		          </div>
-	          <p class="mx-auto mt-5 max-w-3xl text-sm text-slate-600 md:text-base">
-	            Striffs visualize how a pull request changes system structure: what was
-	            added, what was removed, and what relationships shifted across the codebase.
-	          </p>
-	          <div class="mt-8 w-full pt-3 md:mt-10 md:pt-4">
-	            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-	              Language support
+		                fetchpriority="high"
+			                draggable="false"
+			              />
+			            </div>
+			          </div>
+				          <div class="mt-5 flex flex-wrap items-center justify-center gap-2 md:mt-6">
+			            <span class="hero-legend-label">PR diff legend</span>
+			            {heroLegend.map((item) => (
+			              <span class="hero-legend-chip">
+			                <span class={`hero-legend-swatch ${item.swatchClass}`} aria-hidden="true"></span>
+			                {item.label}
+			              </span>
+			            ))}
+                  <span class="hero-strip-separator" aria-hidden="true"></span>
+                  <span class="hero-legend-label">Languages</span>
+                  {languageSupport.map((lang) => (
+                    <span class="lang-chip lang-chip-minimal">
+                      <span class="lang-icon" aria-hidden="true">
+                        <img
+                          class="lang-logo"
+                          src={lang.logoUrl}
+                          alt={`${lang.name} logo`}
+                          loading="lazy"
+                        />
+                      </span>
+                      <span class="lang-inline-name">
+                        {lang.name}
+                        {lang.status === "Coming soon" && <span class="lang-soon-tag"> soon</span>}
+                      </span>
+                    </span>
+                  ))}
+			          </div>
+		          <p class="section-subcopy mx-auto mt-5 max-w-3xl text-sm md:text-base">
+		            Review the PR the way your system was designed: as moving components, boundaries, dependencies, and risk hotspots instead of isolated files.
+		          </p>
+	        </div>
+        <div class="grid w-full max-w-5xl gap-4 md:grid-cols-3">
+          {heroAudienceCards.map((card) => (
+            <div class="hero-audience-card" style={`--hero-card-accent:${card.accentColor};`}>
+              <div class="hero-audience-card-top">
+                <div class="hero-audience-icon" aria-hidden="true">
+                  {card.icon === "review" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v8.7a1.5 1.5 0 0 1-1.5 1.5h-8.2L6.4 20.6a.6.6 0 0 1-1-.42v-4H5A1.5 1.5 0 0 1 3.5 14.7V6A1.5 1.5 0 0 1 5 4.5Z" />
+                      <path d="M8 9h8M8 12h6" />
+                    </svg>
+                  )}
+                  {card.icon === "agent" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <rect x="7" y="8" width="10" height="9" rx="2" />
+                      <path d="M12 4v2M9 17v2M15 17v2M5 10H3M21 10h-2M9 12h.01M15 12h.01M9.5 14.5h5" />
+                    </svg>
+                  )}
+                  {card.icon === "lead" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <path d="M12 3 14.7 8.5 21 9.4l-4.5 4.3 1.1 6.1L12 17l-5.6 2.8 1.1-6.1L3 9.4l6.3-.9L12 3Z" />
+                    </svg>
+                  )}
+                </div>
+                <p class="hero-audience-eyebrow">{card.eyebrow}</p>
+              </div>
+              <p class="hero-audience-title">{card.title}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+	    </section>
+
+	    <section id="proof" class="scroll-mt-24 pb-12 pt-20">
+	      <div class="mx-auto max-w-6xl px-6">
+        <div class="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-start">
+	          <div class="space-y-5">
+	            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
+	              Why Striff
 	            </p>
-            <div class="mt-6 flex flex-wrap justify-center gap-3">
-              {languageSupport.map((lang) => (
-                <div class="lang-chip">
-                  <span class="lang-icon" aria-hidden="true">
-                    <img
-                      class="lang-logo"
-                      src={lang.logoUrl}
-                      alt={`${lang.name} logo`}
-                      loading="lazy"
-                    />
+	            <h2 class="text-balance">File diffs tell you what changed. They rarely tell you what the change means.</h2>
+	            <p class="section-subcopy">
+	              AI-assisted coding increases pull request volume and makes it easier for architecture drift to slip past line-by-line review. Striff gives teams a structural view first, so they can judge blast radius, coupling shifts, and boundary risk before diving into files.
+	            </p>
+	          </div>
+          <div class="grid gap-4">
+            {comparisonRows.map((row) => (
+              <div class="comparison-row">
+                <div class="comparison-side comparison-side-muted">
+                  <p class="comparison-label">Without Striff</p>
+                  <p class="comparison-copy">{row.left}</p>
+                </div>
+                <div class="comparison-side comparison-side-strong">
+                  <p class="comparison-label">With Striff</p>
+                  <p class="comparison-copy">{row.right}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+	      </div>
+	    </section>
+
+      <section id="features" class="scroll-mt-24 pb-14 pt-10">
+        <div class="mx-auto max-w-6xl px-6">
+          <div class="mb-8 max-w-3xl">
+            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
+              What you get
+            </p>
+            <h2 class="mt-3 text-balance">A review view built for architectural judgment.</h2>
+            <p class="section-subcopy mt-4">
+              Striff is not just a diagram generator. It brings structural change, metrics, and review guidance into one view reviewers can use in a few seconds.
+            </p>
+          </div>
+	          <div class="grid gap-5 lg:grid-cols-2">
+	            {featureCards.map((card) => (
+	              <div class="feature-card" style={`--feature-accent:${card.accentColor}; --feature-bg:${card.accent};`}>
+                  <div class="feature-card-glow" aria-hidden="true"></div>
+                  <div class="feature-card-top">
+                    <div class="feature-icon" aria-hidden="true">
+                      {card.icon === "structure" && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <rect x="3.5" y="4" width="6" height="4.5" rx="1.2" />
+                          <rect x="14.5" y="4" width="6" height="4.5" rx="1.2" />
+                          <rect x="9" y="15.5" width="6" height="4.5" rx="1.2" />
+                          <path d="M6.5 8.5v3h11v-3M12 11.5v4" />
+                        </svg>
+                      )}
+                      {card.icon === "spark" && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <path d="m12 3 1.9 4.6L18.5 9l-4.6 1.4L12 15l-1.9-4.6L5.5 9l4.6-1.4L12 3Z" />
+                          <path d="M19 15.5 20 18l2.5 1-2.5 1L19 22.5 18 20l-2.5-1 2.5-1 1-2.5Z" />
+                        </svg>
+                      )}
+                      {card.icon === "note" && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v8.7a1.5 1.5 0 0 1-1.5 1.5h-8.2L6.4 20.6a.6.6 0 0 1-1-.42v-4H5A1.5 1.5 0 0 1 3.5 14.7V6A1.5 1.5 0 0 1 5 4.5Z" />
+                          <path d="M8 9h8M8 12h6" />
+                        </svg>
+                      )}
+                      {card.icon === "flow" && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <path d="M4 7h7" />
+                          <path d="m8 3 4 4-4 4" />
+                          <path d="M20 17h-7" />
+                          <path d="m16 13-4 4 4 4" />
+                          <path d="M12 7v10" />
+                        </svg>
+                      )}
+                    </div>
+                    <p class="feature-card-eyebrow">{card.eyebrow}</p>
+                  </div>
+	                <h3 class="feature-card-title">{card.title}</h3>
+	                <p class="feature-card-body">{card.body}</p>
+	              </div>
+	            ))}
+	          </div>
+	          <div class="mt-10 grid gap-5 lg:grid-cols-3">
+	            {reviewFlow.map((item) => (
+	              <div class="flow-card" style={`--flow-accent:${item.accentColor};`}>
+                  <div class="flow-card-top">
+                    <div class="flow-step-badge">Step {item.step}</div>
+                    <div class="flow-icon" aria-hidden="true">
+                      {item.icon === "ingest" && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <path d="M12 4v11" />
+                          <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
+                          <rect x="4" y="18" width="16" height="2.5" rx="1.25" />
+                        </svg>
+                      )}
+                      {item.icon === "radar" && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <circle cx="12" cy="12" r="7.5" />
+                          <circle cx="12" cy="12" r="3.5" />
+                          <path d="M12 12 19 8" />
+                        </svg>
+                      )}
+                      {item.icon === "action" && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <path d="M5 12h9" />
+                          <path d="m10 7 5 5-5 5" />
+                          <path d="M19 5v14" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  <p class="flow-card-eyebrow">{item.eyebrow}</p>
+	                <h3 class="flow-card-title">{item.title}</h3>
+	                <p class="flow-card-body">{item.body}</p>
+	              </div>
+	            ))}
+	          </div>
+        </div>
+      </section>
+
+      <section id="paths" class="scroll-mt-24 pb-14 pt-4">
+        <div class="mx-auto max-w-6xl px-6">
+          <div class="mb-8 max-w-3xl">
+            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
+              Product paths
+            </p>
+            <h2 class="mt-3 text-balance">Use Striff wherever your team reviews change.</h2>
+            <p class="section-subcopy mt-4">
+              Striff supports three practical use cases: faster pull request review for engineers, architecture-aware checks for teams, and API or library integration for custom automation.
+            </p>
+          </div>
+          <div class="grid gap-5 lg:grid-cols-3">
+            {productPaths.map((path) => (
+              <div class="benefit-card" style="--accent: rgb(37 99 235);">
+                <div class="benefit-card-accent" aria-hidden="true"></div>
+                <div class="benefit-card-top">
+                  <p class="benefit-card-eyebrow">{path.eyebrow}</p>
+                </div>
+                <h3 class="benefit-card-title">{path.title}</h3>
+                <p class="benefit-card-body">{path.body}</p>
+                <div class="mt-5">
+                  <a
+                    class="btn-secondary"
+                    href={path.href}
+                    target={path.href.startsWith("http") ? "_blank" : undefined}
+                    rel={path.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                  >
+                    {path.cta}
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+	    <section id="how" class="scroll-mt-24 pb-14 pt-10 md:pb-18">
+	      <div class="mx-auto max-w-6xl px-6">
+	        <div class="how-layout" data-how-accordion-root>
+            <div class="how-sidebar">
+              <div class="max-w-3xl">
+                <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
+                  How to read a Striff
+                </p>
+                <h2 class="mt-3 text-balance">Learn the diagram once, read every review faster.</h2>
+                <p class="section-subcopy mt-4">
+                  A Striff turns changed files into a system-level diff. Open each section to see how change colors, structure, metrics, and review notes make large pull requests easier to understand.
+                </p>
+              </div>
+              <div
+                class="how-accordion-item how-accordion-item-featured is-open"
+                data-how-accordion-item
+                data-how-accordion-featured
+                style={`--how-accent-bg:${featuredHowItem.accentBg}; --how-accent-text:${featuredHowItem.accentText};`}
+              >
+                <button
+                  class="how-tab-card how-tab-card-active"
+                  type="button"
+                  data-how-accordion-trigger
+                  aria-expanded="true"
+                >
+                  <span class="how-tab-card-header">
+                    <span class="how-tab-card-copy">
+                      <span class="how-tab-card-top">
+                        <span class="how-tab-card-index">01</span>
+                        <span class="how-tab-card-title">{featuredHowItem.title}</span>
+                      </span>
+                      <span class="how-tab-card-body">{featuredHowItem.description}</span>
+                    </span>
+                    <span class="how-tab-card-indicator" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="m9 10 3 3 3-3" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </span>
                   </span>
-                  <div>
-                    <p class="text-xs font-semibold text-ink">{lang.name}</p>
-                    <p class={`text-[10px] uppercase tracking-[0.18em] ${lang.statusClass}`}>
-                      {lang.status}
-                    </p>
+                </button>
+                <div
+                  class="how-accordion-panel"
+                  data-how-accordion-panel
+                  aria-hidden="false"
+                >
+                  <div class="how-accordion-panel-inner">
+                    <div class="how-tab-snippet-frame" set:html={featuredHowItem.snippet}></div>
+                    {featuredHowItem.metrics && (
+                      <div class="how-metrics-grid">
+                        {featuredHowItem.metrics.map((metric) => (
+                          <div class={`how-metric-pill how-metric-pill-${metric.tone}`}>
+                            <div class="how-metric-top">
+                              <span class="how-metric-icon" aria-hidden="true">
+                                {metric.icon === "branch" && (
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                    <path d="M7 5v14M7 8h8M15 8v4M15 12h4" stroke-linecap="round" stroke-linejoin="round" />
+                                    <circle cx="7" cy="5" r="1.8" fill="currentColor" stroke="none" />
+                                    <circle cx="15" cy="8" r="1.8" fill="currentColor" stroke="none" />
+                                    <circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none" />
+                                  </svg>
+                                )}
+                                {metric.icon === "depth" && (
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                    <path d="M6 5h12M8 10h8M10 15h4M11 19h2" stroke-linecap="round" />
+                                  </svg>
+                                )}
+                                {metric.icon === "weight" && (
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                    <path d="M12 5v14M7 10h10M5 19h14" stroke-linecap="round" />
+                                    <circle cx="12" cy="5" r="1.8" fill="currentColor" stroke="none" />
+                                  </svg>
+                                )}
+                                {metric.icon === "inbound" && (
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                    <path d="M20 12H8M12 8l-4 4 4 4" stroke-linecap="round" stroke-linejoin="round" />
+                                    <rect x="4" y="7" width="3" height="10" rx="1.2" />
+                                  </svg>
+                                )}
+                                {metric.icon === "outbound" && (
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                    <path d="M4 12h12M12 8l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+                                    <rect x="17" y="7" width="3" height="10" rx="1.2" />
+                                  </svg>
+                                )}
+                              </span>
+                              <p class="how-metric-label">{metric.label}</p>
+                            </div>
+                            <p class="how-metric-desc">{metric.desc}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {featuredHowItem.details && (
+                      <div class="how-accordion-copy">
+                        <p>{featuredHowItem.details.join(" ")}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="how-tab-column">
+              {secondaryHowItems.map((item, index) => (
+                <div
+                  class="how-accordion-item"
+                  data-how-accordion-item
+                  style={`--how-accent-bg:${item.accentBg}; --how-accent-text:${item.accentText};`}
+                >
+                  <button
+                    class="how-tab-card"
+                    type="button"
+                    data-how-accordion-trigger
+                    aria-expanded="false"
+                  >
+                    <span class="how-tab-card-header">
+                      <span class="how-tab-card-copy">
+                        <span class="how-tab-card-top">
+                          <span class="how-tab-card-index">0{index + 2}</span>
+                          <span class="how-tab-card-title">{item.title}</span>
+                        </span>
+                        <span class="how-tab-card-body">{item.description}</span>
+                      </span>
+                      <span class="how-tab-card-indicator" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="m9 10 3 3 3-3" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                      </span>
+                    </span>
+                  </button>
+                  <div
+                    class="how-accordion-panel"
+                    data-how-accordion-panel
+                    aria-hidden="true"
+                  >
+                    <div class="how-accordion-panel-inner">
+                      <div class="how-tab-snippet-frame" set:html={item.snippet}></div>
+                      {item.metrics && (
+                        <div class="how-metrics-grid">
+                          {item.metrics.map((metric) => (
+                            <div class={`how-metric-pill how-metric-pill-${metric.tone}`}>
+                              <div class="how-metric-top">
+                                <span class="how-metric-icon" aria-hidden="true">
+                                  {metric.icon === "branch" && (
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                      <path d="M7 5v14M7 8h8M15 8v4M15 12h4" stroke-linecap="round" stroke-linejoin="round" />
+                                      <circle cx="7" cy="5" r="1.8" fill="currentColor" stroke="none" />
+                                      <circle cx="15" cy="8" r="1.8" fill="currentColor" stroke="none" />
+                                      <circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none" />
+                                    </svg>
+                                  )}
+                                  {metric.icon === "depth" && (
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                      <path d="M6 5h12M8 10h8M10 15h4M11 19h2" stroke-linecap="round" />
+                                    </svg>
+                                  )}
+                                  {metric.icon === "weight" && (
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                      <path d="M12 5v14M7 10h10M5 19h14" stroke-linecap="round" />
+                                      <circle cx="12" cy="5" r="1.8" fill="currentColor" stroke="none" />
+                                    </svg>
+                                  )}
+                                  {metric.icon === "inbound" && (
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                      <path d="M20 12H8M12 8l-4 4 4 4" stroke-linecap="round" stroke-linejoin="round" />
+                                      <rect x="4" y="7" width="3" height="10" rx="1.2" />
+                                    </svg>
+                                  )}
+                                  {metric.icon === "outbound" && (
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                      <path d="M4 12h12M12 8l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+                                      <rect x="17" y="7" width="3" height="10" rx="1.2" />
+                                    </svg>
+                                  )}
+                                </span>
+                                <p class="how-metric-label">{metric.label}</p>
+                              </div>
+                              <p class="how-metric-desc">{metric.desc}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {item.details && (
+                        <div class="how-accordion-copy">
+                          <p>{item.details.join(" ")}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-        <div class="grid w-full max-w-3xl gap-4 sm:grid-cols-2">
-          <div class="surface border-t-4 border-accent text-left">
-            <p class="text-sm font-semibold text-slate-500">Built for reviewers</p>
-            <p class="mt-2 text-lg font-semibold text-ink">
-              Replace line diffs with architectural clarity.
-            </p>
-          </div>
-          <div class="surface border-t-4 border-accent text-left">
-            <p class="text-sm font-semibold text-slate-500">Made for agents</p>
-            <p class="mt-2 text-lg font-semibold text-ink">
-              Keep automated coding aligned with intent.
-            </p>
-          </div>
-        </div>
-      </div>
-	    </section>
-
-	    <section id="how" class="scroll-mt-24 pb-14 pt-10 md:pb-18">
-	      <div class="mx-auto max-w-6xl px-6">
-	        <div class="mb-8 max-w-2xl">
-	          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-	            How to read a Striff
-	          </p>
-	          <h2 class="mt-3 text-balance">Learn the diagram once, read every review faster.</h2>
-	          <p class="mt-4 text-slate-600">
-	            A Striff turns changed source files into a structural diff view.
-	            Click the tabs below to learn what each signal means.
-	          </p>
-	        </div>
-	        <div class="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-start" data-carousel>
-	          <!-- Diagram side -->
-	          <div class="overflow-hidden rounded-xl border border-slate-800 bg-white">
-	            <div
-	              class="how-diagram-canvas"
-	              data-carousel-svg
-	              role="img"
-	              aria-label="Striff architectural diff guide"
-	              set:html={howDiagramSvg}
-	            ></div>
-	          </div>
-
-	          <!-- Text side -->
-		          <div>
-		            <div class="flex flex-wrap gap-2 mb-4" role="tablist">
-		              {carouselItems.map((item, index) => (
-		                <button
-		                  class="how-step-horizontal"
-		                  type="button"
-		                  role="tab"
-		                  data-carousel-tab
-		                  data-index={index}
-		                  data-targets={JSON.stringify(item.targets)}
-		                  data-viewbox={item.viewBox}
-		                  data-blur-others={item.blurOthers ? "true" : "false"}
-		                  aria-selected={index === 0 ? "true" : "false"}
-		                  aria-expanded={index === 0 ? "true" : "false"}
-		                >
-		                  <span class="how-step-horizontal-icon" aria-hidden="true">
-		                    {item.icon === "palette" && (
-		                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-		                        <path d="M12 3c-5 0-9 3.6-9 8 0 2.8 2.2 5 5 5h1.1c.8 0 1.4.6 1.4 1.4 0 1.5 1.2 2.6 2.8 2.6 4.8 0 8.7-3.6 8.7-8.5C22 6.7 17.6 3 12 3Z" />
-		                        <circle cx="7.5" cy="11" r="1" />
-		                        <circle cx="11" cy="8" r="1" />
-		                        <circle cx="15.5" cy="9.5" r="1" />
-		                      </svg>
-		                    )}
-		                    {item.icon === "network" && (
-		                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-		                        <rect x="3.5" y="4" width="6" height="4.5" rx="1.2" />
-		                        <rect x="14.5" y="4" width="6" height="4.5" rx="1.2" />
-		                        <rect x="9" y="15.5" width="6" height="4.5" rx="1.2" />
-		                        <path d="M6.5 8.5v3h11v-3M12 11.5v4" />
-		                      </svg>
-		                    )}
-		                    {item.icon === "chart" && (
-		                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-		                        <path d="M4 19.5h16" />
-		                        <rect x="5" y="11" width="3" height="6.5" rx="0.8" />
-		                        <rect x="10.5" y="7.5" width="3" height="10" rx="0.8" />
-		                        <rect x="16" y="5" width="3" height="12.5" rx="0.8" />
-		                      </svg>
-		                    )}
-		                    {item.icon === "note" && (
-		                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-		                        <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v8.7a1.5 1.5 0 0 1-1.5 1.5h-8.2L6.4 20.6a.6.6 0 0 1-1-.42v-4H5A1.5 1.5 0 0 1 3.5 14.7V6A1.5 1.5 0 0 1 5 4.5Z" />
-		                        <path d="M8 9h8M8 12h6" />
-		                      </svg>
-		                    )}
-		                    {item.icon === "heat" && (
-		                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-		                        <rect x="4" y="5" width="6" height="6" rx="1.2" />
-		                        <rect x="14" y="5" width="6" height="6" rx="1.2" />
-		                        <rect x="4" y="13" width="6" height="6" rx="1.2" />
-		                        <rect x="14" y="13" width="6" height="6" rx="1.2" />
-		                        <path d="M10 8h4M7 11v2M17 11v2M10 16h4" />
-		                      </svg>
-		                    )}
-		                  </span>
-		                  <span>{item.title}</span>
-		                </button>
-		              ))}
-		            </div>
-
-		            {carouselItems.map((item, index) => (
-		              <div
-		                class={index === 0 ? "surface-strong" : "surface-strong hidden"}
-		                data-carousel-panel
-		                role="tabpanel"
-		              >
-		                <h3 class="text-xl font-semibold">{item.title}</h3>
-		                <p class="mt-2 text-slate-600">{item.description}</p>
-		                {item.details && (
-		                  <div class="mt-4 grid gap-3 sm:grid-cols-2">
-		                    {item.details.map((detail) => (
-		                      <div class="flex items-start gap-3 rounded-lg bg-slate-50 p-3">
-		                        {detail.color && (
-		                          <span class="mt-0.5 shrink-0 h-5 w-5 rounded-full border border-black/10" style={`background: ${detail.color}`}></span>
-		                        )}
-		                        {!detail.color && (
-		                          <span class="mt-0.5 shrink-0 flex h-6 w-6 items-center justify-center rounded bg-slate-200 text-xs font-semibold text-slate-600">
-		                            {detail.label.charAt(0)}
-		                          </span>
-		                        )}
-		                        <div>
-		                          <p class="text-sm font-semibold text-slate-800">{detail.label}</p>
-		                          <p class="mt-0.5 text-xs text-slate-600">{detail.desc}</p>
-		                        </div>
-		                      </div>
-		                    ))}
-		                  </div>
-		                )}
-		              </div>
-		            ))}
-		          </div>
-		        </div>
 	      </div>
 	    </section>
-
-	    <section id="why" class="scroll-mt-24 pb-12 pt-20">
-	      <div class="mx-auto max-w-6xl px-6">
-        <div class="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-start">
-          <div class="space-y-5">
-            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-              Why Striffs
-            </p>
-            <h2 class="text-balance">Line diffs are legacy tooling.</h2>
-            <p>
-              <span class="font-semibold text-ink">Agent-based coding tools accelerate architectural drift.</span>
-              Reviewers need to see structure, not just code.
-              <span class="font-semibold text-ink">Striffs are the diff tool for automated programming.</span>
-            </p>
-          </div>
-          <div class="grid gap-6 sm:grid-cols-2">
-            {benefits.map((benefit) => (
-              <div class="surface-strong">
-                <h3 class="text-xl">{benefit.title}</h3>
-                <p class="mt-3 text-sm text-slate-600">{benefit.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
 
 		    <section id="plugin" class="scroll-mt-24 pb-20 pt-20">
 	      <div class="mx-auto max-w-6xl px-6">
 	        <div class="mx-auto max-w-4xl text-center space-y-8">
-	          <div class="space-y-4">
-	            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-	              Get the plugin
-	            </p>
-	            <h2 class="text-balance">Get the Striff browser extension</h2>
-	            <p class="mx-auto max-w-2xl text-slate-600">
-	              Install the extension to generate <span class="font-semibold text-ink">Striff diagrams</span>
-	              directly inside your code review workflow.
-	            </p>
-	            <div class="pt-2 flex flex-wrap justify-center gap-3">
-	              {pluginButtons.map((button) => (
-	                <a class="btn-primary" href={button.href}>
-	                  {button.label}
-	                </a>
-	              ))}
-	            </div>
-	          </div>
-	          <div style="background: linear-gradient(to bottom, #eef0f2, #e8eaed); padding: 16px; border-radius: 12px;">
-	            <StriffLiveDemo client:load />
-	          </div>
-	        </div>
-	      </div>
-	    </section>
+		          <div class="space-y-4">
+		            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
+		              Install the plugin
+		            </p>
+		            <h2 class="text-balance">Install Striff for GitHub pull request review</h2>
+		            <p class="section-subcopy mx-auto max-w-2xl">
+		              Use the Striff Chrome extension directly on GitHub pull requests to inspect structural change, dependency movement, and review notes where merge decisions actually happen.
+		            </p>
+		            <div class="pt-2 flex flex-wrap justify-center gap-3">
+		              {installCtas.map((button, index) => (
+		                <a
+                    class={index === 0 ? "btn-primary" : "btn-secondary"}
+                    href={button.href}
+	                    target={button.href.startsWith("http") ? "_blank" : undefined}
+	                    rel={button.href.startsWith("http") ? "noopener noreferrer" : undefined}
+	                  >
+                    {button.icon === "chrome" && (
+                      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 2A10 10 0 0 1 20.66 7H12Z" fill="#EA4335" />
+                        <path d="M20.66 7A10 10 0 0 1 12 22l4.33-7.5Z" fill="#FBBC04" />
+                        <path d="M12 22A10 10 0 0 1 3.34 7h8.66Z" fill="#34A853" />
+                        <circle cx="12" cy="12" r="4.1" fill="#4285F4" stroke="#EAF2FF" stroke-width="1" />
+                      </svg>
+                    )}
+		                  {button.label}
+		                </a>
+		              ))}
+		            </div>
+		          </div>
+              <div class="mx-auto w-full" style="max-width: 1200px;">
+                <div class="video-window-frame">
+                  <div class="video-window-chrome" aria-hidden="true">
+                    <span></span><span></span><span></span>
+                  </div>
+                  <div class="video-window-body">
+                    <video
+                      src="/walkthrough.mp4"
+                      muted
+                      loop
+                      playsinline
+                      controls
+                      data-playback-rate="1.25"
+                    />
+                  </div>
+                </div>
+              </div>
+		      <div class="mx-auto grid max-w-4xl gap-4 text-left md:grid-cols-3">
+                    <div class="install-proof-card" style="--install-accent:#2563eb; --install-bg:linear-gradient(180deg, rgba(219,234,254,0.9), rgba(255,255,255,0.94));">
+                      <div class="install-proof-top">
+                        <div class="install-proof-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M8 6h11v11" />
+                            <path d="m8 16 11-11" />
+                            <path d="M5 8.5A2.5 2.5 0 0 1 7.5 6H10" />
+                            <path d="M6 12v4.5A1.5 1.5 0 0 0 7.5 18H12" />
+                          </svg>
+                        </div>
+                        <p class="install-proof-label">Works on GitHub</p>
+                      </div>
+                      <h3 class="install-proof-title">Open Striff inside the pull request page</h3>
+                      <p class="install-proof-body">Use the Chrome extension directly on GitHub PRs instead of jumping between screenshots, tabs, and comments.</p>
+                    </div>
+                    <div class="install-proof-card" style="--install-accent:#d97706; --install-bg:linear-gradient(180deg, rgba(254,243,199,0.9), rgba(255,255,255,0.94));">
+                      <div class="install-proof-top">
+                        <div class="install-proof-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v8.7a1.5 1.5 0 0 1-1.5 1.5h-8.2L6.4 20.6a.6.6 0 0 1-1-.42v-4H5A1.5 1.5 0 0 1 3.5 14.7V6A1.5 1.5 0 0 1 5 4.5Z" />
+                            <path d="M8 9h8M8 12h6" />
+                          </svg>
+                        </div>
+                        <p class="install-proof-label">Review Overlay</p>
+                      </div>
+                      <h3 class="install-proof-title">See structure, metrics, and notes in one extension view</h3>
+                      <p class="install-proof-body">Open an extension panel built for architectural review, with structural diagrams, notes, and change context attached to the pull request.</p>
+                    </div>
+                    <div class="install-proof-card" style="--install-accent:#16a34a; --install-bg:linear-gradient(180deg, rgba(220,252,231,0.9), rgba(255,255,255,0.94));">
+                      <div class="install-proof-top">
+                        <div class="install-proof-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+                            <circle cx="12" cy="12" r="2.5" />
+                          </svg>
+                        </div>
+                        <p class="install-proof-label">Human Focus</p>
+                      </div>
+                      <h3 class="install-proof-title">Put reviewer attention on the riskiest changes first</h3>
+                      <p class="install-proof-body">The extension helps reviewers prioritize coupling drift, architectural spread, and high-impact components before merge.</p>
+                    </div>
+		      </div>
+		        </div>
+		      </div>
+		    </section>
+
+		    <section id="github-check" class="scroll-mt-24 pb-14 pt-10">
+		      <div class="mx-auto max-w-6xl px-6">
+		        <div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+		          <!-- Mockup -->
+		          <div>
+		            <div class="video-window-frame">
+		              <div class="gh-check-header" aria-hidden="true">
+		                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+		                  <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z"/>
+		                </svg>
+		                <span class="gh-check-url">openapitools/openapi-generator <span class="gh-check-url-muted">&middot; pull #19423</span></span>
+		              </div>
+		              <div class="gh-check-body">
+		                <div class="gh-check-pr-title-bar">
+		                  <span class="gh-check-pr-status-dot" aria-hidden="true"></span>
+		                  <span class="gh-check-pr-title">Refactor API gateway routing module</span>
+		                  <span class="gh-check-pr-number">#19423</span>
+		                </div>
+		                <div class="gh-check-branch-row">
+		                  <span class="gh-check-branch">feature/gateway-refactor</span>
+		                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+		                  <span class="gh-check-branch">main</span>
+		                </div>
+		                <div class="gh-check-section-label">Checks</div>
+		                <div class="gh-check-row gh-check-row-striff">
+		                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+		                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+		                    <path d="M22 4 12 14.01l-3-3"/>
+		                  </svg>
+		                  <div class="gh-check-info">
+		                    <span class="gh-check-name">striff / architectural-review</span>
+		                    <span class="gh-check-summary">3 structural changes &middot; 2 coupling warnings &middot; 1 review note</span>
+		                  </div>
+		                  <span class="gh-check-status gh-check-status-pass">Passed</span>
+		                </div>
+		                <div class="gh-check-row">
+		                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+		                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+		                    <path d="M22 4 12 14.01l-3-3"/>
+		                  </svg>
+		                  <span class="gh-check-name-muted">ci / build</span>
+		                  <span class="gh-check-status-sm">Passed</span>
+		                </div>
+		                <div class="gh-check-row">
+		                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+		                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+		                    <path d="M22 4 12 14.01l-3-3"/>
+		                  </svg>
+		                  <span class="gh-check-name-muted">ci / test</span>
+		                  <span class="gh-check-status-sm">Passed</span>
+		                </div>
+		                <div class="gh-check-striff-action" aria-hidden="true">
+		                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+		                    <rect x="3.5" y="4" width="6" height="4.5" rx="1.2"/>
+		                    <rect x="14.5" y="4" width="6" height="4.5" rx="1.2"/>
+		                    <rect x="9" y="15.5" width="6" height="4.5" rx="1.2"/>
+		                    <path d="M6.5 8.5v3h11v-3M12 11.5v4"/>
+		                  </svg>
+		                  <span>View Striff Diagram</span>
+		                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+		                </div>
+		              </div>
+		            </div>
+		          </div>
+
+		          <!-- Copy -->
+		          <div class="space-y-6">
+		            <div class="flex items-center gap-3">
+		              <span class="coming-soon-badge">Coming Soon</span>
+		              <span class="text-sm text-slate-500">In development</span>
+		            </div>
+		            <h2 class="text-balance">Striff as a GitHub Check</h2>
+		            <p class="section-subcopy">
+		              Automatically post architectural reviews as a GitHub Check on every pull request. No browser extension needed — reviewers see structural change, coupling warnings, and AI review notes directly in the PR checks panel.
+		            </p>
+		            <ul class="space-y-3">
+		              <li class="gh-feature-item">
+		                <span class="gh-feature-dot" style="background: #22c55e; box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);"></span>
+		                <span>Post Striff diagrams and review notes as PR check output</span>
+		              </li>
+		              <li class="gh-feature-item">
+		                <span class="gh-feature-dot" style="background: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);"></span>
+		                <span>Gate merges on architectural risk thresholds</span>
+		              </li>
+		              <li class="gh-feature-item">
+		                <span class="gh-feature-dot" style="background: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);"></span>
+		                <span>Works with GitHub Actions, no custom CI setup required</span>
+		              </li>
+		            </ul>
+		            <form class="waitlist-form" data-netlify="true" name="github-check-waitlist" method="POST" data-waitlist-form>
+		              <input type="hidden" name="form-name" value="github-check-waitlist" />
+		              <label class="waitlist-label" for="gh-check-email">Get notified when it launches</label>
+		              <div class="waitlist-row">
+		                <input
+		                  id="gh-check-email"
+		                  class="waitlist-input"
+		                  type="email"
+		                  name="email"
+		                  placeholder="you@company.com"
+		                  required
+		                />
+		                <button class="btn-primary waitlist-btn" type="submit">Notify me</button>
+		              </div>
+		            </form>
+		          </div>
+		        </div>
+		      </div>
+		    </section>
 
   </main>
 
-  <footer class="border-t border-white/60 bg-white/70 py-10">
+  <footer class="border-t border-white/40 py-10 backdrop-blur-sm">
     <div class="mx-auto flex max-w-6xl flex-col gap-6 px-6 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
       <div class="font-semibold text-ink">Striff</div>
       <div class="flex flex-wrap items-center gap-6">
-        <a class="flex items-center gap-2 hover:text-ink" href="https://github.com/hadi-technology/striff-lib" aria-label="Striff GitHub">
+        <a class="flex items-center gap-2 transition-colors duration-200 hover:text-ink" href="https://github.com/hadi-technology/striff-lib" aria-label="Striff GitHub">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" />
           </svg>
           GitHub
         </a>
-        <a class="hover:text-ink" href={feedbackUrl}>Feedback</a>
-        <a class="hover:text-ink" href="/privacy">Privacy</a>
-        <a class="hover:text-ink" href="/terms">Terms</a>
-        <a class="hover:text-ink" href="/cookies">Cookies</a>
+	        <a class="transition-colors duration-200 hover:text-ink" href="#plugin">Extension</a>
+	        <a class="transition-colors duration-200 hover:text-ink" href="#github-check">Roadmap</a>
+	        <a class="transition-colors duration-200 hover:text-ink" href="/privacy">Privacy</a>
+	        <a class="transition-colors duration-200 hover:text-ink" href="/terms">Terms</a>
+	        <a class="transition-colors duration-200 hover:text-ink" href="/cookies">Cookies</a>
       </div>
       <div class="text-xs text-slate-500">
         Striff is a trademark of HADI Technology.
@@ -572,7 +1184,7 @@ const pluginButtons = [
       });
     }
 
-	    const initPanzoom = (container) => {
+	const initPanzoom = (container) => {
 	      const content = container.querySelector("[data-panzoom-content]");
 	      if (!content) return;
 
@@ -582,27 +1194,73 @@ const pluginButtons = [
 	        return Number.isFinite(num) ? num : fallback;
 	      };
 
-	      const minScale = parseNumber(container.dataset.panzoomMinScale, 0.6);
-	      const maxScale = parseNumber(container.dataset.panzoomMaxScale, 3.2);
-	      const initialScale = clamp(
-	        parseNumber(container.dataset.panzoomInitialScale, 1),
-	        minScale,
-	        maxScale
-	      );
-	      const initialOffsetX = parseNumber(container.dataset.panzoomInitialOffsetX, 0);
-	      const initialOffsetY = parseNumber(container.dataset.panzoomInitialOffsetY, 0);
-	      const rect = container.getBoundingClientRect();
-	      let state = {
-	        scale: initialScale,
-	        x: (1 - initialScale) * rect.width * 0.5 + initialOffsetX,
-	        y: (1 - initialScale) * rect.height * 0.5 + initialOffsetY
-	      };
-	      let isPanning = false;
-	      let start = { x: 0, y: 0 };
+		      const minScale = parseNumber(container.dataset.panzoomMinScale, 0.6);
+		      const maxScale = parseNumber(container.dataset.panzoomMaxScale, 3.2);
+		      const initialScale = clamp(
+		        parseNumber(container.dataset.panzoomInitialScale, 1),
+		        minScale,
+		        maxScale
+		      );
+          const explicitInitialX = parseNumber(container.dataset.panzoomInitialX, NaN);
+          const explicitInitialY = parseNumber(container.dataset.panzoomInitialY, NaN);
+		      const rect = container.getBoundingClientRect();
+		      const contentW = content.offsetWidth;
+		      const contentH = content.offsetHeight;
+
+	      const centerOnX = parseNumber(container.dataset.panzoomCenterOnX, NaN);
+	      const centerOnY = parseNumber(container.dataset.panzoomCenterOnY, NaN);
+
+		      let initialX, initialY;
+          if (Number.isFinite(explicitInitialX) && Number.isFinite(explicitInitialY)) {
+            initialX = explicitInitialX;
+            initialY = explicitInitialY;
+          } else if (Number.isFinite(centerOnX) && Number.isFinite(centerOnY)) {
+		        // Center on specific SVG coordinates (SVG viewBox is 1899x1742)
+		        const natW = 1899;
+		        const natH = 1742;
+	        const scX = contentW / natW;
+	        const scY = contentH / natH;
+	        const px = centerOnX * scX;
+	        const py = centerOnY * scY;
+	        initialX = rect.width / 2 - px * initialScale;
+	        initialY = rect.height / 2 - py * initialScale;
+	      } else {
+	        initialX = (rect.width - contentW * initialScale) / 2;
+	        initialY = (rect.height - contentH * initialScale) / 2;
+	      }
+
+		      const state = {
+		        scale: initialScale,
+		        x: initialX,
+		        y: initialY
+		      };
+		      let isPanning = false;
+          let activePointerId = null;
+		      let start = { x: 0, y: 0 };
+		      let animFrame = null;
 
 	      const apply = () => {
 	        content.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
 	      };
+
+	      const animateTo = (targetState, duration) => {
+	        if (animFrame) cancelAnimationFrame(animFrame);
+	        const from = { x: state.x, y: state.y, scale: state.scale };
+	        const startTime = performance.now();
+	        const step = (now) => {
+	          const t = Math.min((now - startTime) / duration, 1);
+	          const ease = 1 - Math.pow(1 - t, 3);
+	          state.x = from.x + (targetState.x - from.x) * ease;
+	          state.y = from.y + (targetState.y - from.y) * ease;
+	          state.scale = from.scale + (targetState.scale - from.scale) * ease;
+	          apply();
+	          if (t < 1) animFrame = requestAnimationFrame(step);
+	        };
+	        animFrame = requestAnimationFrame(step);
+	      };
+
+	      container._pzAnimateTo = animateTo;
+	      container._pzState = state;
 
 	      apply();
 
@@ -610,6 +1268,7 @@ const pluginButtons = [
 	        "wheel",
 	        (event) => {
 	          event.preventDefault();
+	          if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
 	          const rect = container.getBoundingClientRect();
 	          const cursorX = event.clientX - rect.left;
 	          const cursorY = event.clientY - rect.top;
@@ -628,84 +1287,95 @@ const pluginButtons = [
         { passive: false }
       );
 
-      container.addEventListener("pointerdown", (event) => {
-        isPanning = true;
-        container.classList.add("panzoom-grabbing");
-        start = { x: event.clientX - state.x, y: event.clientY - state.y };
-        container.setPointerCapture(event.pointerId);
-      });
+	      container.addEventListener("pointerdown", (event) => {
+          if (!event.isPrimary) return;
+          event.preventDefault();
+	        if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+          activePointerId = event.pointerId;
+	        isPanning = true;
+	        container.classList.add("panzoom-grabbing");
+	        start = { x: event.clientX - state.x, y: event.clientY - state.y };
+	        if (container.setPointerCapture) {
+            container.setPointerCapture(event.pointerId);
+          }
+	      });
 
-      container.addEventListener("pointermove", (event) => {
-        if (!isPanning) return;
-        state.x = event.clientX - start.x;
-        state.y = event.clientY - start.y;
-        apply();
-      });
+	      container.addEventListener("pointermove", (event) => {
+	        if (!isPanning || event.pointerId !== activePointerId) return;
+	        state.x = event.clientX - start.x;
+	        state.y = event.clientY - start.y;
+	        apply();
+	      });
 
-      const endPan = () => {
-        isPanning = false;
-        container.classList.remove("panzoom-grabbing");
-      };
+	      const endPan = (event) => {
+          if (event && activePointerId !== null && event.pointerId !== activePointerId) return;
+	        isPanning = false;
+          activePointerId = null;
+	        container.classList.remove("panzoom-grabbing");
+	      };
 
-      container.addEventListener("pointerup", endPan);
-      container.addEventListener("pointerleave", endPan);
-      container.addEventListener("pointercancel", endPan);
-	    };
+	      container.addEventListener("pointerup", (event) => {
+          if (container.releasePointerCapture && activePointerId === event.pointerId) {
+            container.releasePointerCapture(event.pointerId);
+          }
+          endPan(event);
+        });
+	      container.addEventListener("pointercancel", (event) => {
+          if (container.releasePointerCapture && activePointerId === event.pointerId) {
+            container.releasePointerCapture(event.pointerId);
+          }
+          endPan(event);
+        });
+          container.addEventListener("lostpointercapture", endPan);
+		    };
 
 	    document.querySelectorAll("[data-panzoom]").forEach(initPanzoom);
 
-	    document.querySelectorAll("[data-carousel]").forEach((carousel) => {
-	      const tabs = Array.from(carousel.querySelectorAll("[data-carousel-tab]"));
-	      const panels = Array.from(carousel.querySelectorAll("[data-carousel-panel]"));
-	      const svgRoot = carousel.querySelector("[data-carousel-svg]");
-	      const svg = svgRoot?.querySelector("svg");
+      document.querySelectorAll("[data-how-accordion-item]").forEach((item) => {
+        const trigger = item.querySelector("[data-how-accordion-trigger]");
+        if (!trigger) return;
 
-	      const setActive = (index) => {
-	        tabs.forEach((tab, tabIndex) => {
-	          const isActive = tabIndex === index;
-	          tab.setAttribute("aria-selected", isActive ? "true" : "false");
-	          tab.setAttribute("aria-expanded", isActive ? "true" : "false");
-	        });
-	        panels.forEach((panel, panelIndex) => {
-	          panel.classList.toggle("hidden", panelIndex !== index);
-	        });
+        trigger.addEventListener("click", () => {
+          if (item.hasAttribute("data-how-accordion-featured")) {
+            const shouldOpen = !item.classList.contains("is-open");
+            item.classList.toggle("is-open", shouldOpen);
 
-	        const activeTab = tabs[index];
-	        if (svg && activeTab) {
-	          // Apply viewBox zoom with smooth transition
-	          const viewBox = activeTab.dataset.viewbox;
-	          if (viewBox) {
-	            svg.setAttribute("viewBox", viewBox);
-	          }
+            const featuredTrigger = item.querySelector("[data-how-accordion-trigger]");
+            const featuredPanel = item.querySelector("[data-how-accordion-panel]");
 
-	          // Check if we should blur non-active elements
-	          const blurOthers = activeTab.dataset.blurOthers === "true";
+            if (featuredTrigger) {
+              featuredTrigger.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+              featuredTrigger.classList.toggle("how-tab-card-active", shouldOpen);
+            }
 
-	          // Clear previous active state
-	          svg.classList.remove("blur-non-active");
-	          svg.querySelectorAll(".is-active").forEach((node) => node.classList.remove("is-active"));
+            if (featuredPanel) {
+              featuredPanel.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
+            }
+            return;
+          }
 
-	          // Apply blur if needed
-	          if (blurOthers) {
-	            svg.classList.add("blur-non-active");
-	          }
+          const root = item.closest("[data-how-accordion-root]");
+          if (!root) return;
+          const shouldOpen = !item.classList.contains("is-open");
 
-	          // Highlight active elements
-	          try {
-	            const targets = JSON.parse(activeTab.dataset.targets || "[]");
-	            targets.forEach((selector) => {
-	              svg.querySelectorAll(selector).forEach((node) => node.classList.add("is-active"));
-	            });
-	          } catch {}
-	        }
-	      };
+          root.querySelectorAll("[data-how-accordion-item]:not([data-how-accordion-featured])").forEach((otherItem) => {
+            const isActive = otherItem === item && shouldOpen;
+            otherItem.classList.toggle("is-open", isActive);
 
-	      tabs.forEach((tab, index) => {
-	        tab.addEventListener("click", () => setActive(index));
-	      });
+            const otherTrigger = otherItem.querySelector("[data-how-accordion-trigger]");
+            const otherPanel = otherItem.querySelector("[data-how-accordion-panel]");
 
-	      setActive(0);
-	    });
+            if (otherTrigger) {
+              otherTrigger.setAttribute("aria-expanded", isActive ? "true" : "false");
+              otherTrigger.classList.toggle("how-tab-card-active", isActive);
+            }
+
+            if (otherPanel) {
+              otherPanel.setAttribute("aria-hidden", isActive ? "false" : "true");
+            }
+          });
+        });
+      });
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -720,7 +1390,7 @@ const pluginButtons = [
 
       const typeSpeed = 45;
       const deleteSpeed = 30;
-      const holdTime = 5200;
+      const holdTime = 2600;
       const pauseAfterDelete = 250;
 
       const stop = () => {
@@ -802,6 +1472,24 @@ const pluginButtons = [
 
     document.querySelectorAll("[data-type-rotator]").forEach(initTypeRotator);
 
+    document.querySelectorAll("video[data-playback-rate]").forEach(function (v) {
+      v.playbackRate = parseFloat(v.dataset.playbackRate);
+
+      // Pause on load, play when scrolled into view
+      v.pause();
+      v.removeAttribute("autoplay");
+      var observed = false;
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting && !observed) {
+            observed = true;
+            v.play().catch(function () {});
+          }
+        });
+      }, { threshold: 0.25 });
+      observer.observe(v);
+    });
+
     // PostHog event tracking
     (function () {
       // Track all primary CTA button clicks (Get the Plugin / Download)
@@ -832,15 +1520,6 @@ const pluginButtons = [
         });
       });
 
-      // Track "How to Read" carousel tab clicks
-      document.querySelectorAll("[data-carousel-tab]").forEach(function (tab) {
-        tab.addEventListener("click", function () {
-          window.posthog?.capture("how_to_read_tab_clicked", {
-            tab_title: tab.textContent.trim(),
-          });
-        });
-      });
-
       // Track first hero diagram pan/zoom interaction per page load
       var heroPanned = false;
       document.querySelectorAll("[data-panzoom]").forEach(function (container) {
@@ -852,5 +1531,23 @@ const pluginButtons = [
         });
       });
     })();
+
+    // Waitlist form
+    document.querySelectorAll("[data-waitlist-form]").forEach(function(form) {
+      form.addEventListener("submit", function(e) {
+        e.preventDefault();
+        var formData = new FormData(form);
+        fetch("/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams(formData).toString()
+        }).then(function() {
+          form.innerHTML = '<p class="waitlist-success">You\'re on the list. We\'ll let you know when it launches.</p>';
+          window.posthog?.capture("waitlist_signup", { form: form.getAttribute("name") });
+        }).catch(function() {
+          form.submit();
+        });
+      });
+    });
   </script>
 </BaseLayout>

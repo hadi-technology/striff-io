@@ -4,6 +4,7 @@ dist/
 .DS_Store
 src/env.d.ts
 .claude/
+.codex/
 test/
 
 # Logs
