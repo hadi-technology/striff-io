@@ -242,6 +242,9 @@
 
   .benefit-card {
     @apply rounded-xl p-6 relative overflow-hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     background: linear-gradient(180deg, rgba(255, 252, 248, 0.95), rgba(251, 247, 240, 0.88));
     border: 1px solid var(--panel-line);
     box-shadow:
@@ -323,6 +326,13 @@
     color: rgb(71 85 105);
     font-size: 0.96rem;
     line-height: 1.65;
+  }
+
+  .product-path-cta {
+    position: relative;
+    z-index: 1;
+    margin-top: auto;
+    padding-top: 1.25rem;
   }
 
   .comparison-row {
@@ -1219,6 +1229,22 @@
     color: #991b1b;
   }
 
+  .how-change-num {
+    font-weight: 700;
+  }
+
+  .how-change-num-add {
+    color: #15803d;
+  }
+
+  .how-change-num-remove {
+    color: #b91c1c;
+  }
+
+  .how-change-num-modify {
+    color: #0369a1;
+  }
+
   .how-accordion-copy {
     display: grid;
     gap: 0.5rem;
@@ -1775,13 +1801,130 @@
     margin-top: 1.5rem;
   }
 
+  .contact-page {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top left, rgba(37, 99, 235, 0.06), transparent 28%),
+      linear-gradient(180deg, #f8f5ee 0%, #f3efe7 100%);
+  }
+
+  .contact-shell {
+    display: grid;
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  .contact-intro {
+    max-width: 28rem;
+  }
+
+  .contact-eyebrow {
+    margin: 0;
+    color: #64748b;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .contact-title {
+    margin: 0.85rem 0 0;
+    color: #0f172a;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  .contact-copy {
+    margin: 1rem 0 0;
+    color: #475569;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 0.96rem;
+    line-height: 1.7;
+  }
+
+  .contact-notes {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1.5rem;
+    color: #475569;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.65;
+  }
+
+  .contact-notes p {
+    margin: 0;
+    padding: 0.7rem 0.85rem;
+    border-radius: 12px;
+    background: rgba(255, 252, 248, 0.8);
+    border: 1px solid var(--panel-line);
+  }
+
+  .contact-panel {
+    padding: 2rem;
+    border-radius: 24px;
+    border: 1px solid var(--panel-line);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(252, 250, 245, 0.98));
+    box-shadow:
+      0 20px 48px rgba(15, 23, 42, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .contact-form {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .contact-form-grid {
+    display: grid;
+    gap: 1.15rem;
+  }
+
+  .waitlist-textarea {
+    min-height: 7.5rem;
+    resize: vertical;
+    line-height: 1.6;
+  }
+
+  .contact-form-full {
+    grid-column: 1 / -1;
+  }
+
+  .contact-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+
+  .contact-form-note {
+    margin: 0;
+    color: #94a3b8;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 0.8rem;
+  }
+
   .waitlist-label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
     font-family: "IBM Plex Sans", system-ui, sans-serif;
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     font-weight: 600;
     color: rgb(51, 65, 85);
+    letter-spacing: 0.01em;
+  }
+
+  .waitlist-label + .waitlist-input {
+    margin-top: 0.4rem;
+  }
+
+  .contact-optional {
+    font-weight: 400;
+    color: #94a3b8;
   }
 
   .waitlist-row {
@@ -1791,12 +1934,13 @@
 
   .waitlist-input {
     flex: 1;
-    padding: 0.55rem 0.8rem;
-    border-radius: 8px;
-    border: 1px solid #d0d7de;
-    background: #fff;
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid rgba(15, 23, 42, 0.16);
+    background: rgba(255, 255, 255, 0.92);
     font-family: "IBM Plex Sans", system-ui, sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     color: #24292f;
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -1811,6 +1955,14 @@
     color: #8b949e;
   }
 
+  select.waitlist-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    padding-right: 2rem;
+  }
+
   .waitlist-btn {
     flex-shrink: 0;
     white-space: nowrap;
@@ -1823,6 +1975,22 @@
     font-family: "IBM Plex Sans", system-ui, sans-serif;
     font-size: 0.88rem;
     font-weight: 600;
+  }
+
+  @media (min-width: 900px) {
+    .contact-shell {
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .contact-panel {
+      padding: 2.2rem;
+    }
+
+    .contact-form-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 }
 

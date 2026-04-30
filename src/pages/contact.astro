@@ -1,0 +1,91 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Contact - Striff"
+  description="Get in touch with the Striff team for questions, feedback, bug reports, or partnership inquiries."
+  canonical="https://striff.io/contact"
+>
+  <main class="contact-page">
+    <section class="mx-auto max-w-5xl px-6 py-20">
+      <div class="contact-shell">
+        <div class="contact-intro">
+          <p class="contact-eyebrow">Contact us</p>
+          <h1 class="contact-title">Questions, feedback, or issues? We're here.</h1>
+          <p class="contact-copy">
+            Whether it's a bug report, a feature request, a question about the product, or an enterprise inquiry — fill out the form and we'll get back to you.
+          </p>
+          <div class="contact-notes">
+            <p><strong>Community:</strong> Ask questions, share feedback, review the product, or suggest features on our <a href="https://github.com/hadi-technology/striff-io/discussions" target="_blank" rel="noopener noreferrer">GitHub Discussions</a> page.</p>
+            <p><strong>Enterprise or private deployment?</strong> Include your deployment model, repository scale, and security requirements so we can respond clearly.</p>
+          </div>
+        </div>
+
+        <div class="contact-panel">
+          <form
+            class="contact-form"
+            name="contact"
+            method="POST"
+            data-netlify="true"
+            netlify-honeypot="bot-field"
+          >
+            <input type="hidden" name="form-name" value="contact" />
+            <p class="hidden">
+              <label>
+                Don't fill this out if you're human:
+                <input name="bot-field" />
+              </label>
+            </p>
+
+            <div class="contact-form-grid">
+              <div>
+                <label class="waitlist-label" for="contact-name">Name</label>
+                <input id="contact-name" class="waitlist-input" type="text" name="name" required />
+              </div>
+
+              <div>
+                <label class="waitlist-label" for="contact-email">Email</label>
+                <input id="contact-email" class="waitlist-input" type="email" name="email" required />
+              </div>
+
+              <div>
+                <label class="waitlist-label" for="contact-topic">Topic</label>
+                <select id="contact-topic" class="waitlist-input" name="topic" required>
+                  <option value="" disabled selected>Select a topic</option>
+                  <option value="general">General question</option>
+                  <option value="feedback">Feedback or feature request</option>
+                  <option value="bug">Bug report</option>
+                  <option value="enterprise">Enterprise or private deployment</option>
+                  <option value="partnership">Partnership inquiry</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="waitlist-label" for="contact-company">Company <span class="contact-optional">(optional)</span></label>
+                <input id="contact-company" class="waitlist-input" type="text" name="company" />
+              </div>
+
+              <div class="contact-form-full">
+                <label class="waitlist-label" for="contact-message">Message</label>
+                <textarea
+                  id="contact-message"
+                  class="waitlist-input waitlist-textarea"
+                  name="message"
+                  placeholder="Tell us what's on your mind."
+                  required
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="contact-form-actions">
+              <button class="btn-primary" type="submit">Send message</button>
+              <p class="contact-form-note">We'll reply by email.</p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

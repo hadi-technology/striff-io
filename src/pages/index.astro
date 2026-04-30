@@ -4,8 +4,6 @@ import { readFileSync } from "node:fs";
 
 const pluginReleased = true;
 const feedbackUrl = "https://github.com/hadi-technology/striff-io/discussions/1";
-const primaryCtaLabel = "Install Plugin";
-const primaryCtaHref = "#plugin";
 const secondaryCtaLabel = "See product proof";
 const secondaryCtaHref = "#proof";
 const heroDiagramSvgRaw = readFileSync(
@@ -13,8 +11,8 @@ const heroDiagramSvgRaw = readFileSync(
   "utf8"
 );
 
-const cropHeroSvg = (viewBox: string, className: string) =>
-  heroDiagramSvgRaw
+const cropSvg = (svgRaw: string, viewBox: string, className: string) =>
+  svgRaw
     .replace(/viewBox="[^"]*"/, `viewBox="${viewBox}"`)
     .replace(/width="[^"]*"/, "")
     .replace(/height="[^"]*"/, "")
@@ -22,19 +20,57 @@ const cropHeroSvg = (viewBox: string, className: string) =>
     .replace(/style="[^"]*"/, "")
     .replace("<svg ", `<svg class="${className}" `);
 
+const cropHeroSvg = (viewBox: string, className: string) =>
+  cropSvg(heroDiagramSvgRaw, viewBox, className);
+
 const whyStriffSvg = cropHeroSvg("1138 1148 468 438", "why-visual-svg");
-const howChangeComponentSvg = cropHeroSvg("1148 1148 458 156", "how-change-component-svg");
 const howReviewNoteSvg = cropHeroSvg("1324 10 390 282", "how-tab-snippet-svg");
 const howMetricsSnippetSvg = cropHeroSvg("126 436 310 94", "how-tab-snippet-svg");
 const howUmlDiagramSvg = cropHeroSvg("1088 1088 560 520", "how-tab-snippet-svg");
+
+const howChangeDiagramSvgRaw = heroDiagramSvgRaw
+  .replace(
+    '<text fill="#BEF5CB" font-family="Consolas,Menlo,Liberation Mono" font-size="14" lengthAdjust="spacing" textLength="16.0159" x="962.5598" y="504.432">+1</text>',
+    '<text fill="#16A34A" font-family="Consolas,Menlo,Liberation Mono" font-size="14" lengthAdjust="spacing" textLength="24" x="962.5598" y="504.432">+1,</text>'
+  )
+  .replace(
+    '<text fill="#FFDEAD" font-family="Consolas,Menlo,Liberation Mono" font-size="14" lengthAdjust="spacing" textLength="3.64" x="978.5757" y="504.432"> </text>',
+    '<text fill="#DC2626" font-family="Consolas,Menlo,Liberation Mono" font-size="14" lengthAdjust="spacing" textLength="24" x="985.5757" y="504.432">-1,</text>'
+  )
+  .replace(
+    '<text fill="#B3E3F5" font-family="Consolas,Menlo,Liberation Mono" font-size="14" lengthAdjust="spacing" textLength="16.0159" x="982.2157" y="504.432">+2</text>',
+    '<text fill="#2563EB" font-family="Consolas,Menlo,Liberation Mono" font-size="14" lengthAdjust="spacing" textLength="16.0159" x="1013.2157" y="504.432">+1</text>'
+  )
+  .replace(
+    '<text fill="#000000" filter="url(#b1p18yufcid5is0)" font-family="Consolas,Menlo,Liberation Mono" font-size="14" lengthAdjust="spacing" textLength="295.7209" x="694.27" y="561.9659">generateFromContract(...) : Map&lt;String, File&gt;</text>',
+    '<text fill="#DC2626" font-family="Consolas,Menlo,Liberation Mono" font-size="14" lengthAdjust="spacing" textLength="295.7209" x="694.27" y="561.9659">generateFromContract(...) : Map&lt;String, File&gt;</text>'
+  )
+  .replace(
+    '<text fill="#000000" filter="url(#b1p18yufcid5is1)" font-family="Consolas,Menlo,Liberation Mono" font-size="14" lengthAdjust="spacing" textLength="269.821" x="694.27" y="581.0339">generateLocalTimeForTimeLocalFormat()</text>',
+    '<text fill="#16A34A" font-family="Consolas,Menlo,Liberation Mono" font-size="14" lengthAdjust="spacing" textLength="269.821" x="694.27" y="581.0339">generateLocalTimeForTimeLocalFormat()</text>'
+  )
+  .replace(
+    '<g data-visibility-modifier="PUBLIC_METHOD"><ellipse cx="685.27" cy="596.1698" fill="#84BE84" rx="3" ry="3" style="stroke:#038048;stroke-width:1;"/></g>',
+    '<g data-visibility-modifier="PUBLIC_METHOD"><ellipse cx="685.27" cy="596.1698" fill="#93C5FD" rx="3" ry="3" style="stroke:#2563EB;stroke-width:1;"/></g>'
+  )
+  .replace(
+    '<text fill="#000000" filter="url(#b1p18yufcid5is0)" font-family="Consolas,Menlo,Liberation Mono" font-size="14" lengthAdjust="spacing" textLength="134.4695" x="694.27" y="600.1018">testOneOfAndAllOf()</text>',
+    '<text fill="#2563EB" font-family="Consolas,Menlo,Liberation Mono" font-size="14" lengthAdjust="spacing" textLength="134.4695" x="694.27" y="600.1018">testOneOfAndAllOf()</text>'
+  );
+
+const howChangeComponentSvg = cropSvg(
+  howChangeDiagramSvgRaw,
+  "674 483 468 126",
+  "how-tab-snippet-svg"
+);
 
 const howChangeSnippetSvg = `
   <div class="how-change-live-wrap">
     ${howChangeComponentSvg}
     <div class="how-change-legend" aria-hidden="true">
-      <span class="how-change-chip how-change-chip-add">Added()</span>
-      <span class="how-change-chip how-change-chip-modify">Modified()</span>
-      <span class="how-change-chip how-change-chip-remove">Removed()</span>
+      <span class="how-change-chip how-change-chip-add">Added(<span class="how-change-num how-change-num-add">+1</span>)</span>
+      <span class="how-change-chip how-change-chip-remove">Removed(<span class="how-change-num how-change-num-remove">-1</span>)</span>
+      <span class="how-change-chip how-change-chip-modify">Modified(<span class="how-change-num how-change-num-modify">+1</span>)</span>
     </div>
   </div>
 `;
@@ -44,13 +80,6 @@ const howUmlSnippetSvg = `
     ${howUmlDiagramSvg}
   </div>
 `;
-
-const navLinks = [
-  { label: "Why Striff", href: "#proof" },
-  { label: "Product", href: "#features" },
-  { label: "How It Works", href: "#how" },
-  { label: pluginReleased ? "Install" : "Extension", href: "#plugin" }
-];
 
 const rotatingPhrases = [
   "review AI-generated PRs with confidence",
@@ -100,13 +129,15 @@ const comparisonRows = [
 const productPaths = [
   {
     eyebrow: "For Reviewers",
+    icon: "extension",
     title: "Chrome extension for pull request review",
     body: "Open structural diffs and review notes inside GitHub instead of switching between tabs, screenshots, and comments.",
     cta: "Install Plugin",
-    href: "#plugin"
+    href: "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen"
   },
   {
     eyebrow: "For Teams",
+    icon: "check",
     title: "GitHub Check for architecture-aware merge gates",
     body: "Post architectural review signals directly into PR checks and move toward policy-based enforcement on risky changes.",
     cta: "See roadmap",
@@ -114,10 +145,19 @@ const productPaths = [
   },
   {
     eyebrow: "For Developers",
+    icon: "code",
     title: "API and OSS library for deeper integration",
     body: "Generate Striffs from GitHub pull requests, uploaded code snapshots, or your own Java-based automation.",
     cta: "View GitHub",
     href: "https://github.com/hadi-technology/striff-lib"
+  },
+  {
+    eyebrow: "For Enterprises",
+    icon: "shield",
+    title: "Private deployment for internal codebases",
+    body: "Run Striff inside your own environment for private repositories, stricter data controls, and internal review workflows.",
+    cta: "Contact us",
+    href: "/contact"
   }
 ];
 
@@ -159,8 +199,8 @@ const callouts = [
   {
     icon: "chart",
     title: "Object-oriented metrics",
-    accentBg: "#fef3d6",
-    accentText: "#92400e",
+    accentBg: "#ede9fe",
+    accentText: "#6d28d9",
     snippet: howMetricsSnippetSvg,
     description:
       "Each class displays key metrics that help assess complexity, coupling, and change impact.",
@@ -346,7 +386,7 @@ const reviewFlow = [
 ];
 
 const installCtas = [
-  { label: "Install Plugin", href: "#plugin", icon: "chrome" },
+  { label: "Install Plugin", href: "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen", icon: "chrome" },
   { label: "View on GitHub", href: "https://github.com/hadi-technology/striff-browser-extension" }
 ];
 ---
@@ -355,93 +395,8 @@ const installCtas = [
   title="Striff - Architecture review for AI-era pull requests"
   description="Striff turns pull requests into structural diffs so teams can catch coupling drift, boundary risk, and system-level impact before merge."
   canonical="https://striff.io/"
-  ogImage="https://striff.io/hero-diagram-main.svg"
+  ogImage="https://striff.io/og-image.png"
 >
-  <header class="sticky top-0 z-50 border-b border-white/10 bg-[#24292e] backdrop-blur">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-      <a href="#" class="flex items-center gap-3 text-lg font-bold tracking-tight">
-        <img src="/icon.svg" alt="Striff logo" class="h-9 w-9" />
-        <span class="hidden sm:inline font-logo">Striff</span>
-      </a>
-
-      <style is:global>
-        .font-logo {
-          font-family: "Rubik", system-ui, sans-serif;
-          background: linear-gradient(135deg, #fff5c0 0%, #ffec88 40%, #c9a830 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          letter-spacing: 0.02em;
-        }
-      </style>
-      <nav class="hidden items-center gap-2 md:flex">
-        {navLinks.map((link) => (
-          <a class="nav-link" href={link.href}>
-            {link.label}
-          </a>
-        ))}
-        <a class="nav-link" href="https://github.com/hadi-technology/striff-lib" target="_blank" rel="noopener noreferrer">GitHub</a>
-      </nav>
-      <div class="hidden md:flex">
-        <a class="btn-primary" href={primaryCtaHref}>
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 2A10 10 0 0 1 20.66 7H12Z" fill="#EA4335" />
-            <path d="M20.66 7A10 10 0 0 1 12 22l4.33-7.5Z" fill="#FBBC04" />
-            <path d="M12 22A10 10 0 0 1 3.34 7h8.66Z" fill="#34A853" />
-            <circle cx="12" cy="12" r="4.1" fill="#4285F4" stroke="#EAF2FF" stroke-width="1" />
-          </svg>
-          {primaryCtaLabel}
-        </a>
-      </div>
-      <button
-        class="md:hidden"
-        data-menu-toggle
-        aria-label="Toggle navigation"
-        aria-expanded="false"
-        aria-controls="mobile-menu"
-      >
-        <span class="sr-only">Open menu</span>
-        <div class="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-sm">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <line x1="4" y1="7" x2="20" y2="7" />
-            <line x1="4" y1="12" x2="20" y2="12" />
-            <line x1="4" y1="17" x2="20" y2="17" />
-          </svg>
-        </div>
-      </button>
-    </div>
-    <div
-      id="mobile-menu"
-      data-mobile-menu
-      class="hidden border-t border-white/10 bg-[#24292e] px-6 py-4 md:hidden"
-    >
-      <div class="flex flex-col gap-2">
-        {navLinks.map((link) => (
-          <a class="nav-link" href={link.href}>
-            {link.label}
-          </a>
-        ))}
-        <a class="nav-link" href="https://github.com/hadi-technology/striff-lib" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a class="nav-link flex items-center gap-2" href="https://github.com/hadi-technology/striff-lib">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" />
-          </svg>
-          GitHub
-        </a>
-        <a class="btn-primary w-full" href={primaryCtaHref}>{primaryCtaLabel}</a>
-      </div>
-    </div>
-  </header>
-
   <main>
 	    <section id="hero" class="scroll-mt-24 relative overflow-hidden pb-16 pt-20">
 	      <!-- Ambient glow effects -->
@@ -472,7 +427,7 @@ const installCtas = [
             ))}
           </div>
           <div class="flex flex-wrap justify-center gap-4">
-            <a class="btn-primary" href={primaryCtaHref}>{primaryCtaLabel}</a>
+            <a class="btn-primary" href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen">Install Plugin</a>
             <a class="btn-secondary" href={secondaryCtaHref}>{secondaryCtaLabel}</a>
           </div>
 	        </div>
@@ -712,25 +667,79 @@ const installCtas = [
             </p>
             <h2 class="mt-3 text-balance">Use Striff wherever your team reviews change.</h2>
             <p class="section-subcopy mt-4">
-              Striff supports three practical use cases: faster pull request review for engineers, architecture-aware checks for teams, and API or library integration for custom automation.
+              Striff supports four practical use cases: faster pull request review for engineers, architecture-aware checks for teams, API integration for custom automation, and private deployment for internal codebases.
             </p>
           </div>
-          <div class="grid gap-5 lg:grid-cols-3">
+          <div class="grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
             {productPaths.map((path) => (
               <div class="benefit-card" style="--accent: rgb(37 99 235);">
                 <div class="benefit-card-accent" aria-hidden="true"></div>
                 <div class="benefit-card-top">
+                  <div class="benefit-card-icon" aria-hidden="true">
+                    {path.icon === "extension" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <rect x="4" y="4" width="16" height="16" rx="3" />
+                        <path d="M9 12h6M12 9v6" stroke-linecap="round" />
+                      </svg>
+                    )}
+                    {path.icon === "check" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <rect x="4" y="4" width="16" height="16" rx="3" />
+                        <path d="m8.5 12.5 2.5 2.5 4.5-5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    )}
+                    {path.icon === "code" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="m8 8-4 4 4 4" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="m16 8 4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="m13.5 5-3 14" stroke-linecap="round" />
+                      </svg>
+                    )}
+                    {path.icon === "shield" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M12 3 6 5.5v5.7c0 4 2.5 7.8 6 9.8 3.5-2 6-5.8 6-9.8V5.5L12 3Z" />
+                        <path d="m9.5 12 1.8 1.8 3.4-3.8" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    )}
+                  </div>
                   <p class="benefit-card-eyebrow">{path.eyebrow}</p>
                 </div>
                 <h3 class="benefit-card-title">{path.title}</h3>
                 <p class="benefit-card-body">{path.body}</p>
-                <div class="mt-5">
+                <div class="product-path-cta">
                   <a
                     class="btn-secondary"
                     href={path.href}
                     target={path.href.startsWith("http") ? "_blank" : undefined}
                     rel={path.href.startsWith("http") ? "noopener noreferrer" : undefined}
                   >
+                    <span aria-hidden="true">
+                      {path.icon === "extension" && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" width="16" height="16">
+                          <rect x="4" y="4" width="16" height="16" rx="3" />
+                          <path d="M9 12h6M12 9v6" stroke-linecap="round" />
+                        </svg>
+                      )}
+                      {path.icon === "check" && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" width="16" height="16">
+                          <path d="M5 12h5l2 2 7-7" stroke-linecap="round" stroke-linejoin="round" />
+                          <path d="M5 5h14v14H5z" opacity="0.22" />
+                        </svg>
+                      )}
+                      {path.icon === "code" && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" width="16" height="16">
+                          <path d="m8 8-4 4 4 4" stroke-linecap="round" stroke-linejoin="round" />
+                          <path d="m16 8 4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+                          <path d="m13.5 5-3 14" stroke-linecap="round" />
+                        </svg>
+                      )}
+                      {path.icon === "shield" && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" width="16" height="16">
+                          <path d="M12 3 6 5.5v5.7c0 4 2.5 7.8 6 9.8 3.5-2 6-5.8 6-9.8V5.5L12 3Z" />
+                          <path d="m9.5 12 1.8 1.8 3.4-3.8" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                      )}
+                    </span>
                     {path.cta}
                   </a>
                 </div>
@@ -1144,46 +1153,7 @@ const installCtas = [
 
   </main>
 
-  <footer class="border-t border-white/40 py-10 backdrop-blur-sm">
-    <div class="mx-auto flex max-w-6xl flex-col gap-6 px-6 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
-      <div class="font-semibold text-ink">Striff</div>
-      <div class="flex flex-wrap items-center gap-6">
-        <a class="flex items-center gap-2 transition-colors duration-200 hover:text-ink" href="https://github.com/hadi-technology/striff-lib" aria-label="Striff GitHub">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" />
-          </svg>
-          GitHub
-        </a>
-	        <a class="transition-colors duration-200 hover:text-ink" href="#plugin">Extension</a>
-	        <a class="transition-colors duration-200 hover:text-ink" href="#github-check">Roadmap</a>
-	        <a class="transition-colors duration-200 hover:text-ink" href="/privacy">Privacy</a>
-	        <a class="transition-colors duration-200 hover:text-ink" href="/terms">Terms</a>
-	        <a class="transition-colors duration-200 hover:text-ink" href="/cookies">Cookies</a>
-      </div>
-      <div class="text-xs text-slate-500">
-        Striff is a trademark of HADI Technology.
-      </div>
-    </div>
-  </footer>
-
   <script is:inline define:vars={{ rotatingPhrases }}>
-    const toggle = document.querySelector("[data-menu-toggle]");
-    const menu = document.querySelector("[data-mobile-menu]");
-
-    if (toggle && menu) {
-      toggle.addEventListener("click", () => {
-        const isHidden = menu.classList.toggle("hidden");
-        toggle.setAttribute("aria-expanded", String(!isHidden));
-      });
-
-      menu.querySelectorAll("a").forEach((link) => {
-        link.addEventListener("click", () => {
-          menu.classList.add("hidden");
-          toggle.setAttribute("aria-expanded", "false");
-        });
-      });
-    }
-
 	const initPanzoom = (container) => {
 	      const content = container.querySelector("[data-panzoom-content]");
 	      if (!content) return;
