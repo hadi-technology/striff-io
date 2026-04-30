@@ -40,12 +40,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
             <div class="contact-form-grid">
               <div>
-                <label class="waitlist-label" for="contact-name">Name</label>
+                <label class="waitlist-label" for="contact-name">Name <span class="text-red-500">*</span></label>
                 <input id="contact-name" class="waitlist-input" type="text" name="name" required />
               </div>
 
               <div>
-                <label class="waitlist-label" for="contact-email">Email</label>
+                <label class="waitlist-label" for="contact-email">Email <span class="text-red-500">*</span></label>
                 <input id="contact-email" class="waitlist-input" type="email" name="email" required />
               </div>
 
@@ -68,7 +68,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
               </div>
 
               <div class="contact-form-full">
-                <label class="waitlist-label" for="contact-message">Message</label>
+                <label class="waitlist-label" for="contact-message">Message <span class="text-red-500">*</span></label>
                 <textarea
                   id="contact-message"
                   class="waitlist-input waitlist-textarea"

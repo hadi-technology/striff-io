@@ -1862,6 +1862,16 @@
     border: 1px solid var(--panel-line);
   }
 
+  .contact-notes a {
+    color: #3b82f6;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .contact-notes a:hover {
+    color: #1d4ed8;
+  }
+
   .contact-panel {
     padding: 2rem;
     border-radius: 24px;
