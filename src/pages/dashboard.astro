@@ -1,0 +1,25 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout
+  title="Dashboard | Striff"
+  description="View your Striff installations, connected repos, and manage billing."
+  canonical="https://striff.io/dashboard"
+>
+  <main class="bg-slate-50 text-slate-900">
+    <section class="mx-auto max-w-5xl px-6 py-16 md:py-24">
+      <div id="dashboard-root"></div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import { createRoot } from "react-dom/client";
+  import { createElement } from "react";
+  import Dashboard from "../components/Dashboard";
+
+  const root = document.getElementById("dashboard-root");
+  if (root) {
+    createRoot(root).render(createElement(Dashboard));
+  }
+</script>

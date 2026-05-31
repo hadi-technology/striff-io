@@ -36,7 +36,8 @@ const primaryCtaHref = "https://chromewebstore.google.com/detail/striffs-for-git
         {contactNavLink.label}
       </a>
     </nav>
-    <div class="hidden md:flex md:ml-4">
+    <div class="hidden md:flex md:ml-4 items-center gap-3">
+      <div id="auth-button-root"></div>
       <a class="btn-primary" href={primaryCtaHref} target="_blank" rel="noopener noreferrer">{primaryCtaLabel}</a>
     </div>
     <button
@@ -98,5 +99,16 @@ const primaryCtaHref = "https://chromewebstore.google.com/detail/striffs-for-git
         toggle.setAttribute("aria-expanded", "false");
       });
     });
+  }
+</script>
+
+<script>
+  import { createRoot } from "react-dom/client";
+  import { createElement } from "react";
+  import AuthButton from "../components/AuthButton";
+
+  const authRoot = document.getElementById("auth-button-root");
+  if (authRoot) {
+    createRoot(authRoot).render(createElement(AuthButton));
   }
 </script>
