@@ -241,13 +241,23 @@ function InstallationCard({
             </p>
           </div>
         </div>
-        <button
-          onClick={() => onManageBilling(installation.id)}
-          disabled={billingLoading}
-          class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-        >
-          {billingLoading ? "Loading..." : "Manage billing"}
-        </button>
+        <div class="flex gap-2">
+          <a
+            href={`https://github.com/settings/installations/${installation.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Manage repos
+          </a>
+          <button
+            onClick={() => onManageBilling(installation.id)}
+            disabled={billingLoading}
+            class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+          >
+            {billingLoading ? "Loading..." : "Manage billing"}
+          </button>
+        </div>
       </div>
 
       {/* Repo stats */}
