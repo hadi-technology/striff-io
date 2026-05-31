@@ -1,0 +1,75 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout
+  title="Account | Striff"
+  description="Manage your Striff subscription."
+  canonical="https://striff.io/account"
+>
+  <main class="bg-slate-50 text-slate-900">
+    <section class="mx-auto max-w-4xl px-6 py-16 md:py-24">
+      <div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm md:p-12">
+        <p class="inline-flex rounded-full border border-slate-300 bg-slate-50 px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-700">
+          Account
+        </p>
+        <h1 class="mt-5 text-4xl font-black tracking-tight text-slate-950 md:text-5xl">
+          Manage billing without support tickets.
+        </h1>
+        <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+          Enter your GitHub installation ID and jump into the Stripe customer portal to update payment details, download invoices, or cancel at period end.
+        </p>
+
+        <div class="mt-8 grid gap-4 md:grid-cols-[1fr_auto]">
+          <input
+            id="installation-id"
+            type="text"
+            placeholder="GitHub installation ID"
+            class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none ring-0"
+          />
+          <button id="portal-button" class="btn-primary justify-center" type="button">Open billing portal</button>
+        </div>
+        <p id="portal-status" class="mt-4 text-sm text-slate-500"></p>
+
+        <div class="mt-10 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm leading-7 text-slate-600">
+          <p class="font-semibold text-slate-900">What this does</p>
+          <p class="mt-2">This page calls the Striff billing API, which creates a Stripe Customer Portal session and redirects you to Stripe-hosted billing management.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script is:inline>
+    const button = document.getElementById("portal-button");
+    const input = document.getElementById("installation-id");
+    const status = document.getElementById("portal-status");
+    const params = new URLSearchParams(window.location.search);
+    const presetId = params.get("installation_id");
+    if (input && presetId) input.value = presetId;
+
+    button?.addEventListener("click", async () => {
+      if (!input || !status) return;
+      const installationId = input.value.trim();
+      if (!installationId) {
+        status.textContent = "Enter an installation ID first.";
+        return;
+      }
+      status.textContent = "Opening billing portal...";
+      try {
+        const response = await fetch(`https://api.striff.io/api/v1/billing/portal?installation_id=${encodeURIComponent(installationId)}`, {
+          method: "POST"
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const payload = await response.json();
+        if (payload.portalUrl) {
+          window.location.href = payload.portalUrl;
+          return;
+        }
+        throw new Error("Missing portalUrl");
+      } catch (error) {
+        status.textContent = "Could not create a billing portal session yet. Verify the installation ID and backend deployment.";
+      }
+    });
+  </script>
+</BaseLayout>

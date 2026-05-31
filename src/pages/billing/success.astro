@@ -1,0 +1,43 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+<BaseLayout
+  title="Subscription Started | Striff"
+  description="Your Striff subscription checkout finished."
+  canonical="https://striff.io/billing/success"
+>
+  <main class="bg-slate-50 text-slate-900">
+    <section class="mx-auto max-w-4xl px-6 py-16 md:py-24">
+      <div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm md:p-12">
+        <p class="inline-flex rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-blue-800">
+          Checkout complete
+        </p>
+        <h1 class="mt-5 text-4xl font-black tracking-tight text-slate-950 md:text-5xl">
+          Your Striff subscription is active.
+        </h1>
+        <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+          Stripe has finished the purchase flow. The backend will sync the subscription state from webhooks, and your GitHub App installation can now use paid entitlements for private repositories.
+        </p>
+        <div class="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm leading-7 text-slate-600">
+          <p class="font-semibold text-slate-900">Checkout session</p>
+          <p id="session-id" class="mt-2 break-all">Waiting for session details...</p>
+        </div>
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+          <a href="/account" class="btn-primary inline-flex justify-center">Manage billing</a>
+          <a href="/" class="btn-secondary inline-flex justify-center">Back to homepage</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script is:inline>
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    const target = document.getElementById("session-id");
+    if (target) {
+      target.textContent = sessionId
+        ? `session_id=${sessionId}`
+        : "No session_id was provided in the return URL.";
+    }
+  </script>
+</BaseLayout>
