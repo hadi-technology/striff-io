@@ -243,7 +243,7 @@ function InstallationCard({
         </div>
         <div class="flex gap-2">
           <a
-            href={`https://github.com/settings/installations/${installation.id}`}
+            href="https://github.com/settings/installations"
             target="_blank"
             rel="noopener noreferrer"
             class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
