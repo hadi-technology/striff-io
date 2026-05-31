@@ -1,0 +1,27 @@
+---
+const { text, class: className = "" } = Astro.props;
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+const content = String(text ?? "");
+const html = content
+  .split(/(`[^`]+`)/g)
+  .filter(Boolean)
+  .map((part) => {
+    if (part.startsWith("`") && part.endsWith("`") && part.length > 2) {
+      return `<code class="github-inline-code">${escapeHtml(part.slice(1, -1))}</code>`;
+    }
+
+    return escapeHtml(part);
+  })
+  .join("");
+---
+
+<span class={className} set:html={html} />

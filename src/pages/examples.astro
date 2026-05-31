@@ -1,0 +1,326 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import InlineCodeText from "../components/InlineCodeText.astro";
+import { exampleReviews } from "../data/exampleReviews";
+
+const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
+---
+
+<BaseLayout
+  title="Example Reviews | Striff"
+  description="Real public pull requests analyzed by Striff across Java, Python, TypeScript, and C#."
+  canonical="https://striff.io/examples"
+>
+  <main class="pb-20 pt-16 examples-page-shell">
+    <section class="mx-auto max-w-6xl px-6">
+      <div class="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between" data-reveal>
+        <div class="max-w-3xl">
+          <p class="examples-kicker">
+            Public repo examples
+          </p>
+          <h1 class="mt-5 text-balance">Real PRs, same product story, one example per supported language.</h1>
+          <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+            The homepage carries the main example experience now. This page exists as a dedicated gallery view when you want to compare the Java, Python, TypeScript, and C# examples side by side.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-4">
+          <a class="btn-secondary" href="/#examples">Open homepage gallery</a>
+          <a class="btn-primary" href={extensionUrl} target="_blank" rel="noopener noreferrer">Install extension</a>
+        </div>
+      </div>
+
+      <div class="examples-overview mt-10" data-reveal>
+        <div class="examples-overview-card">
+          <span class="examples-overview-kicker">What to look for</span>
+          <p>Boundary shifts, duplicated responsibilities, shared hotspots, and the relationships a file diff hides.</p>
+        </div>
+        <div class="examples-overview-card">
+          <span class="examples-overview-kicker">Why this matters</span>
+          <p>The point is not prettier diagrams. The point is seeing architectural review value fast enough that a maintainer would use Striff again.</p>
+        </div>
+      </div>
+
+      <div class="examples-gallery-shell mt-10" data-reveal>
+        <div class="examples-gallery-head">
+          <div>
+            <p class="examples-gallery-kicker">Product gallery</p>
+            <h2 class="examples-gallery-title">Real public PR reviews rendered as product surfaces.</h2>
+          </div>
+          <p class="examples-gallery-copy">Each row is a real language example with the structural diff in the background and the GitHub check layered over it in-context.</p>
+        </div>
+        <div class="grid gap-5">
+        {exampleReviews.map((example) => (
+          <details class="example-accordion rounded-[1.9rem] border border-white/75 bg-white/92 shadow-[0_24px_64px_rgba(15,23,42,0.08)] backdrop-blur-sm" data-reveal open={example.id === "java"}>
+            <summary class="example-summary">
+              <div class="example-summary-main">
+                <div class="example-summary-top">
+                  <span class={`example-summary-mark example-summary-mark-${example.accent}`} aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h10"/><path d="M8 12h8"/><path d="M8 18h6"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>
+                  </span>
+                  <span class="example-language-label">{example.language}</span>
+                  <span class="example-github-repo">{example.repo}</span>
+                  <span class="example-pr-number">{example.pr}</span>
+                  <span class="example-status-pill">Public PR</span>
+                </div>
+                <div class="example-summary-copy">
+                  <h2 class="example-summary-title">{example.prTitle}</h2>
+                  <p class="example-summary-subtitle">{example.summary}</p>
+                </div>
+              </div>
+              <span class="example-chevron" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg>
+              </span>
+            </summary>
+
+            <div class="example-panel">
+              <div class="example-toolbar">
+                <div class="example-toolbar-left">
+                  <span class="example-toolbar-pill example-toolbar-pill-active">Focused review surface</span>
+                </div>
+                <div class="example-toolbar-right">
+                  {example.metrics.slice(0, 2).map((metric) => (
+                    <span class="example-metric-chip">{metric}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div class="example-panel-grid">
+                <div class="example-visual-shell">
+                  <div class="github-diff-shell github-diff-shell-background">
+                    <div class="github-pr-bar">
+                      <div class="github-pr-bar-left">
+                        <span class="github-pr-state github-pr-state-open">
+                          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3.75 2a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5ZM3 4.75C3 3.784 3.784 3 4.75 3h6.5a2.75 2.75 0 0 1 2.75 2.75v1.5a.75.75 0 0 1-1.5 0v-1.5c0-.69-.56-1.25-1.25-1.25h-6.5a.25.25 0 0 0-.25.25V13a.75.75 0 0 1-1.5 0V4.75Zm8.75 6.75a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5ZM8 7.25A.75.75 0 0 1 8.75 8v5a.75.75 0 0 1-1.5 0V8A.75.75 0 0 1 8 7.25Zm3.75-3.5a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"/></svg>
+                          Open
+                        </span>
+                        <strong>{example.prTitle}</strong>
+                      </div>
+                      <span class="github-pr-meta">{example.repo} {example.pr}</span>
+                    </div>
+                    <div class="github-tab-bar">
+                      <span class="github-tab">
+                        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1.75 2A1.75 1.75 0 0 0 0 3.75v8.5C0 13.216.784 14 1.75 14h12.5A1.75 1.75 0 0 0 16 12.25v-8.5A1.75 1.75 0 0 0 14.25 2ZM1.5 3.75a.25.25 0 0 1 .25-.25h12.5a.25.25 0 0 1 .25.25v8.5a.25.25 0 0 1-.25.25H1.75a.25.25 0 0 1-.25-.25Z"/></svg>
+                        Conversation <span class="github-tab-count">22</span>
+                      </span>
+                      <span class="github-tab github-tab-active">
+                        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 3.75A1.75 1.75 0 0 1 3.75 2h8.5A1.75 1.75 0 0 1 14 3.75v8.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25Zm1.75-.25a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25Z"/></svg>
+                        Checks <span class="github-tab-count">11</span>
+                      </span>
+                      <span class="github-tab">
+                        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.5 1.75a.75.75 0 0 1 1.5 0v12.5a.75.75 0 0 1-1.5 0Zm4.25 0a.75.75 0 0 1 1.5 0v12.5a.75.75 0 0 1-1.5 0Zm4.25 0a.75.75 0 0 1 1.5 0v12.5a.75.75 0 0 1-1.5 0Z"/></svg>
+                        Files changed <span class="github-tab-count">17</span>
+                      </span>
+                    </div>
+                    <div class="github-checks-layout">
+                      <aside class="github-checks-sidebar">
+                        <div class="github-checks-sidebar-group">
+                          <button class="github-suite-item github-suite-item-active" type="button">
+                            <span class="github-suite-icon github-suite-icon-success"></span>
+                            <span class="github-suite-copy">
+                              <strong>striff / architectural-review</strong>
+                              <span>1 check run with findings</span>
+                            </span>
+                            <span class="github-suite-count">{example.checks.length}</span>
+                          </button>
+                          <button class="github-suite-item" type="button">
+                            <span class="github-suite-icon"></span>
+                            <span class="github-suite-copy">
+                              <strong>Repository checks</strong>
+                              <span>build and validation</span>
+                            </span>
+                            <span class="github-suite-count">6</span>
+                          </button>
+                          <button class="github-suite-item" type="button">
+                            <span class="github-suite-icon"></span>
+                            <span class="github-suite-copy">
+                              <strong>Test matrix</strong>
+                              <span>unit and integration</span>
+                            </span>
+                            <span class="github-suite-count">3</span>
+                          </button>
+                        </div>
+                      </aside>
+                      <div class="github-checks-main">
+                        <div class="github-checks-main-header">
+                          <div>
+                            <p class="github-checks-run-kicker">striff / architectural-review</p>
+                            <h3 class="github-checks-run-title">Architectural review completed</h3>
+                            <p class="github-checks-run-meta">Completed with {example.checks.length} findings across {example.metrics[0].toLowerCase()}.</p>
+                          </div>
+                          <button class="github-diff-reset" type="button" data-panzoom-reset={`gallery-${example.id}`}>Reset view</button>
+                        </div>
+                        <div class="github-check-artifact">
+                          <div class="github-diff-canvas github-diff-canvas-live">
+                            <div
+                              class="github-diff-stage"
+                              style={`--example-stage-height:${example.viewport.desktopHeight}; --example-stage-height-mobile:${example.viewport.mobileHeight};`}
+                              data-panzoom={`gallery-${example.id}`}
+                              data-initial-scale={example.panzoom.desktop.scale}
+                              data-initial-x={example.panzoom.desktop.x}
+                              data-initial-y={example.panzoom.desktop.y}
+                              data-mobile-scale={example.panzoom.mobile.scale}
+                              data-mobile-x={example.panzoom.mobile.x}
+                              data-mobile-y={example.panzoom.mobile.y}
+                            >
+                              <img
+                                src={example.svg}
+                                alt={`${example.language} Striff structural diff for ${example.repo} ${example.pr}`}
+                                class="github-diff-graphic github-diff-image"
+                                loading="lazy"
+                                draggable="false"
+                              />
+                            </div>
+                          </div>
+
+                          <details class="github-check-shell github-check-shell-overlay" open>
+                    <summary class="github-check-summary-toggle">
+                      <div class="github-shell-header github-shell-header-checks">
+                        <div class="github-shell-title">
+                          <span class="github-dot github-dot-success"></span>
+                          <strong>striff / architectural-review</strong>
+                        </div>
+                        <div class="github-check-summary-meta">
+                          <span class="github-shell-meta">Completed in GitHub Checks</span>
+                          <span class="github-check-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 6 4 4 4-4"/></svg>
+                          </span>
+                        </div>
+                      </div>
+                    </summary>
+                    <div class="github-check-status-row">
+                      <span class="github-check-status">
+                        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.47a.75.75 0 0 0-1.06-1.06L7.19 9 5.28 7.09a.75.75 0 1 0-1.06 1.06l2.44 2.44a.75.75 0 0 0 1.06 0Z"/></svg>
+                        Completed
+                      </span>
+                      <span class="github-check-status-meta">1 check run with findings</span>
+                    </div>
+                    <div class="github-check-tabs">
+                      <span class="github-check-tab github-check-tab-active">Summary</span>
+                      <span class="github-check-tab">Findings {example.checks.length}</span>
+                    </div>
+                    <div class="github-check-overview">
+                      <div class="github-check-overview-main">
+                        <p class="github-check-kicker">Review headline</p>
+                        <h4>{example.headline}</h4>
+                        <p>{example.checkHeader}</p>
+                      </div>
+                      <div class="github-check-stats">
+                        <span>{example.metrics[0]}</span>
+                        <span>{example.metrics[1]}</span>
+                      </div>
+                    </div>
+                    <div class="github-check-list">
+                        {example.checks.map((check) => (
+                          <div class={`github-check-item github-check-item-${check.level}`}>
+                            <span class="github-check-icon">
+                              {check.level === "danger" ? "!" : check.level === "warn" ? "~" : "i"}
+                            </span>
+                            <div>
+                              <p><InlineCodeText text={check.title} /></p>
+                              <InlineCodeText class="github-check-body" text={check.body} />
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                    <div class="github-check-footer">
+                      <p class="github-check-footer-label">Review prompts</p>
+                      <ul class="github-check-footer-list">
+                        {example.highlights.map((highlight) => (
+                          <li><InlineCodeText text={highlight} /></li>
+                        ))}
+                      </ul>
+                    </div>
+                  </details>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="example-panel-footer">
+                <p class="text-sm leading-7 text-slate-700">{example.body}</p>
+                <div class="example-panel-actions">
+                  <a class="btn-secondary" href={example.href} target="_blank" rel="noopener noreferrer">Open PR on GitHub</a>
+                </div>
+              </div>
+            </div>
+          </details>
+        ))}
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script is:inline>
+    (function () {
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      document.querySelectorAll("[data-panzoom]").forEach(function (stage) {
+        var id = stage.getAttribute("data-panzoom");
+        var media = stage.querySelector(".github-diff-graphic");
+        var reset = document.querySelector('[data-panzoom-reset="' + id + '"]');
+        if (!media) return;
+
+        var scale = 1;
+        var x = 0;
+        var y = 0;
+        var startX = 0;
+        var startY = 0;
+        var dragging = false;
+
+        function paint() {
+          media.style.transform = "translate(" + x + "px, " + y + "px) scale(" + scale + ")";
+        }
+
+        function numberAttr(name, fallback) {
+          var value = parseFloat(stage.getAttribute(name) || "");
+          return Number.isFinite(value) ? value : fallback;
+        }
+
+        function resetView() {
+          var mobile = window.innerWidth < 768;
+          scale = numberAttr(mobile ? "data-mobile-scale" : "data-initial-scale", mobile ? 1.2 : 1.6);
+          x = numberAttr(mobile ? "data-mobile-x" : "data-initial-x", mobile ? -40 : -120);
+          y = numberAttr(mobile ? "data-mobile-y" : "data-initial-y", mobile ? -30 : -80);
+          paint();
+        }
+
+        stage.addEventListener("wheel", function (event) {
+          event.preventDefault();
+          scale = clamp(scale + (event.deltaY < 0 ? 0.12 : -0.12), 1, 2.8);
+          paint();
+        }, { passive: false });
+
+        stage.addEventListener("pointerdown", function (event) {
+          dragging = true;
+          startX = event.clientX - x;
+          startY = event.clientY - y;
+          stage.setPointerCapture(event.pointerId);
+          stage.classList.add("is-dragging");
+        });
+
+        stage.addEventListener("pointermove", function (event) {
+          if (!dragging || scale <= 1) return;
+          x = event.clientX - startX;
+          y = event.clientY - startY;
+          paint();
+        });
+
+        function stopDragging() {
+          dragging = false;
+          stage.classList.remove("is-dragging");
+        }
+
+        stage.addEventListener("pointerup", stopDragging);
+        stage.addEventListener("pointercancel", stopDragging);
+        stage.addEventListener("pointerleave", stopDragging);
+
+        if (reset) reset.addEventListener("click", resetView);
+        resetView();
+      });
+    })();
+  </script>
+</BaseLayout>

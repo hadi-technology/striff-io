@@ -4,25 +4,25 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
 <BaseLayout
   title="Contact - Striff"
-  description="Get in touch with the Striff team for questions, feedback, bug reports, or partnership inquiries."
+  description="Talk to the Striff team about product questions, private-repo rollout, or architecture-review workflows."
   canonical="https://striff.io/contact"
 >
   <main class="contact-page">
     <section class="mx-auto max-w-5xl px-6 py-20">
       <div class="contact-shell">
-        <div class="contact-intro">
+        <div class="contact-intro" data-reveal>
           <p class="contact-eyebrow">Contact us</p>
-          <h1 class="contact-title">Questions, feedback, or issues? We're here.</h1>
+          <h1 class="contact-title">Talk to the team behind architecture-aware PR review.</h1>
           <p class="contact-copy">
-            Whether it's a bug report, a feature request, a question about the product, or an enterprise inquiry — fill out the form and we'll get back to you.
+            Use this for rollout questions, private-repo interest, bug reports, or anything blocking adoption. We read for specifics and respond like engineers, not marketers.
           </p>
           <div class="contact-notes">
-            <p><strong>Community:</strong> Ask questions, share feedback, review the product, or suggest features on our <a href="https://github.com/hadi-technology/striff-io/discussions" target="_blank" rel="noopener noreferrer">GitHub Discussions</a> page.</p>
-            <p><strong>Enterprise or private deployment?</strong> Include your deployment model, repository scale, and security requirements so we can respond clearly.</p>
+            <p><span class="contact-note-icon" aria-hidden="true">↗</span><strong>Community:</strong> Ask questions, share feedback, review the product, or suggest features on our <a href="https://github.com/hadi-technology/striff-io/discussions" target="_blank" rel="noopener noreferrer">GitHub Discussions</a> page.</p>
+            <p><span class="contact-note-icon" aria-hidden="true">◆</span><strong>Enterprise or private deployment?</strong> Include your deployment model, repository scale, and security requirements so we can respond clearly.</p>
           </div>
         </div>
 
-        <div class="contact-panel">
+        <div class="contact-panel" data-reveal>
           <form
             class="contact-form"
             name="contact"

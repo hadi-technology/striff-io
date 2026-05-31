@@ -1,1494 +1,851 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { readFileSync } from "node:fs";
+import InlineCodeText from "../components/InlineCodeText.astro";
+import { exampleReviews } from "../data/exampleReviews";
 
-const pluginReleased = true;
-const feedbackUrl = "https://github.com/hadi-technology/striff-io/discussions/1";
-const secondaryCtaLabel = "See how it works";
-const secondaryCtaHref = "#proof";
-const heroDiagramSvgRaw = readFileSync(
-  new URL("../../public/hero-diagram-main.svg", import.meta.url),
-  "utf8"
-);
+const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
+const githubAppUrl = "https://github.com/apps/striff-app/installations/new";
+const examplesUrl = "/#examples";
 
-const cropSvg = (svgRaw: string, viewBox: string, className: string) =>
-  svgRaw
-    .replace(/viewBox="[^"]*"/, `viewBox="${viewBox}"`)
-    .replace(/width="[^"]*"/, "")
-    .replace(/height="[^"]*"/, "")
-    .replace('preserveAspectRatio="none"', 'preserveAspectRatio="xMidYMid meet"')
-    .replace(/style="[^"]*"/, "")
-    .replace("<svg ", `<svg class="${className}" `);
-
-const cropHeroSvg = (viewBox: string, className: string) =>
-  cropSvg(heroDiagramSvgRaw, viewBox, className);
-
-const whyStriffSvg = cropHeroSvg("1138 1148 468 438", "why-visual-svg");
-const howReviewNoteSvg = cropHeroSvg("1324 10 390 282", "how-tab-snippet-svg");
-const howMetricsSnippetSvg = cropHeroSvg("126 436 310 94", "how-tab-snippet-svg");
-const howUmlDiagramSvg = cropHeroSvg("1088 1088 560 520", "how-tab-snippet-svg");
-
-const howChangeComponentSvg = cropHeroSvg("674 483 468 126", "how-tab-snippet-svg");
-
-const howChangeSnippetSvg = `
-  <div class="how-change-live-wrap">
-    ${howChangeComponentSvg}
-    <div class="how-change-legend" aria-hidden="true">
-      <span class="how-change-chip how-change-chip-add">Added <span class="how-change-num how-change-num-add">+1</span></span>
-      <span class="how-change-chip how-change-chip-remove">Removed <span class="how-change-num how-change-num-remove">-1</span></span>
-      <span class="how-change-chip how-change-chip-modify">Modified <span class="how-change-num how-change-num-modify">+1</span></span>
-    </div>
-  </div>
-`;
-
-const howUmlSnippetSvg = `
-  <div class="how-uml-live-wrap">
-    ${howUmlDiagramSvg}
-  </div>
-`;
-
-const rotatingPhrases = [
-  "gauge PR impact in a single view.",
-  "review AI-generated PRs with confidence.",
-  "uncover architectural anomalies."
-];
-
-const proofPills = [
+const whatItCatches = [
   {
-    label: "GitHub pull request review",
-    tone: "#2563eb",
-    glyph: "PR"
+    icon: "layers",
+    accent: "blue",
+    title: "New cross-layer dependency",
+    body: "Spot when an API or controller starts depending directly on persistence, internals, or the wrong side of a boundary."
   },
   {
-    label: "Java, Python, TypeScript",
-    tone: "#0f766e",
-    glyph: "{ }"
+    icon: "turn",
+    accent: "emerald",
+    title: "Reversed dependency direction",
+    body: "See when a service starts reaching into transport DTOs or other upstream concerns that usually point the other way."
   },
   {
-    label: "Inline architecture notes",
-    tone: "#b45309",
-    glyph: "AI"
+    icon: "hub",
+    accent: "amber",
+    title: "Coupling jump on a shared component",
+    body: "Notice when fan-in, complexity, or architectural reach grows on a class other teams already depend on."
   },
   {
-    label: "Metrics and risk signals",
-    tone: "#7c3aed",
-    glyph: "Σ"
+    icon: "alert",
+    accent: "rose",
+    title: "Structurally unusual new edges",
+    body: "Flag new relationships that look rare compared with healthy codebases, then explain why they deserve attention."
   }
 ];
 
 const comparisonRows = [
   {
-    left: "File diff shows what lines changed.",
-    right: "Striff shows what moved structurally: dependencies, boundaries, and blast radius."
+    left: "Shows edited lines and moved code.",
+    right: "Shows new dependencies, boundary movement, and architectural blast radius."
   },
   {
-    left: "Conventional review starts deep in files.",
-    right: "Striff starts at the system layer and lets reviewers drill in only where risk appears."
+    left: "Makes reviewers hunt through files for the risky part.",
+    right: "Highlights the changed components and relationships worth reading first."
   },
   {
-    left: "AI-generated PRs can look tidy line-by-line.",
-    right: "Striff exposes architecture drift, coupling shifts, and the parts of the system most likely to need attention."
+    left: "Can make AI-generated changes look tidy at the syntax level.",
+    right: "Focuses review on structural drift, unusual edges, and the questions to ask before merge."
   }
 ];
 
-const productPaths = [
+const surfaces = [
   {
-    eyebrow: "For Reviewers",
-    icon: "extension",
-    title: "Chrome extension for pull request review",
-    body: "Open structural diffs and review notes inside GitHub instead of switching between tabs, screenshots, and comments.",
-    cta: "Install extension",
-    href: "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen"
-  },
-  {
-    eyebrow: "For Teams",
     icon: "check",
-    title: "GitHub Check for architecture-aware merge gates",
-    body: "Post architectural review signals directly into PR checks and move toward policy-based enforcement on risky changes.",
-    cta: "See GitHub Check",
-    href: "#github-check"
+    accent: "blue",
+    eyebrow: "GitHub Check",
+    title: "Scannable structural triage in the PR checks tab",
+    body: "Use the Check Run to see what changed structurally, which edges look unusual, and which components deserve a second look."
   },
   {
-    eyebrow: "For Developers",
-    icon: "code",
-    title: "API and OSS library for deeper integration",
-    body: "Generate Striffs from GitHub pull requests, uploaded code snapshots, or your own Java-based automation.",
-    cta: "Explore the library",
-    href: "https://github.com/hadi-technology/striff-lib"
-  },
-  {
-    eyebrow: "For Enterprises",
-    icon: "shield",
-    title: "Private deployment for internal codebases",
-    body: "Run Striff inside your own environment for private repositories, stricter data controls, and internal review workflows.",
-    cta: "Contact us",
-    href: "/contact"
+    icon: "graph",
+    accent: "amber",
+    eyebrow: "Interactive Diff",
+    title: "Dive into the structural diff when you need the why",
+    body: "Open the diagram to inspect changed relationships, metric shifts, and grounded review notes attached to the part of the system they describe."
   }
 ];
 
-const heroLegend = [
-  { label: "Added", swatchClass: "hero-legend-swatch-add" },
-  { label: "Modified", swatchClass: "hero-legend-swatch-modify" },
-  { label: "Removed", swatchClass: "hero-legend-swatch-remove" }
-];
-
-const callouts = [
-  {
-    icon: "palette",
-    title: "Change coloring",
-    accentBg: "#dff7e4",
-    accentText: "#166534",
-    snippet: howChangeSnippetSvg,
-    description:
-      "Each change type gets a distinct color so you can instantly scan for what matters.",
-    details: [
-      "Added marks new structure entering the system.",
-      "Modified shows existing components whose internals changed.",
-      "Removed makes deleted paths visible before they disappear into file diffs."
-    ]
-  },
-  {
-    icon: "network",
-    title: "UML-based class structure",
-    accentBg: "#e4f1f7",
-    accentText: "#0f4c81",
-    snippet: howUmlSnippetSvg,
-    description:
-      "Classes are boxes with compartments for name, attributes, and methods. Arrows show relationships like inheritance, implementation, and dependencies.",
-    details: [
-      "Solid arrows represent direct references or associations.",
-      "Dashed arrows indicate looser dependencies or implementation edges.",
-      "The structure view makes boundary changes readable at a glance."
-    ]
-  },
-  {
-    icon: "chart",
-    title: "Object-oriented metrics",
-    accentBg: "#ede9fe",
-    accentText: "#6d28d9",
-    snippet: howMetricsSnippetSvg,
-    description:
-      "Each class displays key metrics that help assess complexity, coupling, and change impact.",
-    metrics: [
-      { label: "NOC", icon: "branch", tone: "green", desc: "<strong>Number of children.</strong> Wider inheritance means more downstream impact." },
-      { label: "DIT", icon: "depth", tone: "blue", desc: "<strong>Depth of inheritance.</strong> Deep trees are harder to reason about safely." },
-      { label: "WMC", icon: "weight", tone: "gold", desc: "<strong>Weighted method complexity.</strong> Higher values usually mean heavier review effort." },
-      { label: "AC", icon: "inbound", tone: "rose", desc: "<strong>Afferent coupling.</strong> More incoming dependencies mean the class is harder to change safely." },
-      { label: "EC", icon: "outbound", tone: "slate", desc: "<strong>Efferent coupling.</strong> More outgoing dependencies suggest broader ripple effects." }
-    ]
-  },
-  {
-    icon: "note",
-    title: "Review notes",
-    accentBg: "#fff1dd",
-    accentText: "#9a3412",
-    snippet: howReviewNoteSvg,
-    description:
-      "Striffs can carry architectural review notes directly on the diagram so high-risk changes are visible in context, not buried in a comment thread.",
-    details: [
-      "Striff narrows review to the most relevant part of the change, then adds architecture-aware signals before generating notes.",
-      "Notes are cleaned up, deduplicated, and ranked so reviewers see the highest-value guidance first.",
-      "The final comments are rendered directly on the diagram, next to the package or component they refer to."
-    ]
-  },
-];
-
-const carouselItems = callouts.map((callout) => ({
-  ...callout
-}));
-const featuredHowItem = carouselItems[0];
-const secondaryHowItems = carouselItems.slice(1);
-
-const languageSupport = [
-  {
-    name: "Java",
-    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg",
-    status: "Supported",
-    statusClass: "status-supported"
-  },
-  {
-    name: "Python",
-    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
-    status: "Supported",
-    statusClass: "status-supported"
-  },
-  {
-    name: "TypeScript",
-    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg",
-    status: "Supported",
-    statusClass: "status-supported"
-  },
-  {
-    name: "CSharp",
-    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg",
-    status: "Coming soon",
-    statusClass: "status-soon"
-  },
-  {
-    name: "GoLang",
-    logoUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg",
-    status: "Coming soon",
-    statusClass: "status-soon"
-  }
-];
-
-const heroAudienceCards = [
-  {
-    eyebrow: "For reviewers",
-    icon: "review",
-    accentColor: "#2563eb",
-    title: "Start with system change, then drill into files only where needed."
-  },
-  {
-    eyebrow: "For AI-heavy teams",
-    icon: "agent",
-    accentColor: "#16a34a",
-    title: "Keep agent-generated code aligned with architecture, not just syntax."
-  },
-  {
-    eyebrow: "For engineering leads",
-    icon: "lead",
-    accentColor: "#d97706",
-    title: "Surface coupling, drift, and risky boundaries before they become cleanup work."
-  }
-];
-
-const benefits = [
-  {
-    eyebrow: "Impact First",
-    icon: "blast",
-    title: "See blast radius before reading files",
-    body: "Start with the architectural surface area of the PR, not a pile of changed files with no system context.",
-    accent: "rgb(248 113 113)"
-  },
-  {
-    eyebrow: "AI Guardrails",
-    icon: "shield",
-    title: "Review AI output at the architecture layer",
-    body: "Agent-generated changes can pass syntax review while quietly bending boundaries. Striff makes that visible.",
-    accent: "rgb(74 222 128)"
-  },
-  {
-    eyebrow: "One Artifact",
-    icon: "stack",
-    title: "Keep risk and context in one view",
-    body: "Metrics, dependency edges, and AI review notes stay on the diagram itself instead of being scattered across comments and tabs.",
-    accent: "rgb(96 165 250)"
-  },
-  {
-    eyebrow: "Large PRs",
-    icon: "focus",
-    title: "Handle large pull requests without drowning",
-    body: "When a PR spans dozens of files, Striff helps reviewers focus on the structural changes that deserve attention first.",
-    accent: "rgb(250 204 21)"
-  }
-];
-
-const featureCards = [
-  {
-    eyebrow: "Diff Lens",
-    icon: "structure",
-    accent: "linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(14, 165, 233, 0.08))",
-    accentColor: "#2563eb",
-    title: "Structural diffs instead of file noise",
-    body:
-      "Review the shape of the change first: new dependencies, moved boundaries, changed classes, and the surrounding impact."
-  },
-  {
-    eyebrow: "Review Engine",
-    icon: "spark",
-    accent: "linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(251, 191, 36, 0.08))",
-    accentColor: "#d97706",
-    title: "AI review grounded in deterministic signals",
-    body:
-      "AI review is grounded in architecture-aware signals so comments are tied to real structural risk, not generic code-review advice."
-  },
-  {
-    eyebrow: "Inline Context",
-    icon: "note",
-    accent: "linear-gradient(135deg, rgba(244, 114, 182, 0.18), rgba(251, 207, 232, 0.08))",
-    accentColor: "#db2777",
-    title: "Notes attached where the risk lives",
-    body:
-      "Review comments are rendered into the SVG itself so the architectural issue stays attached to the component or package it affects."
-  },
-  {
-    eyebrow: "Workflow Fit",
-    icon: "flow",
-    accent: "linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(134, 239, 172, 0.08))",
-    accentColor: "#16a34a",
-    title: "Built for real review flows",
-    body:
-      "Analyze GitHub pull requests or code snapshots, revisit saved results later, and keep the experience fast enough for active review."
-  }
-];
-
-const reviewFlow = [
+const howItWorks = [
   {
     step: "1",
-    eyebrow: "Input",
-    icon: "ingest",
-    accentColor: "#2563eb",
-    title: "Generate the diagram",
-    body: "Start from a pull request or two code snapshots and generate a structural view of the system changes."
+    icon: "split",
+    title: "Generate the structural diff",
+    body: "Parse the pull request into changed components, relationships, and architectural facts instead of treating it as a flat set of files."
   },
   {
     step: "2",
-    eyebrow: "Analysis",
-    icon: "radar",
-    accentColor: "#d97706",
-    title: "Spot impact and risk",
-    body: "Scan added, modified, and removed components, then use metrics and relationship changes to find the blast radius fast."
+    icon: "focus",
+    title: "Rank what deserves review",
+    body: "Combine deterministic rules, learned graph signals, and GNN-style structure scoring to rank the unusual edges and changed components that deserve attention."
   },
   {
     step: "3",
-    eyebrow: "Decision",
-    icon: "action",
-    accentColor: "#16a34a",
-    title: "Act on the right questions",
-    body: "Use inline review notes and risk signals to focus the conversation on coupling, drift, and boundary risk before merge."
+    icon: "note",
+    title: "Explain the concern in context",
+    body: "Use a neurosymbolic pipeline to keep the model grounded in architectural facts, then render concise review notes directly on the affected component or relationship."
   }
 ];
 
-const installCtas = [
-  { label: "Install Chrome extension", href: "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen", icon: "chrome" },
-  { label: "View extension source", href: "https://github.com/hadi-technology/striff-browser-extension" }
+const plans = [
+  {
+    eyebrow: "Public OSS",
+    icon: "globe",
+    title: "Free review workflow for public repositories",
+    body: "Install the extension and use Striff on public pull requests where maintainers need fast architectural context."
+  },
+  {
+    eyebrow: "Private Teams",
+    icon: "team",
+    title: "Automated checks for private-team review",
+    body: "Add the GitHub App when your team wants shared structural checks and repeatable review coverage on private pull requests."
+  },
+  {
+    eyebrow: "Deep Integration",
+    icon: "gear",
+    title: "Library and private deployment options",
+    body: "Use the OSS library or talk to us about internal deployment when you need deeper integration with your engineering workflow."
+  }
 ];
 ---
 
 <BaseLayout
-  title="Striff - Architecture review for AI-era pull requests"
-  description="Striff turns pull requests into structural diffs so teams can catch coupling drift, boundary risk, and system-level impact before merge."
+  title="Striff - Architecture-aware pull request review"
+  description="Striff surfaces unusual dependencies, boundary drift, and structural blast radius in GitHub before merge."
   canonical="https://striff.io/"
   ogImage="https://striff.io/og-image.png"
 >
   <main>
-	    <section id="hero" class="scroll-mt-24 relative overflow-hidden pb-16 pt-20">
-	      <!-- Ambient glow effects -->
-	      <div class="pointer-events-none absolute inset-0 overflow-hidden">
-	        <div class="absolute -top-40 -right-40 h-80 w-80 rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #7ee89d 0%, transparent 70%);"></div>
-	        <div class="absolute -bottom-40 -left-40 h-80 w-80 rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #f0808e 0%, transparent 70%);"></div>
-	        <div class="absolute top-1/2 -right-20 h-60 w-60 rounded-full opacity-15 blur-3xl" style="background: radial-gradient(circle, #6eaaee 0%, transparent 70%);"></div>
-	      </div>
+    <section class="hero-section relative overflow-hidden pb-20 pt-24">
+      <div class="pointer-events-none absolute inset-0 overflow-hidden">
+        <div class="absolute -top-40 -right-40 h-80 w-80 rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #7ee89d 0%, transparent 70%);"></div>
+        <div class="absolute -bottom-40 -left-40 h-80 w-80 rounded-full opacity-20 blur-3xl" style="background: radial-gradient(circle, #f0808e 0%, transparent 70%);"></div>
+        <div class="absolute top-1/2 right-10 h-56 w-56 rounded-full opacity-15 blur-3xl" style="background: radial-gradient(circle, #6eaaee 0%, transparent 70%);"></div>
+      </div>
 
-	      <div class="mx-auto flex max-w-5xl flex-col items-center gap-10 px-6 text-center relative z-10">
-	        <div class="space-y-8 animate-fade-up">
-	          <div class="space-y-6">
-            <h1 class="text-balance">Architectural review for pull requests in the age of AI coding.</h1>
-            <p class="subheadline-line">
-              Striff gives reviewers a system-level view of every pull request so teams can{" "}
-              <span class="type-rotator" data-type-rotator aria-live="polite">
-                <span class="type-rotator-text">{rotatingPhrases[0]}</span>
-                <span class="type-caret" aria-hidden="true"></span>
-              </span>
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="hero-copy relative z-10 mx-auto max-w-4xl space-y-8 text-center" data-reveal>
+          <div class="inline-flex rounded-full border border-sky-200/90 bg-white/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-800 shadow-sm backdrop-blur-sm">
+            For public GitHub pull requests
+          </div>
+          <div class="space-y-5">
+            <h1 class="mx-auto max-w-4xl text-balance">See architectural risk before merge.</h1>
+            <p class="section-subcopy mx-auto max-w-3xl">
+              Striff reviews pull requests at the system level inside GitHub, surfacing unusual dependencies, boundary drift, and structural blast radius before line-by-line review eats your time.
             </p>
           </div>
-          <div class="proof-pill-row">
-            {proofPills.map((pill) => (
-              <span class="proof-pill" style={`--proof-accent:${pill.tone};`}>
-                <span class="proof-pill-badge" aria-hidden="true">{pill.glyph}</span>
-                <span>{pill.label}</span>
-              </span>
-            ))}
-          </div>
           <div class="flex flex-wrap justify-center gap-4">
-            <a class="btn-primary" href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen">Install Chrome extension</a>
-            <a class="btn-secondary" href={secondaryCtaHref}>{secondaryCtaLabel}</a>
+            <a class="btn-primary" href={extensionUrl} target="_blank" rel="noopener noreferrer">Install extension</a>
+            <a class="btn-secondary" href={examplesUrl}>View examples</a>
           </div>
-	        </div>
-	        <div class="w-full">
-		          <div
-		            class="hero-diagram-frame mx-auto w-full max-w-5xl"
-		            data-panzoom
-		            data-panzoom-initial-scale="2.3105"
-                data-panzoom-initial-x="-612.455"
-                data-panzoom-initial-y="-189.536"
-		            data-panzoom-min-scale="0.5"
-		            data-panzoom-max-scale="5"
-		          >
-		            <div class="hero-diagram-chrome" aria-hidden="true">
-                  <div class="hero-chrome-left">
-                    <div class="hero-window-controls">
-		                  <span></span><span></span><span></span>
+          <p class="mx-auto max-w-2xl text-sm text-slate-500">
+            Start in public repos. Move into private-team checks only after the signal proves itself on real pull requests.
+          </p>
+        </div>
+
+        <div class="relative z-10 mx-auto mt-14 w-full max-w-5xl space-y-5" data-reveal>
+          <div class="hero-stage-shell" data-hero-stage>
+            <div class="hero-stage-head">
+              <div class="hero-stage-context">
+                <span class="hero-context-chip">openapitools/openapi-generator</span>
+                <span class="hero-context-chip hero-context-chip-muted">PR #19423</span>
+                <span class="hero-context-chip hero-context-chip-muted">Java</span>
+              </div>
+              <div class="hero-stage-badge">Structural diff in GitHub</div>
+            </div>
+
+            <div class="hero-stage-canvas-wrap">
+              <article class="hero-diagram-card">
+                <div class="hero-diagram-topbar">
+                  <span>Structural diff</span>
+                  <span>Changed relationships in context</span>
+                </div>
+                <div class="hero-diagram-window">
+                  <div class="hero-diagram-board hero-diagram-board-standalone">
+                    <div class="hero-diagram-board-header">
+                      <span class="hero-board-chip">Changed packages</span>
+                      <span class="hero-board-chip hero-board-chip-muted">1 unusual edge</span>
                     </div>
-                    <div class="hero-github-context">
-                      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" />
+                    <div class="hero-diagram-canvas">
+                      <svg class="hero-diagram-lines" viewBox="0 0 700 420" aria-hidden="true">
+                        <path d="M166 120C230 120 248 168 314 176" />
+                        <path d="M166 120C232 120 246 80 316 76" />
+                        <path d="M362 176C430 188 450 228 526 248" />
+                        <path d="M364 78C428 94 452 138 526 148" />
+                        <path d="M364 78C438 72 472 70 544 74" class="is-highlighted" />
+                        <path d="M548 150C592 158 616 192 624 234" />
                       </svg>
-                      <span class="hero-github-slug">openapitools/openapi-generator</span>
-                      <span class="hero-github-pr">PR #19423</span>
+
+                      <div class="hero-node hero-node-a">
+                        <span class="hero-node-label">adapter/web</span>
+                        <strong>BillingController</strong>
+                      </div>
+                      <div class="hero-node hero-node-b">
+                        <span class="hero-node-label">review/core</span>
+                        <strong>ReviewOrchestrator</strong>
+                      </div>
+                      <div class="hero-node hero-node-c">
+                        <span class="hero-node-label">review/core</span>
+                        <strong>StructuralSignals</strong>
+                      </div>
+                      <div class="hero-node hero-node-d">
+                        <span class="hero-node-label">storage</span>
+                        <strong>RepositoryStore</strong>
+                      </div>
+                      <div class="hero-node hero-node-e hero-node-highlight">
+                        <span class="hero-node-label">shared/core</span>
+                        <strong>ModelUtils</strong>
+                      </div>
+                      <div class="hero-node hero-node-f">
+                        <span class="hero-node-label">github/checks</span>
+                        <strong>CheckRunWriter</strong>
+                      </div>
+
+                      <div class="hero-diagram-pin">
+                        <span class="hero-diagram-pin-line"></span>
+                        <div class="hero-diagram-pin-card">
+                          <p class="hero-pin-kicker">Grounded note</p>
+                          <p class="hero-pin-copy"><strong>BillingController</strong> now reaches into <strong>ModelUtils</strong>, which usually sits behind review-core services.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="hero-diagram-bottom-strip">
+                      <div class="hero-bottom-stat">
+                        <span class="hero-bottom-label">Anomalous edges</span>
+                        <strong>2</strong>
+                      </div>
+                      <div class="hero-bottom-stat">
+                        <span class="hero-bottom-label">Flagged components</span>
+                        <strong>1</strong>
+                      </div>
+                      <div class="hero-bottom-stat">
+                        <span class="hero-bottom-label">Structural changes</span>
+                        <strong>3</strong>
+                      </div>
                     </div>
                   </div>
-	                  <p class="hero-pan-hint">
-	                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-	                      <path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" />
-                      <path d="M12 9v6M9 12h6" />
-                    </svg>
-                    Scroll to zoom · Drag to pan
-                  </p>
-		            </div>
-			            <div class="hero-diagram-viewport" data-panzoom-content style="transform: translate(-612.455px, -189.536px) scale(2.3105)">
-			              <img
-		                src="/hero-diagram-main.svg"
-		                alt="Striff diagram overview"
-		                class="hero-diagram-img"
-	                loading="eager"
-	                decoding="async"
-		                fetchpriority="high"
-			                draggable="false"
-			              />
-			            </div>
-			          </div>
-				          <div class="mt-5 flex flex-wrap items-center justify-center gap-2 md:mt-6">
-			            <span class="hero-legend-label">PR diff legend</span>
-			            {heroLegend.map((item) => (
-			              <span class="hero-legend-chip">
-			                <span class={`hero-legend-swatch ${item.swatchClass}`} aria-hidden="true"></span>
-			                {item.label}
-			              </span>
-			            ))}
-                  <span class="hero-strip-separator" aria-hidden="true"></span>
-                  <span class="hero-legend-label">Languages</span>
-                  {languageSupport.map((lang) => (
-                    <span class="lang-chip lang-chip-minimal">
-                      <span class="lang-icon" aria-hidden="true">
-                        <img
-                          class="lang-logo"
-                          src={lang.logoUrl}
-                          alt={`${lang.name} logo`}
-                          loading="lazy"
-                        />
-                      </span>
-                      <span class="lang-inline-name">
-                        {lang.name}
-                        {lang.status === "Coming soon" && <span class="lang-soon-tag"> soon</span>}
-                      </span>
-                    </span>
-                  ))}
-			          </div>
-		          <p class="section-subcopy mx-auto mt-5 max-w-3xl text-sm md:text-base">
-		            Review the PR the way your system was designed: as moving components, boundaries, dependencies, and risk hotspots instead of isolated files.
-		          </p>
-	        </div>
-        <div class="grid w-full max-w-5xl gap-4 md:grid-cols-3">
-          {heroAudienceCards.map((card) => (
-            <div class="hero-audience-card" style={`--hero-card-accent:${card.accentColor};`}>
-              <div class="hero-audience-card-top">
-                <div class="hero-audience-icon" aria-hidden="true">
-                  {card.icon === "review" && (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                      <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v8.7a1.5 1.5 0 0 1-1.5 1.5h-8.2L6.4 20.6a.6.6 0 0 1-1-.42v-4H5A1.5 1.5 0 0 1 3.5 14.7V6A1.5 1.5 0 0 1 5 4.5Z" />
-                      <path d="M8 9h8M8 12h6" />
-                    </svg>
-                  )}
-                  {card.icon === "agent" && (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                      <rect x="7" y="8" width="10" height="9" rx="2" />
-                      <path d="M12 4v2M9 17v2M15 17v2M5 10H3M21 10h-2M9 12h.01M15 12h.01M9.5 14.5h5" />
-                    </svg>
-                  )}
-                  {card.icon === "lead" && (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                      <path d="M12 3 14.7 8.5 21 9.4l-4.5 4.3 1.1 6.1L12 17l-5.6 2.8 1.1-6.1L3 9.4l6.3-.9L12 3Z" />
-                    </svg>
-                  )}
                 </div>
-                <p class="hero-audience-eyebrow">{card.eyebrow}</p>
-              </div>
-              <p class="hero-audience-title">{card.title}</p>
+              </article>
+
+              <aside class="hero-overlay-check hero-overlay-check-scroll" data-hero-check aria-hidden="true">
+                <div class="hero-overlay-check-head">
+                  <span class="hero-overlay-check-title">GitHub Check</span>
+                  <span class="hero-overlay-check-pill">Flags</span>
+                </div>
+                <div class="hero-overlay-check-item hero-overlay-check-item-danger">
+                  <span class="hero-overlay-check-dot"></span>
+                  <div>
+                    <strong>Unusual edge</strong>
+                    <p><code>BillingController</code> now depends on <code>ModelUtils</code>.</p>
+                  </div>
+                </div>
+                <div class="hero-overlay-check-item hero-overlay-check-item-warn">
+                  <span class="hero-overlay-check-dot"></span>
+                  <div>
+                    <strong>Shared component changed</strong>
+                    <p><code>AbstractJavaCodegen</code> changed with dependents touching shared core.</p>
+                  </div>
+                </div>
+              </aside>
             </div>
+
+            <div class="hero-stage-footer">
+              <div class="hero-stage-footer-copy">
+                <p class="hero-slide-kicker">One artifact first</p>
+                <h3>The structural diff is the main review surface.</h3>
+                <p>The GitHub Check slides in while you scroll the hero so the story is clear: Striff shows the architecture, then points at the specific risky changes it wants reviewed.</p>
+              </div>
+              <div class="hero-overlay-check hero-overlay-check-mobile" aria-hidden="true">
+                <div class="hero-overlay-check-head">
+                  <span class="hero-overlay-check-title">GitHub Check</span>
+                  <span class="hero-overlay-check-pill">Flags</span>
+                </div>
+                <div class="hero-overlay-check-item hero-overlay-check-item-danger">
+                  <span class="hero-overlay-check-dot"></span>
+                  <div>
+                    <strong>Unusual edge</strong>
+                    <p><code>BillingController</code> now depends on <code>ModelUtils</code>.</p>
+                  </div>
+                </div>
+                <div class="hero-overlay-check-item hero-overlay-check-item-warn">
+                  <span class="hero-overlay-check-dot"></span>
+                  <div>
+                    <strong>Shared component changed</strong>
+                    <p><code>AbstractJavaCodegen</code> changed with dependents touching shared core.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="signals" class="scroll-mt-24 pb-16 pt-10">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="max-w-3xl" data-reveal>
+          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">What it catches</p>
+          <h2 class="mt-3 text-balance">Catch the changes file diffs hide.</h2>
+          <p class="section-subcopy mt-4">
+            Striff earns attention when a pull request changes the shape of the system, not just the lines in a file. These are the changes it should make easier to see first.
+          </p>
+        </div>
+        <div class="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          {whatItCatches.map((signal) => (
+            <article class={`signal-card signal-card-${signal.accent} rounded-[1.7rem] border border-white/70 bg-white/88 p-6 shadow-[0_18px_42px_rgba(15,23,42,0.06)] backdrop-blur-sm`} data-reveal>
+              <div class="signal-card-top">
+                <span class={`icon-badge icon-badge-${signal.accent}`} aria-hidden="true">
+                  {signal.icon === "layers" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4 4 8l8 4 8-4-8-4Z"/><path d="m4 12 8 4 8-4"/><path d="m4 16 8 4 8-4"/></svg>
+                  )}
+                  {signal.icon === "turn" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 7h8a4 4 0 1 1 0 8H9"/><path d="m12 14-3 3-3-3"/></svg>
+                  )}
+                  {signal.icon === "hub" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M19.1 4.9l-2.8 2.8M7.7 16.3l-2.8 2.8"/></svg>
+                  )}
+                  {signal.icon === "alert" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.5 2.9 16.3A2 2 0 0 0 4.6 19h14.8a2 2 0 0 0 1.7-2.7L13.7 3.5a2 2 0 0 0-3.4 0Z"/></svg>
+                  )}
+                </span>
+              </div>
+              <div class={`signal-mini signal-mini-${signal.accent}`} aria-hidden="true">
+                <div class="signal-mini-top">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <div class="signal-mini-body">
+                  <div class="signal-mini-node signal-mini-node-a"></div>
+                  <div class="signal-mini-link"></div>
+                  <div class="signal-mini-node signal-mini-node-b"></div>
+                  <div class="signal-mini-callout"></div>
+                </div>
+              </div>
+              <p class="font-semibold text-slate-900">{signal.title}</p>
+              <p class="mt-3 text-sm leading-7 text-slate-600">{signal.body}</p>
+            </article>
           ))}
         </div>
       </div>
-	    </section>
+    </section>
 
-	    <section id="proof" class="scroll-mt-24 pb-12 pt-20">
-	      <div class="mx-auto max-w-6xl px-6">
-        <div class="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-start">
-	          <div class="space-y-5">
-	            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-	              Why Striff
-	            </p>
-	            <h2 class="text-balance">File diffs tell you what changed. They rarely tell you what the change means.</h2>
-		            <p class="section-subcopy">
-		              AI-assisted coding increases pull request volume and makes it easier for architecture drift to slip past line-by-line review. Striff gives teams a structural view first so they can judge blast radius, coupling shifts, and boundary risk before diving into files.
-		            </p>
-              <div class="mt-3 flex items-center gap-3 rounded-lg border border-slate-200/80 bg-white/50 px-4 py-3 text-sm backdrop-blur-sm">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="shrink-0 text-slate-400" aria-hidden="true">
-                  <path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path d="M12 14l9-5-9-5-9 5 9 5zM12 14v7m0 0l-3.5-2M12 21l3.5-2"/>
-                </svg>
-                <span class="text-slate-500">Research published at <a class="font-medium text-slate-700 underline decoration-slate-300 underline-offset-2 transition-colors hover:text-ink" href="https://www.iccq.ru/2021.html" target="_blank" rel="noopener noreferrer">ICCQ 2021</a>, in cooperation with <a class="font-medium text-slate-700 underline decoration-slate-300 underline-offset-2 transition-colors hover:text-ink" href="https://www.iccq.ru/2021.html" target="_blank" rel="noopener noreferrer">IEEE Computer Society</a></span>
-              </div>
-	          </div>
+    <section id="proof" class="scroll-mt-24 pb-16 pt-8">
+      <div class="mx-auto max-w-6xl px-6" data-reveal>
+        <div class="rounded-[2.2rem] border border-white/70 bg-white/78 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl md:p-10">
+        <div class="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+          <div class="space-y-5">
+            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Why Striff</p>
+            <h2 class="text-balance">Why not just use file diffs?</h2>
+            <div class="why-striff-callout">
+              <p class="why-striff-callout-title">File diffs are good at edits. Striff is built for architecture movement.</p>
+              <p class="why-striff-callout-copy">Large, AI-generated, or cross-cutting pull requests often hide the risky part in plain sight. Striff gives reviewers a structural first pass before they dive into files.</p>
+            </div>
+            <div class="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-white/72 px-4 py-3 text-sm text-slate-700 backdrop-blur-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="shrink-0 text-slate-400" aria-hidden="true">
+                <path d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
+              </svg>
+              <span>Research roots at <a class="font-medium text-slate-800 underline decoration-slate-300 underline-offset-2 hover:text-ink" href="https://www.iccq.ru/2021.html" target="_blank" rel="noopener noreferrer">ICCQ 2021</a>, with the product focused on practical PR review.</span>
+            </div>
+          </div>
           <div class="grid gap-4">
             {comparisonRows.map((row) => (
-              <div class="comparison-row">
+              <div class="comparison-row" data-reveal>
                 <div class="comparison-side comparison-side-muted">
-                  <p class="comparison-label">Without Striff</p>
+                  <p class="comparison-label">File Diff</p>
                   <p class="comparison-copy">{row.left}</p>
                 </div>
                 <div class="comparison-side comparison-side-strong">
-                  <p class="comparison-label">With Striff</p>
+                  <p class="comparison-label">Striff</p>
                   <p class="comparison-copy">{row.right}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
-	      </div>
-	    </section>
-
-      <section id="features" class="scroll-mt-24 pb-14 pt-10">
-        <div class="mx-auto max-w-6xl px-6">
-          <div class="mb-8 max-w-3xl">
-            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-              What you get
-            </p>
-            <h2 class="mt-3 text-balance">A review view built for architectural judgment.</h2>
-            <p class="section-subcopy mt-4">
-              Striff is not just a diagram generator. It brings structural change, metrics, and review guidance into one review view your team can use in seconds.
-            </p>
-          </div>
-	          <div class="grid gap-5 lg:grid-cols-2">
-	            {featureCards.map((card) => (
-	              <div class="feature-card" style={`--feature-accent:${card.accentColor}; --feature-bg:${card.accent};`}>
-                  <div class="feature-card-glow" aria-hidden="true"></div>
-                  <div class="feature-card-top">
-                    <div class="feature-icon" aria-hidden="true">
-                      {card.icon === "structure" && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                          <rect x="3.5" y="4" width="6" height="4.5" rx="1.2" />
-                          <rect x="14.5" y="4" width="6" height="4.5" rx="1.2" />
-                          <rect x="9" y="15.5" width="6" height="4.5" rx="1.2" />
-                          <path d="M6.5 8.5v3h11v-3M12 11.5v4" />
-                        </svg>
-                      )}
-                      {card.icon === "spark" && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                          <path d="m12 3 1.9 4.6L18.5 9l-4.6 1.4L12 15l-1.9-4.6L5.5 9l4.6-1.4L12 3Z" />
-                          <path d="M19 15.5 20 18l2.5 1-2.5 1L19 22.5 18 20l-2.5-1 2.5-1 1-2.5Z" />
-                        </svg>
-                      )}
-                      {card.icon === "note" && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                          <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v8.7a1.5 1.5 0 0 1-1.5 1.5h-8.2L6.4 20.6a.6.6 0 0 1-1-.42v-4H5A1.5 1.5 0 0 1 3.5 14.7V6A1.5 1.5 0 0 1 5 4.5Z" />
-                          <path d="M8 9h8M8 12h6" />
-                        </svg>
-                      )}
-                      {card.icon === "flow" && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                          <path d="M4 7h7" />
-                          <path d="m8 3 4 4-4 4" />
-                          <path d="M20 17h-7" />
-                          <path d="m16 13-4 4 4 4" />
-                          <path d="M12 7v10" />
-                        </svg>
-                      )}
-                    </div>
-                    <p class="feature-card-eyebrow">{card.eyebrow}</p>
-                  </div>
-	                <h3 class="feature-card-title">{card.title}</h3>
-	                <p class="feature-card-body">{card.body}</p>
-	              </div>
-	            ))}
-	          </div>
-	          <div class="mt-10 grid gap-5 lg:grid-cols-3">
-	            {reviewFlow.map((item) => (
-	              <div class="flow-card" style={`--flow-accent:${item.accentColor};`}>
-                  <div class="flow-card-top">
-                    <div class="flow-step-badge">Step {item.step}</div>
-                    <div class="flow-icon" aria-hidden="true">
-                      {item.icon === "ingest" && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                          <path d="M12 4v11" />
-                          <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
-                          <rect x="4" y="18" width="16" height="2.5" rx="1.25" />
-                        </svg>
-                      )}
-                      {item.icon === "radar" && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                          <circle cx="12" cy="12" r="7.5" />
-                          <circle cx="12" cy="12" r="3.5" />
-                          <path d="M12 12 19 8" />
-                        </svg>
-                      )}
-                      {item.icon === "action" && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                          <path d="M5 12h9" />
-                          <path d="m10 7 5 5-5 5" />
-                          <path d="M19 5v14" />
-                        </svg>
-                      )}
-                    </div>
-                  </div>
-                  <p class="flow-card-eyebrow">{item.eyebrow}</p>
-	                <h3 class="flow-card-title">{item.title}</h3>
-	                <p class="flow-card-body">{item.body}</p>
-	              </div>
-	            ))}
-	          </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="paths" class="scroll-mt-24 pb-14 pt-4">
-        <div class="mx-auto max-w-6xl px-6">
-          <div class="mb-8 max-w-3xl">
-            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-              Product paths
-            </p>
-            <h2 class="mt-3 text-balance">Use Striff wherever your team reviews change.</h2>
-            <p class="section-subcopy mt-4">
-              Use Striff in the review flow that fits your team: inside GitHub, in automated checks, through your own integrations, or in a private environment.
-            </p>
-          </div>
-          <div class="grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
-            {productPaths.map((path) => (
-              <div class="benefit-card" style="--accent: rgb(37 99 235);">
-                <div class="benefit-card-accent" aria-hidden="true"></div>
-                <div class="benefit-card-top">
-                  <div class="benefit-card-icon" aria-hidden="true">
-                    {path.icon === "extension" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <rect x="4" y="4" width="16" height="16" rx="3" />
-                        <path d="M9 12h6M12 9v6" stroke-linecap="round" />
-                      </svg>
-                    )}
-                    {path.icon === "check" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <rect x="4" y="4" width="16" height="16" rx="3" />
-                        <path d="m8.5 12.5 2.5 2.5 4.5-5" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                    )}
-                    {path.icon === "code" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <path d="m8 8-4 4 4 4" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="m16 8 4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="m13.5 5-3 14" stroke-linecap="round" />
-                      </svg>
-                    )}
-                    {path.icon === "shield" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <path d="M12 3 6 5.5v5.7c0 4 2.5 7.8 6 9.8 3.5-2 6-5.8 6-9.8V5.5L12 3Z" />
-                        <path d="m9.5 12 1.8 1.8 3.4-3.8" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                    )}
-                  </div>
-                  <p class="benefit-card-eyebrow">{path.eyebrow}</p>
-                </div>
-                <h3 class="benefit-card-title">{path.title}</h3>
-                <p class="benefit-card-body">{path.body}</p>
-                <div class="product-path-cta">
-                  <a
-                    class="btn-secondary"
-                    href={path.href}
-                    target={path.href.startsWith("http") ? "_blank" : undefined}
-                    rel={path.href.startsWith("http") ? "noopener noreferrer" : undefined}
-                  >
-                    <span aria-hidden="true">
-                      {path.icon === "extension" && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" width="16" height="16">
-                          <rect x="4" y="4" width="16" height="16" rx="3" />
-                          <path d="M9 12h6M12 9v6" stroke-linecap="round" />
-                        </svg>
-                      )}
-                      {path.icon === "check" && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" width="16" height="16">
-                          <path d="M5 12h5l2 2 7-7" stroke-linecap="round" stroke-linejoin="round" />
-                          <path d="M5 5h14v14H5z" opacity="0.22" />
-                        </svg>
-                      )}
-                      {path.icon === "code" && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" width="16" height="16">
-                          <path d="m8 8-4 4 4 4" stroke-linecap="round" stroke-linejoin="round" />
-                          <path d="m16 8 4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-                          <path d="m13.5 5-3 14" stroke-linecap="round" />
-                        </svg>
-                      )}
-                      {path.icon === "shield" && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" width="16" height="16">
-                          <path d="M12 3 6 5.5v5.7c0 4 2.5 7.8 6 9.8 3.5-2 6-5.8 6-9.8V5.5L12 3Z" />
-                          <path d="m9.5 12 1.8 1.8 3.4-3.8" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                      )}
-                    </span>
-                    {path.cta}
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
+    <section id="features" class="section-dark scroll-mt-24 pb-20 pt-20">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="max-w-3xl" data-reveal>
+          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-sky-200">Two surfaces</p>
+          <h2 class="mt-3 text-balance text-white">The check says what is concerning. The diff explains why.</h2>
+          <p class="section-subcopy mt-4 text-slate-300">
+            Striff makes more sense as review infrastructure with two linked views than as a diagram tool with extra features.
+          </p>
         </div>
-      </section>
-
-	    <section id="how" class="scroll-mt-24 pb-14 pt-10 md:pb-18">
-	      <div class="mx-auto max-w-6xl px-6">
-	        <div class="how-layout" data-how-accordion-root>
-            <div class="how-sidebar">
-              <div class="max-w-3xl">
-                <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-                  How to read a Striff
-                </p>
-                <h2 class="mt-3 text-balance">Learn the diagram once, read every review faster.</h2>
-                <p class="section-subcopy mt-4">
-                  A Striff turns changed files into a system-level diff. Open each section to see how change colors, structure, metrics, and review notes make large pull requests easier to understand.
-                </p>
-              </div>
-              <div
-                class="how-accordion-item how-accordion-item-featured is-open"
-                data-how-accordion-item
-                data-how-accordion-featured
-                style={`--how-accent-bg:${featuredHowItem.accentBg}; --how-accent-text:${featuredHowItem.accentText};`}
-              >
-                <button
-                  class="how-tab-card how-tab-card-active"
-                  type="button"
-                  data-how-accordion-trigger
-                  aria-expanded="true"
-                >
-                  <span class="how-tab-card-header">
-                    <span class="how-tab-card-copy">
-                      <span class="how-tab-card-top">
-                        <span class="how-tab-card-index">01</span>
-                        <span class="how-tab-card-title">{featuredHowItem.title}</span>
-                      </span>
-                      <span class="how-tab-card-body">{featuredHowItem.description}</span>
-                    </span>
-                    <span class="how-tab-card-indicator" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="m9 10 3 3 3-3" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                    </span>
+        <div class="mt-8 grid gap-5 lg:grid-cols-2">
+          {surfaces.map((surface, index) => (
+            <article class="rounded-[1.9rem] border border-white/10 bg-white/6 p-7 shadow-[0_22px_70px_rgba(0,0,0,0.18)] backdrop-blur-md" data-reveal>
+              <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <span class={`icon-badge icon-badge-dark-${surface.accent}`} aria-hidden="true">
+                    {surface.icon === "check" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 12 4 4L19 6"/></svg>
+                    )}
+                    {surface.icon === "graph" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19h16"/><path d="m6 15 4-5 4 3 4-7"/></svg>
+                    )}
                   </span>
-                </button>
-                <div
-                  class="how-accordion-panel"
-                  data-how-accordion-panel
-                  aria-hidden="false"
-                >
-                  <div class="how-accordion-panel-inner">
-                    <div class="how-tab-snippet-frame" set:html={featuredHowItem.snippet}></div>
-                    {featuredHowItem.metrics && (
-                      <div class="how-metrics-grid">
-                        {featuredHowItem.metrics.map((metric) => (
-                          <div class={`how-metric-pill how-metric-pill-${metric.tone}`}>
-                            <div class="how-metric-top">
-                              <span class="how-metric-icon" aria-hidden="true">
-                                {metric.icon === "branch" && (
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                    <path d="M7 5v14M7 8h8M15 8v4M15 12h4" stroke-linecap="round" stroke-linejoin="round" />
-                                    <circle cx="7" cy="5" r="1.8" fill="currentColor" stroke="none" />
-                                    <circle cx="15" cy="8" r="1.8" fill="currentColor" stroke="none" />
-                                    <circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none" />
-                                  </svg>
-                                )}
-                                {metric.icon === "depth" && (
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                    <path d="M6 5h12M8 10h8M10 15h4M11 19h2" stroke-linecap="round" />
-                                  </svg>
-                                )}
-                                {metric.icon === "weight" && (
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                    <path d="M12 5v14M7 10h10M5 19h14" stroke-linecap="round" />
-                                    <circle cx="12" cy="5" r="1.8" fill="currentColor" stroke="none" />
-                                  </svg>
-                                )}
-                                {metric.icon === "inbound" && (
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                    <path d="M20 12H8M12 8l-4 4 4 4" stroke-linecap="round" stroke-linejoin="round" />
-                                    <rect x="4" y="7" width="3" height="10" rx="1.2" />
-                                  </svg>
-                                )}
-                                {metric.icon === "outbound" && (
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                    <path d="M4 12h12M12 8l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-                                    <rect x="17" y="7" width="3" height="10" rx="1.2" />
-                                  </svg>
-                                )}
+                  <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-100/80">{surface.eyebrow}</p>
+                </div>
+                <span class={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${index === 0 ? "bg-blue-400/15 text-blue-100" : "bg-amber-300/15 text-amber-100"}`}>
+                  {index === 0 ? "Fast triage" : "Deep review"}
+                </span>
+              </div>
+              <div class={`surface-mini surface-mini-${surface.accent}`} aria-hidden="true">
+                {index === 0 ? (
+                  <div class="surface-mini-check">
+                    <div class="surface-mini-check-row surface-mini-check-row-danger"></div>
+                    <div class="surface-mini-check-row surface-mini-check-row-warn"></div>
+                    <div class="surface-mini-check-row"></div>
+                  </div>
+                ) : (
+                  <div class="surface-mini-diff">
+                    <span class="surface-mini-pill"></span>
+                    <span class="surface-mini-pill surface-mini-pill-warn"></span>
+                    <div class="surface-mini-map">
+                      <span class="surface-mini-box surface-mini-box-a"></span>
+                      <span class="surface-mini-box surface-mini-box-b"></span>
+                      <span class="surface-mini-box surface-mini-box-c"></span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <h3 class="mt-4 text-2xl text-white">{surface.title}</h3>
+              <p class="mt-4 text-base leading-8 text-slate-300">{surface.body}</p>
+              <ul class="mt-5 space-y-3 text-sm text-slate-200">
+                {index === 0 ? (
+                  <>
+                    <li>Highlights unusual new edges and flagged components.</li>
+                    <li>Keeps the summary terse, structured, and easy to scan in GitHub.</li>
+                    <li>Works even when AI notes are unavailable.</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Attaches review notes to the package or component they describe.</li>
+                    <li>Keeps changed relationships, metrics, and context in one artifact.</li>
+                    <li>Lets maintainers judge the system effect before debating line edits.</li>
+                  </>
+                )}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="examples" class="scroll-mt-24 examples-section pb-20 pt-20">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="examples-section-header flex flex-col gap-5 md:flex-row md:items-end md:justify-between" data-reveal>
+          <div class="max-w-3xl">
+            <p class="examples-kicker">Real OSS examples</p>
+            <h2 class="mt-3 text-balance">One polished PR example for each supported language.</h2>
+            <p class="section-subcopy mt-4">
+              These rows now use real Striff output from public PRs. Open any language to see a GitHub-style check summary layered directly over the structural diff artifact, with pan and zoom for the diagram.
+            </p>
+          </div>
+          <div class="example-meta self-start md:self-auto">
+            <span class="example-meta-badge">Live public PR artifacts</span>
+          </div>
+        </div>
+        <div class="mt-8 grid gap-5">
+          {exampleReviews.map((example) => (
+            <details class="example-accordion rounded-[1.9rem] border border-white/75 bg-white/92 shadow-[0_24px_64px_rgba(15,23,42,0.08)] backdrop-blur-sm" data-reveal open={example.id === "java"}>
+              <summary class="example-summary">
+                <div class="example-summary-main">
+                  <div class="example-summary-top">
+                    <span class={`example-summary-mark example-summary-mark-${example.accent}`} aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h10"/><path d="M8 12h8"/><path d="M8 18h6"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>
+                    </span>
+                    <span class="example-language-label">{example.language}</span>
+                    <span class="example-github-repo">{example.repo}</span>
+                    <span class="example-pr-number">{example.pr}</span>
+                    <span class="example-status-pill">Public PR</span>
+                  </div>
+                  <div class="example-summary-copy">
+                    <h3 class="example-summary-title">{example.prTitle}</h3>
+                    <p class="example-summary-subtitle">{example.summary}</p>
+                  </div>
+                </div>
+                <span class="example-chevron" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg>
+                </span>
+              </summary>
+
+              <div class="example-panel">
+                <div class="example-toolbar">
+                  <div class="example-toolbar-left">
+                    <span class="example-toolbar-pill example-toolbar-pill-active">Focused review surface</span>
+                  </div>
+                  <div class="example-toolbar-right">
+                    {example.metrics.slice(0, 2).map((metric) => (
+                      <span class="example-metric-chip">{metric}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div class="example-panel-grid">
+                  <div class="example-visual-shell">
+                    <div class="github-diff-shell github-diff-shell-background">
+                      <div class="github-pr-bar">
+                        <div class="github-pr-bar-left">
+                          <span class="github-pr-state github-pr-state-open">
+                            <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3.75 2a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5ZM3 4.75C3 3.784 3.784 3 4.75 3h6.5a2.75 2.75 0 0 1 2.75 2.75v1.5a.75.75 0 0 1-1.5 0v-1.5c0-.69-.56-1.25-1.25-1.25h-6.5a.25.25 0 0 0-.25.25V13a.75.75 0 0 1-1.5 0V4.75Zm8.75 6.75a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5ZM8 7.25A.75.75 0 0 1 8.75 8v5a.75.75 0 0 1-1.5 0V8A.75.75 0 0 1 8 7.25Zm3.75-3.5a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"/></svg>
+                            Open
+                          </span>
+                          <strong>{example.prTitle}</strong>
+                        </div>
+                        <span class="github-pr-meta">{example.repo} {example.pr}</span>
+                      </div>
+                      <div class="github-tab-bar">
+                        <span class="github-tab">
+                          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1.75 2A1.75 1.75 0 0 0 0 3.75v8.5C0 13.216.784 14 1.75 14h12.5A1.75 1.75 0 0 0 16 12.25v-8.5A1.75 1.75 0 0 0 14.25 2ZM1.5 3.75a.25.25 0 0 1 .25-.25h12.5a.25.25 0 0 1 .25.25v8.5a.25.25 0 0 1-.25.25H1.75a.25.25 0 0 1-.25-.25Z"/></svg>
+                          Conversation <span class="github-tab-count">22</span>
+                        </span>
+                        <span class="github-tab github-tab-active">
+                          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 3.75A1.75 1.75 0 0 1 3.75 2h8.5A1.75 1.75 0 0 1 14 3.75v8.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25Zm1.75-.25a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25Z"/></svg>
+                          Checks <span class="github-tab-count">11</span>
+                        </span>
+                        <span class="github-tab">
+                          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.5 1.75a.75.75 0 0 1 1.5 0v12.5a.75.75 0 0 1-1.5 0Zm4.25 0a.75.75 0 0 1 1.5 0v12.5a.75.75 0 0 1-1.5 0Zm4.25 0a.75.75 0 0 1 1.5 0v12.5a.75.75 0 0 1-1.5 0Z"/></svg>
+                          Files changed <span class="github-tab-count">17</span>
+                        </span>
+                      </div>
+                      <div class="github-checks-layout">
+                        <aside class="github-checks-sidebar">
+                          <div class="github-checks-sidebar-group">
+                            <button class="github-suite-item github-suite-item-active" type="button">
+                              <span class="github-suite-icon github-suite-icon-success"></span>
+                              <span class="github-suite-copy">
+                                <strong>striff / architectural-review</strong>
+                                <span>1 check run with findings</span>
                               </span>
-                              <p class="how-metric-label">{metric.label}</p>
+                              <span class="github-suite-count">{example.checks.length}</span>
+                            </button>
+                            <button class="github-suite-item" type="button">
+                              <span class="github-suite-icon"></span>
+                              <span class="github-suite-copy">
+                                <strong>Repository checks</strong>
+                                <span>build and validation</span>
+                              </span>
+                              <span class="github-suite-count">6</span>
+                            </button>
+                            <button class="github-suite-item" type="button">
+                              <span class="github-suite-icon"></span>
+                              <span class="github-suite-copy">
+                                <strong>Test matrix</strong>
+                                <span>unit and integration</span>
+                              </span>
+                              <span class="github-suite-count">3</span>
+                            </button>
+                          </div>
+                        </aside>
+                        <div class="github-checks-main">
+                          <div class="github-checks-main-header">
+                            <div>
+                              <p class="github-checks-run-kicker">striff / architectural-review</p>
+                              <h3 class="github-checks-run-title">Architectural review completed</h3>
+                              <p class="github-checks-run-meta">Completed with {example.checks.length} findings across {example.metrics[0].toLowerCase()}.</p>
                             </div>
-                            <p class="how-metric-desc" set:html={metric.desc} />
+                            <button class="github-diff-reset" type="button" data-panzoom-reset={`pz-${example.id}`}>Reset view</button>
+                          </div>
+                          <div class="github-check-artifact">
+                            <div class="github-diff-canvas github-diff-canvas-live">
+                              <div
+                                class="github-diff-stage"
+                                style={`--example-stage-height:${example.viewport.desktopHeight}; --example-stage-height-mobile:${example.viewport.mobileHeight};`}
+                                data-panzoom={`pz-${example.id}`}
+                                data-initial-scale={example.panzoom.desktop.scale}
+                                data-initial-x={example.panzoom.desktop.x}
+                                data-initial-y={example.panzoom.desktop.y}
+                                data-mobile-scale={example.panzoom.mobile.scale}
+                                data-mobile-x={example.panzoom.mobile.x}
+                                data-mobile-y={example.panzoom.mobile.y}
+                              >
+                                <img
+                                  src={example.svg}
+                                  alt={`${example.language} Striff structural diff for ${example.repo} ${example.pr}`}
+                                  class="github-diff-graphic github-diff-image"
+                                  loading="lazy"
+                                  draggable="false"
+                                />
+                              </div>
+                            </div>
+
+                            <details class="github-check-shell github-check-shell-overlay" open>
+                      <summary class="github-check-summary-toggle">
+                        <div class="github-shell-header github-shell-header-checks">
+                          <div class="github-shell-title">
+                            <span class="github-dot github-dot-success"></span>
+                            <strong>striff / architectural-review</strong>
+                          </div>
+                          <div class="github-check-summary-meta">
+                            <span class="github-shell-meta">Completed in GitHub Checks</span>
+                            <span class="github-check-chevron" aria-hidden="true">
+                              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 6 4 4 4-4"/></svg>
+                            </span>
+                          </div>
+                        </div>
+                      </summary>
+                      <div class="github-check-status-row">
+                        <span class="github-check-status">
+                          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.47a.75.75 0 0 0-1.06-1.06L7.19 9 5.28 7.09a.75.75 0 1 0-1.06 1.06l2.44 2.44a.75.75 0 0 0 1.06 0Z"/></svg>
+                          Completed
+                        </span>
+                        <span class="github-check-status-meta">1 check run with findings</span>
+                      </div>
+                      <div class="github-check-tabs">
+                        <span class="github-check-tab github-check-tab-active">Summary</span>
+                        <span class="github-check-tab">Findings {example.checks.length}</span>
+                      </div>
+                      <div class="github-check-overview">
+                        <div class="github-check-overview-main">
+                          <p class="github-check-kicker">Review headline</p>
+                          <h4>{example.headline}</h4>
+                          <p>{example.checkHeader}</p>
+                        </div>
+                        <div class="github-check-stats">
+                          <span>{example.metrics[0]}</span>
+                          <span>{example.metrics[1]}</span>
+                        </div>
+                      </div>
+                      <div class="github-check-list">
+                        {example.checks.map((check) => (
+                          <div class={`github-check-item github-check-item-${check.level}`}>
+                            <span class="github-check-icon">
+                              {check.level === "danger" ? "!" : check.level === "warn" ? "~" : "i"}
+                            </span>
+                            <div>
+                              <p><InlineCodeText text={check.title} /></p>
+                              <InlineCodeText class="github-check-body" text={check.body} />
+                            </div>
                           </div>
                         ))}
                       </div>
-                    )}
-                    {featuredHowItem.details && (
-                      <div class="how-accordion-copy">
-                        <p>{featuredHowItem.details.join(" ")}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="how-tab-column">
-              {secondaryHowItems.map((item, index) => (
-                <div
-                  class="how-accordion-item"
-                  data-how-accordion-item
-                  style={`--how-accent-bg:${item.accentBg}; --how-accent-text:${item.accentText};`}
-                >
-                  <button
-                    class="how-tab-card"
-                    type="button"
-                    data-how-accordion-trigger
-                    aria-expanded="false"
-                  >
-                    <span class="how-tab-card-header">
-                      <span class="how-tab-card-copy">
-                        <span class="how-tab-card-top">
-                          <span class="how-tab-card-index">0{index + 2}</span>
-                          <span class="how-tab-card-title">{item.title}</span>
-                        </span>
-                        <span class="how-tab-card-body">{item.description}</span>
-                      </span>
-                      <span class="how-tab-card-indicator" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <circle cx="12" cy="12" r="9" />
-                          <path d="m9 10 3 3 3-3" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                      </span>
-                    </span>
-                  </button>
-                  <div
-                    class="how-accordion-panel"
-                    data-how-accordion-panel
-                    aria-hidden="true"
-                  >
-                    <div class="how-accordion-panel-inner">
-                      <div class="how-tab-snippet-frame" set:html={item.snippet}></div>
-                      {item.metrics && (
-                        <div class="how-metrics-grid">
-                          {item.metrics.map((metric) => (
-                            <div class={`how-metric-pill how-metric-pill-${metric.tone}`}>
-                              <div class="how-metric-top">
-                                <span class="how-metric-icon" aria-hidden="true">
-                                  {metric.icon === "branch" && (
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                      <path d="M7 5v14M7 8h8M15 8v4M15 12h4" stroke-linecap="round" stroke-linejoin="round" />
-                                      <circle cx="7" cy="5" r="1.8" fill="currentColor" stroke="none" />
-                                      <circle cx="15" cy="8" r="1.8" fill="currentColor" stroke="none" />
-                                      <circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none" />
-                                    </svg>
-                                  )}
-                                  {metric.icon === "depth" && (
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                      <path d="M6 5h12M8 10h8M10 15h4M11 19h2" stroke-linecap="round" />
-                                    </svg>
-                                  )}
-                                  {metric.icon === "weight" && (
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                      <path d="M12 5v14M7 10h10M5 19h14" stroke-linecap="round" />
-                                      <circle cx="12" cy="5" r="1.8" fill="currentColor" stroke="none" />
-                                    </svg>
-                                  )}
-                                  {metric.icon === "inbound" && (
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                      <path d="M20 12H8M12 8l-4 4 4 4" stroke-linecap="round" stroke-linejoin="round" />
-                                      <rect x="4" y="7" width="3" height="10" rx="1.2" />
-                                    </svg>
-                                  )}
-                                  {metric.icon === "outbound" && (
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                      <path d="M4 12h12M12 8l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-                                      <rect x="17" y="7" width="3" height="10" rx="1.2" />
-                                    </svg>
-                                  )}
-                                </span>
-                                <p class="how-metric-label">{metric.label}</p>
-                              </div>
-                              <p class="how-metric-desc" set:html={metric.desc} />
-                            </div>
+                      <div class="github-check-footer">
+                        <p class="github-check-footer-label">Review prompts</p>
+                        <ul class="github-check-footer-list">
+                          {example.highlights.map((highlight) => (
+                            <li><InlineCodeText text={highlight} /></li>
                           ))}
+                        </ul>
+                      </div>
+                    </details>
+                          </div>
                         </div>
-                      )}
-                      {item.details && (
-                        <div class="how-accordion-copy">
-                          <p>{item.details.join(" ")}</p>
-                        </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-	      </div>
-	    </section>
 
-		    <section id="plugin" class="scroll-mt-24 pb-20 pt-20">
-	      <div class="mx-auto max-w-6xl px-6">
-	        <div class="mx-auto max-w-4xl text-center space-y-8">
-		          <div class="space-y-4">
-		            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-		              Install the plugin
-		            </p>
-		            <h2 class="text-balance">Install Striff for GitHub pull request review</h2>
-		            <p class="section-subcopy mx-auto max-w-2xl">
-		              Use the Striff Chrome extension directly on GitHub pull requests to inspect structural change, dependency movement, and review notes where merge decisions actually happen.
-		            </p>
-		            <div class="pt-2 flex flex-wrap justify-center gap-3">
-		              {installCtas.map((button, index) => (
-		                <a
-                    class={index === 0 ? "btn-primary" : "btn-secondary"}
-                    href={button.href}
-	                    target={button.href.startsWith("http") ? "_blank" : undefined}
-	                    rel={button.href.startsWith("http") ? "noopener noreferrer" : undefined}
-	                  >
-                    {button.icon === "chrome" && (
-                      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 2A10 10 0 0 1 20.66 7H12Z" fill="#EA4335" />
-                        <path d="M20.66 7A10 10 0 0 1 12 22l4.33-7.5Z" fill="#FBBC04" />
-                        <path d="M12 22A10 10 0 0 1 3.34 7h8.66Z" fill="#34A853" />
-                        <circle cx="12" cy="12" r="4.1" fill="#4285F4" stroke="#EAF2FF" stroke-width="1" />
-                      </svg>
-                    )}
-		                  {button.label}
-		                </a>
-		              ))}
-		            </div>
-		          </div>
-              <div class="mx-auto w-full" style="max-width: 1200px;">
-                <div class="video-window-frame">
-                  <div class="video-window-chrome" aria-hidden="true">
-                    <span></span><span></span><span></span>
-                  </div>
-                  <div class="video-window-body">
-                    <video
-                      src="/walkthrough.mp4"
-                      muted
-                      loop
-                      playsinline
-                      controls
-                      data-playback-rate="1.25"
-                    />
+                <div class="example-panel-footer">
+                  <p class="text-sm leading-7 text-slate-700">{example.body}</p>
+                  <div class="example-panel-actions">
+                    <a class="btn-secondary" href={example.href} target="_blank" rel="noopener noreferrer">Open PR on GitHub</a>
                   </div>
                 </div>
               </div>
-		      <div class="mx-auto grid max-w-4xl gap-4 text-left md:grid-cols-3">
-                    <div class="install-proof-card" style="--install-accent:#2563eb; --install-bg:linear-gradient(180deg, rgba(219,234,254,0.9), rgba(255,255,255,0.94));">
-                      <div class="install-proof-top">
-                        <div class="install-proof-icon" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M8 6h11v11" />
-                            <path d="m8 16 11-11" />
-                            <path d="M5 8.5A2.5 2.5 0 0 1 7.5 6H10" />
-                            <path d="M6 12v4.5A1.5 1.5 0 0 0 7.5 18H12" />
-                          </svg>
-                        </div>
-                        <p class="install-proof-label">Native workflow</p>
-                      </div>
-                      <h3 class="install-proof-title">Open Striff directly inside the pull request</h3>
-                      <p class="install-proof-body">Review architectural change in GitHub instead of jumping between screenshots, tabs, and comments.</p>
-                    </div>
-                    <div class="install-proof-card" style="--install-accent:#d97706; --install-bg:linear-gradient(180deg, rgba(254,243,199,0.9), rgba(255,255,255,0.94));">
-                      <div class="install-proof-top">
-                        <div class="install-proof-icon" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v8.7a1.5 1.5 0 0 1-1.5 1.5h-8.2L6.4 20.6a.6.6 0 0 1-1-.42v-4H5A1.5 1.5 0 0 1 3.5 14.7V6A1.5 1.5 0 0 1 5 4.5Z" />
-                            <path d="M8 9h8M8 12h6" />
-                          </svg>
-                        </div>
-                        <p class="install-proof-label">One review view</p>
-                      </div>
-                      <h3 class="install-proof-title">See structure, metrics, and notes in one place</h3>
-                      <p class="install-proof-body">Open a review panel built for architectural judgment, with diagrams, notes, and change context attached to the pull request.</p>
-                    </div>
-                    <div class="install-proof-card" style="--install-accent:#16a34a; --install-bg:linear-gradient(180deg, rgba(220,252,231,0.9), rgba(255,255,255,0.94));">
-                      <div class="install-proof-top">
-                        <div class="install-proof-icon" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
-                            <circle cx="12" cy="12" r="2.5" />
-                          </svg>
-                        </div>
-                        <p class="install-proof-label">Reviewer focus</p>
-                      </div>
-                      <h3 class="install-proof-title">Put reviewer attention on the riskiest changes first</h3>
-                      <p class="install-proof-body">The extension helps reviewers prioritize coupling drift, architectural spread, and high-impact components before merge.</p>
-                    </div>
-		      </div>
-		        </div>
-		      </div>
-		    </section>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
 
-		    <section id="github-check" class="scroll-mt-24 pb-14 pt-10">
-		      <div class="mx-auto max-w-6xl px-6">
-		        <div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-		          <!-- Mockup -->
-		          <div>
-		            <div class="video-window-frame">
-		              <div class="gh-check-header" aria-hidden="true">
-		                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-		                  <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z"/>
-		                </svg>
-		                <span class="gh-check-url">openapitools/openapi-generator <span class="gh-check-url-muted">&middot; pull #19423</span></span>
-		              </div>
-		              <div class="gh-check-body">
-		                <div class="gh-check-pr-title-bar">
-		                  <span class="gh-check-pr-status-dot" aria-hidden="true"></span>
-		                  <span class="gh-check-pr-title">Refactor API gateway routing module</span>
-		                  <span class="gh-check-pr-number">#19423</span>
-		                </div>
-		                <div class="gh-check-branch-row">
-		                  <span class="gh-check-branch">feature/gateway-refactor</span>
-		                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-		                  <span class="gh-check-branch">main</span>
-		                </div>
-		                <div class="gh-check-section-label">Checks</div>
-		                <div class="gh-check-row gh-check-row-striff">
-		                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-		                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-		                    <path d="M22 4 12 14.01l-3-3"/>
-		                  </svg>
-		                  <div class="gh-check-info">
-		                    <span class="gh-check-name">striff / architectural-review</span>
-		                    <span class="gh-check-summary">3 structural changes &middot; 2 coupling warnings &middot; 1 review note</span>
-		                  </div>
-		                  <span class="gh-check-status gh-check-status-pass">Passed</span>
-		                </div>
-		                <div class="gh-check-row">
-		                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-		                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-		                    <path d="M22 4 12 14.01l-3-3"/>
-		                  </svg>
-		                  <span class="gh-check-name-muted">ci / build</span>
-		                  <span class="gh-check-status-sm">Passed</span>
-		                </div>
-		                <div class="gh-check-row">
-		                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-		                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-		                    <path d="M22 4 12 14.01l-3-3"/>
-		                  </svg>
-		                  <span class="gh-check-name-muted">ci / test</span>
-		                  <span class="gh-check-status-sm">Passed</span>
-		                </div>
-		                <div class="gh-check-striff-action" aria-hidden="true">
-		                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-		                    <rect x="3.5" y="4" width="6" height="4.5" rx="1.2"/>
-		                    <rect x="14.5" y="4" width="6" height="4.5" rx="1.2"/>
-		                    <rect x="9" y="15.5" width="6" height="4.5" rx="1.2"/>
-		                    <path d="M6.5 8.5v3h11v-3M12 11.5v4"/>
-		                  </svg>
-		                  <span>View Striff Diagram</span>
-		                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-		                </div>
-		              </div>
-		            </div>
-		          </div>
+    <section id="how" class="scroll-mt-24 pb-16 pt-10">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="max-w-3xl" data-reveal>
+          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">How it works</p>
+          <h2 class="mt-3 text-balance">Deterministic structural signals first. AI explanation second.</h2>
+          <p class="section-subcopy mt-4">
+            The system stays useful by grounding the model in architectural facts. The AI is there to explain evidence, not invent concerns.
+          </p>
+        </div>
+        <div class="mt-8 grid gap-5 lg:grid-cols-3">
+          {howItWorks.map((step) => (
+            <article class="rounded-[1.8rem] border border-white/75 bg-white/88 p-7 shadow-[0_18px_48px_rgba(15,23,42,0.06)] backdrop-blur-sm" data-reveal>
+              <div class="flex items-center justify-between gap-4">
+                <div class="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                  Step {step.step}
+                </div>
+                <span class="icon-badge icon-badge-blue" aria-hidden="true">
+                  {step.icon === "split" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h7"/><path d="M4 17h7"/><path d="M13 7h7"/><path d="M13 17h7"/><path d="M12 4v16"/></svg>
+                  )}
+                  {step.icon === "focus" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3H5a2 2 0 0 0-2 2v4"/><path d="M15 3h4a2 2 0 0 1 2 2v4"/><path d="M21 15v4a2 2 0 0 1-2 2h-4"/><path d="M3 15v4a2 2 0 0 0 2 2h4"/><circle cx="12" cy="12" r="3"/></svg>
+                  )}
+                  {step.icon === "note" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/><path d="M5 4h14a2 2 0 0 1 2 2v12l-4-3H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg>
+                  )}
+                </span>
+              </div>
+              <div class="flow-mini" aria-hidden="true">
+                <div class="flow-mini-track"></div>
+                <span class={`flow-mini-stop ${step.step === "1" ? "is-active" : ""}`}></span>
+                <span class={`flow-mini-stop ${step.step === "2" ? "is-active" : ""}`}></span>
+                <span class={`flow-mini-stop ${step.step === "3" ? "is-active" : ""}`}></span>
+              </div>
+              <h3 class="mt-5 text-2xl text-slate-950">{step.title}</h3>
+              <p class="mt-4 text-sm leading-7 text-slate-600">{step.body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
 
-		          <!-- Copy -->
-		          <div class="space-y-6">
-		            <div class="flex items-center gap-3">
-		              <span class="coming-soon-badge">Coming Soon</span>
-		              <span class="text-sm text-slate-500">In development</span>
-		            </div>
-		            <h2 class="text-balance">Striff as a GitHub Check</h2>
-		            <p class="section-subcopy">
-		              Automatically post architectural review signals as a GitHub Check on every pull request. Reviewers see structural change, coupling warnings, and AI review notes directly in the PR checks panel.
-		            </p>
-		            <ul class="space-y-3">
-		              <li class="gh-feature-item">
-		                <span class="gh-feature-dot" style="background: #22c55e; box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);"></span>
-		                <span>Post Striff diagrams and review notes as PR check output</span>
-		              </li>
-		              <li class="gh-feature-item">
-		                <span class="gh-feature-dot" style="background: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);"></span>
-		                <span>Gate merges on architectural risk thresholds</span>
-		              </li>
-		              <li class="gh-feature-item">
-		                <span class="gh-feature-dot" style="background: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);"></span>
-		                <span>Works with GitHub Actions, no custom CI setup required</span>
-		              </li>
-		            </ul>
-		            <form class="waitlist-form" data-netlify="true" name="github-check-waitlist" method="POST" data-waitlist-form>
-		              <input type="hidden" name="form-name" value="github-check-waitlist" />
-		              <label class="waitlist-label" for="gh-check-email">Get launch updates</label>
-		              <div class="waitlist-row">
-		                <input
-		                  id="gh-check-email"
-		                  class="waitlist-input"
-		                  type="email"
-		                  name="email"
-		                  placeholder="you@company.com"
-		                  required
-		                />
-		                <button class="btn-primary waitlist-btn" type="submit">Get updates</button>
-		              </div>
-		            </form>
-		          </div>
-		        </div>
-		      </div>
-		    </section>
-
+    <section class="pb-20 pt-12">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="rounded-[2.2rem] border border-slate-900/10 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_58%,#2563eb_100%)] p-8 shadow-[0_30px_90px_rgba(15,23,42,0.18)] md:p-10" data-reveal>
+          <div class="max-w-3xl">
+            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-blue-100/80">Adoption path</p>
+            <h2 class="mt-3 text-balance text-white">Use it in public repos first. Roll it out to teams when the value is clear.</h2>
+            <p class="section-subcopy mt-4 text-slate-200">
+              Public repositories are the easiest place to evaluate Striff on real pull requests. Teams can then add private-repo coverage, automated checks, and shared review workflow when they want it in daily use.
+            </p>
+          </div>
+          <div class="mt-8 grid gap-5 lg:grid-cols-3">
+            {plans.map((plan) => (
+              <article class="rounded-[1.7rem] border border-white/12 bg-white/8 p-6 shadow-[0_16px_50px_rgba(0,0,0,0.18)] backdrop-blur-md" data-reveal>
+                <div class="flex items-center gap-3">
+                  <span class="icon-badge icon-badge-dark-blue" aria-hidden="true">
+                    {plan.icon === "globe" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18"/><path d="M12 3a15 15 0 0 0 0 18"/></svg>
+                    )}
+                    {plan.icon === "team" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 4.13a3 3 0 0 1 0 5.74"/></svg>
+                    )}
+                    {plan.icon === "gear" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1.8 1.8 0 1 1-3.6 0v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a1.8 1.8 0 1 1 0-3.6h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1.8 1.8 0 1 1 3.6 0v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1.8 1.8 0 1 1 0 3.6h-.2a1 1 0 0 0-.9.6Z"/></svg>
+                    )}
+                  </span>
+                  <p class="text-xs font-semibold uppercase tracking-[0.24em] text-blue-100/80">{plan.eyebrow}</p>
+                </div>
+                <p class="mt-4 text-lg font-semibold text-white">{plan.title}</p>
+                <p class="mt-3 text-sm leading-7 text-slate-200">{plan.body}</p>
+              </article>
+            ))}
+          </div>
+          <div class="mt-8 flex flex-wrap gap-4">
+            <a class="btn-primary" href={extensionUrl} target="_blank" rel="noopener noreferrer">Install extension</a>
+            <a class="btn-secondary" href="/pricing">Team pricing</a>
+            <a class="btn-secondary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">GitHub App</a>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <script is:inline define:vars={{ rotatingPhrases }}>
-	const initPanzoom = (container) => {
-	      const content = container.querySelector("[data-panzoom-content]");
-	      if (!content) return;
+  <script is:inline>
+    (function () {
+      var stage = document.querySelector("[data-hero-stage]");
+      var overlay = document.querySelector("[data-hero-check]");
+      if (!stage || !overlay) return;
 
-	      const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-	      const parseNumber = (value, fallback) => {
-	        const num = Number.parseFloat(value);
-	        return Number.isFinite(num) ? num : fallback;
-	      };
-
-		      const minScale = parseNumber(container.dataset.panzoomMinScale, 0.6);
-		      const maxScale = parseNumber(container.dataset.panzoomMaxScale, 3.2);
-		      const initialScale = clamp(
-		        parseNumber(container.dataset.panzoomInitialScale, 1),
-		        minScale,
-		        maxScale
-		      );
-          const explicitInitialX = parseNumber(container.dataset.panzoomInitialX, NaN);
-          const explicitInitialY = parseNumber(container.dataset.panzoomInitialY, NaN);
-		      const rect = container.getBoundingClientRect();
-		      const contentW = content.offsetWidth;
-		      const contentH = content.offsetHeight;
-
-	      const centerOnX = parseNumber(container.dataset.panzoomCenterOnX, NaN);
-	      const centerOnY = parseNumber(container.dataset.panzoomCenterOnY, NaN);
-
-		      let initialX, initialY;
-          if (Number.isFinite(explicitInitialX) && Number.isFinite(explicitInitialY)) {
-            initialX = explicitInitialX;
-            initialY = explicitInitialY;
-          } else if (Number.isFinite(centerOnX) && Number.isFinite(centerOnY)) {
-		        // Center on specific SVG coordinates (SVG viewBox is 1899x1742)
-		        const natW = 1899;
-		        const natH = 1742;
-	        const scX = contentW / natW;
-	        const scY = contentH / natH;
-	        const px = centerOnX * scX;
-	        const py = centerOnY * scY;
-	        initialX = rect.width / 2 - px * initialScale;
-	        initialY = rect.height / 2 - py * initialScale;
-	      } else {
-	        initialX = (rect.width - contentW * initialScale) / 2;
-	        initialY = (rect.height - contentH * initialScale) / 2;
-	      }
-
-		      const state = {
-		        scale: initialScale,
-		        x: initialX,
-		        y: initialY
-		      };
-		      let isPanning = false;
-          let activePointerId = null;
-		      let start = { x: 0, y: 0 };
-		      let animFrame = null;
-
-	      const apply = () => {
-	        content.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
-	      };
-
-	      const animateTo = (targetState, duration) => {
-	        if (animFrame) cancelAnimationFrame(animFrame);
-	        const from = { x: state.x, y: state.y, scale: state.scale };
-	        const startTime = performance.now();
-	        const step = (now) => {
-	          const t = Math.min((now - startTime) / duration, 1);
-	          const ease = 1 - Math.pow(1 - t, 3);
-	          state.x = from.x + (targetState.x - from.x) * ease;
-	          state.y = from.y + (targetState.y - from.y) * ease;
-	          state.scale = from.scale + (targetState.scale - from.scale) * ease;
-	          apply();
-	          if (t < 1) animFrame = requestAnimationFrame(step);
-	        };
-	        animFrame = requestAnimationFrame(step);
-	      };
-
-	      container._pzAnimateTo = animateTo;
-	      container._pzState = state;
-
-	      apply();
-
-	      container.addEventListener(
-	        "wheel",
-	        (event) => {
-	          event.preventDefault();
-	          if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
-	          const rect = container.getBoundingClientRect();
-	          const cursorX = event.clientX - rect.left;
-	          const cursorY = event.clientY - rect.top;
-	          const scaleDelta = Math.exp(-event.deltaY * 0.0012);
-	          const nextScale = clamp(state.scale * scaleDelta, minScale, maxScale);
-
-	          const dx = (cursorX - state.x) / state.scale;
-	          const dy = (cursorY - state.y) / state.scale;
-
-	          state.scale = nextScale;
-	          state.x = cursorX - dx * state.scale;
-	          state.y = cursorY - dy * state.scale;
-
-	          apply();
-	        },
-        { passive: false }
-      );
-
-	      container.addEventListener("pointerdown", (event) => {
-          if (!event.isPrimary) return;
-          event.preventDefault();
-	        if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
-          activePointerId = event.pointerId;
-	        isPanning = true;
-	        container.classList.add("panzoom-grabbing");
-	        start = { x: event.clientX - state.x, y: event.clientY - state.y };
-	        if (container.setPointerCapture) {
-            container.setPointerCapture(event.pointerId);
-          }
-	      });
-
-	      container.addEventListener("pointermove", (event) => {
-	        if (!isPanning || event.pointerId !== activePointerId) return;
-	        state.x = event.clientX - start.x;
-	        state.y = event.clientY - start.y;
-	        apply();
-	      });
-
-	      const endPan = (event) => {
-          if (event && activePointerId !== null && event.pointerId !== activePointerId) return;
-	        isPanning = false;
-          activePointerId = null;
-	        container.classList.remove("panzoom-grabbing");
-	      };
-
-	      container.addEventListener("pointerup", (event) => {
-          if (container.releasePointerCapture && activePointerId === event.pointerId) {
-            container.releasePointerCapture(event.pointerId);
-          }
-          endPan(event);
-        });
-	      container.addEventListener("pointercancel", (event) => {
-          if (container.releasePointerCapture && activePointerId === event.pointerId) {
-            container.releasePointerCapture(event.pointerId);
-          }
-          endPan(event);
-        });
-          container.addEventListener("lostpointercapture", endPan);
-		    };
-
-	    document.querySelectorAll("[data-panzoom]").forEach(initPanzoom);
-
-      document.querySelectorAll("[data-how-accordion-item]").forEach((item) => {
-        const trigger = item.querySelector("[data-how-accordion-trigger]");
-        if (!trigger) return;
-
-        trigger.addEventListener("click", () => {
-          if (item.hasAttribute("data-how-accordion-featured")) {
-            const shouldOpen = !item.classList.contains("is-open");
-            item.classList.toggle("is-open", shouldOpen);
-
-            const featuredTrigger = item.querySelector("[data-how-accordion-trigger]");
-            const featuredPanel = item.querySelector("[data-how-accordion-panel]");
-
-            if (featuredTrigger) {
-              featuredTrigger.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
-              featuredTrigger.classList.toggle("how-tab-card-active", shouldOpen);
-            }
-
-            if (featuredPanel) {
-              featuredPanel.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
-            }
-            return;
-          }
-
-          const root = item.closest("[data-how-accordion-root]");
-          if (!root) return;
-          const shouldOpen = !item.classList.contains("is-open");
-
-          root.querySelectorAll("[data-how-accordion-item]:not([data-how-accordion-featured])").forEach((otherItem) => {
-            const isActive = otherItem === item && shouldOpen;
-            otherItem.classList.toggle("is-open", isActive);
-
-            const otherTrigger = otherItem.querySelector("[data-how-accordion-trigger]");
-            const otherPanel = otherItem.querySelector("[data-how-accordion-panel]");
-
-            if (otherTrigger) {
-              otherTrigger.setAttribute("aria-expanded", isActive ? "true" : "false");
-              otherTrigger.classList.toggle("how-tab-card-active", isActive);
-            }
-
-            if (otherPanel) {
-              otherPanel.setAttribute("aria-hidden", isActive ? "false" : "true");
-            }
-          });
-        });
-      });
-
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-    const initTypeRotator = (rotator) => {
-      if (!rotatingPhrases.length) return;
-      const textEl = rotator.querySelector(".type-rotator-text") || rotator;
-
-      let phraseIndex = 0;
-      let charIndex = rotatingPhrases[0].length;
-      let isDeleting = true;
-      let timeoutId = null;
-
-      const typeSpeed = 45;
-      const deleteSpeed = 30;
-      const holdTime = 2600;
-      const pauseAfterDelete = 250;
-
-      const stop = () => {
-        if (!timeoutId) return;
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      };
-
-      const tick = () => {
-        if (document.hidden || prefersReducedMotion.matches) {
-          stop();
-          return;
-        }
-
-        const phrase = rotatingPhrases[phraseIndex];
-        if (!isDeleting) {
-          charIndex += 1;
-          textEl.textContent = phrase.slice(0, charIndex);
-          if (charIndex >= phrase.length) {
-            isDeleting = true;
-            timeoutId = setTimeout(tick, holdTime);
-            return;
-          }
-          timeoutId = setTimeout(tick, typeSpeed);
-          return;
-        }
-
-        charIndex -= 1;
-        textEl.textContent = phrase.slice(0, charIndex);
-        if (charIndex <= 0) {
-          isDeleting = false;
-          phraseIndex = (phraseIndex + 1) % rotatingPhrases.length;
-          timeoutId = setTimeout(tick, pauseAfterDelete);
-          return;
-        }
-        timeoutId = setTimeout(tick, deleteSpeed);
-      };
-
-      const start = (delay = 0) => {
-        if (timeoutId) return;
-        if (prefersReducedMotion.matches) {
-          textEl.textContent = rotatingPhrases[0];
-          return;
-        }
-        timeoutId = setTimeout(tick, delay);
-      };
-
-      const handleVisibility = () => {
-        if (document.hidden) {
-          stop();
-        } else {
-          start();
-        }
-      };
-
-      document.addEventListener("visibilitychange", handleVisibility);
-
-      const handleMotionChange = (event) => {
-        if (event.matches) {
-          stop();
-          textEl.textContent = rotatingPhrases[0];
-          phraseIndex = 0;
-          charIndex = rotatingPhrases[0].length;
-          isDeleting = true;
-        } else {
-          start(holdTime);
-        }
-      };
-
-      if (prefersReducedMotion.addEventListener) {
-        prefersReducedMotion.addEventListener("change", handleMotionChange);
-      } else if (prefersReducedMotion.addListener) {
-        prefersReducedMotion.addListener(handleMotionChange);
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
       }
 
-      textEl.textContent = rotatingPhrases[0];
-      start(holdTime);
-    };
+      function updateOverlay() {
+        if (window.innerWidth < 768) {
+          stage.style.removeProperty("--hero-check-progress");
+          return;
+        }
 
-    document.querySelectorAll("[data-type-rotator]").forEach(initTypeRotator);
+        var rect = stage.getBoundingClientRect();
+        var viewport = window.innerHeight || document.documentElement.clientHeight;
+        var enterStart = viewport * 0.92;
+        var enterEnd = viewport * 0.38;
+        var exitStart = viewport * 0.14;
+        var exitEnd = -rect.height * 0.32;
 
-    document.querySelectorAll("video[data-playback-rate]").forEach(function (v) {
-      v.playbackRate = parseFloat(v.dataset.playbackRate);
+        var enterProgress = clamp((enterStart - rect.top) / (enterStart - enterEnd), 0, 1);
+        var exitProgress = clamp((exitStart - rect.top) / (exitStart - exitEnd), 0, 1);
+        var progress = enterProgress * (1 - exitProgress);
 
-      // Pause on load, play when scrolled into view
-      v.pause();
-      v.removeAttribute("autoplay");
-      var observed = false;
-      var observer = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting && !observed) {
-            observed = true;
-            v.play().catch(function () {});
-          }
-        });
-      }, { threshold: 0.25 });
-      observer.observe(v);
-    });
+        stage.style.setProperty("--hero-check-progress", progress.toFixed(3));
+      }
 
-    // PostHog event tracking
-    (function () {
-      // Track all primary CTA button clicks (Get the Plugin / Download)
-      document.querySelectorAll("a.btn-primary").forEach(function (el) {
-        el.addEventListener("click", function () {
-          window.posthog?.capture("get_plugin_clicked", {
-            label: el.textContent.trim(),
-            href: el.getAttribute("href"),
-          });
-        });
-      });
-
-      // Track secondary CTA "Learn how it works"
-      document.querySelectorAll("a.btn-secondary").forEach(function (el) {
-        el.addEventListener("click", function () {
-          window.posthog?.capture("learn_how_clicked");
-        });
-      });
-
-      // Track GitHub and Feedback link clicks
-      document.querySelectorAll('a[href*="github.com"]').forEach(function (el) {
-        el.addEventListener("click", function () {
-          if (el.href.includes("discussions")) {
-            window.posthog?.capture("feedback_link_clicked");
-          } else {
-            window.posthog?.capture("github_link_clicked", { href: el.href });
-          }
-        });
-      });
-
-      // Track first hero diagram pan/zoom interaction per page load
-      var heroPanned = false;
-      document.querySelectorAll("[data-panzoom]").forEach(function (container) {
-        container.addEventListener("pointerdown", function () {
-          if (!heroPanned) {
-            heroPanned = true;
-            window.posthog?.capture("hero_diagram_panned");
-          }
-        });
-      });
+      updateOverlay();
+      window.addEventListener("scroll", updateOverlay, { passive: true });
+      window.addEventListener("resize", updateOverlay);
     })();
 
-    // Waitlist form
-    document.querySelectorAll("[data-waitlist-form]").forEach(function(form) {
-      form.addEventListener("submit", function(e) {
-        e.preventDefault();
-        var formData = new FormData(form);
-        fetch("/", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams(formData).toString()
-        }).then(function() {
-          form.innerHTML = '<p class="waitlist-success">You\'re on the list. We\'ll let you know when it launches.</p>';
-          window.posthog?.capture("waitlist_signup", { form: form.getAttribute("name") });
-        }).catch(function() {
-          form.submit();
+    (function () {
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      document.querySelectorAll("[data-panzoom]").forEach(function (stage) {
+        var id = stage.getAttribute("data-panzoom");
+        var media = stage.querySelector(".github-diff-graphic");
+        var reset = document.querySelector('[data-panzoom-reset="' + id + '"]');
+        if (!media) return;
+
+        var scale = 1;
+        var x = 0;
+        var y = 0;
+        var startX = 0;
+        var startY = 0;
+        var dragging = false;
+
+        function paint() {
+          media.style.transform = "translate(" + x + "px, " + y + "px) scale(" + scale + ")";
+        }
+
+        function numberAttr(name, fallback) {
+          var value = parseFloat(stage.getAttribute(name) || "");
+          return Number.isFinite(value) ? value : fallback;
+        }
+
+        function resetView() {
+          var mobile = window.innerWidth < 768;
+          scale = numberAttr(mobile ? "data-mobile-scale" : "data-initial-scale", mobile ? 1.2 : 1.6);
+          x = numberAttr(mobile ? "data-mobile-x" : "data-initial-x", mobile ? -40 : -120);
+          y = numberAttr(mobile ? "data-mobile-y" : "data-initial-y", mobile ? -30 : -80);
+          paint();
+        }
+
+        stage.addEventListener("wheel", function (event) {
+          event.preventDefault();
+          var next = clamp(scale + (event.deltaY < 0 ? 0.12 : -0.12), 1, 2.8);
+          scale = next;
+          paint();
+        }, { passive: false });
+
+        stage.addEventListener("pointerdown", function (event) {
+          dragging = true;
+          startX = event.clientX - x;
+          startY = event.clientY - y;
+          stage.setPointerCapture(event.pointerId);
+          stage.classList.add("is-dragging");
         });
+
+        stage.addEventListener("pointermove", function (event) {
+          if (!dragging || scale <= 1) return;
+          x = event.clientX - startX;
+          y = event.clientY - startY;
+          paint();
+        });
+
+        function stopDragging() {
+          dragging = false;
+          stage.classList.remove("is-dragging");
+        }
+
+        stage.addEventListener("pointerup", stopDragging);
+        stage.addEventListener("pointercancel", stopDragging);
+        stage.addEventListener("pointerleave", stopDragging);
+
+        if (reset) {
+          reset.addEventListener("click", resetView);
+        }
+
+        resetView();
       });
-    });
+    })();
   </script>
 </BaseLayout>

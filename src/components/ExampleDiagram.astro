@@ -1,0 +1,193 @@
+---
+const { example } = Astro.props;
+const preview = example.preview;
+
+const toneMap = {
+  blue: {
+    groupFill: "#dbeafe",
+    groupStroke: "#93c5fd",
+    nodeFill: "#ffffff",
+    nodeStroke: "#93c5fd",
+    edge: "#3b82f6",
+    text: "#1d4ed8"
+  },
+  emerald: {
+    groupFill: "#dcfce7",
+    groupStroke: "#86efac",
+    nodeFill: "#ffffff",
+    nodeStroke: "#86efac",
+    edge: "#10b981",
+    text: "#047857"
+  },
+  amber: {
+    groupFill: "#fef3c7",
+    groupStroke: "#fcd34d",
+    nodeFill: "#ffffff",
+    nodeStroke: "#fbbf24",
+    edge: "#d97706",
+    text: "#b45309"
+  },
+  rose: {
+    groupFill: "#ffe4e6",
+    groupStroke: "#fda4af",
+    nodeFill: "#ffffff",
+    nodeStroke: "#fb7185",
+    edge: "#e11d48",
+    text: "#be123c"
+  },
+  slate: {
+    groupFill: "#e2e8f0",
+    groupStroke: "#cbd5e1",
+    nodeFill: "#ffffff",
+    nodeStroke: "#cbd5e1",
+    edge: "#64748b",
+    text: "#334155"
+  }
+};
+
+const nodeMap = new Map(preview.nodes.map((node) => [node.id, node]));
+
+function center(nodeId) {
+  const node = nodeMap.get(nodeId);
+  return { x: node.x + node.width / 2, y: node.y + node.height / 2 };
+}
+
+function edgePath(edge) {
+  const from = center(edge.from);
+  const to = center(edge.to);
+  const dx = Math.max(72, Math.abs(to.x - from.x) * 0.4);
+  return `M ${from.x} ${from.y} C ${from.x + dx} ${from.y}, ${to.x - dx} ${to.y}, ${to.x} ${to.y}`;
+}
+
+function calloutPath() {
+  const target = center(preview.callout.targetNode);
+  const startX = preview.callout.x;
+  const startY = preview.callout.y + 42;
+  const dx = Math.max(38, (target.x - startX) * 0.42);
+  return `M ${startX} ${startY} C ${startX - dx} ${startY}, ${target.x - dx} ${target.y}, ${target.x} ${target.y}`;
+}
+
+function wrapLabel(label) {
+  const normalized = label.replace(/([a-z])([A-Z])/g, "$1 $2");
+  const parts = normalized.split(/\s+/);
+  const lines = [];
+  let current = "";
+  for (const part of parts) {
+    const candidate = current ? `${current} ${part}` : part;
+    if (candidate.length > 18 && current) {
+      lines.push(current);
+      current = part;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.slice(0, 2);
+}
+---
+
+<svg
+  class="github-diff-svg github-diff-graphic"
+  viewBox={`0 0 ${preview.width} ${preview.height}`}
+  role="img"
+  aria-label={`${example.language} structural diff preview`}
+>
+  <rect x="0" y="0" width={preview.width} height={preview.height} rx="24" fill="#ffffff" />
+
+  {preview.groups.map((group) => {
+    const tone = toneMap[group.tone];
+    return (
+      <>
+        <rect
+          x={group.x}
+          y={group.y}
+          width={group.width}
+          height={group.height}
+          rx="24"
+          fill={tone.groupFill}
+          fill-opacity="0.56"
+          stroke={tone.groupStroke}
+          stroke-width="1.5"
+          stroke-dasharray="8 8"
+        />
+        <text x={group.x + 18} y={group.y + 24} class="diagram-group-label" fill={tone.text}>
+          {group.label}
+        </text>
+      </>
+    );
+  })}
+
+  {preview.edges.map((edge) => {
+    const tone = toneMap[edge.tone];
+    return (
+      <path
+        d={edgePath(edge)}
+        fill="none"
+        stroke={tone.edge}
+        stroke-width={edge.emphasis === "focus" ? "4" : edge.emphasis === "warning" ? "3.5" : "2.5"}
+        stroke-opacity={edge.emphasis === "focus" ? "0.92" : "0.66"}
+        stroke-dasharray={edge.emphasis === "warning" ? "8 7" : "0"}
+        stroke-linecap="round"
+      />
+    );
+  })}
+
+  {preview.nodes.map((node) => {
+    const tone = toneMap[node.tone];
+    const lines = wrapLabel(node.label);
+    const isCritical = node.emphasis === "critical";
+    const isFocus = node.emphasis === "focus";
+    return (
+      <>
+        <rect
+          x={node.x}
+          y={node.y}
+          width={node.width}
+          height={node.height}
+          rx="18"
+          fill={isCritical ? "#fff1f2" : isFocus ? "#eff6ff" : tone.nodeFill}
+          stroke={isCritical ? "#fb7185" : isFocus ? "#60a5fa" : tone.nodeStroke}
+          stroke-width={isCritical || isFocus ? "2.4" : "1.6"}
+        />
+        <text x={node.x + 14} y={node.y + 18} class="diagram-node-meta">
+          {node.meta}
+        </text>
+        <text x={node.x + 14} y={node.y + 38} class="diagram-node-label">
+          {lines.map((line, index) => (
+            <tspan x={node.x + 14} dy={index === 0 ? "0" : "16"}>{line}</tspan>
+          ))}
+        </text>
+      </>
+    );
+  })}
+
+  <path
+    d={calloutPath()}
+    fill="none"
+    stroke={toneMap[preview.callout.tone].edge}
+    stroke-width="2.5"
+    stroke-dasharray="6 6"
+    stroke-linecap="round"
+    stroke-opacity="0.9"
+  />
+
+  <rect
+    x={preview.callout.x}
+    y={preview.callout.y}
+    width="238"
+    height="88"
+    rx="20"
+    fill="#ffffff"
+    stroke={toneMap[preview.callout.tone].groupStroke}
+    stroke-width="1.5"
+  />
+  <text x={preview.callout.x + 16} y={preview.callout.y + 24} class="diagram-callout-kicker" fill={toneMap[preview.callout.tone].text}>
+    Grounded note
+  </text>
+  <text x={preview.callout.x + 16} y={preview.callout.y + 44} class="diagram-callout-title">
+    {preview.callout.title}
+  </text>
+  <text x={preview.callout.x + 16} y={preview.callout.y + 64} class="diagram-callout-copy">
+    <tspan x={preview.callout.x + 16} dy="0">{preview.callout.body}</tspan>
+  </text>
+</svg>
