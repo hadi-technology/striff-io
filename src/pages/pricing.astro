@@ -2,7 +2,6 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 
 const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
-const apiBaseUrl = "https://api.striff.io";
 ---
 <BaseLayout
   title="Pricing | Striff"
@@ -109,7 +108,7 @@ const apiBaseUrl = "https://api.striff.io";
     </section>
   </main>
 
-  <script is:inline define:vars={{ apiBaseUrl, githubInstallUrl }}>
+  <script is:inline define:vars={{ githubInstallUrl }}>
     const params = new URLSearchParams(window.location.search);
     const installationId = params.get("installation_id");
     const button = document.getElementById("pro-checkout-button");
@@ -123,25 +122,10 @@ const apiBaseUrl = "https://api.striff.io";
     }
 
     if (button && installationId) {
-      status.textContent = `Preparing checkout for installation ${installationId}.`;
+      status.textContent = `Billing for installation ${installationId}.`;
       button.addEventListener("click", async () => {
-        status.textContent = "Creating Stripe Checkout session...";
-        try {
-          const response = await fetch(`${apiBaseUrl}/api/v1/billing/checkout?installation_id=${encodeURIComponent(installationId)}`, {
-            method: "POST"
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-          const payload = await response.json();
-          if (payload.checkoutUrl) {
-            window.location.href = payload.checkoutUrl;
-            return;
-          }
-          throw new Error("Missing checkoutUrl");
-        } catch (error) {
-          status.textContent = "Could not start checkout yet. Verify the backend deployment and installation ID.";
-        }
+        status.textContent = "Redirecting to billing...";
+        window.location.href = `/dashboard?installation_id=${encodeURIComponent(installationId)}`;
       });
     }
   </script>

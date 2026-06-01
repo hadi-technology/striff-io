@@ -24,12 +24,18 @@ interface Installation {
   repositories?: Repo[];
 }
 
+const PLANS = [
+  { id: "starter", name: "Starter", price: "$29/mo", repos: "Up to 5 private repos" },
+  { id: "team", name: "Team", price: "$59/mo", repos: "Up to 15 private repos" },
+  { id: "scale", name: "Scale", price: "$149/mo", repos: "Up to 50 private repos" },
+] as const;
+
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [installations, setInstallations] = useState<Installation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [portalLoading, setPortalLoading] = useState<number | null>(null);
+  const [autoCheckout, setAutoCheckout] = useState<{ installationId: number; plan: string } | null>(null);
 
   useEffect(() => {
     init();
@@ -52,7 +58,6 @@ export default function Dashboard() {
       const installationsData = await installationsRes.json();
 
       const installs = installationsData.installations || [];
-      // Fetch repos for each installation
       const withRepos = await Promise.all(
         installs.map(async (inst: Installation) => {
           try {
@@ -68,30 +73,20 @@ export default function Dashboard() {
         })
       );
       setInstallations(withRepos);
+
+      // Auto-trigger checkout if redirected from installed page with plan param
+      const params = new URLSearchParams(window.location.search);
+      const planParam = params.get("plan");
+      const instIdParam = params.get("installation_id");
+      if (planParam && instIdParam) {
+        setAutoCheckout({ installationId: Number(instIdParam), plan: planParam });
+        // Clean URL
+        window.history.replaceState({}, "", "/dashboard");
+      }
     } catch (e: any) {
       setError(e.message || "Failed to load dashboard");
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function openPortal(installationId: number) {
-    setPortalLoading(installationId);
-    try {
-      const res = await fetch(
-        `/.netlify/functions/stripe-portal?installation_id=${installationId}`
-      );
-      const data = await res.json();
-      if (data.portalUrl) {
-        window.location.href = data.portalUrl;
-      } else if (!data.hasSubscription) {
-        // No subscription — redirect to pricing
-        window.location.href = `/pricing?installation_id=${installationId}`;
-      }
-    } catch {
-      setError("Failed to open billing portal");
-    } finally {
-      setPortalLoading(null);
     }
   }
 
@@ -164,8 +159,9 @@ export default function Dashboard() {
             <InstallationCard
               key={inst.id}
               installation={inst}
-              onManageBilling={openPortal}
-              billingLoading={portalLoading === inst.id}
+              onError={setError}
+              autoPlan={autoCheckout?.installationId === inst.id ? autoCheckout.plan : null}
+              onAutoPlanConsumed={() => setAutoCheckout(null)}
             />
           ))}
         </div>
@@ -209,16 +205,72 @@ export default function Dashboard() {
 
 function InstallationCard({
   installation,
-  onManageBilling,
-  billingLoading,
+  onError,
+  autoPlan,
+  onAutoPlanConsumed,
 }: {
   installation: Installation;
-  onManageBilling: (id: number) => void;
-  billingLoading: boolean;
+  onError: (msg: string) => void;
+  autoPlan: string | null;
+  onAutoPlanConsumed: () => void;
 }) {
   const repos = installation.repositories || [];
   const privateRepos = repos.filter((r) => r.private);
   const publicRepos = repos.filter((r) => !r.private);
+  const [billingState, setBillingState] = useState<"idle" | "loading" | "subscribe" | "portal_loading">("idle");
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+
+  // Auto-trigger checkout when redirected from installed page with a plan
+  useEffect(() => {
+    if (autoPlan && billingState === "idle" && !checkoutLoading) {
+      handleCheckout(autoPlan);
+      onAutoPlanConsumed();
+    }
+  }, [autoPlan]);
+
+  async function handleBilling() {
+    setBillingState("loading");
+    try {
+      const res = await fetch(
+        `/.netlify/functions/stripe-portal?installation_id=${installation.id}`
+      );
+      const data = await res.json();
+      if (data.portalUrl) {
+        window.location.href = data.portalUrl;
+      } else if (!data.hasSubscription) {
+        setBillingState("subscribe");
+      }
+    } catch {
+      onError("Failed to check billing status");
+      setBillingState("idle");
+    }
+  }
+
+  async function handleCheckout(plan: string) {
+    setCheckoutLoading(plan);
+    try {
+      const res = await fetch("/.netlify/functions/stripe-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          installation_id: installation.id,
+          plan,
+        }),
+      });
+      const data = await res.json();
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        onError(data.error || "Failed to create checkout session");
+        setBillingState("idle");
+      }
+    } catch {
+      onError("Failed to start checkout");
+      setBillingState("idle");
+    } finally {
+      setCheckoutLoading(null);
+    }
+  }
 
   return (
     <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -251,14 +303,46 @@ function InstallationCard({
             Manage repos
           </a>
           <button
-            onClick={() => onManageBilling(installation.id)}
-            disabled={billingLoading}
+            onClick={handleBilling}
+            disabled={billingState !== "idle"}
             class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
           >
-            {billingLoading ? "Loading..." : "Manage billing"}
+            {billingState === "loading" ? "Loading..." : "Manage billing"}
           </button>
         </div>
       </div>
+
+      {/* Plan picker — shown when no subscription exists */}
+      {billingState === "subscribe" && (
+        <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <h3 class="text-sm font-bold text-slate-900">Select a plan for private repositories</h3>
+          <p class="mt-1 text-xs text-slate-600">
+            Public repos are always free. Choose a plan to enable Striff on private pull requests.
+          </p>
+          <div class="mt-4 grid gap-3 sm:grid-cols-3">
+            {PLANS.map((plan) => (
+              <div key={plan.id} class="rounded-xl border border-slate-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{plan.name}</p>
+                <p class="mt-1 text-lg font-black text-slate-950">{plan.price}</p>
+                <p class="text-xs text-slate-500">{plan.repos}</p>
+                <button
+                  onClick={() => handleCheckout(plan.id)}
+                  disabled={checkoutLoading === plan.id}
+                  class="mt-3 w-full rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {checkoutLoading === plan.id ? "Loading..." : "Subscribe"}
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => setBillingState("idle")}
+            class="mt-3 text-xs text-slate-500 hover:text-slate-700"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* Repo stats */}
       <div class="mt-4 flex gap-4">

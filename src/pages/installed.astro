@@ -81,28 +81,14 @@ const apiBaseUrl = "https://api.striff.io";
     }
 
     document.querySelectorAll(".plan-checkout-btn").forEach((btn) => {
-      btn.addEventListener("click", async () => {
+      btn.addEventListener("click", () => {
         if (!installationId) {
           statusEl.textContent = "Missing installation ID. Please reinstall the GitHub App.";
           return;
         }
         const plan = btn.dataset.plan;
-        statusEl.textContent = "Creating checkout session...";
-        try {
-          const res = await fetch(
-            `${apiBaseUrl}/api/v1/billing/checkout?plan=${plan}&installation_id=${encodeURIComponent(installationId)}`,
-            { method: "POST" }
-          );
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const data = await res.json();
-          if (data.checkoutUrl) {
-            window.location.href = data.checkoutUrl;
-            return;
-          }
-          throw new Error("Missing checkoutUrl in response");
-        } catch (err) {
-          statusEl.textContent = "Could not start checkout. Make sure the backend is running and try again.";
-        }
+        // Redirect to dashboard which handles Stripe checkout
+        window.location.href = `/dashboard?installation_id=${encodeURIComponent(installationId)}&plan=${plan}`;
       });
     });
   </script>
