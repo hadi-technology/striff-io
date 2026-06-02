@@ -56,7 +56,7 @@ exports.handler = async (event) => {
     // Find or create Stripe customer
     let customerId;
     const customerRes = await stripeGet(
-      `customers?metadata[installation_id]=${encodeURIComponent(installationId)}`
+      `customers/search?query=metadata['installation_id']:'${encodeURIComponent(installationId)}'`
     );
 
     if (customerRes.error) {

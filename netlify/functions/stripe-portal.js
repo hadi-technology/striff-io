@@ -19,7 +19,7 @@ exports.handler = async (event) => {
   try {
     // Find Stripe customer by installation_id metadata
     const customerRes = await stripeGet(
-      `customers?metadata[installation_id]=${encodeURIComponent(installationId)}`
+      `customers/search?query=metadata['installation_id']:'${encodeURIComponent(installationId)}'`
     );
     if (!customerRes.data || customerRes.data.length === 0) {
       // No subscription yet — return empty to signal checkout flow
