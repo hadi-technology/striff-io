@@ -433,7 +433,7 @@ function FaqSection() {
     },
     {
       q: "How do I enable Striff on private repositories?",
-      a: 'Go to "Manage repos" on the installation card above, which takes you to GitHub's App settings. There you can grant Striff access to specific private repositories. Then choose a plan and subscribe to enable analysis on private pull requests.',
+      a: "Go to \"Manage repos\" on the installation card above, which takes you to GitHub\u2019s App settings. There you can grant Striff access to specific private repositories. Then choose a plan and subscribe to enable analysis on private pull requests.",
     },
     {
       q: "When will I be charged?",
@@ -449,7 +449,7 @@ function FaqSection() {
     },
     {
       q: "Which languages does Striff support?",
-      a: "Striff supports Java, Kotlin, TypeScript, JavaScript, Python, C#, and Go. We parse source code to build architectural dependency graphs and detect structural changes between pull request versions.",
+      a: "Striff supports Java, TypeScript, Python, and C#. We parse source code to build architectural dependency graphs and detect structural changes between pull request versions.",
     },
     {
       q: "What does Striff actually do on my pull requests?",
