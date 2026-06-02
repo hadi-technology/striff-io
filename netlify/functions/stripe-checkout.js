@@ -58,6 +58,12 @@ exports.handler = async (event) => {
     const customerRes = await stripeGet(
       `customers?metadata[installation_id]=${encodeURIComponent(installationId)}`
     );
+
+    if (customerRes.error) {
+      console.error("Stripe customer lookup error:", JSON.stringify(customerRes.error));
+      return { statusCode: 500, body: JSON.stringify({ error: `Stripe customer lookup failed: ${customerRes.error.message}` }) };
+    }
+
     if (customerRes.data && customerRes.data.length > 0) {
       customerId = customerRes.data[0].id;
     } else {
@@ -69,8 +75,13 @@ exports.handler = async (event) => {
 
       const newCustomer = await stripePost("customers", {
         name: user.name || user.login,
-        metadata: { installation_id: installationId },
+        "metadata[installation_id]": installationId,
       });
+
+      if (newCustomer.error) {
+        console.error("Stripe customer create error:", JSON.stringify(newCustomer.error));
+        return { statusCode: 500, body: JSON.stringify({ error: `Stripe customer create failed: ${newCustomer.error.message}` }) };
+      }
       customerId = newCustomer.id;
     }
 
@@ -86,11 +97,19 @@ exports.handler = async (event) => {
       "metadata[installation_id]": installationId,
     });
 
-    if (!session.url) {
-      console.error("Stripe checkout error:", JSON.stringify(session));
+    if (session.error) {
+      console.error("Stripe checkout error:", JSON.stringify(session.error));
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: session.last_payment_error?.message || "Checkout session failed" }),
+        body: JSON.stringify({ error: `Checkout failed: ${session.error.message}` }),
+      };
+    }
+
+    if (!session.url) {
+      console.error("Stripe checkout no URL:", JSON.stringify(session));
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Checkout session returned no URL" }),
       };
     }
 
@@ -100,7 +119,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({ checkoutUrl: session.url }),
     };
   } catch (e) {
-    console.error("Stripe checkout error:", e.message);
+    console.error("Stripe checkout exception:", e.message);
     return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
   }
 };
