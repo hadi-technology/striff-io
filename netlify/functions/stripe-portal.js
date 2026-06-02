@@ -1,5 +1,11 @@
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
+const PLAN_NAMES = {
+  starter: "Starter",
+  team: "Team",
+  scale: "Scale",
+};
+
 exports.handler = async (event) => {
   const token = parseCookie(event.headers?.cookie || "")["gh_token"];
   if (!token) {
@@ -22,15 +28,41 @@ exports.handler = async (event) => {
       `customers/search?query=metadata['installation_id']:'${encodeURIComponent(installationId)}'`
     );
     if (!customerRes.data || customerRes.data.length === 0) {
-      // No subscription yet — return empty to signal checkout flow
       return {
         statusCode: 200,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ portalUrl: null, hasSubscription: false }),
+        body: JSON.stringify({ hasSubscription: false }),
       };
     }
 
     const customerId = customerRes.data[0].id;
+
+    // Get active subscription
+    const subRes = await stripeGet(`subscriptions?customer=${customerId}&status=active&limit=1`);
+    const subscription = subRes.data && subRes.data.length > 0 ? subRes.data[0] : null;
+
+    if (!subscription) {
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hasSubscription: false }),
+      };
+    }
+
+    // Derive plan name from price lookup
+    const priceId = subscription.plan?.id || subscription.items?.data?.[0]?.price?.id;
+    let planName = "Unknown";
+    // Match price ID to plan
+    for (const [key, envVar] of [
+      ["Starter", process.env.STRIPE_STARTER_PRICE_ID],
+      ["Team", process.env.STRIPE_TEAM_PRICE_ID],
+      ["Scale", process.env.STRIPE_SCALE_PRICE_ID],
+    ]) {
+      if (envVar && priceId === envVar) {
+        planName = key;
+        break;
+      }
+    }
 
     // Create customer portal session
     const session = await stripePost("billing_portal/sessions", {
@@ -41,7 +73,12 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ portalUrl: session.url, hasSubscription: true }),
+      body: JSON.stringify({
+        hasSubscription: true,
+        planName: planName,
+        status: subscription.status,
+        portalUrl: session.url,
+      }),
     };
   } catch (e) {
     console.error("Stripe portal error:", e.message);

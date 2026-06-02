@@ -19,9 +19,16 @@ interface Repo {
 
 interface Installation {
   id: number;
-  account: { login: string; avatar_url: string };
+  account: { login: string; avatar_url: string; type?: string };
   repository_selection: string;
   repositories?: Repo[];
+}
+
+interface BillingInfo {
+  hasSubscription: boolean;
+  planName?: string;
+  status?: string;
+  portalUrl?: string;
 }
 
 const PLANS = [
@@ -219,6 +226,24 @@ function InstallationCard({
   const publicRepos = repos.filter((r) => !r.private);
   const [billingState, setBillingState] = useState<"idle" | "loading" | "subscribe" | "portal_loading">("idle");
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
+
+  // Fetch billing info on mount
+  useEffect(() => {
+    fetchBillingInfo();
+  }, []);
+
+  async function fetchBillingInfo() {
+    try {
+      const res = await fetch(
+        `/.netlify/functions/stripe-portal?installation_id=${installation.id}`
+      );
+      const data = await res.json();
+      setBillingInfo(data);
+    } catch {
+      // Silently fail — billing check is non-critical
+    }
+  }
 
   // Auto-trigger checkout when redirected from installed page with a plan
   useEffect(() => {
@@ -229,12 +254,17 @@ function InstallationCard({
   }, [autoPlan]);
 
   async function handleBilling() {
+    if (billingInfo?.portalUrl) {
+      window.location.href = billingInfo.portalUrl;
+      return;
+    }
     setBillingState("loading");
     try {
       const res = await fetch(
         `/.netlify/functions/stripe-portal?installation_id=${installation.id}`
       );
       const data = await res.json();
+      setBillingInfo(data);
       if (data.portalUrl) {
         window.location.href = data.portalUrl;
       } else if (!data.hasSubscription) {
@@ -272,6 +302,11 @@ function InstallationCard({
     }
   }
 
+  // Manage repos link — route to org settings if account is an organization
+  const manageReposUrl = installation.account?.type === "Organization"
+    ? `https://github.com/organizations/${installation.account.login}/settings/installations`
+    : "https://github.com/settings/installations";
+
   return (
     <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div class="flex items-start justify-between">
@@ -293,9 +328,15 @@ function InstallationCard({
             </p>
           </div>
         </div>
-        <div class="flex gap-2">
+        <div class="flex items-center gap-2">
+          {/* Plan badge — shown when subscription exists */}
+          {billingInfo?.hasSubscription && billingInfo.planName && (
+            <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              {billingInfo.planName} plan
+            </span>
+          )}
           <a
-            href="https://github.com/settings/installations"
+            href={manageReposUrl}
             target="_blank"
             rel="noopener noreferrer"
             class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
@@ -373,6 +414,9 @@ function InstallationCard({
                 >
                   {repo.full_name}
                 </a>
+                <span class={`ml-auto text-xs font-medium ${repo.private ? "text-amber-600" : "text-green-600"}`}>
+                  {repo.private ? "Private" : "Public"}
+                </span>
               </li>
             ))}
           </ul>
