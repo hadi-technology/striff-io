@@ -81,13 +81,11 @@ export default function Dashboard() {
       );
       setInstallations(withRepos);
 
-      // Auto-trigger checkout if redirected from installed page with plan param
       const params = new URLSearchParams(window.location.search);
       const planParam = params.get("plan");
       const instIdParam = params.get("installation_id");
       if (planParam && instIdParam) {
         setAutoCheckout({ installationId: Number(instIdParam), plan: planParam });
-        // Clean URL
         window.history.replaceState({}, "", "/dashboard");
       }
     } catch (e: any) {
@@ -126,16 +124,10 @@ export default function Dashboard() {
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           {user && (
-            <img
-              src={user.avatar_url}
-              alt={user.login}
-              class="h-10 w-10 rounded-full"
-            />
+            <img src={user.avatar_url} alt={user.login} class="h-10 w-10 rounded-full" />
           )}
           <div>
-            <h1 class="text-2xl font-bold text-slate-950">
-              {user?.name || user?.login}
-            </h1>
+            <h1 class="text-2xl font-bold text-slate-950">{user?.name || user?.login}</h1>
             <p class="text-sm text-slate-500">@{user?.login}</p>
           </div>
         </div>
@@ -174,41 +166,15 @@ export default function Dashboard() {
         </div>
       )}
 
-      {error && (
-        <p class="mt-4 text-sm text-red-600">{error}</p>
-      )}
+      {error && <p class="mt-4 text-sm text-red-600">{error}</p>}
 
-      {/* Help */}
-      <div class="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
-        <p class="font-semibold text-slate-900">Need help?</p>
-        <ul class="mt-2 space-y-1">
-          <li>
-            Install Striff on more repos:{" "}
-            <a
-              href="https://github.com/apps/striff-app/installations/new"
-              class="text-blue-600 hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              GitHub App settings
-            </a>
-          </li>
-          <li>
-            To stop being charged, remove private repos or{" "}
-            <a
-              href="https://github.com/settings/installations"
-              class="text-blue-600 hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              uninstall the app
-            </a>
-          </li>
-        </ul>
-      </div>
+      {/* FAQ */}
+      <FaqSection />
     </div>
   );
 }
+
+/* ─── Installation Card ─────────────────────────────────────────── */
 
 function InstallationCard({
   installation,
@@ -224,11 +190,13 @@ function InstallationCard({
   const repos = installation.repositories || [];
   const privateRepos = repos.filter((r) => r.private);
   const publicRepos = repos.filter((r) => !r.private);
-  const [billingState, setBillingState] = useState<"idle" | "loading" | "subscribe" | "portal_loading">("idle");
+  const [repoTab, setRepoTab] = useState<"private" | "public">(
+    privateRepos.length > 0 ? "private" : "public"
+  );
+  const [billingState, setBillingState] = useState<"idle" | "loading" | "subscribe">("idle");
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
 
-  // Fetch billing info on mount
   useEffect(() => {
     fetchBillingInfo();
   }, []);
@@ -241,11 +209,10 @@ function InstallationCard({
       const data = await res.json();
       setBillingInfo(data);
     } catch {
-      // Silently fail — billing check is non-critical
+      // Silently fail
     }
   }
 
-  // Auto-trigger checkout when redirected from installed page with a plan
   useEffect(() => {
     if (autoPlan && billingState === "idle" && !checkoutLoading) {
       handleCheckout(autoPlan);
@@ -282,10 +249,7 @@ function InstallationCard({
       const res = await fetch("/.netlify/functions/stripe-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          installation_id: installation.id,
-          plan,
-        }),
+        body: JSON.stringify({ installation_id: installation.id, plan }),
       });
       const data = await res.json();
       if (data.checkoutUrl) {
@@ -302,37 +266,30 @@ function InstallationCard({
     }
   }
 
-  // Manage repos link — route to org settings if account is an organization
   const manageReposUrl = installation.account?.type === "Organization"
     ? `https://github.com/organizations/${installation.account.login}/settings/installations`
     : "https://github.com/settings/installations";
 
+  const hasNoPlan = billingInfo && !billingInfo.hasSubscription && privateRepos.length > 0;
+  const displayedRepos = repoTab === "private" ? privateRepos : publicRepos;
+
   return (
     <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      {/* Header row */}
       <div class="flex items-start justify-between">
         <div class="flex items-center gap-3">
-          <img
-            src={installation.account.avatar_url}
-            alt={installation.account.login}
-            class="h-8 w-8 rounded"
-          />
+          <img src={installation.account.avatar_url} alt={installation.account.login} class="h-8 w-8 rounded" />
           <div>
-            <h2 class="text-lg font-bold text-slate-950">
-              {installation.account.login}
-            </h2>
+            <h2 class="text-lg font-bold text-slate-950">{installation.account.login}</h2>
             <p class="text-xs text-slate-500">
-              Installation #{installation.id} ·{" "}
-              {installation.repository_selection === "all"
-                ? "All repositories"
-                : "Selected repositories"}
+              Installation #{installation.id} · {installation.repository_selection === "all" ? "All repositories" : "Selected repositories"}
             </p>
           </div>
         </div>
         <div class="flex items-center gap-2">
-          {/* Plan badge — shown when subscription exists */}
           {billingInfo?.hasSubscription && billingInfo.planName && (
             <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-              {billingInfo.planName} plan
+              {billingInfo.planName}
             </span>
           )}
           <a
@@ -353,7 +310,25 @@ function InstallationCard({
         </div>
       </div>
 
-      {/* Plan picker — shown when no subscription exists */}
+      {/* No-plan warning for private repos */}
+      {hasNoPlan && (
+        <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
+          <p class="font-medium text-amber-800">
+            You have {privateRepos.length} private repo{privateRepos.length > 1 ? "s" : ""} enabled but no active subscription.
+          </p>
+          <p class="mt-1 text-amber-700">
+            Private repo analysis requires a paid plan.{" "}
+            <button
+              onClick={() => setBillingState("subscribe")}
+              class="font-semibold text-amber-900 underline hover:no-underline"
+            >
+              Choose a plan
+            </button>
+          </p>
+        </div>
+      )}
+
+      {/* Plan picker */}
       {billingState === "subscribe" && (
         <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <h3 class="text-sm font-bold text-slate-900">Select a plan for private repositories</h3>
@@ -376,55 +351,150 @@ function InstallationCard({
               </div>
             ))}
           </div>
-          <button
-            onClick={() => setBillingState("idle")}
-            class="mt-3 text-xs text-slate-500 hover:text-slate-700"
-          >
+          <button onClick={() => setBillingState("idle")} class="mt-3 text-xs text-slate-500 hover:text-slate-700">
             Cancel
           </button>
         </div>
       )}
 
-      {/* Repo stats */}
-      <div class="mt-4 flex gap-4">
-        <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-          {privateRepos.length} private
-        </span>
-        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-          {publicRepos.length} public
-        </span>
-      </div>
-
-      {/* Repo list */}
+      {/* Repo tabs */}
       {repos.length > 0 && (
-        <div class="mt-4 max-h-48 overflow-y-auto">
-          <ul class="space-y-1">
-            {repos.map((repo) => (
-              <li key={repo.full_name} class="flex items-center gap-2 text-sm">
-                <span
-                  class={`inline-block h-2 w-2 rounded-full ${
-                    repo.private ? "bg-amber-400" : "bg-green-400"
-                  }`}
-                />
-                <a
-                  href={repo.html_url}
-                  class="text-slate-700 hover:text-blue-600 hover:underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {repo.full_name}
-                </a>
-                <span class={`ml-auto text-xs font-medium ${repo.private ? "text-amber-600" : "text-green-600"}`}>
-                  {repo.private ? "Private" : "Public"}
-                </span>
-              </li>
-            ))}
-          </ul>
+        <div class="mt-5">
+          <div class="flex gap-1 rounded-xl bg-slate-100 p-1">
+            <button
+              onClick={() => setRepoTab("private")}
+              class={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                repoTab === "private"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {privateRepos.length} Private
+            </button>
+            <button
+              onClick={() => setRepoTab("public")}
+              class={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                repoTab === "public"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {publicRepos.length} Public
+            </button>
+          </div>
+
+          {/* Repo list */}
+          {displayedRepos.length > 0 ? (
+            <div class="mt-3 max-h-48 overflow-y-auto">
+              <ul class="space-y-1">
+                {displayedRepos.map((repo) => (
+                  <li key={repo.full_name} class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm hover:bg-slate-50">
+                    <span class={`inline-block h-2 w-2 rounded-full ${repo.private ? "bg-amber-400" : "bg-green-400"}`} />
+                    <a
+                      href={repo.html_url}
+                      class="text-slate-700 hover:text-blue-600 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {repo.full_name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p class="mt-3 px-3 py-4 text-center text-sm text-slate-400">
+              No {repoTab} repositories enabled
+              {repoTab === "private" && (
+                <>
+                  {" — "}
+                  <a href={manageReposUrl} target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
+                    add private repos
+                  </a>
+                </>
+              )}
+            </p>
+          )}
         </div>
       )}
     </div>
   );
 }
+
+/* ─── FAQ Section ───────────────────────────────────────────────── */
+
+function FaqSection() {
+  const [open, setOpen] = useState<number | null>(null);
+
+  const items = [
+    {
+      q: "How does Striff pricing work?",
+      a: "Public repositories are completely free — no limits. Private repositories require a paid plan (Starter, Team, or Scale). You only pay for the plan you select, billed monthly. There are no per-PR charges or hidden fees.",
+    },
+    {
+      q: "How do I enable Striff on private repositories?",
+      a: 'Go to "Manage repos" on the installation card above, which takes you to GitHub's App settings. There you can grant Striff access to specific private repositories. Then choose a plan and subscribe to enable analysis on private pull requests.',
+    },
+    {
+      q: "When will I be charged?",
+      a: "You are charged immediately when you subscribe, and then on the same date each month. You can see your next billing date and manage payment methods in the Stripe Customer Portal (click \"Manage billing\" above).",
+    },
+    {
+      q: "How do I stop being charged?",
+      a: 'Click "Manage billing" above to open the Stripe portal, where you can cancel your subscription. You\'ll keep access until the end of your current billing period. Alternatively, you can remove all private repos from the Striff App installation in GitHub settings.',
+    },
+    {
+      q: "What happens if I cancel my subscription?",
+      a: "Striff will continue analyzing public repository pull requests for free. Private repository analysis will be paused. You can re-subscribe at any time to resume private repo analysis.",
+    },
+    {
+      q: "Which languages does Striff support?",
+      a: "Striff supports Java, Kotlin, TypeScript, JavaScript, Python, C#, and Go. We parse source code to build architectural dependency graphs and detect structural changes between pull request versions.",
+    },
+    {
+      q: "What does Striff actually do on my pull requests?",
+      a: "For each PR, Striff analyzes the structural impact of code changes — new dependencies, broken encapsulation, package cycles, hub formation, and more. Results appear as a GitHub check-run with a summary, and you can install the browser extension to explore interactive architecture diagrams inline.",
+    },
+    {
+      q: "What is the browser extension?",
+      a: 'The Striff browser extension lets you view interactive architectural diagrams directly on GitHub. You can switch between code and architecture views, focus on specific components, and post subdiagrams as PR comments. Install it from the Chrome Web Store.',
+    },
+  ];
+
+  return (
+    <div class="mt-12">
+      <h2 class="text-xl font-bold text-slate-950">Frequently asked questions</h2>
+      <div class="mt-4 space-y-2">
+        {items.map((item, i) => (
+          <div key={i} class="rounded-xl border border-slate-200 bg-white">
+            <button
+              onClick={() => setOpen(open === i ? null : i)}
+              class="flex w-full items-center justify-between px-5 py-4 text-left"
+            >
+              <span class="text-sm font-medium text-slate-900">{item.q}</span>
+              <svg
+                class={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open === i ? "rotate-180" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {open === i && (
+              <div class="border-t border-slate-100 px-5 py-4 text-sm leading-relaxed text-slate-600">
+                {item.a}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Utility ───────────────────────────────────────────────────── */
 
 function getOAuthUrl() {
   const params = new URLSearchParams({
