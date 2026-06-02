@@ -83,7 +83,7 @@ exports.handler = async (event) => {
       "line_items[0][quantity]": "1",
       success_url: `https://striff.io/dashboard`,
       cancel_url: `https://striff.io/dashboard`,
-      metadata: { installation_id: installationId },
+      "metadata[installation_id]": installationId,
     });
 
     if (!session.url) {
