@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 
 const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
+const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
 const STRIFF_API_BASE = process.env.STRIFF_API_BASE_URL || "https://api.striff.io";
 
 function generateToken(installationId) {
@@ -45,6 +46,7 @@ exports.handler = async (event) => {
   }
 
   const hmacToken = generateToken(installationId);
+  const apiHeaders = { "X-Server-Key": STRIFF_SERVER_KEY || "" };
 
   try {
     switch (action) {
@@ -54,7 +56,7 @@ exports.handler = async (event) => {
         }
         const res = await fetch(
           `${STRIFF_API_BASE}/api/v1/billing/checkout?installation_id=${installationId}&plan=${plan}&token=${hmacToken}`,
-          { method: "POST" }
+          { method: "POST", headers: apiHeaders }
         );
         const data = await res.json();
         if (!res.ok) {
@@ -70,7 +72,7 @@ exports.handler = async (event) => {
       case "portal": {
         const res = await fetch(
           `${STRIFF_API_BASE}/api/v1/billing/portal?installation_id=${installationId}&token=${hmacToken}`,
-          { method: "POST" }
+          { method: "POST", headers: apiHeaders }
         );
         const data = await res.json();
         if (!res.ok) {
@@ -85,7 +87,8 @@ exports.handler = async (event) => {
 
       case "status": {
         const res = await fetch(
-          `${STRIFF_API_BASE}/api/v1/billing/status?installation_id=${installationId}&token=${hmacToken}`
+          `${STRIFF_API_BASE}/api/v1/billing/status?installation_id=${installationId}&token=${hmacToken}`,
+          { headers: apiHeaders }
         );
         const data = await res.json();
         if (!res.ok) {
