@@ -68,7 +68,7 @@ exports.handler = async (event) => {
         return {
           statusCode: 200,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ checkoutUrl: data.url }),
+          body: JSON.stringify({ checkoutUrl: data.checkoutUrl }),
         };
       }
 
