@@ -231,9 +231,14 @@ function InstallationCard({
   async function handleBilling() {
     setBillingState("loading");
     try {
-      const res = await fetch(
-        `/.netlify/functions/stripe-portal?installation_id=${installation.id}`
-      );
+      const res = await fetch("/.netlify/functions/billing-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "portal",
+          installation_id: installation.id,
+        }),
+      });
       const data = await res.json();
       if (data.portalUrl) {
         window.location.href = data.portalUrl;
@@ -249,10 +254,11 @@ function InstallationCard({
   async function handleCheckout(plan: string) {
     setCheckoutLoading(plan);
     try {
-      const res = await fetch("/.netlify/functions/stripe-checkout", {
+      const res = await fetch("/.netlify/functions/billing-proxy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          action: "checkout",
           installation_id: installation.id,
           plan,
         }),
