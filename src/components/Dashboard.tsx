@@ -203,9 +203,14 @@ function InstallationCard({
 
   async function fetchBillingInfo() {
     try {
-      const res = await fetch(
-        `/.netlify/functions/stripe-portal?installation_id=${installation.id}`
-      );
+      const res = await fetch("/.netlify/functions/billing-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "status",
+          installation_id: installation.id,
+        }),
+      });
       const data = await res.json();
       setBillingInfo(data);
     } catch {
@@ -227,9 +232,14 @@ function InstallationCard({
     }
     setBillingState("loading");
     try {
-      const res = await fetch(
-        `/.netlify/functions/stripe-portal?installation_id=${installation.id}`
-      );
+      const res = await fetch("/.netlify/functions/billing-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "portal",
+          installation_id: installation.id,
+        }),
+      });
       const data = await res.json();
       setBillingInfo(data);
       if (data.portalUrl) {
@@ -246,10 +256,14 @@ function InstallationCard({
   async function handleCheckout(plan: string) {
     setCheckoutLoading(plan);
     try {
-      const res = await fetch("/.netlify/functions/stripe-checkout", {
+      const res = await fetch("/.netlify/functions/billing-proxy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ installation_id: installation.id, plan }),
+        body: JSON.stringify({
+          action: "checkout",
+          installation_id: installation.id,
+          plan,
+        }),
       });
       const data = await res.json();
       if (data.checkoutUrl) {
