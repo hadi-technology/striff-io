@@ -42,7 +42,10 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: "Missing installation_id" }) };
   }
   if (!STRIFF_BILLING_AUTH_SECRET) {
-    return { statusCode: 500, body: JSON.stringify({ error: "Server not configured" }) };
+    return { statusCode: 500, body: JSON.stringify({ error: "Server not configured: BILLING_AUTH_SECRET missing" }) };
+  }
+  if (!STRIFF_SERVER_KEY) {
+    return { statusCode: 500, body: JSON.stringify({ error: "Server not configured: SERVER_KEY missing" }) };
   }
 
   const hmacToken = generateToken(installationId);
