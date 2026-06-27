@@ -8,13 +8,13 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
   description="Free for public repositories. Paid plans for private-repo teams that want automated structural review inside GitHub."
   canonical="https://striff.io/pricing"
 >
-  <main class="bg-slate-50 text-slate-900">
-    <section class="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-16 md:py-24">
+  <main class="pricing-page text-slate-900">
+    <section class="mx-auto flex max-w-[90rem] flex-col gap-8 px-6 py-16 md:py-24">
       <div class="max-w-3xl">
-        <p class="mb-4 inline-flex rounded-full border border-amber-300 bg-amber-50 px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-amber-800" data-reveal>
+        <p class="pricing-kicker" data-reveal>
           Pricing
         </p>
-        <h1 class="text-4xl font-black tracking-tight text-slate-950 md:text-6xl" data-reveal>
+        <h1 class="text-4xl font-black tracking-normal text-slate-950 md:text-6xl" data-reveal>
           Free for public repos. Paid for private-team rollout.
         </h1>
         <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600" data-reveal>
@@ -34,7 +34,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
       </div>
 
       <div class="grid gap-6 lg:grid-cols-3">
-        <article class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm" data-reveal>
+        <article class="pricing-card" data-reveal>
           <div class="flex items-center gap-3">
             <span class="icon-badge icon-badge-emerald" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.2 2.2 4.8-4.8"/></svg>
@@ -52,32 +52,32 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
           <a href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen" class="btn-secondary mt-8 inline-flex" target="_blank" rel="noopener noreferrer">Install</a>
         </article>
 
-        <article class="rounded-[2rem] border border-blue-300 bg-gradient-to-b from-blue-600 to-slate-950 p-8 text-white shadow-xl" data-reveal>
+        <article class="pricing-card pricing-card-featured" data-reveal>
           <div class="flex items-center gap-3">
             <span class="icon-badge icon-badge-dark-blue" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 4.13a3 3 0 0 1 0 5.74"/></svg>
             </span>
-            <p class="text-sm font-semibold uppercase tracking-[0.24em] text-blue-100">Team</p>
+            <p class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Team</p>
           </div>
           <div class="mt-3 flex items-end gap-2">
-            <h2 class="text-4xl font-black">$10</h2>
-            <p class="pb-1 text-sm text-blue-100">per seat / month</p>
+            <h2 class="text-4xl font-black text-slate-950">$10</h2>
+            <p class="pb-1 text-sm text-slate-500">per seat / month</p>
           </div>
-          <p class="mt-3 text-sm text-blue-100">Private repositories and shared team workflow</p>
-          <ul class="feature-list feature-list-light mt-6 space-y-3 text-sm leading-6 text-blue-50">
+          <p class="mt-3 text-sm text-slate-500">Private repositories and shared team workflow</p>
+          <ul class="feature-list mt-6 space-y-3 text-sm leading-6 text-slate-700">
             <li>Everything in Free</li>
             <li>GitHub App posts structural review output on private PRs</li>
             <li>Centralized checks instead of one-user extension-only review</li>
             <li>Billing and account management tied to your installation</li>
             <li>Email support</li>
           </ul>
-          <button id="pro-checkout-button" class="btn-primary mt-8 inline-flex bg-white text-slate-950 hover:bg-blue-50">
+          <button id="pro-checkout-button" class="btn-primary mt-8 inline-flex">
             Start plan
           </button>
-          <p id="checkout-status" class="mt-4 text-sm text-blue-100"></p>
+          <p id="checkout-status" class="mt-4 text-sm text-slate-500"></p>
         </article>
 
-        <article class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm" data-reveal>
+        <article class="pricing-card" data-reveal>
           <div class="flex items-center gap-3">
             <span class="icon-badge icon-badge-amber" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14.5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -97,7 +97,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
         </article>
       </div>
 
-      <div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm" data-reveal>
+      <div class="pricing-upgrade" data-reveal>
         <h2 class="text-2xl font-black text-slate-950">How the upgrade path works</h2>
         <div class="mt-4 grid gap-4 text-sm leading-7 text-slate-600 md:grid-cols-3">
           <p><strong class="text-slate-900">1.</strong> Prove Striff on public pull requests first. The extension is free and that is the intended entry point.</p>

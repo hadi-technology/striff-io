@@ -1,0 +1,51 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection, render } from "astro:content";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("blog");
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const { title, description, date, ogImage } = post.data;
+---
+
+<BaseLayout
+  title={`${title} - Striff Blog`}
+  description={description}
+  canonical={`https://striff.io/blog/${post.id}`}
+  ogImage={ogImage || "https://striff.io/og-image.png"}
+  ogType="article"
+>
+  <main class="pb-20 pt-16">
+    <div class="mx-auto max-w-[90rem] px-6">
+      <div class="blog-article">
+        <a href="/blog" class="blog-back" data-reveal>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path d="M13 8H3M7 4L3 8l4 4"/></svg>
+          Blog
+        </a>
+
+        <div class="blog-article-header" data-reveal>
+          <p class="blog-article-date">
+            {new Date(date).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </p>
+          <h1>{title}</h1>
+          <p class="blog-article-desc">{description}</p>
+        </div>
+
+        <div class="blog-prose" data-reveal>
+          <Content />
+        </div>
+      </div>
+    </div>
+  </main>
+</BaseLayout>

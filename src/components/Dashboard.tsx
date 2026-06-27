@@ -101,7 +101,8 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div class="flex items-center justify-center py-20">
+      <div class="dashboard-loading">
+        <div class="dashboard-spinner" aria-hidden="true" />
         <div class="text-slate-500">Loading dashboard...</div>
       </div>
     );
@@ -109,7 +110,7 @@ export default function Dashboard() {
 
   if (error && !user) {
     return (
-      <div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+      <div class="dashboard-alert dashboard-alert-danger">
         <p class="text-red-700">{error}</p>
         <a href="/" class="mt-4 inline-block text-sm text-blue-600 hover:underline">
           Back to homepage
@@ -119,21 +120,22 @@ export default function Dashboard() {
   }
 
   return (
-    <div>
+    <div class="dashboard-shell">
       {/* Header */}
-      <div class="flex items-center justify-between">
+      <div class="dashboard-account-bar">
         <div class="flex items-center gap-4">
           {user && (
-            <img src={user.avatar_url} alt={user.login} class="h-10 w-10 rounded-full" />
+            <img src={user.avatar_url} alt={user.login} class="h-11 w-11 rounded-lg border border-slate-200" />
           )}
           <div>
+            <p class="dashboard-kicker">Striff account</p>
             <h1 class="text-2xl font-bold text-slate-950">{user?.name || user?.login}</h1>
             <p class="text-sm text-slate-500">@{user?.login}</p>
           </div>
         </div>
         <button
           onClick={signOut}
-          class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          class="dashboard-button dashboard-button-secondary"
         >
           Sign out
         </button>
@@ -141,7 +143,7 @@ export default function Dashboard() {
 
       {/* Installations */}
       {installations.length === 0 ? (
-        <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-8 text-center">
+        <div class="dashboard-empty">
           <p class="text-slate-600">No Striff installations found.</p>
           <a
             href="https://github.com/apps/striff-app/installations/new"
@@ -153,7 +155,7 @@ export default function Dashboard() {
           </a>
         </div>
       ) : (
-        <div class="mt-8 space-y-6">
+        <div class="mt-8 space-y-5">
           {installations.map((inst) => (
             <InstallationCard
               key={inst.id}
@@ -166,7 +168,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {error && <p class="mt-4 text-sm text-red-600">{error}</p>}
+      {error && <p class="dashboard-inline-error">{error}</p>}
 
       {/* FAQ */}
       <FaqSection />
@@ -288,11 +290,11 @@ function InstallationCard({
   const displayedRepos = repoTab === "private" ? privateRepos : publicRepos;
 
   return (
-    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div class="dashboard-installation-card">
       {/* Header row */}
-      <div class="flex items-start justify-between">
+      <div class="dashboard-installation-head">
         <div class="flex items-center gap-3">
-          <img src={installation.account.avatar_url} alt={installation.account.login} class="h-8 w-8 rounded" />
+          <img src={installation.account.avatar_url} alt={installation.account.login} class="h-9 w-9 rounded-lg border border-slate-200" />
           <div>
             <h2 class="text-lg font-bold text-slate-950">{installation.account.login}</h2>
             <p class="text-xs text-slate-500">
@@ -302,7 +304,7 @@ function InstallationCard({
         </div>
         <div class="flex items-center gap-2">
           {billingInfo?.hasSubscription && billingInfo.planName && (
-            <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+            <span class="dashboard-plan-badge">
               {billingInfo.planName}
             </span>
           )}
@@ -310,33 +312,33 @@ function InstallationCard({
             href={manageReposUrl}
             target="_blank"
             rel="noopener noreferrer"
-            class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            class="dashboard-button dashboard-button-secondary"
           >
             Manage repos
           </a>
           <button
             onClick={handleBilling}
             disabled={billingState !== "idle"}
-            class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+            class="dashboard-button dashboard-button-primary disabled:opacity-50"
           >
             {billingState === "loading" ? "Loading..." : "Manage billing"}
           </button>
         </div>
       </div>
 
-      {/* No-plan warning for private repos */}
+      {/* No-plan prompt for private repos */}
       {hasNoPlan && (
-        <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
-          <p class="font-medium text-amber-800">
-            You have {privateRepos.length} private repo{privateRepos.length > 1 ? "s" : ""} enabled but no active subscription.
+        <div class="dashboard-plan-notice">
+          <p class="font-medium text-slate-900">
+            {privateRepos.length} private repo{privateRepos.length > 1 ? "s" : ""} enabled — choose a plan to enable analysis.
           </p>
-          <p class="mt-1 text-amber-700">
-            Private repo analysis requires a paid plan.{" "}
+          <p class="mt-1 text-slate-500">
+            Public repos are always free.{" "}
             <button
               onClick={() => setBillingState("subscribe")}
-              class="font-semibold text-amber-900 underline hover:no-underline"
+              class="font-semibold text-slate-900 underline underline-offset-2 hover:text-slate-700"
             >
-              Choose a plan
+              View plans
             </button>
           </p>
         </div>
@@ -344,28 +346,28 @@ function InstallationCard({
 
       {/* Plan picker */}
       {billingState === "subscribe" && (
-        <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <h3 class="text-sm font-bold text-slate-900">Select a plan for private repositories</h3>
-          <p class="mt-1 text-xs text-slate-600">
-            Public repos are always free. Choose a plan to enable Striff on private pull requests.
+        <div class="dashboard-plan-picker">
+          <h3 class="text-sm font-bold text-slate-900">Choose a plan</h3>
+          <p class="mt-1 text-xs text-slate-500">
+            Private repo analysis requires a paid plan. Public repos are always free.
           </p>
           <div class="mt-4 grid gap-3 sm:grid-cols-3">
             {PLANS.map((plan) => (
-              <div key={plan.id} class="rounded-xl border border-slate-200 bg-white p-4">
-                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{plan.name}</p>
+              <div key={plan.id} class="dashboard-plan-option">
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{plan.name}</p>
                 <p class="mt-1 text-lg font-black text-slate-950">{plan.price}</p>
                 <p class="text-xs text-slate-500">{plan.repos}</p>
                 <button
                   onClick={() => handleCheckout(plan.id)}
                   disabled={checkoutLoading === plan.id}
-                  class="mt-3 w-full rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                  class="mt-3 w-full rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                 >
                   {checkoutLoading === plan.id ? "Loading..." : "Subscribe"}
                 </button>
               </div>
             ))}
           </div>
-          <button onClick={() => setBillingState("idle")} class="mt-3 text-xs text-slate-500 hover:text-slate-700">
+          <button onClick={() => setBillingState("idle")} class="mt-3 text-xs text-slate-400 hover:text-slate-600">
             Cancel
           </button>
         </div>
@@ -374,23 +376,23 @@ function InstallationCard({
       {/* Repo tabs */}
       {repos.length > 0 && (
         <div class="mt-5">
-          <div class="flex gap-0 border-b border-slate-200">
+          <div class="dashboard-tabs">
             <button
               onClick={() => setRepoTab("private")}
-              class={`px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+              class={`dashboard-tab ${
                 repoTab === "private"
-                  ? "border-slate-900 text-slate-900"
-                  : "border-transparent text-slate-400 hover:text-slate-600"
+                  ? "dashboard-tab-active"
+                  : ""
               }`}
             >
               Private ({privateRepos.length})
             </button>
             <button
               onClick={() => setRepoTab("public")}
-              class={`px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+              class={`dashboard-tab ${
                 repoTab === "public"
-                  ? "border-slate-900 text-slate-900"
-                  : "border-transparent text-slate-400 hover:text-slate-600"
+                  ? "dashboard-tab-active"
+                  : ""
               }`}
             >
               Public ({publicRepos.length})
@@ -399,18 +401,18 @@ function InstallationCard({
 
           {/* Repo grid */}
           {displayedRepos.length > 0 ? (
-            <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 max-h-64 overflow-y-auto">
+            <div class="dashboard-repo-grid">
               {displayedRepos.map((repo) => (
                 <a
                   key={repo.full_name}
                   href={repo.html_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-colors hover:border-slate-300 hover:bg-slate-50 ${
-                    repo.private ? "border-amber-200 bg-amber-50/50" : "border-green-200 bg-green-50/50"
+                  class={`dashboard-repo-link ${
+                    repo.private ? "dashboard-repo-private" : "dashboard-repo-public"
                   }`}
                 >
-                  <span class={`inline-block h-2 w-2 shrink-0 rounded-full ${repo.private ? "bg-amber-400" : "bg-green-400"}`} />
+                  <span class={`inline-block h-2 w-2 shrink-0 rounded-full ${repo.private ? "bg-amber-500" : "bg-emerald-600"}`} />
                   <span class="truncate text-slate-700">{repo.full_name}</span>
                 </a>
               ))}
@@ -479,11 +481,11 @@ function FaqSection() {
   ];
 
   return (
-    <div class="mt-12">
+    <div class="dashboard-faq">
       <h2 class="text-xl font-bold text-slate-950">Frequently asked questions</h2>
       <div class="mt-4 space-y-2">
         {items.map((item, i) => (
-          <div key={i} class="rounded-xl border border-slate-200 bg-white">
+          <div key={i} class="dashboard-faq-item">
             <button
               onClick={() => setOpen(open === i ? null : i)}
               class="flex w-full items-center justify-between px-5 py-4 text-left"
