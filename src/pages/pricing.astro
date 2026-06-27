@@ -5,128 +5,98 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
 ---
 <BaseLayout
   title="Pricing | Striff"
-  description="Free for public repositories. Paid plans for private-repo teams that want automated structural review inside GitHub."
+  description="Free for public repositories. Flat monthly pricing for private-repo teams — $29/mo for 5 repos, $59/mo for 15, $149/mo for 50."
   canonical="https://striff.io/pricing"
 >
   <main class="pricing-page text-slate-900">
     <section class="mx-auto flex max-w-[90rem] flex-col gap-8 px-6 py-16 md:py-24">
       <div class="max-w-3xl">
-        <p class="pricing-kicker" data-reveal>
-          Pricing
-        </p>
-        <h1 class="text-4xl font-black tracking-normal text-slate-950 md:text-6xl" data-reveal>
-          Free for public repos. Paid for private-team rollout.
+        <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600" data-reveal>Pricing</p>
+        <h1 class="mt-3 text-4xl font-extrabold tracking-tight text-slate-950 md:text-5xl" data-reveal>
+          Free for public repos. Flat monthly pricing for private teams.
         </h1>
         <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600" data-reveal>
-          Start with public pull requests for free. Upgrade when your team wants automated structural review, shared GitHub checks, and private-repo coverage.
+          Start with public pull requests for free. Add the GitHub App when your team wants automated structural review on private repositories. Pricing scales by repo count, not seats.
         </p>
       </div>
 
-      <div class="pricing-overview" data-reveal>
-        <div class="pricing-overview-card">
-          <span class="pricing-overview-kicker">Best entry point</span>
-          <p>Use the extension on public repositories first, then expand into shared team workflow.</p>
-        </div>
-        <div class="pricing-overview-card">
-          <span class="pricing-overview-kicker">Paid boundary</span>
-          <p>Private repositories, centralized checks, billing, and broader rollout across a team.</p>
-        </div>
-      </div>
-
-      <div class="grid gap-6 lg:grid-cols-3">
-        <article class="pricing-card" data-reveal>
-          <div class="flex items-center gap-3">
-            <span class="icon-badge icon-badge-emerald" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.2 2.2 4.8-4.8"/></svg>
-            </span>
-            <p class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Free</p>
-          </div>
-          <h2 class="mt-3 text-3xl font-black text-slate-950">$0</h2>
-          <p class="mt-2 text-sm text-slate-500">Public repositories</p>
-          <ul class="feature-list mt-6 space-y-3 text-sm leading-6 text-slate-700">
-            <li>Chrome extension for public PR review</li>
-            <li>Structural diffs, unusual-edge signals, and grounded notes</li>
-            <li>Good fit for open-source projects and evaluation</li>
-            <li>Community support</li>
+      <div class="grid gap-5 lg:grid-cols-4" data-reveal>
+        <!-- Free -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
+          <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Free</p>
+          <h2 class="mt-3 text-3xl font-extrabold text-slate-950">$0</h2>
+          <p class="mt-1 text-sm text-slate-500">Public repositories</p>
+          <ul class="mt-5 space-y-2 text-sm text-slate-600">
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Chrome extension</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Structural diffs on any public PR</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Unusual-edge signals</li>
           </ul>
-          <a href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen" class="btn-secondary mt-8 inline-flex" target="_blank" rel="noopener noreferrer">Install</a>
+          <a href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen" class="btn-secondary mt-6 inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install</a>
         </article>
 
-        <article class="pricing-card pricing-card-featured" data-reveal>
-          <div class="flex items-center gap-3">
-            <span class="icon-badge icon-badge-dark-blue" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 4.13a3 3 0 0 1 0 5.74"/></svg>
-            </span>
-            <p class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Team</p>
-          </div>
-          <div class="mt-3 flex items-end gap-2">
-            <h2 class="text-4xl font-black text-slate-950">$10</h2>
-            <p class="pb-1 text-sm text-slate-500">per seat / month</p>
-          </div>
-          <p class="mt-3 text-sm text-slate-500">Private repositories and shared team workflow</p>
-          <ul class="feature-list mt-6 space-y-3 text-sm leading-6 text-slate-700">
-            <li>Everything in Free</li>
-            <li>GitHub App posts structural review output on private PRs</li>
-            <li>Centralized checks instead of one-user extension-only review</li>
-            <li>Billing and account management tied to your installation</li>
-            <li>Email support</li>
+        <!-- Starter -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
+          <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Starter</p>
+          <h2 class="mt-3 text-3xl font-extrabold text-slate-950">$29<span class="text-base font-medium text-slate-400">/mo</span></h2>
+          <p class="mt-1 text-sm text-slate-500">Up to 5 private repos</p>
+          <ul class="mt-5 space-y-2 text-sm text-slate-600">
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> GitHub App checks</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Automated structural review</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> All detectors + GNN scoring</li>
           </ul>
-          <button id="pro-checkout-button" class="btn-primary mt-8 inline-flex">
-            Start plan
-          </button>
-          <p id="checkout-status" class="mt-4 text-sm text-slate-500"></p>
+          <a href={githubInstallUrl} class="btn-secondary mt-6 inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Get started</a>
         </article>
 
-        <article class="pricing-card" data-reveal>
-          <div class="flex items-center gap-3">
-            <span class="icon-badge icon-badge-amber" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14.5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            </span>
-            <p class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Enterprise</p>
+        <!-- Team (featured) -->
+        <article class="rounded-2xl border-2 border-blue-500 bg-white p-6 shadow-lg ring-1 ring-blue-500/10">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-bold uppercase tracking-[0.12em] text-blue-600">Team</p>
+            <span class="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-600">Popular</span>
           </div>
-          <h2 class="mt-3 text-3xl font-black text-slate-950">Custom</h2>
-          <p class="mt-2 text-sm text-slate-500">For internal platforms and compliance-heavy teams</p>
-          <ul class="feature-list mt-6 space-y-3 text-sm leading-6 text-slate-700">
-            <li>Private deployment and internal-network constraints</li>
-            <li>SSO and audit-oriented workflows</li>
-            <li>Priority analysis and higher volume</li>
-            <li>Private deployment options</li>
-            <li>Dedicated support</li>
+          <h2 class="mt-3 text-3xl font-extrabold text-slate-950">$59<span class="text-base font-medium text-slate-400">/mo</span></h2>
+          <p class="mt-1 text-sm text-slate-500">Up to 15 private repos</p>
+          <ul class="mt-5 space-y-2 text-sm text-slate-600">
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Everything in Starter</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Shared team workflow</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Billing management</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Email support</li>
           </ul>
-          <a href="/contact" class="btn-secondary mt-8 inline-flex">Talk to us</a>
+          <a href={githubInstallUrl} class="btn-primary mt-6 inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Get started</a>
+        </article>
+
+        <!-- Scale -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
+          <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Scale</p>
+          <h2 class="mt-3 text-3xl font-extrabold text-slate-950">$149<span class="text-base font-medium text-slate-400">/mo</span></h2>
+          <p class="mt-1 text-sm text-slate-500">Up to 50 private repos</p>
+          <ul class="mt-5 space-y-2 text-sm text-slate-600">
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Everything in Team</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Higher analysis volume</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Priority processing</li>
+          </ul>
+          <a href={githubInstallUrl} class="btn-secondary mt-6 inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Get started</a>
         </article>
       </div>
 
-      <div class="pricing-upgrade" data-reveal>
-        <h2 class="text-2xl font-black text-slate-950">How the upgrade path works</h2>
+      <!-- Enterprise bar -->
+      <div class="flex flex-col items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-6 md:flex-row md:items-center" data-reveal>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Enterprise</p>
+          <h3 class="mt-1 text-xl font-bold text-slate-950">50+ repos, self-hosted, or compliance needs</h3>
+          <p class="mt-1 text-sm text-slate-600">Private deployment, SSO, audit workflows, and dedicated support.</p>
+        </div>
+        <a href="/contact" class="btn-primary inline-flex shrink-0">Talk to us</a>
+      </div>
+
+      <!-- How it works -->
+      <div class="mt-4" data-reveal>
+        <h2 class="text-xl font-bold text-slate-950">How billing works</h2>
         <div class="mt-4 grid gap-4 text-sm leading-7 text-slate-600 md:grid-cols-3">
-          <p><strong class="text-slate-900">1.</strong> Prove Striff on public pull requests first. The extension is free and that is the intended entry point.</p>
-          <p><strong class="text-slate-900">2.</strong> Install the GitHub App when your team wants structural review on private repositories.</p>
-          <p><strong class="text-slate-900">3.</strong> Stripe Checkout attaches billing to a specific installation and the customer portal handles invoices and cancellation.</p>
+          <p><strong class="text-slate-900">1.</strong> Install the GitHub App to connect your private repositories.</p>
+          <p><strong class="text-slate-900">2.</strong> Pick a tier based on how many private repos you need covered. Upgrade or downgrade anytime.</p>
+          <p><strong class="text-slate-900">3.</strong> Stripe handles billing — invoices, cancellation, and the customer portal are all self-serve.</p>
         </div>
       </div>
     </section>
   </main>
-
-  <script is:inline define:vars={{ githubInstallUrl }}>
-    const params = new URLSearchParams(window.location.search);
-    const installationId = params.get("installation_id");
-    const button = document.getElementById("pro-checkout-button");
-    const status = document.getElementById("checkout-status");
-
-    if (button && !installationId) {
-      status.textContent = "Install the GitHub App first so billing can be attached to a specific installation.";
-      button.addEventListener("click", () => {
-        window.location.href = githubInstallUrl;
-      });
-    }
-
-    if (button && installationId) {
-      status.textContent = `Billing for installation ${installationId}.`;
-      button.addEventListener("click", async () => {
-        status.textContent = "Redirecting to billing...";
-        window.location.href = `/dashboard?installation_id=${encodeURIComponent(installationId)}`;
-      });
-    }
-  </script>
 </BaseLayout>
