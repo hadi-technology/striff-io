@@ -1024,13 +1024,26 @@
     color: var(--ink-muted);
   }
 
-  .proof-logos-names {
-    margin-top: 0.35rem;
-    font-size: 0.85rem;
-    font-weight: 500;
+  .proof-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+    justify-content: center;
+  }
+
+  .proof-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.65rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--line);
+    background: white;
+    font-size: 0.78rem;
+    font-weight: 600;
     color: var(--ink-soft);
-    letter-spacing: 0.01em;
-    line-height: 1.6;
+    font-family: "IBM Plex Mono", monospace;
+    box-shadow: var(--shadow-sm);
   }
 
   /* Problem agitation section */
