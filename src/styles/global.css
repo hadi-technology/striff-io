@@ -4287,13 +4287,17 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.hero-panzoom-stage .github-diff-graphic {
+  filter: invert(0.92) hue-rotate(180deg) brightness(0.95);
+}
+
 .hero-diff-reset {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
-  background: rgba(15, 23, 42, 0.8);
-  color: #94a3b8;
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.9) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
   z-index: 6;
   backdrop-filter: blur(4px);
   z-index: 6;
@@ -4494,10 +4498,63 @@
 
 .example-slide-card {
   border-radius: 1.5rem;
-  border: 1px solid var(--line);
-  background: white;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   padding: 1.5rem;
-  box-shadow: var(--shadow-lg);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.5),
+    var(--shadow-xl);
+}
+
+.example-slide-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.example-slide-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.example-slide-sub {
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.example-slide-link {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+}
+
+.example-diagram-label {
+  color: #64748b !important;
+}
+
+.example-diff-stage {
+  background: #0f172a;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.example-diff-stage .github-diff-graphic {
+  filter: invert(0.92) hue-rotate(180deg) brightness(0.95);
+}
+
+.example-slide-card .github-diff-reset {
+  background: rgba(30, 41, 59, 0.9);
+  color: #94a3b8;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.example-slide-card .panzoom-hint {
+  background: rgba(15, 23, 42, 0.85);
+  color: #64748b;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .example-slide-header {
