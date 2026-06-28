@@ -40,22 +40,25 @@ const plans = [
     eyebrow: "Free",
     icon: "globe",
     title: "Public repositories",
-    body: "Install the browser extension and review architectural risk on any public pull request.",
-    price: "$0"
+    body: "Browser extension for any public PR. Structural diffs, unusual-edge signals, and AI review notes.",
+    price: "$0",
+    priceDetail: "forever"
   },
   {
-    eyebrow: "Private repos",
+    eyebrow: "Starter",
     icon: "team",
-    title: "Starter · Team · Scale",
-    body: "Add the GitHub App for automated checks on every private PR. $29/mo for 5 repos, $59/mo for 15, $149/mo for 50.",
-    price: "$29–149/mo"
+    title: "Private repos",
+    body: "GitHub App checks on every private PR. All detectors, GNN scoring, and automated review.",
+    price: "$29",
+    priceDetail: "/mo · 5 repos"
   },
   {
     eyebrow: "Enterprise",
     icon: "gear",
     title: "Self-hosted & 50+ repos",
     body: "Private deployment, SSO, and audit workflows for organizations that need full control.",
-    price: "Let's talk"
+    price: "",
+    priceDetail: "Talk to us"
   }
 ];
 
@@ -66,13 +69,13 @@ const proofStats = [
 ];
 
 const proofLogos = [
-  "Apache Phoenix",
   "JanssenProject / Jans",
-  "Line / Armeria",
+  "jbogard / MediatR",
   "ArcadeDB",
+  "acronis / uikit",
   "Mastra AI",
-  "pnpm",
-  "Appsmith",
+  "Line / Armeria",
+  "Apache Phoenix",
   "junit-team / junit5"
 ];
 ---
@@ -594,10 +597,18 @@ const proofLogos = [
                     )}
                   </span>
                   <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">{plan.eyebrow}</p>
-                  <span class="ml-auto text-lg font-extrabold text-blue-600">{plan.price}</span>
+                  <div class="ml-auto text-right">
+                    {plan.price && <span class="text-lg font-extrabold text-blue-600">{plan.price}</span>}
+                    <span class="block text-xs text-slate-400">{plan.priceDetail}</span>
+                  </div>
                 </div>
                 <p class="mt-3 text-base font-semibold text-slate-900">{plan.title}</p>
                 <p class="mt-2 text-sm leading-7 text-slate-600">{plan.body}</p>
+                {plan.eyebrow === "Starter" && (
+                  <p class="mt-3 text-xs text-slate-400">
+                    <a href="/pricing" class="text-blue-600 hover:underline">Team $59/mo · Scale $149/mo →</a>
+                  </p>
+                )}
               </article>
             ))}
           </div>
