@@ -3097,11 +3097,6 @@
     color: var(--ink);
   }
 
-  .dashboard-metric-subvalue {
-    font-size: 0.8rem;
-    color: #57606a;
-  }
-
   .dashboard-metric-trend {
     margin-left: auto;
     font-size: 0.78rem;
@@ -3110,14 +3105,6 @@
 
   .dashboard-metric-trend-neutral {
     color: #57606a;
-  }
-
-  .dashboard-metric-trend-good {
-    color: var(--mint);
-  }
-
-  .dashboard-metric-trend-bad {
-    color: var(--danger);
   }
 
   .dashboard-metric-caption {
@@ -4194,6 +4181,10 @@
 
 .github-diff-stage.is-dragging {
   cursor: grabbing;
+}
+
+.github-diff-stage.is-dragging .github-diff-image {
+  transition: none;
 }
 
 .github-diff-stage::before {
