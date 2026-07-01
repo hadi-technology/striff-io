@@ -1,7 +1,7 @@
 // Renders the org-level manager metrics dashboard (hotspots, PRs analyzed, package cycles,
 // high-impact changes, most-flagged repos) for one GitHub App installation. Purely presentational
 // -- the parent (Dashboard.tsx) owns fetching from metrics-proxy and passes the result down.
-import { createElement } from "react";
+import { createElement, useState } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -123,6 +123,9 @@ export default function MetricsTab({
   loading: boolean;
   error: string;
 }) {
+  // -1 means "no explicit selection yet" -- default to the latest month once data loads.
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(-1);
+
   if (loading) {
     return (
       <div class="dashboard-loading">
@@ -145,8 +148,12 @@ export default function MetricsTab({
   }
 
   const months = data.months;
-  const latest = months[months.length - 1];
-  const previous = months.length > 1 ? months[months.length - 2] : latest;
+  const selectedIndex =
+    selectedMonthIndex === -1 || selectedMonthIndex >= months.length
+      ? months.length - 1
+      : selectedMonthIndex;
+  const latest = months[selectedIndex];
+  const previous = selectedIndex > 0 ? months[selectedIndex - 1] : latest;
 
   // Config array of cards: adding a 6th metric later is a one-entry addition here (plus the
   // matching backend field) rather than a rewrite of this component. Each card's internal layout
@@ -156,7 +163,7 @@ export default function MetricsTab({
   const METRIC_CARDS: { key: string; label: string; render: () => any }[] = [
     {
       key: "hotspots",
-      label: "Architectural hotspots this month",
+      label: "Architectural hotspots",
       render: () => (
         <>
           <div class="dashboard-metric-value-row">
@@ -169,7 +176,7 @@ export default function MetricsTab({
     },
     {
       key: "prs",
-      label: "PRs analyzed this month",
+      label: "PRs analyzed",
       render: () => (
         <>
           <div class="dashboard-metric-value-row">
@@ -229,7 +236,7 @@ export default function MetricsTab({
               ))}
             </ul>
           ) : (
-            <p class="dashboard-metric-caption">None this month</p>
+            <p class="dashboard-metric-caption">None for the selected month</p>
           )}
         </>
       ),
@@ -272,7 +279,7 @@ export default function MetricsTab({
                 </ul>
               </>
             ) : (
-              <p class="dashboard-metric-caption">No flagged repos this month</p>
+              <p class="dashboard-metric-caption">No flagged repos for the selected month</p>
             )}
           </>
         );
@@ -281,12 +288,35 @@ export default function MetricsTab({
   ];
 
   return (
-    <div class="dashboard-metric-grid">
-      {METRIC_CARDS.map((card) => (
-        <MetricCardShell key={card.key} label={card.label}>
-          {card.render()}
-        </MetricCardShell>
-      ))}
+    <div>
+      <div class="dashboard-metric-month-picker">
+        <label for="metrics-month-select" class="dashboard-metric-label">Month</label>
+        <select
+          id="metrics-month-select"
+          class="dashboard-metric-month-select"
+          value={selectedIndex}
+          onChange={(e: any) => setSelectedMonthIndex(Number(e.target.value))}
+        >
+          {months.map((m, i) => (
+            <option key={m.yearMonth} value={i}>
+              {formatYearMonth(m.yearMonth)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div class="dashboard-metric-grid">
+        {METRIC_CARDS.map((card) => (
+          <MetricCardShell key={card.key} label={card.label}>
+            {card.render()}
+          </MetricCardShell>
+        ))}
+      </div>
     </div>
   );
+}
+
+function formatYearMonth(yearMonth: string): string {
+  const [year, month] = yearMonth.split("-");
+  const date = new Date(Number(year), Number(month) - 1, 1);
+  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }

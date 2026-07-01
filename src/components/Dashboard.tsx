@@ -469,7 +469,7 @@ function InstallationCard({
                         <span class="truncate text-slate-700">{repo.full_name}</span>
                         {isActive && (
                           <span class="dashboard-plan-badge ml-auto shrink-0" title="Actively analyzed by Striff">
-                            \u2713 Active
+                            {"\u2713"} Active
                           </span>
                         )}
                       </a>
