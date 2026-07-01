@@ -3062,14 +3062,119 @@
     animation: spin 800ms linear infinite;
   }
 
+  .dashboard-metric-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .dashboard-metric-card {
+    border: 1px solid rgba(31, 35, 40, 0.12);
+    border-radius: 0.75rem;
+    background: #ffffff;
+    box-shadow: var(--shadow-sm);
+    padding: 1rem;
+  }
+
+  .dashboard-metric-label {
+    color: #57606a;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .dashboard-metric-value-row {
+    margin-top: 0.35rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .dashboard-metric-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--ink);
+  }
+
+  .dashboard-metric-subvalue {
+    font-size: 0.8rem;
+    color: #57606a;
+  }
+
+  .dashboard-metric-trend {
+    margin-left: auto;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .dashboard-metric-trend-neutral {
+    color: #57606a;
+  }
+
+  .dashboard-metric-trend-good {
+    color: var(--mint);
+  }
+
+  .dashboard-metric-trend-bad {
+    color: var(--danger);
+  }
+
+  .dashboard-metric-caption {
+    margin-top: 0.2rem;
+    font-size: 0.78rem;
+    color: #57606a;
+  }
+
+  .dashboard-metric-chart-wrap {
+    margin-top: 0.5rem;
+  }
+
+  .dashboard-metric-list {
+    margin-top: 0.6rem;
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .dashboard-metric-list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: space-between;
+    border-radius: 0.4rem;
+    background: #f6f8fa;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.78rem;
+    color: #24292f;
+  }
+
+  .dashboard-metric-list-badge {
+    flex-shrink: 0;
+    font-weight: 700;
+    color: #57606a;
+    font-size: 0.72rem;
+  }
+
+  .dashboard-metric-fade-in {
+    animation: dashboardMetricFadeIn 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
   @media (min-width: 640px) {
     .dashboard-repo-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-metric-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
   @media (min-width: 1024px) {
     .dashboard-repo-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .dashboard-metric-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
@@ -3083,6 +3188,17 @@
   }
 
   [data-reveal].is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashboardMetricFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
     opacity: 1;
     transform: translateY(0);
   }

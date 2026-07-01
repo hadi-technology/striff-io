@@ -1,4 +1,5 @@
 import { createElement, useState, useEffect } from "react";
+import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 
 const OAUTH_CLIENT_ID =
   typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_GITHUB_OAUTH_CLIENT_ID
@@ -198,10 +199,40 @@ function InstallationCard({
   const [billingState, setBillingState] = useState<"idle" | "loading" | "subscribe">("idle");
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
+  const [installTab, setInstallTab] = useState<"repos" | "metrics">("repos");
+  const [metrics, setMetrics] = useState<OrgMetricsData | null>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsError, setMetricsError] = useState("");
 
   useEffect(() => {
     fetchBillingInfo();
   }, []);
+
+  useEffect(() => {
+    if (installTab === "metrics" && !metrics && !metricsLoading) {
+      fetchMetrics();
+    }
+  }, [installTab]);
+
+  async function fetchMetrics() {
+    setMetricsLoading(true);
+    setMetricsError("");
+    try {
+      const res = await fetch(
+        `/.netlify/functions/metrics-proxy?installation_id=${installation.id}&months=6`
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setMetricsError(data.error || "Failed to load metrics");
+        return;
+      }
+      setMetrics(data);
+    } catch {
+      setMetricsError("Failed to load metrics");
+    } finally {
+      setMetricsLoading(false);
+    }
+  }
 
   async function fetchBillingInfo() {
     try {
@@ -373,62 +404,96 @@ function InstallationCard({
         </div>
       )}
 
-      {/* Repo tabs */}
+      {/* Repositories / Metrics tabs */}
       {repos.length > 0 && (
         <div class="mt-5">
           <div class="dashboard-tabs">
             <button
-              onClick={() => setRepoTab("private")}
-              class={`dashboard-tab ${
-                repoTab === "private"
-                  ? "dashboard-tab-active"
-                  : ""
-              }`}
+              onClick={() => setInstallTab("repos")}
+              class={`dashboard-tab ${installTab === "repos" ? "dashboard-tab-active" : ""}`}
             >
-              Private ({privateRepos.length})
+              Repositories
             </button>
             <button
-              onClick={() => setRepoTab("public")}
-              class={`dashboard-tab ${
-                repoTab === "public"
-                  ? "dashboard-tab-active"
-                  : ""
-              }`}
+              onClick={() => setInstallTab("metrics")}
+              class={`dashboard-tab ${installTab === "metrics" ? "dashboard-tab-active" : ""}`}
             >
-              Public ({publicRepos.length})
+              Metrics
             </button>
           </div>
 
-          {/* Repo grid */}
-          {displayedRepos.length > 0 ? (
-            <div class="dashboard-repo-grid">
-              {displayedRepos.map((repo) => (
-                <a
-                  key={repo.full_name}
-                  href={repo.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class={`dashboard-repo-link ${
-                    repo.private ? "dashboard-repo-private" : "dashboard-repo-public"
+          {installTab === "repos" ? (
+            <div class="dashboard-metric-fade-in">
+              <div class="dashboard-tabs mt-3">
+                <button
+                  onClick={() => setRepoTab("private")}
+                  class={`dashboard-tab ${
+                    repoTab === "private"
+                      ? "dashboard-tab-active"
+                      : ""
                   }`}
                 >
-                  <span class={`inline-block h-2 w-2 shrink-0 rounded-full ${repo.private ? "bg-amber-500" : "bg-emerald-600"}`} />
-                  <span class="truncate text-slate-700">{repo.full_name}</span>
-                </a>
-              ))}
+                  Private ({privateRepos.length})
+                </button>
+                <button
+                  onClick={() => setRepoTab("public")}
+                  class={`dashboard-tab ${
+                    repoTab === "public"
+                      ? "dashboard-tab-active"
+                      : ""
+                  }`}
+                >
+                  Public ({publicRepos.length})
+                </button>
+              </div>
+
+              {/* Repo grid */}
+              {displayedRepos.length > 0 ? (
+                <div class="dashboard-repo-grid">
+                  {displayedRepos.map((repo) => {
+                    const [repoOwner, repoName] = repo.full_name.split("/");
+                    const isActive = metrics?.activeRepos.some(
+                      (r) => r.repoOwner === repoOwner && r.repoName === repoName && r.active
+                    );
+                    return (
+                      <a
+                        key={repo.full_name}
+                        href={repo.html_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class={`dashboard-repo-link ${
+                          repo.private ? "dashboard-repo-private" : "dashboard-repo-public"
+                        }`}
+                      >
+                        <span class={`inline-block h-2 w-2 shrink-0 rounded-full ${repo.private ? "bg-amber-500" : "bg-emerald-600"}`} />
+                        <span class="truncate text-slate-700">{repo.full_name}</span>
+                        {isActive && (
+                          <span class="dashboard-plan-badge ml-auto shrink-0" title="Actively analyzed by Striff">
+                            \u2713 Active
+                          </span>
+                        )}
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p class="mt-3 px-3 py-6 text-center text-sm text-slate-400">
+                  No {repoTab} repositories enabled
+                  {repoTab === "private" && (
+                    <>
+                      {" \u2014 "}
+                      <a href={manageReposUrl} target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
+                        add private repos
+                      </a>
+                    </>
+                  )}
+                </p>
+              )}
             </div>
           ) : (
-            <p class="mt-3 px-3 py-6 text-center text-sm text-slate-400">
-              No {repoTab} repositories enabled
-              {repoTab === "private" && (
-                <>
-                  {" \u2014 "}
-                  <a href={manageReposUrl} target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
-                    add private repos
-                  </a>
-                </>
-              )}
-            </p>
+            <div class="mt-3 dashboard-metric-fade-in">
+              <MetricsTab data={metrics} loading={metricsLoading} error={metricsError} />
+            </div>
           )}
         </div>
       )}
