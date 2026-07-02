@@ -24,6 +24,8 @@ export interface MonthlyMetrics {
   structuralRegressionCount: number;
   reviewHotspotCount: number;
   prsAnalyzedCount: number;
+  cleanPrCount: number;
+  highRiskPrCount: number;
   topFlaggedRepos: RepoHotspot[];
 }
 
@@ -55,11 +57,11 @@ function TrendArrow({ current, previous }: { current: number; previous: number }
   );
 }
 
-function Sparkline({ months, dataKey, color }: { months: MonthlyMetrics[]; dataKey: keyof MonthlyMetrics; color: string }) {
+function Sparkline<T>({ data, dataKey, color }: { data: T[]; dataKey: keyof T; color: string }) {
   return (
     <div class="dashboard-metric-chart-wrap">
       <ResponsiveContainer width="100%" height={56}>
-        <AreaChart data={months} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+        <AreaChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id={`spark-${String(dataKey)}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={color} stopOpacity={0.35} />
@@ -131,6 +133,17 @@ export default function MetricsTab({
   const latest = months[selectedIndex];
   const previous = selectedIndex > 0 ? months[selectedIndex - 1] : latest;
 
+  // cleanPrCount/highRiskPrCount come back as counts (same shape as every other backend field --
+  // see MonthlyMetricsDto), not rates. Rate is a display concern, so it's derived here rather
+  // than asking the backend to duplicate the same division per month.
+  const cleanPrRate = (m: MonthlyMetrics) => ratePct(m.cleanPrCount, m.prsAnalyzedCount);
+  const highRiskPrRate = (m: MonthlyMetrics) => ratePct(m.highRiskPrCount, m.prsAnalyzedCount);
+  const monthsWithRates = months.map((m) => ({
+    ...m,
+    cleanPrRate: cleanPrRate(m),
+    highRiskPrRate: highRiskPrRate(m),
+  }));
+
   // Config array of cards: adding a metric later is a one-entry addition here (plus the matching
   // backend field) rather than a rewrite of this component.
   const METRIC_CARDS: { key: string; label: string; render: () => any }[] = [
@@ -143,7 +156,7 @@ export default function MetricsTab({
             <span class="dashboard-metric-value">{latest.structuralRegressionCount}</span>
             <TrendArrow current={latest.structuralRegressionCount} previous={previous.structuralRegressionCount} />
           </div>
-          <Sparkline months={months} dataKey="structuralRegressionCount" color="var(--danger)" />
+          <Sparkline data={months} dataKey="structuralRegressionCount" color="var(--danger)" />
         </>
       ),
     },
@@ -156,7 +169,33 @@ export default function MetricsTab({
             <span class="dashboard-metric-value">{latest.reviewHotspotCount}</span>
             <TrendArrow current={latest.reviewHotspotCount} previous={previous.reviewHotspotCount} />
           </div>
-          <Sparkline months={months} dataKey="reviewHotspotCount" color="var(--brand)" />
+          <Sparkline data={months} dataKey="reviewHotspotCount" color="var(--brand)" />
+        </>
+      ),
+    },
+    {
+      key: "cleanRate",
+      label: "Clean PR rate",
+      render: () => (
+        <>
+          <div class="dashboard-metric-value-row">
+            <span class="dashboard-metric-value">{cleanPrRate(latest)}%</span>
+            <TrendArrow current={cleanPrRate(latest)} previous={cleanPrRate(previous)} />
+          </div>
+          <Sparkline data={monthsWithRates} dataKey="cleanPrRate" color="var(--mint)" />
+        </>
+      ),
+    },
+    {
+      key: "highRiskRate",
+      label: "High-risk PR rate",
+      render: () => (
+        <>
+          <div class="dashboard-metric-value-row">
+            <span class="dashboard-metric-value">{highRiskPrRate(latest)}%</span>
+            <TrendArrow current={highRiskPrRate(latest)} previous={highRiskPrRate(previous)} />
+          </div>
+          <Sparkline data={monthsWithRates} dataKey="highRiskPrRate" color="var(--danger)" />
         </>
       ),
     },
@@ -169,7 +208,7 @@ export default function MetricsTab({
             <span class="dashboard-metric-value">{latest.prsAnalyzedCount}</span>
             <TrendArrow current={latest.prsAnalyzedCount} previous={previous.prsAnalyzedCount} />
           </div>
-          <Sparkline months={months} dataKey="prsAnalyzedCount" color="var(--mint)" />
+          <Sparkline data={months} dataKey="prsAnalyzedCount" color="var(--mint)" />
         </>
       ),
     },
@@ -251,4 +290,8 @@ function formatYearMonth(yearMonth: string): string {
   const [year, month] = yearMonth.split("-");
   const date = new Date(Number(year), Number(month) - 1, 1);
   return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+function ratePct(count: number, total: number): number {
+  return total > 0 ? Math.round((count / total) * 100) : 0;
 }
