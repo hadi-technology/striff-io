@@ -4670,11 +4670,13 @@
   grid-template-columns: 2.2fr 1fr;
   gap: 0;
   align-items: stretch;
+  height: 40rem;
 }
 
 @media (max-width: 900px) {
   .example-split {
     grid-template-columns: 1fr;
+    height: auto;
   }
 }
 
@@ -4699,6 +4701,13 @@
   display: flex;
   flex-direction: column;
   background: white;
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .example-split-findings {
+    overflow-y: visible;
+  }
 }
 
 .example-slide-title {

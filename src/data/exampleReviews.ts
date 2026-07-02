@@ -120,114 +120,58 @@ export const exampleReviews: ExampleReview[] = [
     }
   },
   {
-    id: "mediatr",
+    id: "orchardcore",
     language: "C#",
     accent: "blue",
-    repo: "jbogard/MediatR",
-    pr: "#1157",
-    prTitle: "Fix: cryptic \"No constructor\" error when ILoggerFactory not registered",
-    href: "https://github.com/LuckyPennySoftware/MediatR/pull/1157",
-    summary: "3 findings · 5 components · MEDIUM risk",
-    headline: "Two missing generic parameters. One new cross-package dependency.",
-    body: "MediatR is the most widely-used CQRS library in .NET. This PR touches its DI wiring — exactly the kind of change where one missing generic parameter quietly breaks every consumer. Copilot caught the implementation bugs. Striff caught what the package diagram now looks like: Registration imports Licensing for the first time.",
-    svg: "/examples/mediatr.svg",
+    repo: "OrchardCMS/OrchardCore",
+    pr: "#18887",
+    prTitle: "Refactor PlacementInfo API and improve placement handling",
+    href: "https://github.com/OrchardCMS/OrchardCore/pull/18887",
+    summary: "5 findings · 10 components · 15 relationships · MEDIUM risk",
+    headline: "God-class remediation, quantified: cut EC by 1 and WMC by ~10 with a named replacement class.",
+    body: "This PR adds a new GroupingMetadata struct and wires it into PlacementInfo. Striff traces the resulting coupling growth — EC +9, WMC +50 on PlacementInfo — and prescribes a specific fix: extract a GroupingMetadataHandler and delegate to it.",
+    svg: "/examples/orchardcore.svg",
     panzoom: {
-      desktop: { scale: 1.2, x: -40, y: -20 },
-      mobile: { scale: 1.0, x: -20, y: -10 }
+      desktop: { scale: 1.05, x: -60, y: -30 },
+      mobile: { scale: 0.85, x: -30, y: -15 }
     },
     viewport: {
-      desktopHeight: "28rem",
-      mobileHeight: "18rem"
+      desktopHeight: "34rem",
+      mobileHeight: "22rem"
     },
     metrics: [
-      "5 components in the structural diff",
-      "3 findings including 1 boundary crossing",
-      "Copilot posted 7 inline review comments"
+      "10 components in the structural diff",
+      "15 relationships across the DisplayManagement package",
+      "5 findings including a new package cycle"
     ],
-    checkHeader: "Copilot caught the missing parameters and the dead code. Striff caught what the package diagram now looks like.",
+    checkHeader: "Striff doesn't just flag the god-class risk — it quantifies the fix: reduce EC by at least 1 and WMC by ~10 with a named extraction target.",
     checks: [
       {
         level: "danger",
-        title: "New cross-package dependency: Registration → Licensing",
-        body: "`MediatR.Registration.ServiceRegistrar` now depends on `MediatR.Licensing.LicenseAccessor` and `LicenseValidator`. The Registration package previously had no edges into Licensing — should registration logic know about licensing?"
+        title: "New package cycle in DisplayManagement",
+        body: "Cycle: `Zones` → `Descriptors.ShapeTablePlacementProvider` → `DisplayManagement` → `Descriptors` → `Shapes.ShapeDebugView` → `Shapes` → `Zones`. The cycle spans 6 components this PR touches."
+      },
+      {
+        level: "danger",
+        title: "New directional boundary crossing",
+        body: "New dependency from `OrchardCore.Tests.DisplayManagement.Decriptors` to `OrchardCore.DisplayManagement.Zones` — no prior edge in this direction, and it skips 4 layers."
       },
       {
         level: "warn",
-        title: "Cross-package licensing dependency",
-        body: "The fix wires `ServiceRegistrar` directly to licensing types, mixing registration concerns with license validation. Both packages still work, but the boundary between them just got softer."
-      }
-    ],
-    highlights: [
-      "Review whether Registration should import Licensing directly, or if licensing validation should be injected via interface.",
-      "Consider whether the licensing check belongs in the DI registration path at all — this couples two separate concerns.",
-      "The fix works, but it creates a structural dependency that will outlast the bug it fixes."
-    ],
-    aiTool: {
-      name: "Copilot",
-      findings: [
-        { severity: "danger", severityLabel: "Bug", title: "Missing type parameter in TryAddSingleton<LicenseAccessor>", body: "Registers nothing because the generic parameter is omitted. Will not register `LicenseAccessor` in the DI container correctly." },
-        { severity: "danger", severityLabel: "Bug", title: "Missing type parameter in TryAddSingleton<LicenseValidator>", body: "Same bug, second location. `LicenseValidator` won't be registered correctly either." },
-        { severity: "warn", severityLabel: "Logic", title: "Exception message implies ordering that isn't required", body: "Says \"before AddMediatR()\" but registration order doesn't actually matter as long as ILoggerFactory is registered before resolution." },
-        { severity: "warn", severityLabel: "Gap", title: "No test for the new exception path", body: "Adding a focused test that omits logging and asserts the thrown message would prevent regressions." },
-        { severity: "warn", severityLabel: "Dead code", title: "Unreachable fallback branch", body: "`MediatRServiceConfiguration` is always registered just above, so the `?? new LicenseAccessor(...)` branch is unreachable." },
-        { severity: "warn", severityLabel: "Inconsistency", title: "PR description and implementation diverge", body: "The described simplification was not applied to the second method." },
-        { severity: "danger", severityLabel: "Bug", title: "Bare DI registrations will hit the same cryptic error", body: "`LicenseAccessor` and `LicenseValidator` registered without factory lambdas will fail with exactly the bug this PR is fixing." }
-      ],
-      verdict: "Copilot found seven implementation issues — two missing generic parameters that silently break DI registration, dead code, and a misleading exception message.",
-      missed: "Striff found what the package diagram now looks like: Registration imports Licensing for the first time. Both reviews matter on a PR like this."
-    }
-  },
-  {
-    id: "arcadedb",
-    language: "Java",
-    accent: "amber",
-    repo: "ArcadeData/arcadedb",
-    pr: "#4572",
-    prTitle: "fix(#4550): guard RemoteHttpComponent.getLeaderAddress against null",
-    href: "https://github.com/ArcadeData/arcadedb/pull/4572",
-    summary: "4 findings · 6 components · MEDIUM risk",
-    headline: "Bug fix scope: 3 lines. Architectural scope: 8 hops.",
-    body: "A small null-guard fix drags in a large architectural cost. Gemini caught the next null-related crash. Striff caught the 8-hop dependency cycle the test scaffolding introduced — a structural debt that survives the bug fix and stays in the codebase.",
-    svg: "/examples/arcadedb.svg",
-    panzoom: {
-      desktop: { scale: 1.3, x: -80, y: -40 },
-      mobile: { scale: 1.1, x: -40, y: -20 }
-    },
-    viewport: {
-      desktopHeight: "30rem",
-      mobileHeight: "20rem"
-    },
-    metrics: [
-      "6 components in the structural diff",
-      "4 findings including 2 HIGH severity",
-      "8-hop dependency cycle spanning gremlin and remote packages"
-    ],
-    checkHeader: "Gemini caught the next null-related crash. Striff caught the 8-hop cycle the test scaffolding introduced.",
-    checks: [
-      {
-        level: "danger",
-        title: "New 8-hop package cycle",
-        body: "Cycle: `gremlin.service` → `remote` → `RemoteHttpComponentTest` → `RemoteDatabaseTest` → `gremlin` → `ArcadeGraphRemoteTraversalTest` → `ArcadeGraphFactory` → `RemoteServerTest` → `gremlin.service`. The fix was three lines. The cycle spans eight types across two packages."
+        title: "PlacementInfo complexity surge",
+        body: "`PlacementInfo` EC jumped from 6 to 15 and WMC from 28 to 78. Moving `GroupingMetadata` parsing into a dedicated `GroupingMetadataHandler` is projected to cut EC by at least 1 and WMC by ~10."
       },
       {
-        level: "danger",
-        title: "10 dependents on the modified component",
-        body: "`RemoteHttpComponent` has afferent coupling of 10. The PR's null-guard changes its return contract from \"always an address\" to \"address or null\" — every dependent now needs to handle null, even if the compiler doesn't force them to."
+        level: "warn",
+        title: "Complexity growth on GroupingMetadata",
+        body: "`GroupingMetadata` WMC grew by 27 (from 0 to 27) as a new component — consider extracting cohesive method groups."
       }
     ],
     highlights: [
-      "The 8-hop cycle is structural debt — it will survive the bug fix and stay in the codebase.",
-      "Review whether the test scaffolding can be decoupled from the gremlin service package.",
-      "Check that all 10 dependents of RemoteHttpComponent handle the new null return path."
-    ],
-    aiTool: {
-      name: "Gemini",
-      findings: [
-        { severity: "warn", severityLabel: "Medium", title: "Empty remoteAddresses array can throw IllegalArgumentException", body: "If both `leaderAddress` is null and there are no replica addresses, the empty array passed to `Cluster.Builder.addContactPoints` will throw." }
-      ],
-      verdict: "Gemini caught the next null-related crash — the empty array edge case that the null-guard doesn't cover.",
-      missed: "Striff caught the 8-hop dependency cycle the test scaffolding introduced — a structural debt that survives the bug fix."
-    }
+      "Extract a `GroupingMetadataHandler` and have `PlacementInfo` delegate to it instead of aggregating `GroupingMetadata` directly.",
+      "Break the 6-component package cycle in `DisplayManagement` before it calcifies.",
+      "Embed `GroupingMetadata` as a private field constructed by `PlacementLocationBuilder`, making ownership explicit."
+    ]
   },
   {
     id: "uikit",
@@ -283,65 +227,6 @@ export const exampleReviews: ExampleReview[] = [
       ],
       verdict: "Copilot found an XSS injection path, a formatter bug, falsy-zero filtering, and two other correctness issues in the new component.",
       missed: "Striff found the migration plan moving in the wrong direction — legacy code reaching into the new package before it's shipped."
-    }
-  },
-  {
-    id: "mastra",
-    language: "TypeScript",
-    accent: "rose",
-    repo: "mastra-ai/mastra",
-    pr: "#16658",
-    prTitle: "Auth0 session options integration",
-    href: "https://github.com/mastra-ai/mastra/pull/16658",
-    summary: "3 findings · 8 components · 5 relationships · HIGH risk",
-    headline: "Type-safe. Just not architecturally bounded.",
-    body: "This PR integrates Auth0 session management. CodeRabbit found a process-local OAuth state store that won't scale and a cookie regex bug. Striff found the example agent reaching directly into the Auth0 package internals — a boundary violation that couples example code to a specific auth implementation.",
-    svg: "/examples/mastra.svg",
-    panzoom: {
-      desktop: { scale: 1.2, x: -40, y: -20 },
-      mobile: { scale: 1.0, x: -20, y: -10 }
-    },
-    viewport: {
-      desktopHeight: "26rem",
-      mobileHeight: "16rem"
-    },
-    metrics: [
-      "8 components in the structural diff",
-      "5 relationships in the auth layer",
-      "3 findings including 1 HIGH severity boundary crossing"
-    ],
-    checkHeader: "CodeRabbit found the OAuth state store bug and the cookie regex. Striff found the example code reaching into Auth0 internals.",
-    checks: [
-      {
-        level: "danger",
-        title: "New directional boundary crossing",
-        body: "`examples.agent.src.mastra.auth` now depends on `auth.auth0.src` — no prior edge in this direction. Example code is reaching directly into the Auth0 package."
-      },
-      {
-        level: "warn",
-        title: "Session config increases coupling (EC +3, instability +0.13)",
-        body: "The new `MastraAuthAuth0SessionOptions` interface aggregates into `MastraAuthAuth0Options`, increasing coupling and instability in the auth module."
-      },
-      {
-        level: "note",
-        title: "Encapsulate StatePayload in shared types",
-        body: "The PR introduces a dependency on `StatePayload` from the auth0 package. Moving it to shared types would avoid the boundary crossing."
-      }
-    ],
-    highlights: [
-      "Move `StatePayload` to a shared types package to break the boundary crossing.",
-      "Review whether the examples agent should depend on auth abstractions, not Auth0 specifics.",
-      "Assess whether the instability increase (+0.13) is acceptable for the auth module."
-    ],
-    aiTool: {
-      name: "CodeRabbit",
-      findings: [
-        { severity: "danger", severityLabel: "Major", title: "Process-local OAuth state store won't scale", body: "This map only works when `/authorize` and `/callback` hit the same process. In load-balanced or serverless deployments, valid logins will intermittently fail with invalid/expired state." },
-        { severity: "warn", severityLabel: "Major", title: "Cookie regex matching bug", body: "The current regex will also match prefixed names like `xauth0_session=...`, and custom cookie names containing regex metacharacters will parse incorrectly." },
-        { severity: "warn", severityLabel: "Minor", title: "AUTH0_REDIRECT_URI not cleared in test suite", body: "The constructor reads this env var, but test hooks never reset it. If another test file sets it, the SSO cases become order-dependent." }
-      ],
-      verdict: "CodeRabbit found a production scalability bug (process-local state store), a cookie parsing bug, and a test isolation issue.",
-      missed: "Striff found the example code reaching into Auth0 package internals — boundaries that aren't enforced by the compiler or caught by line-level review."
     }
   }
 ];

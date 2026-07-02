@@ -139,8 +139,8 @@ const proofLogos = [
           <div class="hero-stage-shell" data-hero-stage>
             <div class="hero-stage-head">
               <div class="hero-stage-context">
-                <span class="hero-context-chip">ArcadeData/arcadedb</span>
-                <span class="hero-context-chip hero-context-chip-muted">PR #4572</span>
+                <span class="hero-context-chip">apache/fineract</span>
+                <span class="hero-context-chip hero-context-chip-muted">PR #6063</span>
                 <span class="hero-context-chip hero-context-chip-muted">Java</span>
                 <span class="hero-context-chip hero-context-chip-danger">2 HIGH · 2 MEDIUM</span>
               </div>
@@ -152,16 +152,16 @@ const proofLogos = [
                 class="github-diff-stage example-diff-stage hero-diagram-stage"
                 style="--example-stage-height: 40rem; --example-stage-height-mobile: 26rem;"
                 data-panzoom="pz-hero"
-                data-initial-scale="1.24"
-                data-initial-x="-252"
-                data-initial-y="-923"
-                data-mobile-scale="2.0"
-                data-mobile-x="-550"
-                data-mobile-y="-200"
+                data-initial-scale="1.38"
+                data-initial-x="-403"
+                data-initial-y="-4"
+                data-mobile-scale="2.2"
+                data-mobile-x="-260"
+                data-mobile-y="-140"
               >
                 <img
-                  src="/examples/arcadedb.svg"
-                  alt="Striff structural diff for ArcadeData/arcadedb PR #4572"
+                  src="/examples/fineract.svg"
+                  alt="Striff structural diff for apache/fineract PR #6063"
                   class="github-diff-graphic github-diff-image"
                   loading="eager"
                   draggable="false"
@@ -179,7 +179,7 @@ const proofLogos = [
                 <!-- Findings overlay (starts open, collapsible) -->
                 <div class="hero-findings-overlay is-open" data-findings-overlay>
                   <button class="hero-findings-toggle" type="button" data-findings-toggle>
-                    <span class="hero-findings-badge">5 findings · HIGH risk</span>
+                    <span class="hero-findings-badge">4 findings · HIGH risk</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hero-findings-chevron"><path d="M6 9l6 6 6-6"/></svg>
                   </button>
                   <div class="hero-findings-panel">
@@ -187,41 +187,34 @@ const proofLogos = [
                       <div class="ai-finding ai-finding-danger" data-tour-finding="0">
                         <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
                         <div>
-                          <strong>New 8-hop package cycle</strong>
-                          <p>gremlin.service → remote → tests → gremlin. 8 types across 2 packages dragged in by a 3-line fix.</p>
+                          <strong>Package structure violation</strong>
+                          <p><code>DefaultCommandHandlerManager</code> sits in <code>implementation</code>, but <code>REFACTORING.md</code> requires command handlers to live in <code>handler</code>. Doc-grounded — cites the file by name.</p>
                         </div>
                       </div>
                       <div class="ai-finding ai-finding-danger" data-tour-finding="1">
                         <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
                         <div>
-                          <strong>10 dependents on modified component</strong>
-                          <p><code>RemoteHttpComponent</code> return contract changed from "always an address" to "address or null". Every dependent now needs null handling.</p>
+                          <strong>New directional boundary crossing</strong>
+                          <p>New dependency from <code>command</code> to <code>command.implementation</code> — no prior edge in this direction.</p>
                         </div>
                       </div>
-                      <div class="ai-finding ai-finding-danger" data-tour-finding="2">
-                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
+                      <div class="ai-finding ai-finding-warn" data-tour-finding="2">
+                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>MED</span>
                         <div>
-                          <strong>Doc out of match</strong>
-                          <p><code>CONTRIBUTING.md</code> states "test classes must not import across package boundaries." This PR's test scaffolding violates that constraint in 4 locations.</p>
+                          <strong>Complexity growth: WMC +10</strong>
+                          <p><code>DefaultCommandHandlerManager</code> WMC grew from 4 to 14 — rising cyclomatic complexity in the misplaced class.</p>
                         </div>
                       </div>
                       <div class="ai-finding ai-finding-warn" data-tour-finding="3">
                         <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>MED</span>
                         <div>
-                          <strong>Boundary crossing: remote → gremlin</strong>
-                          <p>New dependency from <code>com.arcadedb.remote</code> to <code>com.arcadedb.gremlin</code> — no prior edge.</p>
-                        </div>
-                      </div>
-                      <div class="ai-finding ai-finding-warn" data-tour-finding="4">
-                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>MED</span>
-                        <div>
-                          <strong>WMC hotspot: 158 complexity</strong>
-                          <p><code>RemoteHttpComponent</code> lost 2 WMC points but remains at 158 — still a high-complexity class.</p>
+                          <strong>Coupling spike: EC +9</strong>
+                          <p><code>DefaultCommandHandlerManager</code> efferent coupling grew from 8 to 17 — harder to change in isolation.</p>
                         </div>
                       </div>
                     </div>
                     <div class="hero-findings-verdict">
-                      <strong>Gemini</strong> caught the next null-related crash. <strong>Striff</strong> caught the 8-hop dependency cycle the test scaffolding introduced.
+                      No other tool reads your docs. <strong>Striff</strong> cites <strong>REFACTORING.md</strong> by name and flags the exact class that violates it.
                     </div>
                   </div>
                 </div>
