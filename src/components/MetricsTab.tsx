@@ -149,7 +149,7 @@ export default function MetricsTab({
   const METRIC_CARDS: { key: string; label: string; render: () => any }[] = [
     {
       key: "regressions",
-      label: "Structural regressions",
+      label: "Regressions flagged",
       render: () => (
         <>
           <div class="dashboard-metric-value-row">
@@ -162,7 +162,7 @@ export default function MetricsTab({
     },
     {
       key: "hotspots",
-      label: "Review hotspots",
+      label: "Hotspots flagged",
       render: () => (
         <>
           <div class="dashboard-metric-value-row">
