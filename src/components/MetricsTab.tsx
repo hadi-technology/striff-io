@@ -142,7 +142,14 @@ export default function MetricsTab({
     );
   }
 
-  const months = data.months;
+  // Defends against an API response that predates ADR-020 (backend deployed after this frontend,
+  // or briefly out of sync during rollout) -- without this, `.length` on a missing field throws
+  // and blanks the whole tab instead of just omitting the new cards' data.
+  const months = data.months.map((m) => ({
+    ...m,
+    prCheckWebhooksReceivedCount: m.prCheckWebhooksReceivedCount ?? 0,
+    recentFlaggedPrs: m.recentFlaggedPrs ?? [],
+  }));
   const selectedIndex =
     selectedMonthIndex === -1 || selectedMonthIndex >= months.length
       ? months.length - 1
