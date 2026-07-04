@@ -219,7 +219,7 @@ function InstallationCard({
     setMetricsError("");
     try {
       const res = await fetch(
-        `/.netlify/functions/metrics-proxy?installation_id=${installation.id}&months=6`
+        `/.netlify/functions/metrics-proxy?installation_id=${installation.id}&months=12`
       );
       const data = await res.json();
       if (!res.ok) {

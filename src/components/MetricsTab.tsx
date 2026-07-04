@@ -63,7 +63,7 @@ function TrendArrow({ current, previous }: { current: number; previous: number }
 function Sparkline<T>({ data, dataKey, color }: { data: T[]; dataKey: keyof T; color: string }) {
   return (
     <div class="dashboard-metric-chart-wrap">
-      <ResponsiveContainer width="100%" height={56}>
+      <ResponsiveContainer width="100%" height={112}>
         <AreaChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id={`spark-${String(dataKey)}`} x1="0" y1="0" x2="0" y2="1">
@@ -89,14 +89,16 @@ function Sparkline<T>({ data, dataKey, color }: { data: T[]; dataKey: keyof T; c
 function MetricCardShell({
   label,
   description,
+  wide,
   children,
 }: {
   label: string;
   description: string;
+  wide?: boolean;
   children: any;
 }) {
   return (
-    <div class="dashboard-metric-card">
+    <div class={`dashboard-metric-card${wide ? " dashboard-metric-card-wide" : ""}`}>
       <p class="dashboard-metric-label">
         {label}
         <span class="dashboard-metric-help" tabIndex={0}>
@@ -174,7 +176,7 @@ export default function MetricsTab({
 
   // Config array of cards: adding a metric later is a one-entry addition here (plus the matching
   // backend field) rather than a rewrite of this component.
-  const METRIC_CARDS: { key: string; label: string; description: string; render: () => any }[] = [
+  const METRIC_CARDS: { key: string; label: string; description: string; wide?: boolean; render: () => any }[] = [
     {
       key: "regressions",
       label: "Regressions flagged",
@@ -318,7 +320,8 @@ export default function MetricsTab({
       key: "recentFlagged",
       label: "Recently flagged PRs",
       description:
-        "The most recent pull requests this month with a structural regression or review hotspot -- click through to see exactly what was flagged.",
+        "The 10 most recent pull requests this month with a structural regression or review hotspot -- click through to see exactly what was flagged.",
+      wide: true,
       render: () => (
         <>
           {latest.recentFlaggedPrs.length > 0 ? (
@@ -368,7 +371,7 @@ export default function MetricsTab({
       </div>
       <div class="dashboard-metric-grid">
         {METRIC_CARDS.map((card) => (
-          <MetricCardShell key={card.key} label={card.label} description={card.description}>
+          <MetricCardShell key={card.key} label={card.label} description={card.description} wide={card.wide}>
             {card.render()}
           </MetricCardShell>
         ))}
