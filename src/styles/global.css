@@ -3153,91 +3153,95 @@
     color: var(--ink);
   }
 
-  .dashboard-metric-trend {
-    margin-left: auto;
-    font-size: 0.78rem;
-    font-weight: 700;
-  }
-
-  .dashboard-metric-trend-neutral {
-    color: #57606a;
-  }
-
   .dashboard-metric-caption {
     margin-top: 0.2rem;
     font-size: 0.78rem;
     color: #57606a;
   }
 
+  .dashboard-metric-value-caption {
+    margin-top: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #57606a;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
   .dashboard-metric-chart-wrap {
     margin-top: 0.5rem;
   }
 
-  .dashboard-metric-repo-list {
-    margin-top: 0.6rem;
-    display: grid;
-    gap: 0.65rem;
-  }
-
-  .dashboard-metric-repo-row {
-    border-radius: 0.5rem;
-    background: #f6f8fa;
-    padding: 0.55rem 0.65rem 0.5rem;
-  }
-
-  .dashboard-metric-repo-top {
+  .dashboard-metric-repo-legend {
+    margin-top: 0.75rem;
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
   }
 
-  .dashboard-metric-repo-name {
-    font-size: 0.8rem;
+  .dashboard-metric-repo-legend li {
+    display: flex;
+    min-width: 0;
+    max-width: 100%;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .dashboard-metric-repo-legend-swatch {
+    width: 0.6rem;
+    height: 0.6rem;
+    flex-shrink: 0;
+    border-radius: 999px;
+  }
+
+  .dashboard-metric-repo-legend-link {
+    min-width: 0;
+    font-size: 0.78rem;
     font-weight: 600;
     color: #24292f;
+    text-decoration: none;
   }
 
-  .dashboard-metric-repo-count {
-    flex-shrink: 0;
-    font-size: 0.8rem;
-    font-weight: 800;
-    color: var(--ink);
+  .dashboard-metric-repo-legend-link:hover,
+  .dashboard-metric-repo-legend-link:focus-visible {
+    color: var(--brand);
+    text-decoration: underline;
   }
 
-  .dashboard-metric-repo-bar-track {
+  .dashboard-chart-tooltip-multi {
+    min-width: 10rem;
+  }
+
+  .dashboard-chart-tooltip-repo-list {
     margin-top: 0.35rem;
-    height: 0.35rem;
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .dashboard-chart-tooltip-repo-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: #f6f8fa;
+  }
+
+  .dashboard-chart-tooltip-swatch {
+    width: 0.5rem;
+    height: 0.5rem;
+    flex-shrink: 0;
     border-radius: 999px;
-    background: rgba(31, 35, 40, 0.1);
-    overflow: hidden;
   }
 
-  .dashboard-metric-repo-bar-fill {
-    height: 100%;
-    border-radius: 999px;
-    background: var(--brand);
-    transition: width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  .dashboard-chart-tooltip-repo-name {
+    min-width: 0;
+    flex: 1;
+    font-weight: 600;
   }
 
-  .dashboard-metric-repo-delta {
-    display: inline-block;
-    margin-top: 0.3rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-  }
-
-  .dashboard-metric-repo-delta.is-up {
-    color: var(--danger);
-  }
-
-  .dashboard-metric-repo-delta.is-down {
-    color: var(--mint);
-  }
-
-  .dashboard-metric-repo-delta.is-flat,
-  .dashboard-metric-repo-delta.is-new {
-    color: #57606a;
+  .dashboard-chart-tooltip-repo-count {
+    flex-shrink: 0;
+    font-weight: 800;
   }
 
   .dashboard-metric-pr-list {
@@ -3256,6 +3260,13 @@
     padding: 0.55rem 0.75rem;
   }
 
+  .dashboard-metric-pr-main {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
   .dashboard-metric-pr-link {
     min-width: 0;
     font-size: 0.85rem;
@@ -3270,32 +3281,94 @@
     text-decoration: underline;
   }
 
+  .dashboard-metric-pr-title {
+    font-size: 0.75rem;
+    color: #57606a;
+  }
+
   .dashboard-metric-pr-badge {
     flex-shrink: 0;
-    font-size: 0.75rem;
+    border-radius: 999px;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    color: #57606a;
+  }
+
+  .dashboard-metric-pr-badge.is-regression {
+    color: var(--danger);
+    background: rgba(220, 38, 38, 0.1);
+  }
+
+  .dashboard-metric-pr-badge.is-hotspot {
+    color: var(--brand);
+    background: rgba(37, 99, 235, 0.1);
   }
 
   .dashboard-metric-fade-in {
     animation: dashboardMetricFadeIn 320ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .dashboard-metric-month-picker {
+  .dashboard-metric-window {
     margin-bottom: 0.85rem;
     display: flex;
-    align-items: center;
-    gap: 0.6rem;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.75rem;
   }
 
-  .dashboard-metric-month-select {
-    border: 1px solid rgba(31, 35, 40, 0.14);
-    border-radius: 0.5rem;
-    background: #ffffff;
-    padding: 0.4rem 0.6rem;
+  .dashboard-metric-window-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .dashboard-metric-window-range {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #24292f;
+    color: #57606a;
+  }
+
+  .dashboard-chart-tooltip {
+    border-radius: 0.55rem;
+    background: #1f2328;
+    padding: 0.55rem 0.75rem;
+    box-shadow: var(--shadow-md);
+    min-width: 8rem;
+  }
+
+  .dashboard-chart-tooltip-month {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: rgba(246, 248, 250, 0.65);
+  }
+
+  .dashboard-chart-tooltip-value {
+    margin-top: 0.15rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #f6f8fa;
+  }
+
+  .dashboard-chart-tooltip-delta {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .dashboard-chart-tooltip-delta.tone-good {
+    color: #34d399;
+  }
+
+  .dashboard-chart-tooltip-delta.tone-bad {
+    color: #f87171;
+  }
+
+  .dashboard-chart-tooltip-delta.tone-neutral {
+    color: rgba(246, 248, 250, 0.75);
   }
 
   @media (min-width: 640px) {

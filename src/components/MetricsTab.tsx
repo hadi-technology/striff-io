@@ -1,8 +1,18 @@
 // Renders the org-level manager metrics dashboard (structural regressions, review hotspots, PRs
-// analyzed, most-flagged repos) for one GitHub App installation. Purely presentational -- the
-// parent (Dashboard.tsx) owns fetching from metrics-proxy and passes the result down.
-import { createElement, useState } from "react";
-import { ResponsiveContainer, AreaChart, Area } from "recharts";
+// analyzed, flagged repos over time) for one GitHub App installation. Purely presentational --
+// the parent (Dashboard.tsx) owns fetching from metrics-proxy and passes the result down.
+import { createElement } from "react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  XAxis,
+  CartesianGrid,
+  Tooltip,
+  ReferenceLine,
+} from "recharts";
 
 export interface RepoHotspot {
   repoOwner: string;
@@ -15,6 +25,10 @@ export interface FlaggedPr {
   repoName: string;
   pullNo: string;
   pullUrl: string;
+  // Optional: older backend deploys may not send this yet (same defend-against-schema-drift
+  // pattern as prCheckWebhooksReceivedCount below) -- render the row without a title rather than
+  // breaking on it.
+  pullTitle?: string;
   regressionCount: number;
   hotspotCount: number;
   createdAtMs: number;
@@ -45,38 +59,164 @@ export interface OrgMetricsData {
   activeRepos: ActiveRepo[];
 }
 
-function TrendArrow({ current, previous }: { current: number; previous: number }) {
-  const delta = current - previous;
-  if (previous === 0 && current === 0) {
-    return <span class="dashboard-metric-trend dashboard-metric-trend-neutral">flat</span>;
-  }
-  const pct = previous === 0 ? 100 : Math.round((delta / previous) * 100);
-  const up = delta > 0;
-  const flat = delta === 0;
+// Caps how much history the charts ever render, even if the backend returns more -- keeps the
+// x-axis readable and matches the "last 6 months" framing used across the tab.
+const MAX_HISTORY_MONTHS = 6;
+
+// "up" means an increasing value is the improvement (clean rate, coverage); "down" means a
+// decreasing value is the improvement (regressions, hotspots, high-risk rate). Metrics with no
+// inherent direction (PR volume) pass undefined and render a neutral, uncolored arrow.
+type Direction = "up" | "down";
+
+function trendTone(delta: number, direction?: Direction): "good" | "bad" | "neutral" {
+  if (delta === 0 || !direction) return "neutral";
+  const improving = direction === "up" ? delta > 0 : delta < 0;
+  return improving ? "good" : "bad";
+}
+
+// Tailwind's content scanner only keeps a CSS class if it finds that exact string, unbroken,
+// somewhere in the source -- interpolating the tone into a template literal never spells the
+// full class name out, so it gets silently purged from the production build. Looking it up in a
+// static map instead means every class name Tailwind needs to see is written out literally here.
+const TOOLTIP_TONE_CLASS: Record<"good" | "bad" | "neutral", string> = {
+  good: "tone-good",
+  bad: "tone-bad",
+  neutral: "tone-neutral",
+};
+
+// Cycled per repo line/legend entry in the "flagged repos over time" chart -- distinct enough at
+// a glance without trying to carry the good/bad semantics the single-metric charts use.
+const REPO_PALETTE = ["#2563eb", "#dc2626", "#059669", "#d97706", "#7c3aed", "#0891b2", "#db2777", "#65a30d"];
+
+function repoKey(r: { repoOwner: string; repoName: string }): string {
+  return `${r.repoOwner}/${r.repoName}`;
+}
+
+function repoGitHubUrl(r: { repoOwner: string; repoName: string }): string {
+  return `https://github.com/${r.repoOwner}/${r.repoName}`;
+}
+
+// month/year label shown on the x-axis -- only spells out the year on the first point or on a
+// January boundary, since 6 months can straddle a year change (e.g. Nov -> Apr).
+function chartMonthLabel(yearMonth: string, includeYear: boolean): string {
+  const [year, month] = yearMonth.split("-");
+  const date = new Date(Number(year), Number(month) - 1, 1);
+  const label = date.toLocaleDateString(undefined, { month: "short" });
+  return includeYear ? `${label} '${year.slice(2)}` : label;
+}
+
+function fullMonthLabel(yearMonth: string): string {
+  const [year, month] = yearMonth.split("-");
+  const date = new Date(Number(year), Number(month) - 1, 1);
+  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+// Used to caption the two list cards (recently flagged PRs), which are scoped to the latest
+// month only -- unlike the numeric cards above them, which show a 6-month total.
+function shortMonthYear(yearMonth: string): string {
+  const [year, month] = yearMonth.split("-");
+  const date = new Date(Number(year), Number(month) - 1, 1);
+  return date.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+}
+
+// Builds the tooltip renderer for one chart. Closes over the prepared series so it can look up
+// the prior month's value by index and surface a month-over-month delta on hover, rather than
+// just restating the point already visible on the chart.
+function makeChartTooltip(
+  series: Array<Record<string, any>>,
+  dataKey: string,
+  direction: Direction | undefined,
+  formatValue: (v: number) => string
+) {
+  return function ChartTooltip({ active, payload }: any) {
+    if (!active || !payload || !payload.length) return null;
+    const row = payload[0].payload;
+    const idx = row.__idx as number;
+    const value = row[dataKey] as number;
+    const prevValue = idx > 0 ? (series[idx - 1][dataKey] as number) : null;
+    let deltaNode = null;
+    if (prevValue !== null) {
+      const delta = value - prevValue;
+      const flat = delta === 0;
+      const pct = prevValue === 0 ? (value === 0 ? 0 : 100) : Math.round((delta / prevValue) * 100);
+      const tone = trendTone(delta, direction);
+      deltaNode = (
+        <span className={`dashboard-chart-tooltip-delta ${TOOLTIP_TONE_CLASS[tone]}`}>
+          {flat ? "→ flat vs prior month" : `${delta > 0 ? "↑" : "↓"} ${Math.abs(pct)}% vs prior month`}
+        </span>
+      );
+    }
+    return (
+      <div className="dashboard-chart-tooltip">
+        <div className="dashboard-chart-tooltip-month">{row.__fullLabel}</div>
+        <div className="dashboard-chart-tooltip-value">{formatValue(value)}</div>
+        {deltaNode}
+      </div>
+    );
+  };
+}
+
+// Tooltip for the multi-repo trend chart: one row per repo with a nonzero count that month,
+// ranked highest-first so the repo driving the hover point is always on top.
+function RepoTrendTooltip({ active, payload }: any) {
+  if (!active || !payload || !payload.length) return null;
+  const rows = [...payload].filter((p: any) => p.value > 0).sort((a: any, b: any) => b.value - a.value);
+  if (rows.length === 0) return null;
   return (
-    <span class="dashboard-metric-trend dashboard-metric-trend-neutral">
-      {flat ? "→" : up ? "↑" : "↓"} {Math.abs(pct)}%
-    </span>
+    <div className="dashboard-chart-tooltip dashboard-chart-tooltip-multi">
+      <div className="dashboard-chart-tooltip-month">{payload[0].payload.__fullLabel}</div>
+      <ul className="dashboard-chart-tooltip-repo-list">
+        {rows.map((p: any) => (
+          <li key={p.dataKey}>
+            <span className="dashboard-chart-tooltip-swatch" style={{ background: p.color }} />
+            <span className="dashboard-chart-tooltip-repo-name truncate">{p.dataKey}</span>
+            <span className="dashboard-chart-tooltip-repo-count">{p.value}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
-function Sparkline<T>({ data, dataKey, color }: { data: T[]; dataKey: keyof T; color: string }) {
+function MetricChart({
+  data,
+  dataKey,
+  color,
+  direction,
+  formatValue = (v) => String(v),
+}: {
+  data: Array<Record<string, any>>;
+  dataKey: string;
+  color: string;
+  direction?: Direction;
+  formatValue?: (v: number) => string;
+}) {
+  const values = data.map((d) => d[dataKey] as number);
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  const gradientId = `chart-${dataKey}`;
+  const ChartTooltip = makeChartTooltip(data, dataKey, direction, formatValue);
   return (
-    <div class="dashboard-metric-chart-wrap">
-      <ResponsiveContainer width="100%" height={112}>
-        <AreaChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+    <div className="dashboard-metric-chart-wrap">
+      <ResponsiveContainer width="100%" height={188}>
+        <AreaChart data={data} margin={{ top: 10, right: 6, bottom: 0, left: 6 }}>
           <defs>
-            <linearGradient id={`spark-${String(dataKey)}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.32} />
               <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
+          <CartesianGrid stroke="rgba(31, 35, 40, 0.08)" vertical={false} />
+          <XAxis dataKey="__label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#57606a" }} dy={6} />
+          {values.length > 1 && <ReferenceLine y={avg} stroke={color} strokeOpacity={0.35} strokeDasharray="4 4" />}
+          <Tooltip content={ChartTooltip} cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: "3 3" }} />
           <Area
             type="monotone"
-            dataKey={dataKey as string}
+            dataKey={dataKey}
             stroke={color}
-            strokeWidth={2}
-            fill={`url(#spark-${String(dataKey)})`}
+            strokeWidth={2.5}
+            fill={`url(#${gradientId})`}
+            dot={{ r: 3, stroke: color, strokeWidth: 2, fill: "#fff" }}
+            activeDot={{ r: 5 }}
             isAnimationActive
             animationDuration={700}
           />
@@ -98,12 +238,12 @@ function MetricCardShell({
   children: any;
 }) {
   return (
-    <div class={`dashboard-metric-card${wide ? " dashboard-metric-card-wide" : ""}`}>
-      <p class="dashboard-metric-label">
+    <div className={`dashboard-metric-card${wide ? " dashboard-metric-card-wide" : ""}`}>
+      <p className="dashboard-metric-label">
         {label}
-        <span class="dashboard-metric-help" tabIndex={0}>
-          <span class="dashboard-metric-help-icon" aria-hidden="true">?</span>
-          <span class="dashboard-metric-help-tooltip" role="tooltip">{description}</span>
+        <span className="dashboard-metric-help" tabIndex={0}>
+          <span className="dashboard-metric-help-icon" aria-hidden="true">?</span>
+          <span className="dashboard-metric-help-tooltip" role="tooltip">{description}</span>
         </span>
       </p>
       {children}
@@ -120,26 +260,23 @@ export default function MetricsTab({
   loading: boolean;
   error: string;
 }) {
-  // -1 means "no explicit selection yet" -- default to the latest month once data loads.
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState(-1);
-
   if (loading) {
     return (
-      <div class="dashboard-loading">
-        <div class="dashboard-spinner" aria-hidden="true" />
-        <div class="text-slate-500">Loading metrics...</div>
+      <div className="dashboard-loading">
+        <div className="dashboard-spinner" aria-hidden="true" />
+        <div className="text-slate-500">Loading metrics...</div>
       </div>
     );
   }
 
   if (error) {
-    return <p class="dashboard-inline-error">{error}</p>;
+    return <p className="dashboard-inline-error">{error}</p>;
   }
 
   if (!data || data.months.length === 0) {
     return (
-      <div class="dashboard-empty">
-        <p class="text-slate-600">No metrics yet -- check back after Striff has analyzed a few pull requests.</p>
+      <div className="dashboard-empty">
+        <p className="text-slate-600">No metrics yet -- check back after Striff has analyzed a few pull requests.</p>
       </div>
     );
   }
@@ -147,17 +284,14 @@ export default function MetricsTab({
   // Defends against an API response that predates ADR-020 (backend deployed after this frontend,
   // or briefly out of sync during rollout) -- without this, `.length` on a missing field throws
   // and blanks the whole tab instead of just omitting the new cards' data.
-  const months = data.months.map((m) => ({
+  const allMonths = data.months.map((m) => ({
     ...m,
     prCheckWebhooksReceivedCount: m.prCheckWebhooksReceivedCount ?? 0,
     recentFlaggedPrs: m.recentFlaggedPrs ?? [],
   }));
-  const selectedIndex =
-    selectedMonthIndex === -1 || selectedMonthIndex >= months.length
-      ? months.length - 1
-      : selectedMonthIndex;
-  const latest = months[selectedIndex];
-  const previous = selectedIndex > 0 ? months[selectedIndex - 1] : latest;
+  const months = allMonths.slice(-MAX_HISTORY_MONTHS);
+  const latest = months[months.length - 1];
+  const latestMonthLabel = shortMonthYear(latest.yearMonth);
 
   // cleanPrCount/highRiskPrCount come back as counts (same shape as every other backend field --
   // see MonthlyMetricsDto), not rates. Rate is a display concern, so it's derived here rather
@@ -167,12 +301,56 @@ export default function MetricsTab({
   // Coverage divides by webhooks *received*, not PRs analyzed -- the denominator here is the count
   // of PR-check webhook events GitHub sent, independent of whether analysis completed. See ADR-020.
   const coverageRate = (m: MonthlyMetrics) => ratePct(m.prsAnalyzedCount, m.prCheckWebhooksReceivedCount);
-  const monthsWithRates = months.map((m) => ({
+
+  // The headline number on every card is a 6-month total, not a single month's value -- a lone
+  // number sitting on top of a 6-month chart read ambiguously otherwise. Rate cards can't just sum
+  // monthly percentages (that's not a valid average), so they re-derive the rate from summed counts
+  // across the window instead -- the same weighted-average approach the backend would use.
+  const sumField = (field: keyof MonthlyMetrics) => months.reduce((total, m) => total + (m[field] as number), 0);
+  const windowRegressions = sumField("structuralRegressionCount");
+  const windowHotspots = sumField("reviewHotspotCount");
+  const windowPrsAnalyzed = sumField("prsAnalyzedCount");
+  const windowCleanPrs = sumField("cleanPrCount");
+  const windowHighRiskPrs = sumField("highRiskPrCount");
+  const windowWebhooksReceived = sumField("prCheckWebhooksReceivedCount");
+  const windowCleanPrRate = ratePct(windowCleanPrs, windowPrsAnalyzed);
+  const windowHighRiskPrRate = ratePct(windowHighRiskPrs, windowPrsAnalyzed);
+  const windowCoverageRate = ratePct(windowPrsAnalyzed, windowWebhooksReceived);
+
+  // Chart series shared by every card below: each point carries its own axis label, tooltip
+  // label, and index so MetricChart's tooltip can look up "the prior point" without re-deriving
+  // month math per metric.
+  const series = months.map((m, i) => ({
     ...m,
     cleanPrRate: cleanPrRate(m),
     highRiskPrRate: highRiskPrRate(m),
     coverageRate: coverageRate(m),
+    __idx: i,
+    __label: chartMonthLabel(m.yearMonth, i === 0 || m.yearMonth.endsWith("-01")),
+    __fullLabel: fullMonthLabel(m.yearMonth),
   }));
+
+  const rangeLabel =
+    months.length > 1 ? `${fullMonthLabel(months[0].yearMonth)} -- ${fullMonthLabel(latest.yearMonth)}` : fullMonthLabel(latest.yearMonth);
+
+  // Union of every repo that cracked a month's top-flagged list anywhere in the window -- since
+  // topFlaggedRepos is a per-month top-N, a reshuffling top spot can surface more than N distinct
+  // repos across 6 months even though no single month ever lists more than its own top few.
+  const repoMeta = new Map<string, RepoHotspot>();
+  months.forEach((m) => m.topFlaggedRepos.forEach((r) => repoMeta.set(repoKey(r), r)));
+  const repoTotals = new Map<string, number>();
+  months.forEach((m) =>
+    m.topFlaggedRepos.forEach((r) => repoTotals.set(repoKey(r), (repoTotals.get(repoKey(r)) ?? 0) + r.flaggedCount))
+  );
+  const orderedRepoKeys = [...repoMeta.keys()].sort((a, b) => (repoTotals.get(b) ?? 0) - (repoTotals.get(a) ?? 0));
+  const repoTrendSeries = months.map((m, i) => {
+    const byKey = new Map(m.topFlaggedRepos.map((r) => [repoKey(r), r.flaggedCount]));
+    const row: Record<string, any> = { __label: series[i].__label, __fullLabel: series[i].__fullLabel };
+    orderedRepoKeys.forEach((key) => {
+      row[key] = byKey.get(key) ?? 0;
+    });
+    return row;
+  });
 
   // Config array of cards: adding a metric later is a one-entry addition here (plus the matching
   // backend field) rather than a rewrite of this component.
@@ -184,11 +362,10 @@ export default function MetricsTab({
         "A high-severity structural break Striff traced directly to this PR -- a new dependency cycle, a one-way boundary crossing, a stable component's contract shifting, or a sharp complexity jump. Deliberately rare: most PRs show zero.",
       render: () => (
         <>
-          <div class="dashboard-metric-value-row">
-            <span class="dashboard-metric-value">{latest.structuralRegressionCount}</span>
-            <TrendArrow current={latest.structuralRegressionCount} previous={previous.structuralRegressionCount} />
+          <div className="dashboard-metric-value-row">
+            <span className="dashboard-metric-value">{windowRegressions}</span>
           </div>
-          <Sparkline data={months} dataKey="structuralRegressionCount" color="var(--danger)" />
+          <MetricChart data={series} dataKey="structuralRegressionCount" color="var(--danger)" direction="down" />
         </>
       ),
     },
@@ -199,53 +376,49 @@ export default function MetricsTab({
         "A lower-severity or anomaly-only finding worth a second look -- coupling or churn signals that don't rise to a confirmed structural regression. Usually zero or one per PR.",
       render: () => (
         <>
-          <div class="dashboard-metric-value-row">
-            <span class="dashboard-metric-value">{latest.reviewHotspotCount}</span>
-            <TrendArrow current={latest.reviewHotspotCount} previous={previous.reviewHotspotCount} />
+          <div className="dashboard-metric-value-row">
+            <span className="dashboard-metric-value">{windowHotspots}</span>
           </div>
-          <Sparkline data={months} dataKey="reviewHotspotCount" color="var(--brand)" />
+          <MetricChart data={series} dataKey="reviewHotspotCount" color="var(--brand)" direction="down" />
         </>
       ),
     },
     {
       key: "cleanRate",
       label: "Clean PR rate",
-      description: "Share of analyzed pull requests with zero regressions or hotspots flagged this month.",
+      description: "Share of analyzed pull requests with zero regressions or hotspots flagged, over the last 6 months.",
       render: () => (
         <>
-          <div class="dashboard-metric-value-row">
-            <span class="dashboard-metric-value">{cleanPrRate(latest)}%</span>
-            <TrendArrow current={cleanPrRate(latest)} previous={cleanPrRate(previous)} />
+          <div className="dashboard-metric-value-row">
+            <span className="dashboard-metric-value">{windowCleanPrRate}%</span>
           </div>
-          <Sparkline data={monthsWithRates} dataKey="cleanPrRate" color="var(--mint)" />
+          <MetricChart data={series} dataKey="cleanPrRate" color="var(--mint)" direction="up" formatValue={(v) => `${v}%`} />
         </>
       ),
     },
     {
       key: "highRiskRate",
       label: "High-risk PR rate",
-      description: "Share of analyzed pull requests with at least one regression flagged, the more severe finding type.",
+      description: "Share of analyzed pull requests with at least one regression flagged, the more severe finding type, over the last 6 months.",
       render: () => (
         <>
-          <div class="dashboard-metric-value-row">
-            <span class="dashboard-metric-value">{highRiskPrRate(latest)}%</span>
-            <TrendArrow current={highRiskPrRate(latest)} previous={highRiskPrRate(previous)} />
+          <div className="dashboard-metric-value-row">
+            <span className="dashboard-metric-value">{windowHighRiskPrRate}%</span>
           </div>
-          <Sparkline data={monthsWithRates} dataKey="highRiskPrRate" color="var(--danger)" />
+          <MetricChart data={series} dataKey="highRiskPrRate" color="var(--danger)" direction="down" formatValue={(v) => `${v}%`} />
         </>
       ),
     },
     {
       key: "prs",
       label: "PRs analyzed",
-      description: "Total pull requests Striff reviewed for architecture across every active repo in this installation this month.",
+      description: "Total pull requests Striff reviewed for architecture across every active repo in this installation.",
       render: () => (
         <>
-          <div class="dashboard-metric-value-row">
-            <span class="dashboard-metric-value">{latest.prsAnalyzedCount}</span>
-            <TrendArrow current={latest.prsAnalyzedCount} previous={previous.prsAnalyzedCount} />
+          <div className="dashboard-metric-value-row">
+            <span className="dashboard-metric-value">{windowPrsAnalyzed}</span>
           </div>
-          <Sparkline data={months} dataKey="prsAnalyzedCount" color="var(--mint)" />
+          <MetricChart data={series} dataKey="prsAnalyzedCount" color="var(--mint)" direction="up" />
         </>
       ),
     },
@@ -253,65 +426,81 @@ export default function MetricsTab({
       key: "coverage",
       label: "Coverage",
       description:
-        "Share of GitHub PR-check webhook events (opened, updated, reopened) that completed analysis this month. Below 100% may mean PRs were skipped -- check billing status or repo connection.",
+        "Share of GitHub PR-check webhook events (opened, updated, reopened) that completed analysis, over the last 6 months. Below 100% may mean PRs were skipped -- check billing status or repo connection.",
       render: () => {
         // Months before this metric shipped have no webhook-receipt data at all (ADR-020 has no
         // backfill, matching ADR-019's precedent) -- show "no data" rather than a misleading 0%.
-        const hasData = latest.prCheckWebhooksReceivedCount > 0;
+        const hasData = windowWebhooksReceived > 0;
         return (
           <>
-            <div class="dashboard-metric-value-row">
-              <span class="dashboard-metric-value">{hasData ? `${coverageRate(latest)}%` : "—"}</span>
-              {hasData && <TrendArrow current={coverageRate(latest)} previous={coverageRate(previous)} />}
+            <div className="dashboard-metric-value-row">
+              <span className="dashboard-metric-value">{hasData ? `${windowCoverageRate}%` : "—"}</span>
             </div>
             {hasData ? (
-              <Sparkline data={monthsWithRates} dataKey="coverageRate" color="var(--brand)" />
+              <MetricChart data={series} dataKey="coverageRate" color="var(--brand)" direction="up" formatValue={(v) => `${v}%`} />
             ) : (
-              <p class="dashboard-metric-caption">No webhook data for the selected month</p>
+              <p className="dashboard-metric-caption">No webhook data yet for this installation</p>
             )}
           </>
         );
       },
     },
     {
-      key: "repos",
-      label: "Most-flagged repos",
-      description: "Repos ranked by combined regressions + hotspots this month, with the change versus last month shown per repo.",
+      key: "repoTrend",
+      label: "Flagged repos over time",
+      description:
+        "Every repo that has cracked the top-flagged list at any point in the last 6 months, tracked month by month. A repo can show a lower or zero count in months it wasn't flagged enough to be in that month's own top list -- more than one repo commonly appears here as the top spot reshuffles across months.",
+      wide: true,
       render: () => {
-        const prevByRepo = new Map(previous.topFlaggedRepos.map((r) => [`${r.repoOwner}/${r.repoName}`, r.flaggedCount]));
-        const maxCount = Math.max(...latest.topFlaggedRepos.map((r) => r.flaggedCount), 1);
+        if (orderedRepoKeys.length === 0) {
+          return <p className="dashboard-metric-caption">No flagged repos in this window</p>;
+        }
         return (
           <>
-            {latest.topFlaggedRepos.length > 0 ? (
-              <ul class="dashboard-metric-repo-list">
-                {latest.topFlaggedRepos.map((r) => {
-                  const key = `${r.repoOwner}/${r.repoName}`;
-                  const prevCount = prevByRepo.get(key);
-                  const delta = prevCount === undefined ? null : r.flaggedCount - prevCount;
-                  const deltaClass =
-                    delta === null ? "is-new" : delta > 0 ? "is-up" : delta < 0 ? "is-down" : "is-flat";
-                  const deltaLabel =
-                    delta === null ? "New" : delta === 0 ? "→ 0" : delta > 0 ? `↑ ${delta}` : `↓ ${Math.abs(delta)}`;
-                  return (
-                    <li key={key} class="dashboard-metric-repo-row">
-                      <div class="dashboard-metric-repo-top">
-                        <span class="dashboard-metric-repo-name truncate">{key}</span>
-                        <span class="dashboard-metric-repo-count">{r.flaggedCount}</span>
-                      </div>
-                      <div class="dashboard-metric-repo-bar-track">
-                        <div
-                          class="dashboard-metric-repo-bar-fill"
-                          style={{ width: `${Math.round((r.flaggedCount / maxCount) * 100)}%` }}
-                        />
-                      </div>
-                      <span class={`dashboard-metric-repo-delta ${deltaClass}`}>{deltaLabel}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p class="dashboard-metric-caption">No flagged repos for the selected month</p>
-            )}
+            <div className="dashboard-metric-chart-wrap">
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={repoTrendSeries} margin={{ top: 10, right: 6, bottom: 0, left: 6 }}>
+                  <CartesianGrid stroke="rgba(31, 35, 40, 0.08)" vertical={false} />
+                  <XAxis dataKey="__label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#57606a" }} dy={6} />
+                  <Tooltip content={RepoTrendTooltip} cursor={{ stroke: "rgba(31, 35, 40, 0.25)", strokeWidth: 1, strokeDasharray: "3 3" }} />
+                  {orderedRepoKeys.map((key, i) => (
+                    <Line
+                      key={key}
+                      type="monotone"
+                      dataKey={key}
+                      name={key}
+                      stroke={REPO_PALETTE[i % REPO_PALETTE.length]}
+                      strokeWidth={2.25}
+                      dot={{ r: 2.5 }}
+                      activeDot={{ r: 5 }}
+                      isAnimationActive
+                      animationDuration={700}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <ul className="dashboard-metric-repo-legend">
+              {orderedRepoKeys.map((key, i) => {
+                const meta = repoMeta.get(key)!;
+                return (
+                  <li key={key}>
+                    <span
+                      className="dashboard-metric-repo-legend-swatch"
+                      style={{ background: REPO_PALETTE[i % REPO_PALETTE.length] }}
+                    />
+                    <a
+                      className="dashboard-metric-repo-legend-link truncate"
+                      href={repoGitHubUrl(meta)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {key}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
           </>
         );
       },
@@ -324,28 +513,35 @@ export default function MetricsTab({
       wide: true,
       render: () => (
         <>
+          <p className="dashboard-metric-value-caption">{latestMonthLabel}</p>
           {latest.recentFlaggedPrs.length > 0 ? (
-            <ul class="dashboard-metric-pr-list">
-              {latest.recentFlaggedPrs.map((pr) => (
-                <li key={pr.pullUrl} class="dashboard-metric-pr-row">
-                  <a
-                    class="dashboard-metric-pr-link truncate"
-                    href={pr.pullUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {pr.repoOwner}/{pr.repoName} #{pr.pullNo}
-                  </a>
-                  <span class="dashboard-metric-pr-badge">
-                    {pr.regressionCount > 0
-                      ? `${pr.regressionCount} regression${pr.regressionCount === 1 ? "" : "s"}`
-                      : `${pr.hotspotCount} hotspot${pr.hotspotCount === 1 ? "" : "s"}`}
-                  </span>
-                </li>
-              ))}
+            <ul className="dashboard-metric-pr-list">
+              {latest.recentFlaggedPrs.map((pr) => {
+                const isRegression = pr.regressionCount > 0;
+                return (
+                  <li key={pr.pullUrl} className="dashboard-metric-pr-row">
+                    <div className="dashboard-metric-pr-main">
+                      <a
+                        className="dashboard-metric-pr-link truncate"
+                        href={pr.pullUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {pr.repoOwner}/{pr.repoName} #{pr.pullNo}
+                      </a>
+                      {pr.pullTitle && <p className="dashboard-metric-pr-title truncate">{pr.pullTitle}</p>}
+                    </div>
+                    <span className={`dashboard-metric-pr-badge ${isRegression ? "is-regression" : "is-hotspot"}`}>
+                      {isRegression
+                        ? `${pr.regressionCount} regression${pr.regressionCount === 1 ? "" : "s"}`
+                        : `${pr.hotspotCount} hotspot${pr.hotspotCount === 1 ? "" : "s"}`}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
-            <p class="dashboard-metric-caption">No flagged PRs for the selected month</p>
+            <p className="dashboard-metric-caption">No flagged PRs this month</p>
           )}
         </>
       ),
@@ -354,22 +550,11 @@ export default function MetricsTab({
 
   return (
     <div>
-      <div class="dashboard-metric-month-picker">
-        <label for="metrics-month-select" class="dashboard-metric-label">Month</label>
-        <select
-          id="metrics-month-select"
-          class="dashboard-metric-month-select"
-          value={selectedIndex}
-          onChange={(e: any) => setSelectedMonthIndex(Number(e.target.value))}
-        >
-          {months.map((m, i) => (
-            <option key={m.yearMonth} value={i}>
-              {formatYearMonth(m.yearMonth)}
-            </option>
-          ))}
-        </select>
+      <div className="dashboard-metric-window">
+        <span className="dashboard-metric-window-title">Last {months.length} month{months.length === 1 ? "" : "s"}</span>
+        <span className="dashboard-metric-window-range">{rangeLabel}</span>
       </div>
-      <div class="dashboard-metric-grid">
+      <div className="dashboard-metric-grid">
         {METRIC_CARDS.map((card) => (
           <MetricCardShell key={card.key} label={card.label} description={card.description} wide={card.wide}>
             {card.render()}
@@ -378,12 +563,6 @@ export default function MetricsTab({
       </div>
     </div>
   );
-}
-
-function formatYearMonth(yearMonth: string): string {
-  const [year, month] = yearMonth.split("-");
-  const date = new Date(Number(year), Number(month) - 1, 1);
-  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }
 
 function ratePct(count: number, total: number): number {

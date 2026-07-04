@@ -30,25 +30,25 @@ export default function AuthButton() {
 
   if (user) {
     return (
-      <div class="relative" ref={dropdownRef}>
+      <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setOpen(!open)}
-          class="flex h-8 w-8 items-center justify-center rounded-full overflow-hidden border-2 border-slate-200 hover:border-blue-400 transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-full overflow-hidden border-2 border-slate-200 hover:border-blue-400 transition-colors"
         >
-          <img src={user.avatar_url} alt={user.login} class="h-full w-full" />
+          <img src={user.avatar_url} alt={user.login} className="h-full w-full" />
         </button>
         {open && (
-          <div class="absolute right-0 mt-2 w-44 rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-            <p class="px-4 py-2 text-xs text-slate-500 truncate">{user.login}</p>
+          <div className="absolute right-0 mt-2 w-44 rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+            <p className="px-4 py-2 text-xs text-slate-500 truncate">{user.login}</p>
             <a
               href="/dashboard"
-              class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
             >
               Dashboard
             </a>
             <a
               href="/.netlify/functions/auth-logout"
-              class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
             >
               Sign out
             </a>
@@ -72,7 +72,7 @@ export default function AuthButton() {
   return (
     <a
       href={oauthUrl}
-      class="text-sm font-medium text-slate-600 hover:text-slate-900"
+      className="text-sm font-medium text-slate-600 hover:text-slate-900"
     >
       Sign in
     </a>

@@ -102,18 +102,18 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div class="dashboard-loading">
-        <div class="dashboard-spinner" aria-hidden="true" />
-        <div class="text-slate-500">Loading dashboard...</div>
+      <div className="dashboard-loading">
+        <div className="dashboard-spinner" aria-hidden="true" />
+        <div className="text-slate-500">Loading dashboard...</div>
       </div>
     );
   }
 
   if (error && !user) {
     return (
-      <div class="dashboard-alert dashboard-alert-danger">
-        <p class="text-red-700">{error}</p>
-        <a href="/" class="mt-4 inline-block text-sm text-blue-600 hover:underline">
+      <div className="dashboard-alert dashboard-alert-danger">
+        <p className="text-red-700">{error}</p>
+        <a href="/" className="mt-4 inline-block text-sm text-blue-600 hover:underline">
           Back to homepage
         </a>
       </div>
@@ -121,22 +121,22 @@ export default function Dashboard() {
   }
 
   return (
-    <div class="dashboard-shell">
+    <div className="dashboard-shell">
       {/* Header */}
-      <div class="dashboard-account-bar">
-        <div class="flex items-center gap-4">
+      <div className="dashboard-account-bar">
+        <div className="flex items-center gap-4">
           {user && (
-            <img src={user.avatar_url} alt={user.login} class="h-11 w-11 rounded-lg border border-slate-200" />
+            <img src={user.avatar_url} alt={user.login} className="h-11 w-11 rounded-lg border border-slate-200" />
           )}
           <div>
-            <p class="dashboard-kicker">Striff account</p>
-            <h1 class="text-2xl font-bold text-slate-950">{user?.name || user?.login}</h1>
-            <p class="text-sm text-slate-500">@{user?.login}</p>
+            <p className="dashboard-kicker">Striff account</p>
+            <h1 className="text-2xl font-bold text-slate-950">{user?.name || user?.login}</h1>
+            <p className="text-sm text-slate-500">@{user?.login}</p>
           </div>
         </div>
         <button
           onClick={signOut}
-          class="dashboard-button dashboard-button-secondary"
+          className="dashboard-button dashboard-button-secondary"
         >
           Sign out
         </button>
@@ -144,11 +144,11 @@ export default function Dashboard() {
 
       {/* Installations */}
       {installations.length === 0 ? (
-        <div class="dashboard-empty">
-          <p class="text-slate-600">No Striff installations found.</p>
+        <div className="dashboard-empty">
+          <p className="text-slate-600">No Striff installations found.</p>
           <a
             href="https://github.com/apps/striff-app/installations/new"
-            class="mt-4 inline-block text-sm font-medium text-blue-600 hover:underline"
+            className="mt-4 inline-block text-sm font-medium text-blue-600 hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -156,7 +156,7 @@ export default function Dashboard() {
           </a>
         </div>
       ) : (
-        <div class="mt-8 space-y-5">
+        <div className="mt-8 space-y-5">
           {installations.map((inst) => (
             <InstallationCard
               key={inst.id}
@@ -169,7 +169,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {error && <p class="dashboard-inline-error">{error}</p>}
+      {error && <p className="dashboard-inline-error">{error}</p>}
 
       {/* FAQ */}
       <FaqSection />
@@ -219,7 +219,7 @@ function InstallationCard({
     setMetricsError("");
     try {
       const res = await fetch(
-        `/.netlify/functions/metrics-proxy?installation_id=${installation.id}&months=12`
+        `/.netlify/functions/metrics-proxy?installation_id=${installation.id}&months=6`
       );
       const data = await res.json();
       if (!res.ok) {
@@ -321,21 +321,21 @@ function InstallationCard({
   const displayedRepos = repoTab === "private" ? privateRepos : publicRepos;
 
   return (
-    <div class="dashboard-installation-card">
+    <div className="dashboard-installation-card">
       {/* Header row */}
-      <div class="dashboard-installation-head">
-        <div class="flex items-center gap-3">
-          <img src={installation.account.avatar_url} alt={installation.account.login} class="h-9 w-9 rounded-lg border border-slate-200" />
+      <div className="dashboard-installation-head">
+        <div className="flex items-center gap-3">
+          <img src={installation.account.avatar_url} alt={installation.account.login} className="h-9 w-9 rounded-lg border border-slate-200" />
           <div>
-            <h2 class="text-lg font-bold text-slate-950">{installation.account.login}</h2>
-            <p class="text-xs text-slate-500">
+            <h2 className="text-lg font-bold text-slate-950">{installation.account.login}</h2>
+            <p className="text-xs text-slate-500">
               Installation #{installation.id} · {installation.repository_selection === "all" ? "All repositories" : "Selected repositories"}
             </p>
           </div>
         </div>
-        <div class="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           {billingInfo?.hasSubscription && billingInfo.planName && (
-            <span class="dashboard-plan-badge">
+            <span className="dashboard-plan-badge">
               {billingInfo.planName}
             </span>
           )}
@@ -343,14 +343,14 @@ function InstallationCard({
             href={manageReposUrl}
             target="_blank"
             rel="noopener noreferrer"
-            class="dashboard-button dashboard-button-secondary"
+            className="dashboard-button dashboard-button-secondary"
           >
             Manage repos
           </a>
           <button
             onClick={handleBilling}
             disabled={billingState !== "idle"}
-            class="dashboard-button dashboard-button-primary disabled:opacity-50"
+            className="dashboard-button dashboard-button-primary disabled:opacity-50"
           >
             {billingState === "loading" ? "Loading..." : "Manage billing"}
           </button>
@@ -359,15 +359,15 @@ function InstallationCard({
 
       {/* No-plan prompt for private repos */}
       {hasNoPlan && (
-        <div class="dashboard-plan-notice">
-          <p class="font-medium text-slate-900">
+        <div className="dashboard-plan-notice">
+          <p className="font-medium text-slate-900">
             {privateRepos.length} private repo{privateRepos.length > 1 ? "s" : ""} enabled — choose a plan to enable analysis.
           </p>
-          <p class="mt-1 text-slate-500">
+          <p className="mt-1 text-slate-500">
             Public repos are always free.{" "}
             <button
               onClick={() => setBillingState("subscribe")}
-              class="font-semibold text-slate-900 underline underline-offset-2 hover:text-slate-700"
+              className="font-semibold text-slate-900 underline underline-offset-2 hover:text-slate-700"
             >
               View plans
             </button>
@@ -377,28 +377,28 @@ function InstallationCard({
 
       {/* Plan picker */}
       {billingState === "subscribe" && (
-        <div class="dashboard-plan-picker">
-          <h3 class="text-sm font-bold text-slate-900">Choose a plan</h3>
-          <p class="mt-1 text-xs text-slate-500">
+        <div className="dashboard-plan-picker">
+          <h3 className="text-sm font-bold text-slate-900">Choose a plan</h3>
+          <p className="mt-1 text-xs text-slate-500">
             Private repo analysis requires a paid plan. Public repos are always free.
           </p>
-          <div class="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {PLANS.map((plan) => (
-              <div key={plan.id} class="dashboard-plan-option">
-                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{plan.name}</p>
-                <p class="mt-1 text-lg font-black text-slate-950">{plan.price}</p>
-                <p class="text-xs text-slate-500">{plan.repos}</p>
+              <div key={plan.id} className="dashboard-plan-option">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{plan.name}</p>
+                <p className="mt-1 text-lg font-black text-slate-950">{plan.price}</p>
+                <p className="text-xs text-slate-500">{plan.repos}</p>
                 <button
                   onClick={() => handleCheckout(plan.id)}
                   disabled={checkoutLoading === plan.id}
-                  class="mt-3 w-full rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                  className="mt-3 w-full rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                 >
                   {checkoutLoading === plan.id ? "Loading..." : "Subscribe"}
                 </button>
               </div>
             ))}
           </div>
-          <button onClick={() => setBillingState("idle")} class="mt-3 text-xs text-slate-400 hover:text-slate-600">
+          <button onClick={() => setBillingState("idle")} className="mt-3 text-xs text-slate-400 hover:text-slate-600">
             Cancel
           </button>
         </div>
@@ -406,28 +406,28 @@ function InstallationCard({
 
       {/* Repositories / Metrics tabs */}
       {repos.length > 0 && (
-        <div class="mt-5">
-          <div class="dashboard-tabs">
+        <div className="mt-5">
+          <div className="dashboard-tabs">
             <button
               onClick={() => setInstallTab("repos")}
-              class={`dashboard-tab ${installTab === "repos" ? "dashboard-tab-active" : ""}`}
+              className={`dashboard-tab ${installTab === "repos" ? "dashboard-tab-active" : ""}`}
             >
               Repositories
             </button>
             <button
               onClick={() => setInstallTab("metrics")}
-              class={`dashboard-tab ${installTab === "metrics" ? "dashboard-tab-active" : ""}`}
+              className={`dashboard-tab ${installTab === "metrics" ? "dashboard-tab-active" : ""}`}
             >
               Metrics
             </button>
           </div>
 
           {installTab === "repos" ? (
-            <div class="dashboard-metric-fade-in">
-              <div class="dashboard-tabs mt-3">
+            <div className="dashboard-metric-fade-in">
+              <div className="dashboard-tabs mt-3">
                 <button
                   onClick={() => setRepoTab("private")}
-                  class={`dashboard-tab ${
+                  className={`dashboard-tab ${
                     repoTab === "private"
                       ? "dashboard-tab-active"
                       : ""
@@ -437,7 +437,7 @@ function InstallationCard({
                 </button>
                 <button
                   onClick={() => setRepoTab("public")}
-                  class={`dashboard-tab ${
+                  className={`dashboard-tab ${
                     repoTab === "public"
                       ? "dashboard-tab-active"
                       : ""
@@ -449,7 +449,7 @@ function InstallationCard({
 
               {/* Repo grid */}
               {displayedRepos.length > 0 ? (
-                <div class="dashboard-repo-grid">
+                <div className="dashboard-repo-grid">
                   {displayedRepos.map((repo) => {
                     const [repoOwner, repoName] = repo.full_name.split("/");
                     const isActive = metrics?.activeRepos.some(
@@ -461,14 +461,14 @@ function InstallationCard({
                         href={repo.html_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        class={`dashboard-repo-link ${
+                        className={`dashboard-repo-link ${
                           repo.private ? "dashboard-repo-private" : "dashboard-repo-public"
                         }`}
                       >
-                        <span class={`inline-block h-2 w-2 shrink-0 rounded-full ${repo.private ? "bg-amber-500" : "bg-emerald-600"}`} />
-                        <span class="truncate text-slate-700">{repo.full_name}</span>
+                        <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${repo.private ? "bg-amber-500" : "bg-emerald-600"}`} />
+                        <span className="truncate text-slate-700">{repo.full_name}</span>
                         {isActive && (
-                          <span class="dashboard-plan-badge ml-auto shrink-0" title="Actively analyzed by Striff">
+                          <span className="dashboard-plan-badge ml-auto shrink-0" title="Actively analyzed by Striff">
                             {"\u2713"} Active
                           </span>
                         )}
@@ -477,12 +477,12 @@ function InstallationCard({
                   })}
                 </div>
               ) : (
-                <p class="mt-3 px-3 py-6 text-center text-sm text-slate-400">
+                <p className="mt-3 px-3 py-6 text-center text-sm text-slate-400">
                   No {repoTab} repositories enabled
                   {repoTab === "private" && (
                     <>
                       {" \u2014 "}
-                      <a href={manageReposUrl} target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
+                      <a href={manageReposUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                         add private repos
                       </a>
                     </>
@@ -491,7 +491,7 @@ function InstallationCard({
               )}
             </div>
           ) : (
-            <div class="mt-3 dashboard-metric-fade-in">
+            <div className="mt-3 dashboard-metric-fade-in">
               <MetricsTab data={metrics} loading={metricsLoading} error={metricsError} />
             </div>
           )}
@@ -537,27 +537,27 @@ function FaqSection() {
     },
     {
       q: "What does Striff actually do on my pull requests?",
-      a: "For each PR, Striff analyzes the <b>structural impact</b> of code changes \u2014 new dependencies, broken encapsulation, package cycles, hub formation, and more. Results appear as a <b>GitHub check-run</b> with a summary. Install the <a href=\"https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> to explore interactive architecture diagrams directly on GitHub.",
+      a: "For each PR, Striff analyzes the <b>structural impact</b> of code changes \u2014 new dependencies, broken encapsulation, package cycles, hub formation, and more. Results appear as a <b>GitHub check-run</b> with a summary. Install the <a href=\"https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen\" target=\"_blank\" rel=\"noopener noreferrer\" className=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> to explore interactive architecture diagrams directly on GitHub.",
     },
     {
       q: "What is the browser extension?",
-      a: "The <a href=\"https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> lets you view <b>interactive architectural diagrams</b> directly on GitHub. You can switch between code and architecture views, focus on specific components, and <b>post subdiagrams as PR comments</b> for your team.",
+      a: "The <a href=\"https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen\" target=\"_blank\" rel=\"noopener noreferrer\" className=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> lets you view <b>interactive architectural diagrams</b> directly on GitHub. You can switch between code and architecture views, focus on specific components, and <b>post subdiagrams as PR comments</b> for your team.",
     },
   ];
 
   return (
-    <div class="dashboard-faq">
-      <h2 class="text-xl font-bold text-slate-950">Frequently asked questions</h2>
-      <div class="mt-4 space-y-2">
+    <div className="dashboard-faq">
+      <h2 className="text-xl font-bold text-slate-950">Frequently asked questions</h2>
+      <div className="mt-4 space-y-2">
         {items.map((item, i) => (
-          <div key={i} class="dashboard-faq-item">
+          <div key={i} className="dashboard-faq-item">
             <button
               onClick={() => setOpen(open === i ? null : i)}
-              class="flex w-full items-center justify-between px-5 py-4 text-left"
+              className="flex w-full items-center justify-between px-5 py-4 text-left"
             >
-              <span class="text-sm font-medium text-slate-900">{item.q}</span>
+              <span className="text-sm font-medium text-slate-900">{item.q}</span>
               <svg
-                class={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open === i ? "rotate-180" : ""}`}
+                className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open === i ? "rotate-180" : ""}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -568,7 +568,7 @@ function FaqSection() {
             </button>
             {open === i && (
               <div
-                class="border-t border-slate-100 px-5 py-4 text-sm leading-relaxed text-slate-600"
+                className="border-t border-slate-100 px-5 py-4 text-sm leading-relaxed text-slate-600"
                 dangerouslySetInnerHTML={{ __html: item.a }}
               />
             )}
