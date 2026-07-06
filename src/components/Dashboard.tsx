@@ -30,13 +30,25 @@ interface BillingInfo {
   planName?: string;
   status?: string;
   portalUrl?: string;
+  connectedPrivateRepoCount?: number;
+  activeRepoCountThisPeriod?: number;
+  billedTier?: string;
+  activeRepoNamesThisPeriod?: string[];
+  periodStartMs?: number;
+  periodEndMs?: number;
+  repoLimit?: number;
 }
 
 const PLANS = [
-  { id: "starter", name: "Starter", price: "$29/mo", repos: "Up to 5 private repos" },
-  { id: "team", name: "Team", price: "$59/mo", repos: "Up to 15 private repos" },
-  { id: "scale", name: "Scale", price: "$149/mo", repos: "Up to 50 private repos" },
+  { id: "starter", name: "Starter", price: "$29/mo", repos: "Up to 5 active repos", cap: 5 },
+  { id: "team", name: "Team", price: "$59/mo", repos: "Up to 15 active repos", cap: 15 },
+  { id: "scale", name: "Scale", price: "$149/mo", repos: "Up to 50 active repos", cap: 50 },
 ] as const;
+
+function formatPeriodEnd(periodEndMs?: number): string | null {
+  if (!periodEndMs) return null;
+  return new Date(periodEndMs).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
@@ -357,6 +369,11 @@ function InstallationCard({
         </div>
       </div>
 
+      {/* Usage this billing period — the basis for what's actually billed */}
+      {billingInfo?.hasSubscription && (
+        <UsagePanel installation={installation} billingInfo={billingInfo} privateRepoCount={privateRepos.length} />
+      )}
+
       {/* No-plan prompt for private repos */}
       {hasNoPlan && (
         <div className="dashboard-plan-notice">
@@ -501,6 +518,72 @@ function InstallationCard({
   );
 }
 
+/* ─── Usage Panel ───────────────────────────────────────────────── */
+
+const TIER_ORDER = ["FREE", "STARTER", "TEAM", "SCALE", "ENTERPRISE"] as const;
+const TIER_CAPS: Record<string, number | null> = { FREE: 0, STARTER: 5, TEAM: 15, SCALE: 50, ENTERPRISE: null };
+
+function nextTierLabel(tier?: string): string | null {
+  if (!tier) return null;
+  const idx = TIER_ORDER.indexOf(tier as (typeof TIER_ORDER)[number]);
+  if (idx < 0 || idx >= TIER_ORDER.length - 1) return null;
+  return TIER_ORDER[idx + 1];
+}
+
+function capitalizeTier(tier?: string): string {
+  if (!tier) return "";
+  return tier.charAt(0) + tier.slice(1).toLowerCase();
+}
+
+function UsagePanel({
+  billingInfo,
+  privateRepoCount,
+}: {
+  installation: Installation;
+  billingInfo: BillingInfo;
+  privateRepoCount: number;
+}) {
+  const activeCount = billingInfo.activeRepoCountThisPeriod ?? 0;
+  const cap = billingInfo.billedTier ? TIER_CAPS[billingInfo.billedTier] : null;
+  const nextTier = nextTierLabel(billingInfo.billedTier);
+  const periodEnd = formatPeriodEnd(billingInfo.periodEndMs);
+  const activeNames = billingInfo.activeRepoNamesThisPeriod || [];
+
+  return (
+    <div className="dashboard-usage-panel">
+      <p className="text-sm font-semibold text-slate-900">
+        Usage this billing period{periodEnd ? ` — resets ${periodEnd}` : ""}
+      </p>
+      <div className="dashboard-usage-stats">
+        <div>
+          <p className="dashboard-usage-stat-label">Enabled</p>
+          <p className="dashboard-usage-stat-value">{privateRepoCount}</p>
+        </div>
+        <div>
+          <p className="dashboard-usage-stat-label">Active this period</p>
+          <p className="dashboard-usage-stat-value">{activeCount}</p>
+        </div>
+        <div>
+          <p className="dashboard-usage-stat-label">Billed as</p>
+          <p className="dashboard-usage-stat-value">{capitalizeTier(billingInfo.billedTier)}</p>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-slate-500">
+        You're billed for the {activeCount} repo{activeCount === 1 ? "" : "s"} that generated a
+        diagram this period — not the {privateRepoCount} you've enabled. Connected repos that
+        haven't produced a diagram yet still run analysis; they just don't count toward your bill.
+        {cap ? ` ${activeCount} of ${cap} active before ${capitalizeTier(nextTier || "")}.` : ""}
+      </p>
+      {activeNames.length > 0 && (
+        <p className="mt-2 text-xs text-slate-500">
+          <span className="font-medium text-slate-700">Active repos: </span>
+          {activeNames.join(", ")}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ─── FAQ Section ───────────────────────────────────────────────── */
 
 function FaqSection() {
@@ -509,11 +592,19 @@ function FaqSection() {
   const items: { q: string; a: string }[] = [
     {
       q: "How does Striff pricing work?",
-      a: "<b>Public repositories are completely free</b> \u2014 no limits, no credit card required. Private repositories need a paid plan. You pick a tier (Starter, Team, or Scale) and pay a <b>flat monthly fee</b>. There are no per-PR charges, no usage-based billing, and no hidden fees.",
+      a: "<b>Public repositories are completely free</b> \u2014 no limits, no credit card required. Private repositories need a paid plan (Starter, Team, or Scale). Each tier has a flat monthly price, but the tier you land on is based on <b>how many repos actually generated a diagram during your billing period</b> \u2014 not how many you've connected. Connect as many private repos as you want; you're only billed for the ones that produce a diagram.",
+    },
+    {
+      q: "What makes a repo billable?",
+      a: "A repo counts toward your bill only when it <b>produces at least one architectural diagram</b> during your current billing period. Simply connecting a repo to the GitHub App is free \u2014 it only becomes billable once a pull request triggers a diagram.",
+    },
+    {
+      q: "I enabled 20 repos but only 3 were active \u2014 what do I pay?",
+      a: "You'd be billed for <b>3 active repos</b>, which falls in the Starter tier ($29/mo) \u2014 not Scale, even though 20 repos are connected. The \"Usage this billing period\" panel on your installation card shows exactly how many repos are active and which tier that puts you in.",
     },
     {
       q: "Will I be charged automatically if I add more repos?",
-      a: "<b>No.</b> Adding private repos to your Striff installation does not change your plan or trigger any charge. You stay on the plan you selected. If you exceed your tier, Striff will simply pause analysis on additional private repos and prompt you to upgrade \u2014 but only if you explicitly choose to.",
+      a: "<b>Not just for connecting them.</b> Adding private repos to your Striff installation doesn't change your bill by itself \u2014 only repos that go on to generate a diagram count. If enough repos become active in a period to exceed your current tier, Striff starts a 24-hour grace period, emails you, and then moves you to the next tier automatically.",
     },
     {
       q: "How do I enable Striff on private repositories?",

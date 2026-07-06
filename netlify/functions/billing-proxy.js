@@ -110,7 +110,15 @@ exports.handler = async (event) => {
             status: data.subscriptionStatus,
             // New fields from the API
             tier: data.tier,
-            billablePrivateRepoCount: data.billablePrivateRepoCount,
+            // Connected repos (enabled via the GitHub App) — not what's billed.
+            connectedPrivateRepoCount: data.connectedPrivateRepoCount,
+            // Active repos this billing period — the repos that generated a diagram, which is
+            // what the tier and Stripe charge are actually based on.
+            activeRepoCountThisPeriod: data.activeRepoCountThisPeriod,
+            billedTier: data.billedTier,
+            activeRepoNamesThisPeriod: data.activeRepoNamesThisPeriod,
+            periodStartMs: data.periodStartMs,
+            periodEndMs: data.periodEndMs,
             repoLimit: data.repoLimit,
             monthlyPriceUsd: data.monthlyPriceUsd,
             pendingUpgradeTier: data.pendingUpgradeTier,

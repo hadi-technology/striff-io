@@ -2947,6 +2947,37 @@
     font-size: 0.875rem;
   }
 
+  .dashboard-usage-panel {
+    margin-top: 1rem;
+    border: 1px solid rgba(31, 111, 235, 0.16);
+    border-radius: 0.5rem;
+    background: #f0f6ff;
+    padding: 1rem;
+    font-size: 0.875rem;
+  }
+
+  .dashboard-usage-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .dashboard-usage-stat-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #57606a;
+  }
+
+  .dashboard-usage-stat-value {
+    margin-top: 0.15rem;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #24292f;
+  }
+
   .dashboard-plan-picker {
     margin-top: 1rem;
     padding: 1rem;
