@@ -604,7 +604,7 @@ function FaqSection() {
     },
     {
       q: "Will I be charged automatically if I add more repos?",
-      a: "<b>Not just for connecting them.</b> Adding private repos to your Striff installation doesn't change your bill by itself \u2014 only repos that go on to generate a diagram count. If enough repos become active in a period to exceed your current tier, Striff starts a 24-hour grace period, emails you, and then moves you to the next tier automatically.",
+      a: "<b>Not just for connecting them.</b> Adding private repos to your Striff installation doesn't change your bill by itself \u2014 only repos that go on to generate a diagram count. Your tier for the period is settled once, at your billing period's boundary, based on however many repos were active \u2014 there's no separate charge mid-period just for crossing a tier threshold.",
     },
     {
       q: "How do I enable Striff on private repositories?",

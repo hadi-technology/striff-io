@@ -121,8 +121,6 @@ exports.handler = async (event) => {
             periodEndMs: data.periodEndMs,
             repoLimit: data.repoLimit,
             monthlyPriceUsd: data.monthlyPriceUsd,
-            pendingUpgradeTier: data.pendingUpgradeTier,
-            gracePeriodEndsAtMs: data.gracePeriodEndsAtMs,
           }),
         };
       }
