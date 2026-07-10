@@ -5,7 +5,7 @@ import { getCollection, render } from "astro:content";
 export async function getStaticPaths() {
   const posts = await getCollection("blog");
   return posts.map((post) => ({
-    params: { slug: post.id },
+    params: { slug: post.slug },
     props: { post },
   }));
 }
@@ -18,7 +18,7 @@ const { title, description, date, ogImage } = post.data;
 <BaseLayout
   title={`${title} - Striff Blog`}
   description={description}
-  canonical={`https://striff.io/blog/${post.id}`}
+  canonical={`https://striff.io/blog/${post.slug}`}
   ogImage={ogImage || "https://striff.io/og-image.png"}
   ogType="article"
 >

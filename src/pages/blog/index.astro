@@ -9,7 +9,7 @@ const posts = allPosts
     title: post.data.title,
     description: post.data.description,
     date: post.data.date,
-    slug: post.id,
+    slug: post.slug,
   }))
   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 ---

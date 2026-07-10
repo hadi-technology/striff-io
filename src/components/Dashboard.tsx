@@ -377,8 +377,11 @@ function InstallationCard({
       {/* No-plan prompt for private repos */}
       {hasNoPlan && (
         <div className="dashboard-plan-notice">
-          <p className="font-medium text-slate-900">
+          <p className="font-medium text-red-800">
             {privateRepos.length} private repo{privateRepos.length > 1 ? "s" : ""} enabled — choose a plan to enable analysis.
+          </p>
+          <p className="mt-1 text-red-700/80 text-xs">
+            Striff checks cannot run until a subscription is selected.
           </p>
           <p className="mt-1 text-slate-500">
             Public repos are always free.{" "}

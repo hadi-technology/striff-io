@@ -2,6 +2,35 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import InlineCodeText from "../components/InlineCodeText.astro";
 import { exampleReviews } from "../data/exampleReviews";
+import MetricsTab from "../components/MetricsTab";
+import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
+
+// ---- Problem-section visualization: the GitHub firehose ----
+// A git graph of branches continuously merging into main (cool colors), beside a
+// live activity feed of issues opened and PRs opened / pushed / merged. Both
+// scroll seamlessly: the block is rendered twice and translated by one copy.
+type Activity = { type: "issue" | "pr" | "push" | "merge"; text: string; meta: string };
+const activityFeed: Activity[] = [
+  { type: "pr", text: "opened PR", meta: "#1841" },
+  { type: "push", text: "pushed 4 commits", meta: "feat/retry" },
+  { type: "merge", text: "merged PR", meta: "#1841" },
+  { type: "issue", text: "opened issue", meta: "#302" },
+  { type: "pr", text: "opened PR", meta: "#1852" },
+  { type: "push", text: "pushed 2 commits", meta: "bulk-import" },
+  { type: "merge", text: "merged PR", meta: "#1852" },
+  { type: "issue", text: "opened issue", meta: "#318" },
+  { type: "pr", text: "opened PR", meta: "#1863" },
+  { type: "merge", text: "merged PR", meta: "#1863" },
+];
+
+// Literal class names (kept out of interpolation so Tailwind's @layer purge
+// doesn't drop the per-type feed styles).
+const feedTypeClass = {
+  issue: "gs-item-issue",
+  pr: "gs-item-pr",
+  push: "gs-item-push",
+  merge: "gs-item-merge",
+} as const;
 
 const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
 const githubAppUrl = "https://github.com/apps/striff-app/installations/new";
@@ -14,30 +43,36 @@ const comparisonRows = [
   }
 ];
 
-const teamPhilosophy = [
-  {
-    icon: "mute",
-    color: "blue",
-    title: "Silent by default.",
-    body: "Only speaks up for structurally significant changes — a new cycle, a coupling spike, a boundary break. Clean PR, clean Check. Nothing else."
-  },
-  {
-    icon: "shield",
-    color: "emerald",
-    title: "Real analysis, not vibes.",
-    body: "Deterministic detectors + a GNN trained on 129 codebases find the issue. The LLM only explains it. Every finding traces to a real component."
-  },
+interface TeamPhilosophyItem {
+  icon: string;
+  color: string;
+  title: string;
+  body: string;
+  image?: string;
+  preview?: "metrics" | "docs" | "checks";
+}
+
+const teamPhilosophy: TeamPhilosophyItem[] = [
   {
     icon: "doc",
     color: "amber",
-    title: "Reads your docs. No setup.",
-    body: "No rules to write, no thresholds to tune. Striff reads your ADRs and ARCHITECTURE.md and cites the exact file when a PR contradicts them."
+    title: "Your architecture decisions, actually enforced.",
+    body: "Most teams write ADRs and an ARCHITECTURE.md, then watch PRs quietly drift from them anyway. Striff reads those docs and checks every PR against them — when a change contradicts what your team agreed on, it cites the exact file and line. No rules to configure. The documentation is the rulebook.",
+    preview: "docs"
   },
   {
-    icon: "check",
-    color: "rose",
-    title: "A Check, not a chatty reviewer.",
-    body: "Lives in the Checks tab next to your CI. No dashboard, no app to learn, nothing to mute — just a pass/fail signal with detail on demand."
+    icon: "chart",
+    color: "emerald",
+    title: "Org-wide architectural health, on one dashboard.",
+    body: "Clean PR rate, high-risk PR rate, and the repos accumulating the most flags — a live read on where architecture is holding and where it's slipping, across every repo you own. Peace of mind about compliance, without reading every diff yourself.",
+    preview: "metrics"
+  },
+  {
+    icon: "mute",
+    color: "blue",
+    title: "Quiet by design. Loud when it matters.",
+    body: "Striff posts once, as a single GitHub Check next to your CI — no comment threads, no bot spam your team learns to tune out. Clean PR, green Check, nothing else. It only speaks up for changes that put your architecture at real risk.",
+    preview: "checks"
   }
 ];
 
@@ -228,77 +263,18 @@ const proofLogos = [
     <!-- ==================== PROBLEM + WHY COMBINED ==================== -->
     <section id="problem" class="scroll-mt-24 bg-slate-100/60 pb-12 pt-6">
       <div class="mx-auto max-w-[90rem] px-6" data-reveal>
-        <div class="rounded-3xl bg-white p-8 shadow-xl border border-slate-200 md:p-10">
-          <div class="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-start">
-            <div class="space-y-5">
+        <div class="rounded-3xl bg-white p-6 shadow-xl border border-slate-200 md:p-8">
+          <div class="problem-split">
+            <div class="problem-copy">
               <p class="text-xs font-bold uppercase tracking-[0.2em] text-rose-500">The problem</p>
-              <h2 class="text-balance">Your file diff doesn't show architecture.</h2>
-              <p class="section-subcopy">
-                Every pull request changes more than lines — it changes dependencies, coupling, and boundaries. File diffs can't show that. Neither can CodeRabbit, Copilot, or any text-based reviewer. Striff can.
+              <h2 class="mt-3 text-balance">Govern your architecture at the speed AI writes code.</h2>
+              <p class="section-subcopy mt-4">
+                Your team merges more AI-written code every week than anyone can read. Left unchecked, each merge piles on coupling and cycles until the architecture is unmaintainable. Striff catches that structural drift on every pull request.
               </p>
-              <div class="problem-callout">
-                <div class="flex items-start gap-3">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="mt-0.5 h-5 w-5 shrink-0 text-rose-400" aria-hidden="true"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.5 2.9 16.3A2 2 0 0 0 4.6 19h14.8a2 2 0 0 0 1.7-2.7L13.7 3.5a2 2 0 0 0-3.4 0Z"/></svg>
-                  <div>
-                    <p class="problem-callout-title">Real example: JanssenProject/jans PR #14256</p>
-                    <p class="problem-callout-copy">CodeRabbit found the implementation bugs. But only Striff detected that <strong>SignatureAlgorithm (220 dependents)</strong> was modified, WMC grew by 5, and a <strong>5-package dependency cycle</strong> was introduced in core crypto.</p>
-                  </div>
-                </div>
-              </div>
-              <div class="problem-callout">
-                <div class="flex items-start gap-3">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="mt-0.5 h-5 w-5 shrink-0 text-amber-500" aria-hidden="true"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.5 2.9 16.3A2 2 0 0 0 4.6 19h14.8a2 2 0 0 0 1.7-2.7L13.7 3.5a2 2 0 0 0-3.4 0Z"/></svg>
-                  <div>
-                    <p class="problem-callout-title">Real example: apache/phoenix PR #2527</p>
-                    <p class="problem-callout-copy">Copilot caught line-length violations. But only Striff detected a <strong>40-node dependency cycle</strong> spanning nearly the entire codebase — plus a new class with 16 outgoing dependencies on day one.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="space-y-5">
-              <div class="problem-diff-mock">
-                <div class="problem-diff-header">
-                  <span class="problem-diff-tab problem-diff-tab-active">Files changed</span>
-                  <span class="problem-diff-badge problem-diff-badge-clean">All checks passed</span>
-                </div>
-                <div class="problem-diff-body">
-                  <div class="problem-diff-file">
-                    <p class="problem-diff-filename">SignatureAlgorithm.java</p>
-                    <div class="problem-diff-lines">
-                      <div class="problem-diff-line problem-diff-line-add"><span>+62</span> <span>if (curveBytes.length &lt; 32) {</span></div>
-                      <div class="problem-diff-line problem-diff-line-add"><span>+63</span> <span>  bytes = padTo32(curveBytes);</span></div>
-                      <div class="problem-diff-line problem-diff-line-add"><span>+64</span> <span>}</span></div>
-                    </div>
-                  </div>
-                  <div class="problem-diff-verdict">
-                    <p class="problem-diff-verdict-label">What the diff shows</p>
-                    <p class="problem-diff-verdict-clean">Looks fine. 3 lines added. Move on.</p>
-                  </div>
-                </div>
-              </div>
-              <div class="problem-striff-mock">
-                <div class="problem-striff-header">
-                  <span class="problem-striff-tab">Striff</span>
-                  <span class="problem-striff-badge">1 unusual edge</span>
-                </div>
-                <div class="problem-striff-body">
-                  <div class="problem-striff-flag">
-                    <span class="problem-striff-dot problem-striff-dot-danger"></span>
-                    <div>
-                      <strong>220 dependents impacted</strong>
-                      <p><code>SignatureAlgorithm</code> has afferent coupling of 220. WMC grew from 17 to 22. Any change ripples across the auth server.</p>
-                    </div>
-                  </div>
-                  <div class="problem-striff-flag">
-                    <span class="problem-striff-dot problem-striff-dot-warn"></span>
-                    <div>
-                      <strong>Package cycle detected</strong>
-                      <p>New circular dependency: <code>crypto</code> → <code>signature</code> → <code>configuration</code> → <code>jwk</code> → <code>util</code> → <code>crypto</code></p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-600">
+              <p class="section-subcopy mt-3">
+                Why architecture matters more, not less, in the AI era — <a class="font-medium text-slate-800 underline decoration-slate-300 underline-offset-2 hover:text-blue-600" href="/blog/architecture-matters-more-not-less">read the breakdown</a>.
+              </p>
+              <div class="mt-6 inline-flex items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-600">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="shrink-0 text-slate-400" aria-hidden="true">
                   <path d="M12 14l9-5-9-5-9 5 9 5z"></path>
                   <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
@@ -306,6 +282,68 @@ const proofLogos = [
                 <span>Research-backed — roots at <a class="font-medium text-slate-800 underline decoration-slate-300 underline-offset-2 hover:text-blue-600" href="https://www.iccq.ru/2021.html" target="_blank" rel="noopener noreferrer">ICCQ 2021</a></span>
               </div>
             </div>
+
+            <!-- The firehose: branches merging into main, beside the activity feed -->
+            <figure class="gs" data-reveal aria-hidden="true">
+              <div class="gs-head">
+                <span class="gs-live"><span class="gs-live-dot"></span> live on <span class="gs-live-repo">acme-corp</span></span>
+                <span class="gs-head-tag">every day</span>
+              </div>
+              <div class="gs-body">
+                <!-- Git branch graph: feature branches continuously merging into main -->
+                <div class="gs-col">
+                  <span class="gs-col-head">branches → main</span>
+                  <div class="gs-graph">
+                  <div class="gs-graph-scroll">
+                    {[0, 1].map(() => (
+                      <svg class="gs-graph-unit" viewBox="0 0 140 320" preserveAspectRatio="xMidYMid meet">
+                        <path class="gs-line gs-line-main" d="M30 0 L30 320" />
+                        <path class="gs-line gs-line-a" d="M30 256 C 52 256 70 242 70 218 L 70 172 C 70 148 52 144 30 144" />
+                        <path class="gs-line gs-line-b" d="M30 224 C 60 224 104 206 104 178 L 104 92 C 104 66 60 64 30 64" />
+                        <circle class="gs-dot gs-dot-main" cx="30" cy="32" r="5" />
+                        <circle class="gs-dot gs-dot-main" cx="30" cy="96" r="5" />
+                        <circle class="gs-dot gs-dot-main" cx="30" cy="160" r="5" />
+                        <circle class="gs-dot gs-dot-main" cx="30" cy="224" r="5" />
+                        <circle class="gs-dot gs-dot-main" cx="30" cy="288" r="5" />
+                        <circle class="gs-dot gs-dot-a" cx="70" cy="196" r="4.5" />
+                        <circle class="gs-dot gs-dot-b" cx="104" cy="168" r="4.5" />
+                        <circle class="gs-dot gs-dot-b" cx="104" cy="102" r="4.5" />
+                        <circle class="gs-merge gs-merge-a" cx="30" cy="144" r="6.5" />
+                        <circle class="gs-merge gs-merge-b" cx="30" cy="64" r="6.5" />
+                      </svg>
+                    ))}
+                  </div>
+                  </div>
+                </div>
+
+                <!-- Activity feed: issues opened, PRs opened / pushed / merged -->
+                <div class="gs-col gs-col-feed">
+                  <span class="gs-col-head">activity</span>
+                  <div class="gs-feed">
+                  <div class="gs-feed-scroll">
+                    {[0, 1].map(() => activityFeed.map((a) => (
+                      <div class={`gs-item ${feedTypeClass[a.type]}`}>
+                        <span class="gs-item-icon">
+                          {a.type === "issue" ? (
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>
+                          ) : a.type === "pr" ? (
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M6 8.5v7"/><circle cx="18" cy="7" r="2.5"/><path d="M18 9.5c0 4-6 2.5-6 8"/></svg>
+                          ) : a.type === "push" ? (
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9"/><path d="M6 15l6-6 6 6"/><path d="M5 4h14"/></svg>
+                          ) : (
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M6 8.5v7"/><circle cx="18" cy="16" r="2.5"/><path d="M18 13.5c0-5-6-1.5-6-7"/></svg>
+                          )}
+                        </span>
+                        <span class="gs-item-text">{a.text}</span>
+                        <span class="gs-item-meta">{a.meta}</span>
+                      </div>
+                    )))}
+                  </div>
+                  </div>
+                </div>
+              </div>
+              <figcaption class="gs-caption">More PRs, branches and issues than any human can review — every single day.</figcaption>
+            </figure>
           </div>
         </div>
       </div>
@@ -538,44 +576,165 @@ const proofLogos = [
     <section id="how" class="scroll-mt-24 bg-slate-100/60 pb-12 pt-8">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="max-w-3xl" data-reveal>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Built for teams</p>
-          <h2 class="mt-3 text-balance">Built for teams that don't want more bot spam.</h2>
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Built for engineering leaders</p>
+          <h2 class="mt-3 text-balance">Fast teams. Architecture that holds.</h2>
           <p class="section-subcopy mt-4">
-            Most AI review tools optimize for comment count. Striff optimizes for signal. Here's what that means in practice.
+            Architectural drift is the tax your team pays later — slower PRs, harder onboarding, rewrites nobody budgeted for. Striff checks every PR against the architecture you've already documented, rolls it into an org-wide health dashboard, and never slows a single review down to do it.
           </p>
         </div>
-        <div class="philosophy-visual mt-10" data-reveal>
-          <div class="philosophy-hub" aria-hidden="true">
-            <span class="philosophy-hub-spoke philosophy-hub-spoke-1"></span>
-            <span class="philosophy-hub-spoke philosophy-hub-spoke-2"></span>
-            <span class="philosophy-hub-spoke philosophy-hub-spoke-3"></span>
-            <span class="philosophy-hub-spoke philosophy-hub-spoke-4"></span>
-            <span class="philosophy-hub-core">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="2.4"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M6.5 6.5 10 10M17.5 6.5 14 10M6.5 17.5 10 14M17.5 17.5 14 14"/></svg>
-            </span>
-          </div>
-          <div class="philosophy-grid">
-            {teamPhilosophy.map((item) => (
-              <article class="philosophy-card philosophy-card-{item.color}" data-reveal>
-                <div class="philosophy-card-head">
-                  <span class={`icon-badge icon-badge-${item.color} philosophy-icon`} aria-hidden="true">
+        <div class="teams-showcase mt-10" data-teams-showcase data-reveal>
+          <div class="teams-tabs" role="tablist">
+            {teamPhilosophy.map((item, i) => (
+              <button
+                class={`teams-tab teams-tab-${item.color} ${i === 0 ? "is-active" : ""}`}
+                type="button"
+                role="tab"
+                aria-selected={i === 0 ? "true" : "false"}
+                data-teams-tab-index={i}
+              >
+                <span class="teams-tab-head">
+                  <span class={`icon-badge icon-badge-${item.color} teams-tab-icon`} aria-hidden="true">
                     {item.icon === "mute" && (
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19 6a9 9 0 0 1 0 12"/></svg>
                     )}
-                    {item.icon === "shield" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 4 6v6c0 4.5 3.4 7.7 8 9 4.6-1.3 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+                    {item.icon === "chart" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M12 20V4M20 20v-7"/><path d="M2 20h20"/></svg>
                     )}
                     {item.icon === "doc" && (
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
                     )}
-                    {item.icon === "check" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12 3 3 5-6"/></svg>
-                    )}
                   </span>
-                  <h3 class="text-lg font-bold text-slate-950">{item.title}</h3>
-                </div>
-                <p class="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>
-              </article>
+                  <span class="teams-tab-title">{item.title}</span>
+                </span>
+                <span class="teams-tab-body">{item.body}</span>
+                <span class="teams-tab-progress" aria-hidden="true"><span class="teams-tab-progress-fill"></span></span>
+              </button>
+            ))}
+          </div>
+
+          <div class="teams-stage">
+            {teamPhilosophy.map((item, i) => (
+              <div class={`teams-stage-panel ${i === 0 ? "is-active" : ""}`} data-teams-panel-index={i}>
+                {item.preview === "metrics" ? (
+                  <div class="metrics-preview-frame" data-metrics-preview>
+                    <div class="metrics-preview-scale" data-metrics-preview-scale>
+                      <div class="dashboard-shell">
+                        <div class="dashboard-account-bar">
+                          <div>
+                            <p class="dashboard-kicker">Striff account</p>
+                            <p class="text-lg font-bold">Acme Corp</p>
+                          </div>
+                          <span class="dashboard-plan-badge">Team plan</span>
+                        </div>
+                        <div class="dashboard-installation-card">
+                          <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
+                        </div>
+                      </div>
+                    </div>
+                    <div class="metrics-preview-fade" aria-hidden="true"></div>
+                  </div>
+                ) : item.preview === "docs" ? (
+                  <div class="teams-doc-frame">
+                    <div
+                      class="github-diff-stage example-diff-stage teams-doc-diagram-stage"
+                      data-panzoom="pz-docs-tile"
+                      data-initial-scale="3"
+                      data-initial-x="-746"
+                      data-initial-y="-78"
+                      data-mobile-scale="2.2"
+                      data-mobile-x="-287"
+                      data-mobile-y="-10"
+                    >
+                      <img
+                        src="/examples/fineract.svg"
+                        alt="Striff structural diagram for apache/fineract PR #6063, zoomed on DefaultCommandHandlerManager"
+                        class="github-diff-graphic github-diff-image"
+                        loading="lazy"
+                        draggable="false"
+                      />
+                    </div>
+                    <div class="teams-doc-note-dock">
+                      <div class="ai-finding ai-finding-danger">
+                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
+                        <div>
+                          <strong>Package structure violation</strong>
+                          <p><code>DefaultCommandHandlerManager</code> sits in <code>implementation</code>, but <code>REFACTORING.md</code> requires command handlers to live in <code>handler</code>. Doc-grounded — cites the file by name.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : item.preview === "checks" ? (
+                  <div class="teams-github-frame" data-github-preview>
+                    <div class="gh-mock-scale" data-github-preview-scale>
+                      <div class="gh-mock">
+                        <div class="gh-mock-body">
+                          <p class="gh-mock-breadcrumb">acme-corp / <strong>platform-api</strong></p>
+                          <h4 class="gh-mock-title">Add token-bucket rate limiter to gateway middleware <span>#1842</span></h4>
+                          <div class="gh-mock-meta">
+                            <span class="gh-mock-state">
+                              <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg>
+                              Open
+                            </span>
+                            <span class="gh-mock-meta-text"><strong>jordan-lee</strong> wants to merge 6 commits into <code>main</code> from <code>feature/rate-limiter</code></span>
+                          </div>
+                          <div class="gh-mock-tabs">
+                            <span class="gh-mock-tab">Conversation <em>12</em></span>
+                            <span class="gh-mock-tab">Commits <em>6</em></span>
+                            <span class="gh-mock-tab is-active">Checks <em>4</em></span>
+                            <span class="gh-mock-tab">Files changed <em>9</em></span>
+                          </div>
+                          <div class="gh-mock-checkbox">
+                            <div class="gh-mock-checkbox-header">
+                              <svg class="gh-mock-check-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
+                              <div>
+                                <p class="gh-mock-checkbox-title">All checks have passed</p>
+                                <p class="gh-mock-checkbox-sub">4 successful checks</p>
+                              </div>
+                              <button type="button" class="gh-mock-hide">Hide all checks</button>
+                            </div>
+                            <div class="gh-mock-check-list">
+                              <div class="gh-mock-check-row">
+                                <svg class="gh-mock-check-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
+                                <span class="gh-mock-check-name">continuous-integration / build</span>
+                                <span class="gh-mock-check-time">44s</span>
+                                <span class="gh-mock-check-details">Details</span>
+                              </div>
+                              <div class="gh-mock-check-row">
+                                <svg class="gh-mock-check-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
+                                <span class="gh-mock-check-name">continuous-integration / test <em>(312)</em></span>
+                                <span class="gh-mock-check-time">1m 12s</span>
+                                <span class="gh-mock-check-details">Details</span>
+                              </div>
+                              <div class="gh-mock-check-row">
+                                <svg class="gh-mock-check-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
+                                <span class="gh-mock-check-name">lint</span>
+                                <span class="gh-mock-check-time">18s</span>
+                                <span class="gh-mock-check-details">Details</span>
+                              </div>
+                              <div class="gh-mock-check-row gh-mock-check-row-striff">
+                                <svg class="gh-mock-check-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
+                                <div class="gh-mock-check-body">
+                                  <span class="gh-mock-check-name">
+                                    <span class="gh-mock-striff-mark" aria-hidden="true">
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><path d="m4.9 4.9 2.8 2.8M16.3 16.3l2.8 2.8"/></svg>
+                                    </span>
+                                    Striff — architecture
+                                  </span>
+                                  <p class="gh-mock-check-output">No boundary violations. Rate limiter stays inside <code>gateway/middleware</code>; matches <code>ARCHITECTURE.md</code>.</p>
+                                </div>
+                                <span class="gh-mock-check-time">26s</span>
+                                <span class="gh-mock-check-details">Details</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <img src={item.image} alt={item.title} class="teams-stage-image" loading="lazy" />
+                )}
+              </div>
             ))}
           </div>
         </div>
@@ -924,5 +1083,108 @@ const proofLogos = [
         overlay.classList.toggle("is-open");
       });
     })();
+
+    // Team showcase — autoplaying rotating tabs
+    (function () {
+      var root = document.querySelector("[data-teams-showcase]");
+      if (!root) return;
+
+      var tabs = root.querySelectorAll("[data-teams-tab-index]");
+      var panels = root.querySelectorAll("[data-teams-panel-index]");
+      var total = tabs.length;
+      var current = 0;
+      var timer = null;
+      var startedAt = 0;
+      var AUTOPLAY_MS = 6000;
+      var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function currentFill() {
+        var fill = tabs[current] && tabs[current].querySelector(".teams-tab-progress-fill");
+        return fill || null;
+      }
+
+      function restartTimer(duration) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(function () { activate(current + 1); }, duration);
+      }
+
+      function activate(index) {
+        current = ((index % total) + total) % total;
+
+        tabs.forEach(function (tab, i) {
+          var isActive = i === current;
+          tab.classList.toggle("is-active", isActive);
+          tab.setAttribute("aria-selected", isActive ? "true" : "false");
+          var fill = tab.querySelector(".teams-tab-progress-fill");
+          if (fill) {
+            fill.style.animation = "none";
+            fill.style.animationPlayState = "";
+            void fill.offsetWidth;
+            fill.style.animation = "";
+          }
+        });
+
+        panels.forEach(function (panel, i) { panel.classList.toggle("is-active", i === current); });
+
+        startedAt = Date.now();
+        if (!reduceMotion) restartTimer(AUTOPLAY_MS);
+      }
+
+      tabs.forEach(function (tab, i) {
+        tab.addEventListener("click", function () { activate(i); });
+      });
+
+      root.addEventListener("mouseenter", function () {
+        if (timer) { clearTimeout(timer); timer = null; }
+        var fill = currentFill();
+        if (fill) fill.style.animationPlayState = "paused";
+      });
+
+      root.addEventListener("mouseleave", function () {
+        if (reduceMotion) return;
+        var fill = currentFill();
+        if (fill) fill.style.animationPlayState = "running";
+        var elapsed = Date.now() - startedAt;
+        restartTimer(Math.max(AUTOPLAY_MS - elapsed, 400));
+      });
+
+      activate(0);
+    })();
+
+    // Scales a fixed-natural-width mock down to fit its tile, preserving proportions
+    // (used by both the live metrics dashboard preview and the GitHub checks mock).
+    function setupPreviewScale(frameAttr, scaleAttr) {
+      var frames = document.querySelectorAll("[" + frameAttr + "]");
+      if (!frames.length) return;
+
+      function rescale(frame) {
+        var scaleEl = frame.querySelector("[" + scaleAttr + "]");
+        // offsetWidth reads the untransformed layout box, so it stays a stable basis
+        // to rescale from no matter what scale is currently applied.
+        var naturalWidth = scaleEl && scaleEl.offsetWidth;
+        if (!naturalWidth) return;
+        var factor = frame.clientWidth / naturalWidth;
+        scaleEl.style.transform = "scale(" + factor + ")";
+      }
+
+      var resizeObserver =
+        typeof ResizeObserver !== "undefined"
+          ? new ResizeObserver(function (entries) {
+              entries.forEach(function (entry) { rescale(entry.target); });
+            })
+          : null;
+
+      frames.forEach(function (frame) {
+        if (resizeObserver) {
+          resizeObserver.observe(frame);
+        } else {
+          window.addEventListener("resize", function () { rescale(frame); });
+        }
+        rescale(frame);
+      });
+    }
+
+    setupPreviewScale("data-metrics-preview", "data-metrics-preview-scale");
+    setupPreviewScale("data-github-preview", "data-github-preview-scale");
   </script>
 </BaseLayout>
