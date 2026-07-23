@@ -344,29 +344,20 @@ const plans = [
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="examples-section-header flex flex-col gap-5 md:flex-row md:items-end md:justify-between" data-reveal>
           <div class="max-w-3xl">
-            <p class="examples-kicker">Real PRs. Every tool. Same diff.</p>
-            <h2 class="mt-3 text-balance">CodeRabbit found a missing import. Striff found a 5&#8209;package dependency cycle.</h2>
+            <p class="examples-kicker">The proof, on live PRs</p>
+            <h2 class="mt-3 text-balance">The riskiest changes look safe in a file diff.</h2>
             <p class="section-subcopy mt-4">
-              The same public pull requests, reviewed head-to-head — with <strong>zero overlapping findings</strong>. AI reviewers read the diff. Striff reads what the diff does to your architecture.
+              These are real public pull requests. Each one looked routine file-by-file. Striff read the structure underneath — <strong>a new package cycle, a god-class forming, a migration quietly reversing</strong> — and posted the findings before merge.
             </p>
           </div>
-          <div class="example-meta self-start md:self-auto">
-            <div class="flex flex-wrap items-center gap-2 mb-2">
-              <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Compared with</span>
-            </div>
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="ai-tool-chip">CodeRabbit</span>
-              <span class="ai-tool-chip">Copilot</span>
-              <span class="ai-tool-chip">Codex</span>
-              <span class="ai-tool-chip ai-tool-chip-dim">+ Claude, Greptile</span>
-            </div>
-            <div class="mt-3">
-              <span class="example-meta-badge">Live public PR artifacts</span>
-            </div>
-          </div>
+          <ul class="example-proof-stack self-start md:self-auto">
+            <li>Live public PRs — open any of them and verify</li>
+            <li>Findings posted on the PR before merge</li>
+            <li>Zero overlap with AI reviewers' comments</li>
+          </ul>
         </div>
         <!-- Tab selector strip -->
-        <div class="example-tabs" data-reveal>
+        <div class="example-tabs mt-9" data-reveal>
           {exampleReviews.map((example, i) => (
             <button
               class={`example-tab ${i === 0 ? "is-active" : ""}`}
@@ -380,7 +371,7 @@ const plans = [
         </div>
 
         <!-- Carousel slides -->
-        <div class="example-carousel mt-4" data-reveal>
+        <div class="example-carousel mt-6" data-reveal>
           {exampleReviews.map((example, i) => (
             <div class={`example-slide ${i === 0 ? "is-active" : ""}`} data-slide-index={i}>
               <div class="example-slide-card">
@@ -467,7 +458,7 @@ const plans = [
 
                     <div class="ex-verdict">
                       {example.aiTool ? (
-                        <p><strong>{example.aiTool.name} caught the implementation bugs in this diff — zero of these findings.</strong> Different layers; use them together.</p>
+                        <p><strong>AI reviewers on this PR caught implementation bugs — and zero of these findings.</strong> Striff reads the layer diff-based tools can't see. Use both.</p>
                       ) : (
                         <p><InlineCodeText text={example.checkHeader} /></p>
                       )}
@@ -707,8 +698,8 @@ const plans = [
                   )}
                 </span>
                 <div>
-                  <h3 class="text-sm font-bold text-white">{item.title}</h3>
-                  <p class="mt-1 text-[0.82rem] leading-5 text-slate-400">{item.body}</p>
+                  <h3 class="text-[0.95rem] font-bold text-white">{item.title}</h3>
+                  <p class="mt-1 text-sm leading-6 text-slate-400">{item.body}</p>
                 </div>
               </div>
             ))}
@@ -730,7 +721,7 @@ const plans = [
             Striff runs as a GitHub Check. No new tool to learn, no workflow to change. Start free on public repos, add private repos when you're ready.
           </p>
         </div>
-          <div class="mt-8 grid gap-5 lg:grid-cols-3">
+          <div class="mt-10 grid gap-5 lg:grid-cols-3">
             {plans.map((plan) => (
               <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-md" data-reveal>
                 <div class="flex items-center gap-3">
@@ -761,7 +752,7 @@ const plans = [
               </article>
             ))}
           </div>
-          <div class="mt-8 flex flex-wrap gap-3">
+          <div class="mt-10 flex flex-wrap gap-3">
             <a class="btn-primary" href={extensionUrl} target="_blank" rel="noopener noreferrer">Get started free</a>
             <a class="btn-secondary" href="/pricing">Team pricing</a>
             <a class="btn-secondary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">GitHub App</a>
@@ -773,7 +764,7 @@ const plans = [
     <!-- ==================== FAQ ==================== -->
     <section class="bg-slate-100/60 pb-16 pt-16">
       <div class="mx-auto max-w-3xl px-6">
-        <div class="text-center mb-8" data-reveal>
+        <div class="text-center mb-10" data-reveal>
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">FAQ</p>
           <h2 class="mt-2 text-balance">Common questions</h2>
         </div>

@@ -98,9 +98,9 @@ export const exampleReviews: ExampleReview[] = [
     ],
     checkHeader: "CodeRabbit caught the implementation bugs. Striff found the architectural risk no other tool could see.",
     scoreboard: [
-      { value: "4", label: "implementation bugs · CodeRabbit", tone: "other" },
-      { value: "4", label: "architectural risks · Striff", tone: "striff" },
-      { value: "0", label: "overlapping findings", tone: "overlap" }
+      { value: "7", label: "findings posted on the live PR", tone: "striff" },
+      { value: "5", label: "crypto packages locked in a new cycle", tone: "other" },
+      { value: "0", label: "visible in the file-by-file diff", tone: "overlap" }
     ],
     hero: {
       stat: "220",
@@ -169,7 +169,7 @@ export const exampleReviews: ExampleReview[] = [
     ],
     checkHeader: "Striff doesn't just flag the god-class risk — it quantifies the fix: reduce EC by at least 1 and WMC by ~10 with a named extraction target.",
     scoreboard: [
-      { value: "5", label: "findings · Striff", tone: "striff" },
+      { value: "5", label: "findings posted on the live PR", tone: "striff" },
       { value: "6", label: "components locked in a new package cycle", tone: "other" },
       { value: "−10 WMC", label: "projected from the fix Striff prescribes", tone: "overlap" }
     ],
@@ -229,9 +229,9 @@ export const exampleReviews: ExampleReview[] = [
     ],
     checkHeader: "Copilot saw an XSS injection path and a key collision. Striff saw the migration plan moving in the wrong direction.",
     scoreboard: [
-      { value: "5", label: "implementation bugs · Copilot", tone: "other" },
-      { value: "2", label: "architectural risks · Striff", tone: "striff" },
-      { value: "0", label: "overlapping findings", tone: "overlap" }
+      { value: "2", label: "structural findings on the live PR", tone: "striff" },
+      { value: "4", label: "components in the structural diff", tone: "other" },
+      { value: "0", label: "visible in the file-by-file diff", tone: "overlap" }
     ],
     hero: {
       stat: "0",
