@@ -1,0 +1,40 @@
+---
+// TEMPORARY page for capturing a marketing screenshot of the metrics dashboard with fake
+// data. Not linked from anywhere in the site. Safe to delete once the screenshot is taken.
+//
+// Renders MetricsTab as a real Astro/React island (client:load) instead of manually calling
+// react-dom's createRoot() from a raw <script> tag -- the manual approach bypasses Astro's React
+// integration, so Vite's Fast Refresh preamble never gets injected and the page throws
+// "@vitejs/plugin-react can't detect preamble" in dev mode (it only worked under `astro build` +
+// `astro preview`, which don't use Fast Refresh at all).
+import "../styles/global.css";
+import MetricsTab from "../components/MetricsTab";
+import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
+---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Metrics screenshot (temporary)</title>
+  </head>
+  <body>
+    <main class="dashboard-page text-slate-900">
+      <section class="mx-auto max-w-4xl px-6 py-16">
+        <div class="dashboard-shell">
+          <div class="dashboard-account-bar">
+            <div>
+              <p class="dashboard-kicker">Striff account</p>
+              <p class="text-lg font-bold">Acme Corp</p>
+            </div>
+            <span class="dashboard-plan-badge">Team plan</span>
+          </div>
+          <div class="dashboard-installation-card">
+            <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
