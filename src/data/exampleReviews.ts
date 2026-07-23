@@ -14,6 +14,21 @@ export type AiToolData = {
   missed: string;
 };
 
+/** The one finding per PR that makes an architecture-minded reviewer stop scrolling. */
+export type HeroFinding = {
+  stat: string;
+  statLabel: string;
+  title: string;
+  body: string;
+};
+
+/** Stat tiles rendered as the head-to-head scoreboard above the findings lanes. */
+export type ScoreboardTile = {
+  value: string;
+  label: string;
+  tone: "striff" | "other" | "overlap";
+};
+
 export type ExampleReview = {
   id: string;
   language: string;
@@ -44,6 +59,8 @@ export type ExampleReview = {
   };
   metrics: string[];
   checkHeader: string;
+  scoreboard: ScoreboardTile[];
+  hero: HeroFinding;
   checks: Array<{
     level: ExampleCheckLevel;
     title: string;
@@ -80,16 +97,22 @@ export const exampleReviews: ExampleReview[] = [
       "7 findings including 3 HIGH severity"
     ],
     checkHeader: "CodeRabbit caught the implementation bugs. Striff found the architectural risk no other tool could see.",
+    scoreboard: [
+      { value: "4", label: "implementation bugs · CodeRabbit", tone: "other" },
+      { value: "4", label: "architectural risks · Striff", tone: "striff" },
+      { value: "0", label: "overlapping findings", tone: "overlap" }
+    ],
+    hero: {
+      stat: "220",
+      statLabel: "components depend on the class this PR modifies",
+      title: "Stable contract modified: `SignatureAlgorithm`",
+      body: "Afferent coupling of 220 — any drift in this class ripples across the entire auth server. Its complexity (WMC) also grew by 5. Invisible in the file diff."
+    },
     checks: [
       {
         level: "danger",
         title: "New package cycle in crypto packages",
         body: "Dependency cycle: `crypto` → `crypto.signature` → `configuration` → `jwk` → `util` → `crypto`. Package cycles break modularity and make future refactoring risky."
-      },
-      {
-        level: "danger",
-        title: "Stable contract modified — 220 dependents",
-        body: "`SignatureAlgorithm` has afferent coupling of 220. Any change to this class ripples across the entire auth server. WMC also grew by 5."
       },
       {
         level: "danger",
@@ -145,6 +168,17 @@ export const exampleReviews: ExampleReview[] = [
       "5 findings including a new package cycle"
     ],
     checkHeader: "Striff doesn't just flag the god-class risk — it quantifies the fix: reduce EC by at least 1 and WMC by ~10 with a named extraction target.",
+    scoreboard: [
+      { value: "5", label: "findings · Striff", tone: "striff" },
+      { value: "6", label: "components locked in a new package cycle", tone: "other" },
+      { value: "−10 WMC", label: "projected from the fix Striff prescribes", tone: "overlap" }
+    ],
+    hero: {
+      stat: "28 → 78",
+      statLabel: "cyclomatic complexity (WMC) on `PlacementInfo` after this PR",
+      title: "A god-class in the making — with a quantified fix",
+      body: "Efferent coupling jumped 6 → 15 alongside the WMC surge. Striff prescribes the remedy by name: extract a `GroupingMetadataHandler` and delegate — projected to cut EC by 1 and WMC by ~10."
+    },
     checks: [
       {
         level: "danger",
@@ -155,11 +189,6 @@ export const exampleReviews: ExampleReview[] = [
         level: "danger",
         title: "New directional boundary crossing",
         body: "New dependency from `OrchardCore.Tests.DisplayManagement.Decriptors` to `OrchardCore.DisplayManagement.Zones` — no prior edge in this direction, and it skips 4 layers."
-      },
-      {
-        level: "warn",
-        title: "PlacementInfo complexity surge",
-        body: "`PlacementInfo` EC jumped from 6 to 15 and WMC from 28 to 78. Moving `GroupingMetadata` parsing into a dedicated `GroupingMetadataHandler` is projected to cut EC by at least 1 and WMC by ~10."
       },
       {
         level: "warn",
@@ -199,12 +228,18 @@ export const exampleReviews: ExampleReview[] = [
       "Copilot posted 5 inline review comments"
     ],
     checkHeader: "Copilot saw an XSS injection path and a key collision. Striff saw the migration plan moving in the wrong direction.",
+    scoreboard: [
+      { value: "5", label: "implementation bugs · Copilot", tone: "other" },
+      { value: "2", label: "architectural risks · Striff", tone: "striff" },
+      { value: "0", label: "overlapping findings", tone: "overlap" }
+    ],
+    hero: {
+      stat: "0",
+      statLabel: "releases of the new chart component — yet legacy already imports it",
+      title: "Migration quietly reversing direction",
+      body: "`ui-legacy.src.components.ui` now imports from `ui-react.src.components.ui.chart`. The migration plan documents this component as \"not yet shipped\" — legacy reaching into the new package makes the migration harder to finish."
+    },
     checks: [
-      {
-        level: "danger",
-        title: "Legacy reaching into new code",
-        body: "`ui-legacy.src.components.ui` now imports from `ui-react.src.components.ui.chart`. The migration plan documents this component as \"not yet shipped\" — but legacy code reaching into the new package makes the migration harder to finish."
-      },
       {
         level: "warn",
         title: "Premature cross-package import",

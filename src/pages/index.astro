@@ -132,16 +132,6 @@ const plans = [
   }
 ];
 
-const proofLogos = [
-  "JanssenProject / Jans",
-  "jbogard / MediatR",
-  "ArcadeDB",
-  "acronis / uikit",
-  "Mastra AI",
-  "Line / Armeria",
-  "Apache Phoenix",
-  "junit-team / junit5"
-];
 ---
 
 <BaseLayout
@@ -152,7 +142,7 @@ const proofLogos = [
 >
   <main>
     <!-- ==================== HERO ==================== -->
-    <section class="hero-section relative overflow-hidden pb-8 pt-14">
+    <section class="hero-section relative overflow-hidden pb-12 pt-14">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="hero-copy relative z-10 mx-auto max-w-2xl space-y-6 text-center" data-reveal>
           <h1 class="mx-auto max-w-2xl text-balance">Code review for your <span class="font-bold text-blue-600">architecture</span>.</h1>
@@ -261,18 +251,18 @@ const proofLogos = [
     </section>
 
     <!-- ==================== PROBLEM + WHY COMBINED ==================== -->
-    <section id="problem" class="scroll-mt-24 bg-slate-100/60 pb-12 pt-6">
+    <section id="problem" class="scroll-mt-24 bg-slate-100/60 pb-16 pt-14">
       <div class="mx-auto max-w-[90rem] px-6" data-reveal>
         <div class="rounded-3xl bg-white p-6 shadow-xl border border-slate-200 md:p-8">
           <div class="problem-split">
             <div class="problem-copy">
               <p class="text-xs font-bold uppercase tracking-[0.2em] text-rose-500">The problem</p>
-              <h2 class="mt-3 text-balance">Govern your architecture at the speed AI writes code.</h2>
+              <h2 class="mt-3 text-balance">Architecture matters more, not less.</h2>
               <p class="section-subcopy mt-4">
                 Your team merges more AI-written code every week than anyone can read. Left unchecked, each merge piles on coupling and cycles until the architecture is unmaintainable. Striff catches that structural drift on every pull request.
               </p>
               <p class="section-subcopy mt-3">
-                Why architecture matters more, not less, in the AI era — <a class="font-medium text-slate-800 underline decoration-slate-300 underline-offset-2 hover:text-blue-600" href="/blog/architecture-matters-more-not-less">read the breakdown</a>.
+                Why it matters more in the AI era, not less — <a class="font-medium text-slate-800 underline decoration-slate-300 underline-offset-2 hover:text-blue-600" href="/blog/architecture-matters-more-not-less">read the breakdown</a>.
               </p>
               <div class="mt-6 inline-flex items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-600">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="shrink-0 text-slate-400" aria-hidden="true">
@@ -349,36 +339,15 @@ const proofLogos = [
       </div>
     </section>
 
-    <!-- ==================== QUANTIFIED VALUE ==================== -->
-    <section class="pb-8 pt-2">
-      <div class="mx-auto max-w-[90rem] px-6">
-        <div class="value-band" data-reveal>
-          <div class="value-band-item">
-            <p class="value-band-label">Without Striff</p>
-            <p class="value-band-time value-band-time-old">3 lines added</p>
-            <p class="value-band-desc">A 5-package dependency cycle hides under a clean file diff. Nobody catches it before merge.</p>
-          </div>
-          <div class="value-band-arrow">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </div>
-          <div class="value-band-item">
-            <p class="value-band-label">With Striff</p>
-            <p class="value-band-time value-band-time-new">5-node cycle</p>
-            <p class="value-band-desc">It's the first thing your reviewer sees — in the Check Run, before the PR is merged.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- ==================== EXAMPLES ==================== -->
-    <section id="examples" class="scroll-mt-24 examples-section pb-16 pt-12">
+    <section id="examples" class="scroll-mt-24 section-dark examples-band pb-20 pt-20">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="examples-section-header flex flex-col gap-5 md:flex-row md:items-end md:justify-between" data-reveal>
           <div class="max-w-3xl">
             <p class="examples-kicker">Real PRs. Every tool. Same diff.</p>
-            <h2 class="mt-3 text-balance">The same PRs, reviewed by every tool. Here's what each one found.</h2>
+            <h2 class="mt-3 text-balance">CodeRabbit found a missing import. Striff found a 5&#8209;package dependency cycle.</h2>
             <p class="section-subcopy mt-4">
-              CodeRabbit found a missing import. Striff found a 40-node dependency cycle. Both are right — but they see completely different risks.
+              The same public pull requests, reviewed head-to-head — with <strong>zero overlapping findings</strong>. AI reviewers read the diff. Striff reads what the diff does to your architecture.
             </p>
           </div>
           <div class="example-meta self-start md:self-auto">
@@ -391,9 +360,9 @@ const proofLogos = [
               <span class="ai-tool-chip">Codex</span>
               <span class="ai-tool-chip ai-tool-chip-dim">+ Claude, Greptile</span>
             </div>
-          </div>
-          <div class="example-meta self-start md:self-auto">
-            <span class="example-meta-badge">Live public PR artifacts</span>
+            <div class="mt-3">
+              <span class="example-meta-badge">Live public PR artifacts</span>
+            </div>
           </div>
         </div>
         <!-- Tab selector strip -->
@@ -424,6 +393,16 @@ const proofLogos = [
                     Open PR
                     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
                   </a>
+                </div>
+
+                <!-- Head-to-head scoreboard -->
+                <div class="ex-score">
+                  {example.scoreboard.map((tile) => (
+                    <div class={`ex-score-tile ex-score-${tile.tone}`}>
+                      <span class="ex-score-value">{tile.value}</span>
+                      <InlineCodeText class="ex-score-label" text={tile.label} />
+                    </div>
+                  ))}
                 </div>
 
                 <div class="example-split">
@@ -457,97 +436,43 @@ const proofLogos = [
                     </div>
                   </div>
 
-                  <div class="example-split-findings">
-                    {example.aiTool ? (
-                      <>
-                        <div class="ai-toggle" data-ai-toggle={example.id}>
-                          <button class="ai-toggle-btn is-active" type="button" data-toggle-target={`striff-${example.id}`}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ai-toggle-icon"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><path d="m4.9 4.9 2.8 2.8M16.3 16.3l2.8 2.8"/></svg>
-                            Striff
-                          </button>
-                          <button class="ai-toggle-btn" type="button" data-toggle-target={`ai-${example.id}`}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ai-toggle-icon"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0l1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>
-                            {example.aiTool.name}
-                          </button>
-                        </div>
-                        <div class="ai-toggle-panels">
-                          <div class="ai-toggle-panel is-active" data-panel={`striff-${example.id}`}>
-                            <div class="ai-findings-card ai-findings-card-striff">
-                              <div class="ai-findings-header">
-                                <div class="flex items-center gap-2">
-                                  <span class="ai-findings-logo">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-blue-600"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><path d="m4.9 4.9 2.8 2.8M16.3 16.3l2.8 2.8"/></svg>
-                                  </span>
-                                  <p class="ai-findings-title">Striff</p>
-                                </div>
-                                <span class="ai-findings-badge ai-findings-badge-arch">{example.checks.length} findings</span>
-                              </div>
-                              <div class="ai-findings-list">
-                                {example.checks.map((check) => (
-                                  <div class={`ai-finding ai-finding-${check.level === "danger" ? "danger" : "warn"}`}>
-                                    <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>{check.level === "danger" ? "HIGH" : check.level === "warn" ? "MEDIUM" : "INFO"}</span>
-                                    <div>
-                                      <strong><InlineCodeText text={check.title} /></strong>
-                                      <InlineCodeText class="ai-finding-body" text={check.body} />
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                              <div class="ai-findings-verdict">
-                                <p>Striff found the architectural risks that {example.aiTool.name} couldn't see.</p>
-                                <p class="ai-findings-verdict-miss"><strong>Use them together.</strong> Striff didn't catch the implementation bugs — that's what {example.aiTool.name} is for.</p>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="ai-toggle-panel" data-panel={`ai-${example.id}`}>
-                            <div class="ai-findings-card">
-                              <div class="ai-findings-header">
-                                <div class="flex items-center gap-2">
-                                  <span class="ai-findings-logo">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-orange-500"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0l1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>
-                                  </span>
-                                  <p class="ai-findings-title">{example.aiTool.name}</p>
-                                </div>
-                                <span class="ai-findings-badge ai-findings-badge-impl">{example.aiTool.findings.length} findings</span>
-                              </div>
-                              <div class="ai-findings-list">
-                                {example.aiTool.findings.map((finding) => (
-                                  <div class={`ai-finding ai-finding-${finding.severity}`}>
-                                    <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>{finding.severityLabel}</span>
-                                    <div>
-                                      <strong>{finding.title}</strong>
-                                      <p>{finding.body}</p>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                              <div class="ai-findings-verdict">
-                                <p>{example.aiTool.verdict}</p>
-                                <p class="ai-findings-verdict-miss">{example.aiTool.missed}</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div class="ai-findings-card ai-findings-card-striff">
-                        <div class="ai-findings-header">
-                          <p class="ai-findings-title">Striff</p>
-                          <span class="ai-findings-badge ai-findings-badge-arch">{example.checks.length} findings</span>
-                        </div>
-                        <div class="ai-findings-list">
-                          {example.checks.map((check) => (
-                            <div class={`ai-finding ai-finding-${check.level === "danger" ? "danger" : "warn"}`}>
-                              <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>{check.level === "danger" ? "HIGH" : check.level === "warn" ? "MEDIUM" : "INFO"}</span>
-                              <div>
-                                <strong><InlineCodeText text={check.title} /></strong>
-                                <InlineCodeText class="ai-finding-body" text={check.body} />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                  <div class="example-split-compare">
+                    <!-- Striff lane: hero finding + supporting findings -->
+                    <div class="ex-lane ex-lane-striff">
+                      <div class="ex-lane-head">
+                        <span class="ex-lane-name">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ex-lane-icon"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><path d="m4.9 4.9 2.8 2.8M16.3 16.3l2.8 2.8"/></svg>
+                          Striff
+                        </span>
+                        <span class="ex-lane-tag ex-lane-tag-striff">reads the structure</span>
                       </div>
-                    )}
+                      <div class="ex-lane-scroll">
+                        <div class="ex-hero">
+                          <p class="ex-hero-stat">{example.hero.stat}</p>
+                          <InlineCodeText class="ex-hero-statlabel" text={example.hero.statLabel} />
+                          <p class="ex-hero-title"><InlineCodeText text={example.hero.title} /></p>
+                          <InlineCodeText class="ex-hero-body" text={example.hero.body} />
+                        </div>
+                        {example.checks.map((check) => (
+                          <div class={`ex-row ex-row-${check.level === "danger" ? "danger" : "warn"}`}>
+                            <span class="ex-row-sev">{check.level === "danger" ? "HIGH" : check.level === "warn" ? "MED" : "INFO"}</span>
+                            <div>
+                              <strong><InlineCodeText text={check.title} /></strong>
+                              <InlineCodeText class="ex-row-body" text={check.body} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div class="ex-verdict">
+                      {example.aiTool ? (
+                        <p><strong>{example.aiTool.name} caught the implementation bugs in this diff — zero of these findings.</strong> Different layers; use them together.</p>
+                      ) : (
+                        <p><InlineCodeText text={example.checkHeader} /></p>
+                      )}
+                      <a class="ex-verdict-link" href="/blog/architectural-findings-in-oss">More findings from major OSS repos →</a>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -573,7 +498,7 @@ const proofLogos = [
     </section>
 
     <!-- ==================== TEAM PHILOSOPHY ==================== -->
-    <section id="how" class="scroll-mt-24 bg-slate-100/60 pb-12 pt-8">
+    <section id="how" class="scroll-mt-24 bg-slate-100/60 pb-16 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="max-w-3xl" data-reveal>
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Built for engineering leaders</p>
@@ -742,17 +667,17 @@ const proofLogos = [
     </section>
 
     <!-- ==================== CHROME EXTENSION ==================== -->
-    <section class="bg-white pb-16 pt-10">
+    <section class="section-dark pb-20 pt-20">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="max-w-3xl" data-reveal>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Free Chrome extension</p>
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Free Chrome extension</p>
           <h2 class="mt-3 text-balance">See the architecture, right inside GitHub.</h2>
           <p class="section-subcopy mt-4">
             Install it and a new "Striffs" tab shows up next to Files changed on any public PR — no account, no backend to run.
           </p>
         </div>
         <div class="chrome-ext-grid mt-8" data-reveal>
-          <div class="chrome-ext-video rounded-3xl border border-slate-200 bg-slate-950 shadow-xl">
+          <div class="chrome-ext-video rounded-3xl border border-white/10 bg-slate-950 shadow-xl">
             <div class="aspect-video overflow-hidden rounded-3xl">
               <iframe
                 class="h-full w-full"
@@ -782,8 +707,8 @@ const proofLogos = [
                   )}
                 </span>
                 <div>
-                  <h3 class="text-base font-bold text-slate-950">{item.title}</h3>
-                  <p class="mt-1 text-sm leading-6 text-slate-600">{item.body}</p>
+                  <h3 class="text-sm font-bold text-white">{item.title}</h3>
+                  <p class="mt-1 text-[0.82rem] leading-5 text-slate-400">{item.body}</p>
                 </div>
               </div>
             ))}
@@ -795,24 +720,8 @@ const proofLogos = [
       </div>
     </section>
 
-    <!-- ==================== SOCIAL PROOF (moved after examples) ==================== -->
-    <section class="pb-10 pt-2">
-      <div class="mx-auto max-w-[90rem] px-6">
-        <div class="proof-bar rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 px-8 py-7 shadow-md" data-reveal>
-          <div class="proof-logos">
-            <p class="proof-logos-label">Validated against real PRs from</p>
-            <div class="proof-chips">
-              {proofLogos.map((name) => (
-                <span class="proof-chip">{name}</span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- ==================== ADOPTION / CTA ==================== -->
-    <section class="bg-slate-50 pb-16 pt-8">
+    <section class="bg-slate-50 pb-20 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="max-w-3xl" data-reveal>
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Get started</p>
@@ -862,7 +771,7 @@ const proofLogos = [
     </section>
 
     <!-- ==================== FAQ ==================== -->
-    <section class="bg-slate-100/60 pb-12 pt-8">
+    <section class="bg-slate-100/60 pb-16 pt-16">
       <div class="mx-auto max-w-3xl px-6">
         <div class="text-center mb-8" data-reveal>
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">FAQ</p>
@@ -898,10 +807,30 @@ const proofLogos = [
     </section>
 
     <!-- ==================== FINAL CTA ==================== -->
-    <section class="pb-16 pt-4">
+    <section class="pb-20 pt-12">
       <div class="mx-auto max-w-[90rem] px-6">
-        <div class="final-cta rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-10 shadow-xl md:p-14" data-reveal>
-          <div class="mx-auto max-w-3xl text-center">
+        <div class="final-cta final-cta-dark rounded-3xl p-10 shadow-xl md:p-14" data-reveal>
+          <!-- Resolved git graph: branches merging cleanly into main — the "after" to the problem firehose -->
+          <figure class="cta-graph" aria-hidden="true">
+            <div class="cta-graph-scroll">
+              {[0, 1, 2, 3, 4, 5].map(() => (
+                <svg class="cta-graph-unit" viewBox="0 0 480 220" preserveAspectRatio="xMidYMid slice">
+                  <path class="cta-line cta-line-main" d="M0 110 H480" />
+                  <path class="cta-line cta-line-a" d="M56 110 C 92 110 100 66 132 66 L188 66 C 220 66 228 110 264 110" />
+                  <path class="cta-line cta-line-b" d="M232 110 C 268 110 276 156 308 156 L372 156 C 404 156 412 110 448 110" />
+                  <circle class="cta-dot cta-dot-main" cx="24" cy="110" r="4.5" />
+                  <circle class="cta-dot cta-dot-main" cx="140" cy="110" r="4.5" />
+                  <circle class="cta-dot cta-dot-a" cx="160" cy="66" r="4" />
+                  <circle class="cta-dot cta-dot-b" cx="340" cy="156" r="4" />
+                  <circle class="cta-merge cta-merge-a" cx="264" cy="110" r="6" />
+                  <circle class="cta-merge cta-merge-b" cx="448" cy="110" r="6" />
+                </svg>
+              ))}
+            </div>
+          </figure>
+          <div class="cta-veil" aria-hidden="true"></div>
+
+          <div class="cta-content mx-auto max-w-3xl text-center">
             <h2 class="text-balance text-white">Architecture review for every pull request.</h2>
             <p class="section-subcopy mx-auto mt-4 text-slate-300">
               Striff works alongside your existing review tools. Install free for public repos — it runs on your next PR.
@@ -952,31 +881,6 @@ const proofLogos = [
 
       if (prevBtn) prevBtn.addEventListener("click", function () { showSlide(current - 1); });
       if (nextBtn) nextBtn.addEventListener("click", function () { showSlide(current + 1); });
-    })();
-
-    (function () {
-      document.querySelectorAll("[data-ai-toggle]").forEach(function (toggle) {
-        var buttons = toggle.querySelectorAll("[data-toggle-target]");
-
-        buttons.forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            var target = btn.getAttribute("data-toggle-target");
-
-            buttons.forEach(function (b) { b.classList.remove("is-active"); });
-            btn.classList.add("is-active");
-
-            var container = toggle.parentElement;
-            var panels = container.querySelectorAll("[data-panel]");
-            panels.forEach(function (panel) {
-              if (panel.getAttribute("data-panel") === target) {
-                panel.classList.add("is-active");
-              } else {
-                panel.classList.remove("is-active");
-              }
-            });
-          });
-        });
-      });
     })();
 
     (function () {

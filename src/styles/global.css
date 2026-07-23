@@ -1012,40 +1012,6 @@
     line-height: 1.4;
   }
 
-  .proof-logos {
-    text-align: center;
-  }
-
-  .proof-logos-label {
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-  }
-
-  .proof-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    margin-top: 0.5rem;
-    justify-content: center;
-  }
-
-  .proof-chip {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.3rem 0.65rem;
-    border-radius: 0.4rem;
-    border: 1px solid var(--line);
-    background: white;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--ink-soft);
-    font-family: "IBM Plex Mono", monospace;
-    box-shadow: var(--shadow-sm);
-  }
-
   /* Problem agitation section */
   .problem-callout {
     padding: 0.9rem 1rem;
@@ -1362,6 +1328,107 @@
   .final-cta h2 {
     max-width: 36rem;
     margin-inline: auto;
+  }
+
+  /* Dark CTA canvas with the resolved-graph animation (mirrors the problem firehose) */
+  .final-cta-dark {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  }
+
+  .final-cta-dark::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.5), rgba(34, 211, 238, 0.4), transparent);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  .cta-graph {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  .cta-graph-scroll {
+    display: flex;
+    height: 100%;
+    width: max-content;
+    will-change: transform;
+    animation: cta-scroll 40s linear infinite;
+  }
+
+  .cta-graph-unit {
+    flex: none;
+    width: 30rem;
+    height: 100%;
+  }
+
+  .cta-line {
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+  .cta-line-main { stroke: rgba(59, 130, 246, 0.55); }
+  .cta-line-a { stroke: rgba(34, 211, 238, 0.7); }
+  .cta-line-b { stroke: rgba(167, 139, 250, 0.7); }
+
+  .cta-dot-main { fill: #60a5fa; filter: drop-shadow(0 0 3px rgba(96, 165, 250, 0.6)); }
+  .cta-dot-a { fill: #22d3ee; filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.6)); }
+  .cta-dot-b { fill: #a78bfa; filter: drop-shadow(0 0 3px rgba(167, 139, 250, 0.6)); }
+
+  .cta-merge {
+    stroke-width: 2.5;
+  }
+  .cta-merge-a { fill: rgba(34, 211, 238, 0.2); stroke: #22d3ee; filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.7)); }
+  .cta-merge-b { fill: rgba(167, 139, 250, 0.2); stroke: #a78bfa; filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.7)); }
+
+  /* Darken the center so the headline + buttons stay legible over the graph */
+  .cta-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 50%, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.7) 45%, rgba(15, 23, 42, 0.25) 100%);
+  }
+
+  .cta-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Buttons need to pop on the dark canvas */
+  .final-cta-dark .btn-primary {
+    color: #0f172a;
+    background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.6) inset,
+      0 6px 18px rgba(2, 6, 23, 0.4);
+  }
+
+  .final-cta-dark .btn-secondary {
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    box-shadow: none;
+  }
+  .final-cta-dark .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  @keyframes cta-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cta-graph-scroll { animation: none; }
   }
 
   .surface-mini {
@@ -4943,12 +5010,24 @@
 }
 
 .example-slide-card {
+  position: relative;
   border-radius: 1.5rem;
   border: 1px solid rgba(15, 23, 42, 0.2);
   background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   padding: 0;
   box-shadow: var(--shadow-xl);
   overflow: hidden;
+}
+
+/* Cyan top hinge — shared signature across all dark surfaces (.gs, .final-cta-dark) */
+.example-slide-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.5), rgba(34, 211, 238, 0.4), transparent);
+  pointer-events: none;
+  z-index: 4;
 }
 
 .example-slide-header {
@@ -4961,14 +5040,14 @@
 }
 
 .example-slide-title {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: #f1f5f9;
 }
 
 .example-slide-sub {
   margin-top: 0.2rem;
-  font-size: 0.82rem;
+  font-size: 0.86rem;
   color: #94a3b8;
 }
 
@@ -5003,61 +5082,371 @@
 
 .example-split {
   display: grid;
-  grid-template-columns: 2.2fr 1fr;
-  gap: 0;
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
+  gap: 1rem;
   align-items: stretch;
-  height: 40rem;
+  height: 44rem;
+  padding: 1rem 1.25rem 1.25rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .example-split {
     grid-template-columns: 1fr;
     height: auto;
   }
 }
 
+/* Diagram inset: the real (light) artifact, framed like a window on the dark card.
+   Dark toolbar = window chrome; body stays light because that's what Striff
+   actually posts on a PR — barely dimmed to cut the glare against the navy. */
 .example-split-diagram {
   display: flex;
   flex-direction: column;
   gap: 0;
   min-width: 0;
-  background: white;
-  border-right: 1px solid rgba(15, 23, 42, 0.06);
+  background: #efefef;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.06),
+    0 0 28px rgba(34, 211, 238, 0.09);
+  overflow: hidden;
 }
 
-@media (max-width: 900px) {
-  .example-split-diagram {
-    border-right: none;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-  }
+.example-split-diagram .github-diff-image {
+  filter: brightness(0.965);
 }
 
-.example-split-findings {
+/* Matches the SVG's #F8F8F8 after its brightness(0.965) filter, so panning
+   never reveals a lighter strip behind the diagram. */
+.example-split-diagram .example-diff-stage {
+  background: #efefef;
+}
+
+.example-split-diagram .example-diagram-toolbar {
+  background: linear-gradient(180deg, #1e293b 0%, #172033 100%);
+  border-bottom: 1px solid rgba(34, 211, 238, 0.18);
+}
+
+.example-split-diagram .example-diagram-label {
+  color: #94a3b8;
+}
+
+.example-split-diagram .github-diff-reset {
+  border-color: rgba(148, 163, 184, 0.3);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+}
+
+.example-split-diagram .github-diff-reset:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.example-split-diagram .panzoom-hint {
+  border-color: rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.85);
+  color: #cbd5e1;
+}
+
+/* ---- Head-to-head comparison column ---- */
+.example-split-compare {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  background: white;
-  overflow-y: auto;
+  gap: 0.85rem;
+  min-height: 0;
 }
 
-@media (max-width: 900px) {
-  .example-split-findings {
+.ex-lane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.ex-lane-striff {
+  border-color: rgba(34, 211, 238, 0.3);
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.07), rgba(255, 255, 255, 0.02));
+}
+
+.ex-lane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
+.ex-lane-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.ex-lane-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ex-lane-striff .ex-lane-icon { color: #22d3ee; }
+
+.ex-lane-tag {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.22rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.ex-lane-tag-striff {
+  color: #67e8f9;
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.22);
+}
+
+
+.ex-lane-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem 0.85rem;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+@media (max-width: 1100px) {
+  .ex-lane-scroll {
     overflow-y: visible;
   }
 }
 
-.example-slide-title {
-  font-size: 1.05rem;
+/* The hero finding: the number that makes reviewers stop scrolling */
+.ex-hero {
+  position: relative;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.12), rgba(15, 23, 42, 0.35));
+  padding: 0.9rem 0.95rem;
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.12) inset;
+}
+
+.ex-hero-stat {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 2.35rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #67e8f9;
+  text-shadow: 0 0 18px rgba(34, 211, 238, 0.45);
+}
+
+.ex-hero-statlabel {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: #a5f3fc;
+}
+
+.ex-hero-title {
+  margin-top: 0.7rem;
+  font-size: 1.02rem;
   font-weight: 700;
   color: #f1f5f9;
   line-height: 1.35;
 }
 
-.example-slide-sub {
+.ex-hero-body {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #cbd5e1;
+}
+
+/* Compact finding rows */
+.ex-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ex-row-sev {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  padding: 0.16rem 0.45rem;
+  border-radius: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ex-row-danger .ex-row-sev {
+  color: #fda4af;
+  background: rgba(244, 63, 94, 0.14);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+}
+
+.ex-row-warn .ex-row-sev {
+  color: #fcd34d;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.22);
+}
+
+.ex-row strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  line-height: 1.35;
+}
+
+.ex-row-body {
+  display: block;
   margin-top: 0.2rem;
   font-size: 0.82rem;
-  color: var(--ink-muted);
   line-height: 1.5;
+  color: #94a3b8;
+}
+
+/* Code chips need dark styling inside the comparison column + scoreboard */
+.example-split-compare .github-inline-code,
+.ex-score .github-inline-code {
+  border-color: rgba(148, 163, 184, 0.3);
+  background: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+/* Verdict footer under both lanes */
+.ex-verdict {
+  flex-shrink: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ex-verdict p {
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #94a3b8;
+}
+
+.ex-verdict strong {
+  color: #e2e8f0;
+}
+
+.ex-verdict-link {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #67e8f9;
+  text-decoration: none;
+}
+
+.ex-verdict-link:hover {
+  text-decoration: underline;
+}
+
+/* ---- Scoreboard strip ---- */
+.ex-score {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  border-block: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+@media (max-width: 640px) {
+  .ex-score {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ex-score-tile {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.8rem 1.25rem;
+  background: linear-gradient(180deg, #1e293b 0%, #172033 100%);
+}
+
+.ex-score-value {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ex-score-other .ex-score-value { color: #fbbf24; }
+.ex-score-striff .ex-score-value { color: #22d3ee; }
+.ex-score-overlap .ex-score-value {
+  color: #f1f5f9;
+  text-shadow: 0 0 16px rgba(241, 245, 249, 0.4);
+}
+
+.ex-score-label {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: #94a3b8;
+}
+
+/* ---- Dark section band (evidence sections on a full-bleed navy canvas) ---- */
+.section-dark {
+  position: relative;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+}
+
+.section-dark::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.5), rgba(34, 211, 238, 0.4), transparent);
+  pointer-events: none;
+}
+
+.section-dark h2 {
+  color: #f1f5f9;
+}
+
+.section-dark .section-subcopy {
+  color: #94a3b8;
+}
+
+.section-dark .icon-badge {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(34, 211, 238, 0.25);
+  box-shadow: none;
+  color: #67e8f9;
+}
+
+.section-dark .btn-primary {
+  color: #0f172a;
+  background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 6px 18px rgba(2, 6, 23, 0.4);
 }
 
 .example-slide-link {
@@ -5065,6 +5454,234 @@
   padding: 0.4rem 0.75rem;
   min-height: auto;
   flex-shrink: 0;
+}
+
+/* ---- Examples band: the whole section on the shared dark canvas ---- */
+.examples-band .examples-kicker {
+  border-color: rgba(34, 211, 238, 0.28);
+  background: rgba(34, 211, 238, 0.08);
+  color: #67e8f9;
+}
+
+.examples-band .examples-kicker::before {
+  background: #22d3ee;
+}
+
+.examples-band .section-subcopy strong {
+  color: #e2e8f0;
+}
+
+.examples-band .ai-tool-chip {
+  border-color: rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  box-shadow: none;
+}
+
+.examples-band .ai-tool-chip-dim {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
+.examples-band .example-meta-badge {
+  border-color: rgba(34, 211, 238, 0.3);
+  box-shadow: none;
+}
+
+.examples-band .example-tab {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.examples-band .example-tab:hover {
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.examples-band .example-tab.is-active {
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.08);
+  box-shadow: none;
+}
+
+.examples-band .example-tab-repo {
+  color: #cbd5e1;
+}
+
+.examples-band .example-tab.is-active .example-tab-repo {
+  color: #f1f5f9;
+}
+
+/* Language accents need lighter variants to read on navy */
+.examples-band .example-tab-lang { color: #94a3b8; }
+.examples-band .example-tab-lang-blue { color: #60a5fa; }
+.examples-band .example-tab-lang-emerald { color: #34d399; }
+.examples-band .example-tab-lang-amber { color: #fbbf24; }
+.examples-band .example-tab-lang-rose { color: #fb7185; }
+
+/* Card is dark-on-dark now: separation comes from border + deeper shadow */
+.examples-band .example-slide-card {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.55);
+}
+
+.examples-band .example-nav-btn {
+  border-color: rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  box-shadow: none;
+}
+
+.examples-band .example-nav-btn:hover {
+  border-color: rgba(34, 211, 238, 0.5);
+  color: #67e8f9;
+}
+
+.examples-band .example-dot {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.examples-band .example-dot.is-active {
+  background: #22d3ee;
+}
+
+/* ==================== Site header: navy evidence-surface + cyan hinge ==================== */
+.site-header {
+  background:
+    radial-gradient(120% 190% at 12% -40%, rgba(37, 99, 235, 0.32), transparent 52%),
+    radial-gradient(120% 210% at 88% 170%, rgba(34, 211, 238, 0.16), transparent 55%),
+    linear-gradient(180deg, rgba(30, 41, 59, 0.97) 0%, rgba(15, 23, 42, 0.97) 100%);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(34, 211, 238, 0.14);
+  box-shadow: 0 6px 20px rgba(2, 6, 23, 0.25);
+  transition: box-shadow 250ms ease;
+}
+
+.site-header.is-scrolled {
+  box-shadow: 0 14px 36px rgba(2, 6, 23, 0.45);
+}
+
+/* Static cyan hinge on the bottom seam — always visible, same signature as the cards */
+.site-header::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -1px 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(37, 99, 235, 0.65),
+    rgba(34, 211, 238, 0.55),
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* A bright glint that periodically sweeps along the hinge */
+.site-header::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 -1px 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 42%,
+    rgba(165, 243, 252, 0.9) 50%,
+    transparent 58%
+  );
+  background-repeat: no-repeat;
+  background-size: 250% 100%;
+  animation: header-glint 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes header-glint {
+  0% { background-position: 140% 0; }
+  60%, 100% { background-position: -140% 0; }
+}
+
+.site-logo-tile {
+  display: flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.14);
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.site-brand:hover .site-logo-tile {
+  border-color: rgba(34, 211, 238, 0.55);
+  box-shadow: 0 0 22px rgba(34, 211, 238, 0.35);
+}
+
+.site-header .nav-link {
+  position: relative;
+  color: #cbd5e1;
+}
+
+.site-header .nav-link:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* Underline sweep: brand-blue into cyan, left to right */
+.site-header .nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.3rem;
+  height: 1.5px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, #2563eb, #22d3ee);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms ease;
+}
+
+.site-header .nav-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* White CTA pops hard on navy — same treatment as the dark-CTA band */
+.site-header .btn-primary {
+  color: #0f172a;
+  background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 4px 16px rgba(2, 6, 23, 0.4);
+  transition:
+    box-shadow 220ms ease,
+    transform 220ms ease;
+}
+
+.site-header .btn-primary:hover {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 0 24px rgba(34, 211, 238, 0.45);
+}
+
+/* Signed-out auth link renders light-theme slate; brighten it on the dark bar */
+.site-header #auth-button-root > a {
+  color: #cbd5e1;
+}
+
+.site-header #auth-button-root > a:hover {
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header::before {
+    animation: none;
+    background: none;
+  }
 }
 
 .example-nav {
@@ -5123,70 +5740,6 @@
   width: 1.5rem;
 }
 
-/* ==================== Example Split (overrides from slide-card) ==================== */
-
-.example-split-findings .ai-toggle {
-  margin-bottom: 0.5rem;
-  align-self: flex-start;
-}
-
-.example-split-findings .ai-toggle-btn {
-  font-size: 0.78rem;
-  padding: 0.4rem 0.85rem;
-}
-
-.example-split-findings .ai-findings-card {
-  padding: 1rem;
-  flex: 1;
-  max-height: 32rem;
-  overflow-y: auto;
-}
-
-.example-split-findings .ai-findings-header {
-  margin-bottom: 0.75rem;
-}
-
-.example-split-findings .ai-findings-title {
-  font-size: 0.95rem;
-}
-
-.example-split-findings .ai-finding {
-  padding: 0.6rem 0.75rem;
-}
-
-.example-split-findings .ai-finding strong {
-  font-size: 0.82rem;
-}
-
-.example-split-findings .ai-finding p,
-.example-split-findings .ai-finding-body {
-  font-size: 0.76rem;
-  line-height: 1.5;
-}
-
-.example-split-findings .ai-findings-verdict {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-}
-
-.example-split-findings .ai-findings-verdict p {
-  font-size: 0.78rem;
-}
-
-/* Stack on mobile */
-@media (max-width: 900px) {
-  .example-split-findings .ai-findings-card {
-    max-height: none;
-  }
-}
-
-.ai-finding-body {
-  display: block;
-  margin-top: 0.2rem;
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-  line-height: 1.6;
-}
 
 /* ==================== Hero Badge Pill ==================== */
 
@@ -6191,8 +6744,8 @@
 /* Chrome extension section */
 .chrome-ext-grid {
   display: grid;
-  gap: 2rem;
-  grid-template-columns: 1.1fr 1fr;
+  gap: 2.5rem;
+  grid-template-columns: 2.4fr 1fr;
   align-items: center;
 }
 
@@ -6209,13 +6762,24 @@
 .chrome-ext-points {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.15rem;
 }
 
 .chrome-ext-point {
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 0.8rem;
+}
+
+.chrome-ext-point .icon-badge {
+  width: 1.9rem;
+  height: 1.9rem;
+  flex-shrink: 0;
+}
+
+.chrome-ext-point .icon-badge svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 /* ==================== Hero Badge Pill ==================== */
@@ -6271,89 +6835,6 @@
   color: #059669;
 }
 
-/* ==================== Quantified Value Band ==================== */
-
-.value-band {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2rem;
-  padding: 1.5rem 2rem;
-  border-radius: 1.5rem;
-  border: 1px solid var(--line);
-  background: white;
-  box-shadow: var(--shadow-md);
-}
-
-@media (max-width: 768px) {
-  .value-band {
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1.25rem;
-  }
-}
-
-.value-band-item {
-  text-align: center;
-}
-
-.value-band-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-}
-
-.value-band-time {
-  font-size: 2.5rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  margin-top: 0.35rem;
-}
-
-.value-band-time-old {
-  color: var(--ink-muted);
-  text-decoration: line-through;
-  text-decoration-color: rgba(220, 38, 38, 0.4);
-  text-decoration-thickness: 2px;
-}
-
-.value-band-time-new {
-  color: var(--brand);
-}
-
-.value-band-desc {
-  margin-top: 0.35rem;
-  font-size: 0.82rem;
-  color: var(--ink-muted);
-  line-height: 1.4;
-  max-width: 14rem;
-}
-
-.value-band-arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 999px;
-  background: rgba(37, 99, 235, 0.08);
-  color: var(--brand);
-  flex-shrink: 0;
-}
-
-.value-band-arrow svg {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-@media (max-width: 768px) {
-  .value-band-arrow svg {
-    transform: rotate(90deg);
-  }
-}
 
 /* ==================== FAQ ==================== */
 
@@ -6442,145 +6923,7 @@
   opacity: 0;
 }
 
-/* ==================== AI Comparison Toggle ==================== */
-
-.ai-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.3rem;
-  border-radius: 999px;
-  background: #e2e8f0;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-}
-
-.ai-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.95rem;
-  border-radius: 999px;
-  border: none;
-  background: transparent;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--ink-muted);
-  cursor: pointer;
-  transition: all 200ms ease;
-  white-space: nowrap;
-}
-
-.ai-toggle-btn:hover {
-  color: var(--ink);
-}
-
-.ai-toggle-btn.is-active {
-  background: white;
-  color: var(--ink);
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1), 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-
-.ai-toggle-icon {
-  width: 0.95rem;
-  height: 0.95rem;
-}
-
-.ai-findings-logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 0.5rem;
-  background: #f1f5f9;
-  border: 1px solid var(--line);
-  flex-shrink: 0;
-}
-
-.ai-findings-header .ai-findings-title {
-  font-size: 0.95rem;
-}
-
-.ai-toggle-icon {
-  width: 1rem;
-  height: 1rem;
-}
-
-.ai-toggle-panels {
-  position: relative;
-}
-
-.ai-toggle-panel {
-  display: none;
-  opacity: 0;
-  transform: translateY(0.5rem);
-  transition: opacity 280ms ease, transform 280ms ease;
-}
-
-.ai-toggle-panel.is-active {
-  display: block;
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.ai-findings-card {
-  border-radius: 1rem;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  background: white;
-  padding: 1.25rem;
-  box-shadow: var(--shadow-md);
-}
-
-.ai-findings-card-striff {
-  border-color: rgba(37, 99, 235, 0.25);
-  background: linear-gradient(180deg, rgba(239, 246, 255, 0.4), white);
-}
-
-.ai-findings-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.ai-findings-title {
-  font-size: 1.1rem;
-  font-weight: 750;
-  color: var(--ink);
-}
-
-.ai-findings-subtitle {
-  font-size: 0.82rem;
-  color: var(--ink-muted);
-  margin-top: 0.15rem;
-}
-
-.ai-findings-badge {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
-.ai-findings-badge-impl {
-  background: rgba(26, 127, 55, 0.08);
-  color: #1a7f37;
-}
-
-.ai-findings-badge-arch {
-  background: rgba(37, 99, 235, 0.08);
-  color: var(--brand-deep);
-}
-
-.ai-findings-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
+/* ==================== AI Finding Cards (used by teams showcase) ==================== */
 
 .ai-finding {
   display: flex;
@@ -6655,24 +6998,6 @@
   padding: 0.05rem 0.3rem;
   border-radius: 0.25rem;
   font-weight: 600;
-}
-
-.ai-findings-verdict {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(148, 163, 184, 0.12);
-}
-
-.ai-findings-verdict p {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-  line-height: 1.65;
-}
-
-.ai-findings-verdict-miss {
-  margin-top: 0.4rem;
-  font-style: italic;
-  color: var(--ink-muted);
 }
 
 /* ==================== Blog ==================== */

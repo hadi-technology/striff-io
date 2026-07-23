@@ -11,10 +11,10 @@ const primaryCtaLabel = "Install";
 const primaryCtaHref = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
 ---
 
-<header class="site-header sticky top-0 z-50 border-b border-[rgba(31,35,40,0.12)] bg-white/95 backdrop-blur">
+<header class="site-header sticky top-0 z-50">
   <div class="mx-auto flex max-w-[90rem] items-center justify-between px-6 py-3">
-    <a href="/" class="flex items-center gap-3 text-lg font-bold tracking-tight">
-      <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-[rgba(31,35,40,0.14)] bg-white shadow-sm">
+    <a href="/" class="site-brand flex items-center gap-3 text-lg font-bold tracking-tight">
+      <span class="site-logo-tile">
         <img src="/icon.svg" alt="Striff logo" class="h-6 w-6" />
       </span>
       <span class="hidden sm:inline font-logo">Striff</span>
@@ -23,7 +23,7 @@ const primaryCtaHref = "https://chromewebstore.google.com/detail/striffs-for-git
     <style is:global>
       .font-logo {
         font-family: "Inter", system-ui, sans-serif;
-        color: #1f2328;
+        color: #f1f5f9;
         letter-spacing: 0;
       }
     </style>
@@ -49,7 +49,7 @@ const primaryCtaHref = "https://chromewebstore.google.com/detail/striffs-for-git
       aria-controls="mobile-menu"
     >
       <span class="sr-only">Open menu</span>
-      <div class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-900 shadow-sm">
+      <div class="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-100">
         <svg
           width="20"
           height="20"
@@ -70,7 +70,7 @@ const primaryCtaHref = "https://chromewebstore.google.com/detail/striffs-for-git
   <div
     id="mobile-menu"
     data-mobile-menu
-    class="hidden border-t border-slate-200/70 bg-white px-6 py-4 md:hidden"
+    class="hidden border-t border-white/10 bg-slate-950/95 px-6 py-4 backdrop-blur md:hidden"
   >
     <div class="flex flex-col gap-2">
       {navLinks.map((link) => (
@@ -87,6 +87,15 @@ const primaryCtaHref = "https://chromewebstore.google.com/detail/striffs-for-git
 </header>
 
 <script is:inline>
+  var siteHeader = document.querySelector(".site-header");
+  if (siteHeader) {
+    var onHeaderScroll = function () {
+      siteHeader.classList.toggle("is-scrolled", window.scrollY > 8);
+    };
+    window.addEventListener("scroll", onHeaderScroll, { passive: true });
+    onHeaderScroll();
+  }
+
   var toggle = document.querySelector("[data-menu-toggle]");
   var menu = document.querySelector("[data-mobile-menu]");
   if (toggle && menu) {
