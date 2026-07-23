@@ -2,6 +2,8 @@ node_modules/
 .astro/
 dist/
 .DS_Store
+.netlify/
+.tmp-*
 src/env.d.ts
 .claude/
 .codex/
