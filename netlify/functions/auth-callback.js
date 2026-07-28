@@ -68,8 +68,8 @@ exports.handler = async (event) => {
                 Your GitHub account is now connected. Here's what you can do:
               </p>
               <ul style="color:#475569;font-size:15px;line-height:1.8">
-                <li><strong>Public repos</strong> — free, no setup needed. Use the browser extension to get started.</li>
-                <li><strong>Private repos</strong> — select a plan from your <a href="https://striff.io/dashboard" style="color:#2563eb">dashboard</a> to enable Striff on private pull requests.</li>
+                <li><strong>Public repos</strong>: free, no setup needed. Use the browser extension to get started.</li>
+                <li><strong>Private repos</strong>: select a plan from your <a href="https://striff.io/dashboard" style="color:#2563eb">dashboard</a> to enable Striff on private pull requests.</li>
               </ul>
               <p style="color:#475569;font-size:15px;line-height:1.6">
                 Questions? Reply to this email or visit <a href="https://striff.io/contact" style="color:#2563eb">striff.io/contact</a>.

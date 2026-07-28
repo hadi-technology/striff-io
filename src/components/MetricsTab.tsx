@@ -434,7 +434,7 @@ export default function MetricsTab({
         return (
           <>
             <div className="dashboard-metric-value-row">
-              <span className="dashboard-metric-value">{hasData ? `${windowCoverageRate}%` : "—"}</span>
+              <span className="dashboard-metric-value">{hasData ? `${windowCoverageRate}%` : "–"}</span>
             </div>
             {hasData ? (
               <MetricChart data={series} dataKey="coverageRate" color="var(--brand)" direction="up" formatValue={(v) => `${v}%`} />

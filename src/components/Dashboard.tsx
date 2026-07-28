@@ -378,7 +378,7 @@ function InstallationCard({
       {hasNoPlan && (
         <div className="dashboard-plan-notice">
           <p className="font-medium text-red-800">
-            {privateRepos.length} private repo{privateRepos.length > 1 ? "s" : ""} enabled — choose a plan to enable analysis.
+            {privateRepos.length} private repo{privateRepos.length > 1 ? "s" : ""} enabled. Choose a plan to enable analysis.
           </p>
           <p className="mt-1 text-red-700/80 text-xs">
             Striff checks cannot run until a subscription is selected.
@@ -555,7 +555,7 @@ function UsagePanel({
   return (
     <div className="dashboard-usage-panel">
       <p className="text-sm font-semibold text-slate-900">
-        Usage this billing period{periodEnd ? ` — resets ${periodEnd}` : ""}
+        Usage this billing period{periodEnd ? ` · resets ${periodEnd}` : ""}
       </p>
       <div className="dashboard-usage-stats">
         <div>
@@ -573,7 +573,7 @@ function UsagePanel({
       </div>
       <p className="mt-3 text-xs text-slate-500">
         You're billed for the {activeCount} repo{activeCount === 1 ? "" : "s"} that generated a
-        diagram this period — not the {privateRepoCount} you've enabled. Connected repos that
+        diagram this period, not the {privateRepoCount} you've enabled. Connected repos that
         haven't produced a diagram yet still run analysis; they just don't count toward your bill.
         {cap ? ` ${activeCount} of ${cap} active before ${capitalizeTier(nextTier || "")}.` : ""}
       </p>

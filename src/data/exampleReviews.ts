@@ -72,196 +72,271 @@ export type ExampleReview = {
 
 export const exampleReviews: ExampleReview[] = [
   {
-    id: "jans",
+    id: "pinot",
     language: "Java",
     accent: "rose",
-    repo: "JanssenProject/jans",
-    pr: "#14256",
-    prTitle: "fix: P-256 signature with X or Y curve < 32 bytes (RFC 7518)",
-    href: "https://github.com/JanssenProject/jans/pull/14256",
-    summary: "7 findings · 6 components · 9 relationships · HIGH risk",
-    headline: "Core crypto class with 220 dependents modified — and a new package cycle.",
-    body: "This PR fixes a crypto bug, but Striff reveals the blast radius: SignatureAlgorithm (220 dependents) and Base64Util (44 dependents) both gained complexity and coupling, while the change introduces a circular dependency across 5 crypto packages.",
-    svg: "/examples/jans.svg",
+    repo: "apache/pinot",
+    pr: "#19073",
+    prTitle: "Generate Avro schemas from Pinot logical data types",
+    href: "https://github.com/apache/pinot/pull/19073",
+    summary: "7 findings \u00b7 9 components \u00b7 HIGH risk",
+    headline: "The core engine took its first dependency on a plugin.",
+    body: "This PR teaches Pinot to generate Avro schemas from logical data types. Copilot reviewed the code. Striff caught the direction of the change: org.apache.pinot.core.util now depends on org.apache.pinot.plugin.inputformat.avro, the first edge ever from the core into the Avro plugin package. Plugin boundaries exist so the core never knows about plugins; this PR quietly reversed that.",
+    svg: "/examples/pinot.svg",
     panzoom: {
-      desktop: { scale: 1.3, x: -60, y: -30 },
-      mobile: { scale: 1.1, x: -30, y: -15 }
+      desktop: { scale: 3.2, x: -1622, y: -253 },
+      mobile: { scale: 3.4, x: -794, y: -79 }
     },
     viewport: {
-      desktopHeight: "32rem",
-      mobileHeight: "20rem"
+      desktopHeight: "30rem",
+      mobileHeight: "19rem"
     },
     metrics: [
-      "6 components in the structural diff",
-      "9 relationships across 5 crypto packages",
-      "7 findings including 3 HIGH severity"
+      "9 components in the structural diff",
+      "7 findings including 2 HIGH severity",
+      "First core-to-plugin edge in this direction"
     ],
-    checkHeader: "CodeRabbit caught the implementation bugs. Striff found the architectural risk no other tool could see.",
+    checkHeader: "Copilot reviewed the implementation. Striff flagged the inverted plugin boundary before merge.",
     scoreboard: [
       { value: "7", label: "findings posted on the live PR", tone: "striff" },
-      { value: "5", label: "crypto packages locked in a new cycle", tone: "other" },
-      { value: "0", label: "visible in the file-by-file diff", tone: "overlap" }
+      { value: "0", label: "prior edges from `core.util` into the Avro plugin", tone: "other" },
+      { value: "24", label: "dependents on `AvroUtils`, the contract this PR touches", tone: "overlap" }
     ],
     hero: {
-      stat: "220",
-      statLabel: "components depend on the class this PR modifies",
-      title: "Stable contract modified: `SignatureAlgorithm`",
-      body: "Afferent coupling of 220 — any drift in this class ripples across the entire auth server. Its complexity (WMC) also grew by 5. Invisible in the file diff."
+      stat: "0",
+      statLabel: "prior dependencies from Pinot's core into the Avro plugin package",
+      title: "New directional boundary crossing",
+      body: "`SegmentProcessorAvroUtils` in `core.util` now calls directly into `plugin.inputformat.avro`. Plugin boundaries exist so the core never depends on a plugin; this edge reverses that direction for the first time, and skips a layer on the way."
     },
     checks: [
       {
         level: "danger",
-        title: "New package cycle in crypto packages",
-        body: "Dependency cycle: `crypto` → `crypto.signature` → `configuration` → `jwk` → `util` → `crypto`. Package cycles break modularity and make future refactoring risky."
+        title: "New directional boundary crossing",
+        body: "New dependency from `org.apache.pinot.core.util` to `org.apache.pinot.plugin.inputformat.avro`, with no prior edge in this direction."
       },
       {
         level: "danger",
-        title: "Stable contract modified — 44 dependents",
-        body: "`Base64Util` has afferent coupling of 44. WMC grew from 17 to 22, making this utility harder to test and maintain."
+        title: "Stable contract modified: 24 dependents",
+        body: "`AvroUtils` has afferent coupling of 24. Changes to this component impact at least 24 dependents in the parsed scope."
       },
       {
         level: "warn",
-        title: "Test class with high efferent coupling",
-        body: "`ECDSAPublicKeyTest` is a new test with efferent coupling of 10. Tests this coupled to production internals tend to break with every refactor."
+        title: "Layer skip on the new edge",
+        body: "The new core-to-plugin edge jumps from `core.util` (layer 1) to `plugin.inputformat.avro` (layer 3), skipping a layer."
       }
     ],
     highlights: [
-      "Review whether the package cycle can be broken before merge — it will only get harder later.",
-      "Assess whether 220 dependents on SignatureAlgorithm is acceptable, or if responsibilities should be split.",
-      "Check that the WMC increase on Base64Util is justified, not accidental complexity."
+      "Invert the dependency: move the shared Avro schema logic into a core-owned module, or extract an interface the plugin implements.",
+      "Watch `SegmentProcessorAvroUtils` (efferent coupling 36 to 44): it is becoming the bridge between core and plugin code."
     ],
     aiTool: {
-      name: "CodeRabbit",
+      name: "Copilot",
       findings: [
-        { severity: "danger", severityLabel: "Critical", title: "Missing assertThrows import", body: "Test file will not compile — `assertThrows` is used but never imported." },
-        { severity: "warn", severityLabel: "Major", title: "Use ceiling conversion for byte length", body: "Bit-to-byte conversion should use ceiling division, not truncation, to handle partial bytes." },
-        { severity: "warn", severityLabel: "Major", title: "Defaulting to 32 bytes breaks non-P-256 keys", body: "Hardcoding 32 bytes works for P-256 but silently corrupts ES384 and ES512 serialization." },
-        { severity: "warn", severityLabel: "Major", title: "Wrong algorithm in ES384/ES512 tests", body: "Test expected lengths and algorithm names don't match the curve being tested." }
+        { severity: "warn", severityLabel: "Perf", title: "Unnecessary per-element conversion for BigDecimal columns", body: "`convertValue()` takes the per-element path for all BYTES element schemas, forcing a list allocation for big-decimal multi-value columns that the registered conversion could pass through zero-copy." }
       ],
-      verdict: "CodeRabbit caught real implementation bugs — the test file won't compile as written, the math is wrong for non-P-256 keys, and the test fixtures contradict the algorithms they're testing.",
-      missed: "Striff caught what happens after merge: a 5-package cycle in the crypto layer, and a quiet 5-point WMC growth on a class 220 other components depend on."
+      verdict: "Copilot's review focused on the implementation: a zero-copy optimization for BigDecimal multi-value columns.",
+      missed: "Striff caught the direction of the change: the first dependency ever from Pinot's core into the Avro plugin package, plus a 24-dependent contract quietly modified."
     }
   },
   {
-    id: "orchardcore",
-    language: "C#",
-    accent: "blue",
-    repo: "OrchardCMS/OrchardCore",
-    pr: "#18887",
-    prTitle: "Refactor PlacementInfo API and improve placement handling",
-    href: "https://github.com/OrchardCMS/OrchardCore/pull/18887",
-    summary: "5 findings · 10 components · 15 relationships · MEDIUM risk",
-    headline: "God-class remediation, quantified: cut EC by 1 and WMC by ~10 with a named replacement class.",
-    body: "This PR adds a new GroupingMetadata struct and wires it into PlacementInfo. Striff traces the resulting coupling growth — EC +9, WMC +50 on PlacementInfo — and prescribes a specific fix: extract a GroupingMetadataHandler and delegate to it.",
-    svg: "/examples/orchardcore.svg",
+    id: "celery",
+    language: "Python",
+    accent: "amber",
+    repo: "celery/celery",
+    pr: "#10418",
+    prTitle: "Preserve absolute event timestamps in Gossip",
+    href: "https://github.com/celery/celery/pull/10418",
+    summary: "4 findings · 7 components · HIGH risk",
+    headline: "A timestamp fix that wired the smoke suite four layers deep into Celery's core.",
+    body: "This PR stops Gossip from losing absolute event timestamps. The fix is fine. The new smoke tests are the story: t.smoke.tests now imports celery.utils and celery.worker.consumer directly, two dependency directions that never existed before, one of them jumping from the test layer straight to a utility layer four levels down.",
+    svg: "/examples/celery.svg",
     panzoom: {
-      desktop: { scale: 1.05, x: -60, y: -30 },
-      mobile: { scale: 0.85, x: -30, y: -15 }
+      desktop: { scale: 1.89, x: -320, y: -444 },
+      mobile: { scale: 2.13, x: -185, y: -152 }
     },
     viewport: {
-      desktopHeight: "34rem",
-      mobileHeight: "22rem"
+      desktopHeight: "26rem",
+      mobileHeight: "17rem"
     },
     metrics: [
-      "10 components in the structural diff",
-      "15 relationships across the DisplayManagement package",
-      "5 findings including a new package cycle"
+      "7 components in the structural diff",
+      "4 findings including 2 HIGH severity",
+      "2 new boundary crossings from the smoke suite"
     ],
-    checkHeader: "Striff doesn't just flag the god-class risk — it quantifies the fix: reduce EC by at least 1 and WMC by ~10 with a named extraction target.",
+    checkHeader: "No AI reviewer was on this PR. Striff flagged both new boundary crossings and the 3-layer skip before merge.",
     scoreboard: [
-      { value: "5", label: "findings posted on the live PR", tone: "striff" },
-      { value: "6", label: "components locked in a new package cycle", tone: "other" },
-      { value: "−10 WMC", label: "projected from the fix Striff prescribes", tone: "overlap" }
+      { value: "4", label: "findings posted on the live PR", tone: "striff" },
+      { value: "2", label: "brand-new dependency directions from the smoke suite", tone: "other" },
+      { value: "3", label: "layers skipped by the deepest new edge", tone: "overlap" }
     ],
     hero: {
-      stat: "28 → 78",
-      statLabel: "cyclomatic complexity (WMC) on `PlacementInfo` after this PR",
-      title: "A god-class in the making — with a quantified fix",
-      body: "Efferent coupling jumped 6 → 15 alongside the WMC surge. Striff prescribes the remedy by name: extract a `GroupingMetadataHandler` and delegate — projected to cut EC by 1 and WMC by ~10."
+      stat: "3",
+      statLabel: "layers skipped by the new edge from the smoke suite into `celery.utils`",
+      title: "New directional boundary crossing",
+      body: "`t.smoke.tests` now depends on `celery.utils` and `celery.worker.consumer` directly, with no prior edge in either direction. Smoke suites coupled to internals break every time the internals move."
     },
     checks: [
       {
         level: "danger",
-        title: "New package cycle in DisplayManagement",
-        body: "Cycle: `Zones` → `Descriptors.ShapeTablePlacementProvider` → `DisplayManagement` → `Descriptors` → `Shapes.ShapeDebugView` → `Shapes` → `Zones`. The cycle spans 6 components this PR touches."
+        title: "New directional boundary crossing",
+        body: "New dependency from `t.smoke.tests` to `celery.utils`, with no prior edge in this direction."
       },
       {
         level: "danger",
         title: "New directional boundary crossing",
-        body: "New dependency from `OrchardCore.Tests.DisplayManagement.Decriptors` to `OrchardCore.DisplayManagement.Zones` — no prior edge in this direction, and it skips 4 layers."
+        body: "New dependency from `t.smoke.tests` to `celery.worker.consumer`, with no prior edge in this direction."
       },
       {
         level: "warn",
-        title: "Complexity growth on GroupingMetadata",
-        body: "`GroupingMetadata` WMC grew by 27 (from 0 to 27) as a new component — consider extracting cohesive method groups."
+        title: "Layer skip: 3 layers",
+        body: "The new edge from `t.smoke.tests` (layer 0) to `celery.utils` (layer 4) skips 3 layers of the codebase's layering."
       }
     ],
     highlights: [
-      "Extract a `GroupingMetadataHandler` and have `PlacementInfo` delegate to it instead of aggregating `GroupingMetadata` directly.",
-      "Break the 6-component package cycle in `DisplayManagement` before it calcifies.",
-      "Embed `GroupingMetadata` as a private field constructed by `PlacementLocationBuilder`, making ownership explicit."
+      "Route smoke-test assertions through Celery's public testing helpers instead of importing `celery.utils` internals.",
+      "If smoke tests must reach internals, isolate the imports in one fixture module so the coupling stays contained."
     ]
   },
   {
-    id: "uikit",
+    id: "typeorm",
     language: "TypeScript",
     accent: "emerald",
-    repo: "acronis/uikit",
-    pr: "#452",
-    prTitle: "feat(chart): add Chart component (ported from ui-legacy)",
-    href: "https://github.com/acronis/uikit/pull/452",
-    summary: "2 findings · 4 components · HIGH risk",
-    headline: "Migration plan: in progress. PR: quietly reversing direction.",
-    body: "A component port from ui-legacy to ui-react looks clean in the file diff. Copilot saw an XSS injection path and three smaller correctness issues. Striff saw the migration plan moving in the wrong direction — legacy code reaching into the new package before it's officially released.",
-    svg: "/examples/uikit.svg",
+    repo: "typeorm/typeorm",
+    pr: "#12647",
+    prTitle: "fix: remove require() calls that break bundlers",
+    href: "https://github.com/typeorm/typeorm/pull/12647",
+    summary: "4 findings · 7 components · HIGH risk",
+    headline: "A bundler fix that rewired two mobile drivers into the platform layer.",
+    body: "This PR removes require() calls so bundlers can statically analyze TypeORM. Qodo caught real code-level issues. Striff caught the structural side effect: the React Native and Expo drivers now depend directly on src.platform, two boundary crossings with no prior edge in that direction, each skipping a layer.",
+    svg: "/examples/typeorm.svg",
     panzoom: {
-      desktop: { scale: 1.25, x: -50, y: -25 },
-      mobile: { scale: 1.05, x: -25, y: -12 }
+      desktop: { scale: 2.4, x: -205, y: -366 },
+      mobile: { scale: 2.7, x: -127, y: -112 }
     },
     viewport: {
       desktopHeight: "26rem",
       mobileHeight: "16rem"
     },
     metrics: [
-      "4 components in the structural diff",
-      "2 findings including 1 boundary crossing",
-      "Copilot posted 5 inline review comments"
+      "7 components in the structural diff",
+      "4 findings including 2 HIGH severity",
+      "2 new boundary crossings into src.platform"
     ],
-    checkHeader: "Copilot saw an XSS injection path and a key collision. Striff saw the migration plan moving in the wrong direction.",
+    checkHeader: "Qodo caught the implementation issues. Striff found the architectural risk no diff-based tool could see.",
     scoreboard: [
-      { value: "2", label: "structural findings on the live PR", tone: "striff" },
-      { value: "4", label: "components in the structural diff", tone: "other" },
-      { value: "0", label: "visible in the file-by-file diff", tone: "overlap" }
+      { value: "4", label: "findings posted on the live PR", tone: "striff" },
+      { value: "2", label: "new driver-to-platform boundary crossings", tone: "other" },
+      { value: "0", label: "overlap with Qodo's 7 review comments", tone: "overlap" }
     ],
     hero: {
-      stat: "0",
-      statLabel: "releases of the new chart component — yet legacy already imports it",
-      title: "Migration quietly reversing direction",
-      body: "`ui-legacy.src.components.ui` now imports from `ui-react.src.components.ui.chart`. The migration plan documents this component as \"not yet shipped\" — legacy reaching into the new package makes the migration harder to finish."
+      stat: "2",
+      statLabel: "brand-new dependency directions introduced by this PR",
+      title: "Drivers rewired into `src.platform`",
+      body: "`ReactNativeDriver` and `ExpoDriver` now load their modules through `PlatformTools`. Convenient, but it points the driver layer at the platform layer for the first time, and both new edges skip an intermediate layer on the way."
     },
     checks: [
       {
+        level: "danger",
+        title: "New directional boundary crossing",
+        body: "New dependency from `src.driver.react-native` to `src.platform`, with no prior edge in this direction."
+      },
+      {
+        level: "danger",
+        title: "New directional boundary crossing",
+        body: "New dependency from `src.driver.expo` to `src.platform`, with no prior edge in this direction."
+      },
+      {
         level: "warn",
-        title: "Premature cross-package import",
-        body: "The new chart component isn't released yet, but `ui-legacy` is already importing it. Worth confirming this is intentional and not a quiet step backward in the migration."
+        title: "Layer skip on both new edges",
+        body: "Both edges jump from the driver layer (layer 1) straight to `src.platform` (layer 3), bypassing the intermediate layer."
       }
     ],
     highlights: [
-      "Remove the import from `ui-legacy` to `ui-react` chart until the component is officially released.",
-      "Replace with a placeholder or feature-flagged stub to keep the migration plan on track.",
-      "Review whether the XSS risk in `ChartStyle` needs to be fixed before the port ships."
+      "Decide whether drivers should call `PlatformTools.load` directly, or route module loading through the existing connector path.",
+      "If the new direction is intended, encode it in the layering rules so the next PR is checked against it.",
+      "Fix the dynamic require in `PlatformTools.load` that Qodo flagged before it ships in bundled apps."
+    ],
+    aiTool: {
+      name: "Qodo",
+      findings: [
+        { severity: "danger", severityLabel: "Bug", title: "Dynamic require blocks bundlers", body: "`PlatformTools.load` calls `require(name)` with a runtime variable, which bundlers cannot statically analyze. Any driver using it can fail in bundled apps." },
+        { severity: "warn", severityLabel: "Rule", title: "ExpoDriver masks load errors", body: "A bare catch collapses every failure while loading `expo-sqlite` into DriverPackageNotInstalledError, discarding the original cause." },
+        { severity: "warn", severityLabel: "Rule", title: "Browser PlatformTools.load() uses require", body: "The browser template now calls `require(name)`, inconsistent with the rest of the browser-only stubs and likely to fail in browser builds." },
+        { severity: "warn", severityLabel: "Bug", title: "Misleading Expo error hint", body: "Users with a custom driver override still get told to upgrade to Expo SDK v52+ when `openDatabaseAsync` is missing." },
+        { severity: "warn", severityLabel: "Bug", title: "Expo tests removed", body: "The PR deletes the unit tests that exercised `ExpoDriver.loadDependencies`, leaving the changed loading logic without regression coverage." }
+      ],
+      verdict: "Qodo caught real implementation issues: a dynamic require that defeats bundlers, masked load errors, a misleading error hint, and deleted tests.",
+      missed: "Striff caught the structural side effect: two brand-new boundary crossings from the driver layer into src.platform, each skipping a layer."
+    }
+  },
+  {
+    id: "efcore",
+    language: "C#",
+    accent: "blue",
+    repo: "dotnet/efcore",
+    pr: "#38676",
+    prTitle: "Handle out-of-order split include rows during concurrent inserts",
+    href: "https://github.com/dotnet/efcore/pull/38676",
+    summary: "8 findings \u00b7 11 components \u00b7 HIGH risk",
+    headline: "A concurrency fix that pointed the query internals back at the root namespace.",
+    body: "This PR fixes split-include queries dropping child rows under concurrent inserts. Copilot reviewed the code. Striff caught the structure: SplitQueryResultCoordinator in Query.Internal now depends on the root Microsoft.EntityFrameworkCore namespace, where the PR's new DbQueryConcurrencyException lives. That direction never existed before, it skips 3 layers, and it leaves the query namespaces one step from a full cycle.",
+    svg: "/examples/efcore.svg",
+    panzoom: {
+      desktop: { scale: 3.2, x: -1338, y: -2 },
+      mobile: { scale: 3.4, x: -657, y: 42 }
+    },
+    viewport: {
+      desktopHeight: "26rem",
+      mobileHeight: "17rem"
+    },
+    metrics: [
+      "11 components in the structural diff",
+      "8 findings including 1 HIGH severity",
+      "1 near-cycle across the query namespaces"
+    ],
+    checkHeader: "Copilot caught the implementation issues. Striff found the architectural risk no diff-based tool could see.",
+    scoreboard: [
+      { value: "8", label: "findings posted on the live PR", tone: "striff" },
+      { value: "3", label: "layers skipped by the new upward edge", tone: "other" },
+      { value: "0", label: "overlap with Copilot's review comments", tone: "overlap" }
+    ],
+    hero: {
+      stat: "3",
+      statLabel: "layers skipped by the new edge from `Query.Internal` to the root namespace",
+      title: "New directional boundary crossing",
+      body: "`SplitQueryResultCoordinator` now depends on the root `Microsoft.EntityFrameworkCore` namespace, with no prior edge in this direction. Combined with the existing path from the root through `Query` into `Query.Internal`, the namespaces are one step from a full cycle."
+    },
+    checks: [
+      {
+        level: "danger",
+        title: "New directional boundary crossing",
+        body: "New dependency from `Microsoft.EntityFrameworkCore.Query.Internal` to `Microsoft.EntityFrameworkCore`, with no prior edge in this direction."
+      },
+      {
+        level: "warn",
+        title: "Layer skip: 3 layers",
+        body: "The new edge jumps from `Query.Internal` (layer 8) straight to the root namespace (layer 12), skipping 3 layers."
+      },
+      {
+        level: "note",
+        title: "Cyclic dependency seed",
+        body: "The new edge, combined with the existing path from the root through `Query` to `Query.Internal`, almost creates a namespace cycle."
+      }
+    ],
+    highlights: [
+      "Consider declaring `DbQueryConcurrencyException` beside the internals that throw it, or routing it through the existing exception surface.",
+      "If internals must reference the root namespace, document the allowed direction so the cycle never closes."
     ],
     aiTool: {
       name: "Copilot",
       findings: [
-        { severity: "danger", severityLabel: "XSS", title: "dangerouslySetInnerHTML injection risk", body: "`ChartStyle` uses `dangerouslySetInnerHTML` to inject CSS from public props. Untrusted input could inject `</style>` and execute scripts. React can safely render CSS as a text node instead." },
-        { severity: "warn", severityLabel: "Bug", title: "formatter receives wrong argument", body: "Typed to receive the full tooltip `payload` array, but the implementation passes `item.payload` (a single datum). Breaks consumers that need the full series list." },
-        { severity: "warn", severityLabel: "Bug", title: "{item.value && ...} hides zero values", body: "0 is falsy and gets filtered out of tooltips. Valid zero data points disappear." },
-        { severity: "warn", severityLabel: "Bug", title: "id prop not forwarded to underlying <div>", body: "Breaks `aria-labelledby` and anchor linking despite extending `React.ComponentProps<'div'>`." },
-        { severity: "warn", severityLabel: "Bug", title: "React key collisions", body: "`key={item.value}` isn't guaranteed unique — duplicated series names cause incorrect updates." }
+        { severity: "danger", severityLabel: "Bug", title: "Hard-coded IntTypeMapping on COUNT(*)", body: "`CreateChildCountAccessor` bypasses provider-specific type mapping, which can produce incorrect SQL typing or runtime cast failures on non-SQL Server providers." },
+        { severity: "warn", severityLabel: "Bug", title: "Bare catch swallows translation bugs", body: "All exceptions fall back silently to streaming correlation, which can hide real failures and reintroduce the silent child-loss behavior under concurrency." },
+        { severity: "warn", severityLabel: "Bug", title: "Static mutable test state", body: "The regression tests coordinate through process-wide statics; xUnit's parallel execution can make the InlineData cases interfere and turn flaky." },
+        { severity: "warn", severityLabel: "Bug", title: "Inconsistent orphan verification", body: "`VerifyNoOrphanedChildRows()` runs for `SplitQueryingEnumerable` but not `GroupBySplitQueryingEnumerable`, leaving the new exception behavior inconsistent across split-query enumerables." }
       ],
-      verdict: "Copilot found an XSS injection path, a formatter bug, falsy-zero filtering, and two other correctness issues in the new component.",
-      missed: "Striff found the migration plan moving in the wrong direction — legacy code reaching into the new package before it's shipped."
+      verdict: "Copilot caught real implementation issues: a hard-coded type mapping, a bare catch, flaky static test state, and inconsistent orphan verification.",
+      missed: "Striff caught the structural side effect: a brand-new upward edge from Query.Internal to the root namespace, 3 layers up, one step from a namespace cycle."
     }
   }
 ];

@@ -7,8 +7,10 @@ const navLinks = [
 ];
 
 const contactNavLink = { label: "Contact", href: "/contact" };
-const primaryCtaLabel = "Install";
-const primaryCtaHref = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
+const primaryCtaLabel = "Install App";
+const primaryCtaHref = "https://github.com/apps/striff-app/installations/new";
+const extensionCtaLabel = "Extension";
+const extensionCtaHref = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
 ---
 
 <header class="site-header sticky top-0 z-50">
@@ -39,6 +41,7 @@ const primaryCtaHref = "https://chromewebstore.google.com/detail/striffs-for-git
     </nav>
     <div class="hidden md:flex md:ml-4 items-center gap-3">
       <div id="auth-button-root"></div>
+      <a class="btn-chrome" href={extensionCtaHref} target="_blank" rel="noopener noreferrer">{extensionCtaLabel}</a>
       <a class="btn-primary" href={primaryCtaHref} target="_blank" rel="noopener noreferrer">{primaryCtaLabel}</a>
     </div>
     <button
@@ -81,6 +84,7 @@ const primaryCtaHref = "https://chromewebstore.google.com/detail/striffs-for-git
       <a class="nav-link" href={contactNavLink.href}>
         {contactNavLink.label}
       </a>
+      <a class="btn-chrome w-full" href={extensionCtaHref} target="_blank" rel="noopener noreferrer">{extensionCtaLabel}</a>
       <a class="btn-primary w-full" href={primaryCtaHref} target="_blank" rel="noopener noreferrer">{primaryCtaLabel}</a>
     </div>
   </div>

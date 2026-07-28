@@ -64,13 +64,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">6. Browser Extension — Striffs for GitHub</h2>
+        <h2 class="text-2xl font-semibold">6. Browser Extension: Striffs for GitHub</h2>
         <p>The <strong>Striffs for GitHub</strong> Chrome extension processes the following data when you use it on GitHub pull request pages:</p>
         <ul class="ml-6 list-disc">
-          <li><strong>Github PR metadata</strong> — pull request page information needed to generate architectural diagrams</li>
-          <li><strong>Repository content</strong> — file paths and changed-file content from PRs, used to build diagrams</li>
-          <li><strong>Optional GitHub token</strong> — stored locally in your browser if you choose to provide one; required only for private repositories</li>
-          <li><strong>Engagement events</strong> — anonymous usage events (diagram views, interactions) sent to the Striffs backend</li>
+          <li><strong>Github PR metadata</strong>: pull request page information needed to generate architectural diagrams</li>
+          <li><strong>Repository content</strong>: file paths and changed-file content from PRs, used to build diagrams</li>
+          <li><strong>GitHub token</strong>: stored locally in your browser and sent with your requests so Striff can read repository data on your behalf; our servers use it per request and do not store it</li>
+          <li><strong>Engagement events</strong>: anonymous usage events (diagram views, interactions) sent to the Striffs backend</li>
         </ul>
         <h3 class="mt-4 text-xl font-semibold">Storage</h3>
         <p>The extension stores your optional GitHub token and cached diagram data locally in your browser's extension storage. No data is sent to third parties beyond the Striffs backend for diagram generation.</p>

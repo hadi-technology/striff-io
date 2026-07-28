@@ -18,9 +18,9 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
           <p class="examples-kicker">
             Public repo examples
           </p>
-          <h1 class="mt-5 text-balance">Real PRs, same product story, one example per supported language.</h1>
+          <h1 class="mt-5 text-balance">Real pull requests, reviewed by Striff.</h1>
           <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            The homepage carries the main example experience now. This page exists as a dedicated gallery view when you want to compare the Java, Python, TypeScript, and C# examples side by side.
+            Four public PRs, one per supported language: Java, Python, TypeScript, and C#. Each one looked routine in the file diff. Open any of them on GitHub and verify what Striff flagged before merge.
           </p>
         </div>
         <div class="flex flex-wrap gap-4">
@@ -36,21 +36,21 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
         </div>
         <div class="examples-overview-card">
           <span class="examples-overview-kicker">Why this matters</span>
-          <p>The point is not prettier diagrams. The point is seeing architectural review value fast enough that a maintainer would use Striff again.</p>
+          <p>These risks are invisible in a line-by-line diff. They only show up when you look at the change as a dependency graph, the way Striff does on every PR.</p>
         </div>
       </div>
 
       <div class="examples-gallery-shell mt-10" data-reveal>
         <div class="examples-gallery-head">
           <div>
-            <p class="examples-gallery-kicker">Product gallery</p>
-            <h2 class="examples-gallery-title">Real public PR reviews rendered as product surfaces.</h2>
+            <p class="examples-gallery-kicker">The reviews</p>
+            <h2 class="examples-gallery-title">What Striff posted on each pull request.</h2>
           </div>
-          <p class="examples-gallery-copy">Each row is a real language example with the structural diff in the background and the GitHub check layered over it in-context.</p>
+          <p class="examples-gallery-copy">Each example shows the architecture diagram Striff generated and the GitHub Check it posted, exactly what your team would see on their own PRs.</p>
         </div>
         <div class="grid gap-5">
         {exampleReviews.map((example) => (
-          <details class="example-accordion rounded-[1.9rem] border border-white/75 bg-white/92 shadow-[0_24px_64px_rgba(15,23,42,0.08)] backdrop-blur-sm" data-reveal open={example.id === "java"}>
+          <details class="example-accordion rounded-[1.9rem] border border-white/75 bg-white/92 shadow-[0_24px_64px_rgba(15,23,42,0.08)] backdrop-blur-sm" data-reveal open={example.id === "hibernate"}>
             <summary class="example-summary">
               <div class="example-summary-main">
                 <div class="example-summary-top">
@@ -63,7 +63,7 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
                   <span class="example-status-pill">Public PR</span>
                 </div>
                 <div class="example-summary-copy">
-                  <h2 class="example-summary-title">{example.prTitle}</h2>
+                  <h2 class="example-summary-title"><a href={example.href} target="_blank" rel="noopener noreferrer">{example.prTitle}</a></h2>
                   <p class="example-summary-subtitle">{example.summary}</p>
                 </div>
               </div>
@@ -75,7 +75,7 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
             <div class="example-panel">
               <div class="example-toolbar">
                 <div class="example-toolbar-left">
-                  <span class="example-toolbar-pill example-toolbar-pill-active">Focused review surface</span>
+                  <span class="example-toolbar-pill example-toolbar-pill-active">Striff review</span>
                 </div>
                 <div class="example-toolbar-right">
                   {example.metrics.slice(0, 2).map((metric) => (
@@ -282,9 +282,20 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
 
         function resetView() {
           var mobile = window.innerWidth < 768;
-          scale = numberAttr(mobile ? "data-mobile-scale" : "data-initial-scale", mobile ? 1.2 : 1.6);
-          x = numberAttr(mobile ? "data-mobile-x" : "data-initial-x", mobile ? -40 : -120);
-          y = numberAttr(mobile ? "data-mobile-y" : "data-initial-y", mobile ? -30 : -80);
+          if (mobile) {
+            // Fit the full diagram to the stage width; the gallery diagram sits
+            // behind the check overlay, so a complete view beats a zoomed crop.
+            scale = 1;
+            x = 0;
+            var stageH = stage.clientHeight;
+            var imgH = media.clientHeight || stageH;
+            y = Math.min(0, (stageH - imgH) / 2);
+            paint();
+            return;
+          }
+          scale = numberAttr("data-initial-scale", 1.6);
+          x = numberAttr("data-initial-x", -120);
+          y = numberAttr("data-initial-y", -80);
           paint();
         }
 
