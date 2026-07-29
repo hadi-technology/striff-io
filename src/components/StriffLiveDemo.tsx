@@ -415,7 +415,7 @@ export default function Demo(){
     const py=e.clientY-rect.top;
     const minScale=MIN_SCALE;
     const maxScale=MAX_SCALE;
-    const zoom=e.deltaY<0?1.06:0.94;
+    const zoom=e.deltaY<0?1.12:0.89;
     const safeScale=svgTransform.scale||1;
     const nextScale=clamp(safeScale*zoom,minScale,maxScale);
     // At the zoom limit in this direction: don't swallow the event, let the page scroll.
