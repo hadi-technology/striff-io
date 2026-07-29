@@ -1,27 +1,31 @@
 ---
-title: "We scanned 175 PRs from repos that use AI code reviewers. Here are 20 where Striff caught what the bots missed."
-description: "CodeRabbit, Greptile, Gemini, Sourcery, and Copilot were already reviewing these merged PRs — in Presto, Google Cloud, Apache Beam, LINE, and more. Striff found 64 structural issues; 63 appear nowhere in the bots' comments. Every PR is public; check our work."
+title: "1 in 3 refactor PRs quietly moves the architecture. The AI reviewers watching them didn't mention it."
+description: "We analyzed merged refactor PRs from repos where CodeRabbit, Greptile, Gemini, Sourcery, or Copilot were actively reviewing — Presto, Google Cloud, Apache Beam, LINE, and more. A third carried real structural risk: 64 findings, 63 of which appear nowhere in the bots' comments. Every PR is public; check our work."
 date: 2026-07-28
 ---
 
-AI code reviewers are everywhere now. So we ran an experiment with a simple, falsifiable premise: **take merged PRs from repos where an AI reviewer was demonstrably active — commenting on the very PR we analyze — and see what Striff's structural analysis finds that the bot's review didn't.**
+AI code reviewers are everywhere now. So we ran an experiment with a simple, falsifiable premise: **take merged refactor-shaped PRs from repos where an AI reviewer was demonstrably active — commenting on the very PR we analyze — and measure how often the architecture moved without the bot saying a word about it.**
 
 Not cherry-picked repos with no review tooling. Repos that already pay for, or actively run, CodeRabbit, Greptile, Gemini Code Assist, Sourcery, or GitHub Copilot review.
 
+The headline result: **of the merged PRs that completed full structural analysis, 1 in 3 carried HIGH or MEDIUM architectural risk** — boundary inversions, contract rewrites, package cycles, coupling spikes. All merged. All AI-reviewed. **63 of the 64 findings appear nowhere in the bots' comments.**
+
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">The funnel</p>
+<p class="bp-figure-title">The experiment</p>
 <div class="bp-stats">
 <div class="bp-stat bp-stat--brand"><div class="bp-stat-value">2,879</div><div class="bp-stat-label">recent merged PRs surveyed where an AI review bot commented</div></div>
-<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">175</div><div class="bp-stat-label">structurally-biased candidates put through Striff's full pipeline</div></div>
-<div class="bp-stat bp-stat--amber"><div class="bp-stat-value">27</div><div class="bp-stat-label">PRs with HIGH or MEDIUM structural findings</div></div>
-<div class="bp-stat bp-stat--danger"><div class="bp-stat-value">20</div><div class="bp-stat-label">handpicked below — after discarding our own noise</div></div>
+<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">91</div><div class="bp-stat-label">refactor-shaped candidates fully analyzed, end to end</div></div>
+<div class="bp-stat bp-stat--danger"><div class="bp-stat-value">1 in 3</div><div class="bp-stat-label">carried HIGH or MEDIUM structural risk the bots didn't mention (27 PRs)</div></div>
+<div class="bp-stat bp-stat--amber"><div class="bp-stat-value">2 in 3</div><div class="bp-stat-label">were structurally clean — Striff posted nothing, by design</div></div>
 </div>
-<p class="bp-figure-caption">Method: GitHub search for merged PRs (April–July 2026) with comments from CodeRabbit, Greptile, Gemini Code Assist, Sourcery, Qodo, or Copilot review, in Java/TypeScript/Python/C# repos; filtered to structural-change titles (refactor, extract, move, split…) and 2–30 changed files; analyzed with the same public Striff pipeline the <a href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen">browser extension</a> uses. Of the 27 flagged PRs we <strong>discarded 7</strong>: five whose findings were test-module artifacts, one sub-threshold coupling trend, and one to cap repo diversity. The same noise bar <a href="/blog/grounded-ai-findings">we hold the product to</a> applies to our marketing.</p>
+<p class="bp-figure-caption">Method: GitHub search for merged PRs (April–July 2026) with comments from CodeRabbit, Greptile, Gemini Code Assist, Sourcery, Qodo, or Copilot review, in Java/TypeScript/Python/C# repos; filtered to structural-change titles (refactor, extract, move, split…) and 2–30 changed files; analyzed with the same public Striff pipeline the <a href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen">browser extension</a> uses. 175 candidates entered the pipeline; 91 completed end-to-end analysis (the rest hit generation or review infrastructure limits, not a clean bill). Of the 27 flagged PRs we showcase 20 below, having <strong>discarded 7</strong>: five whose findings were test-module artifacts, one sub-threshold coupling trend, and one to cap repo diversity. The same noise bar <a href="/blog/grounded-ai-findings">we hold the product to</a> applies to our marketing.</p>
 </div>
+
+<div class="bp-callout"><strong>Read the 2-in-3 number as carefully as the 1-in-3.</strong> A structural reviewer that finds something on every PR is a noise generator — most PRs genuinely don't move the architecture, and the correct output on those is <em>silence</em>. The risk rate that matters is the one above it: a third of merged refactors shifted the dependency graph in ways nobody's review — human or AI — mentioned. At AI-era merge volume, that's not an edge case. That's every sprint.</div>
 
 ## The 20 pull requests
 
-Every row is a public, merged PR. The AI reviewer column is who actually commented on that PR; the findings column is what Striff's graph analysis flagged that never appeared in those comments.
+Here are the strongest 20 of the 27 flagged PRs. Every row is public and merged. The AI reviewer column is who actually commented on that PR; the findings column is what Striff's graph analysis flagged that never appeared in those comments.
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Striff-only findings, in repos with AI review running</p>
