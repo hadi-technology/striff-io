@@ -1,29 +1,29 @@
 ---
 title: "Afferent and efferent coupling, explained with numbers from real codebases"
-description: "What afferent coupling (Ca) and efferent coupling (Ce) actually measure, why the instability metric matters, and how to read coupling numbers — illustrated with real values from Spring Framework and Apache Pinot."
+description: "What afferent coupling (Ca) and efferent coupling (Ce) actually measure, how to read them together, and what the rest of the metrics on a Striff diagram mean: WMC, DIT, NOC, and encapsulation, illustrated with real values from Spring Framework and Apache Pinot."
 date: 2025-11-18
 ---
 
-Every architecture tool eventually shows you two numbers: **afferent coupling** and **efferent coupling**. Most engineers nod, vaguely recall the definitions point in opposite directions, and move on. That's a shame — because these two numbers, read together, are the closest thing software has to a *blood pressure reading* for a component.
+Every architecture tool eventually shows you two numbers: **afferent coupling** and **efferent coupling**. Most engineers nod, vaguely recall the definitions point in opposite directions, and move on. That's a shame, because these two numbers, read together, are the closest thing software has to a *blood pressure reading* for a component.
 
-Here's what they measure, why they matter, and — using **real values from Spring Framework and Apache Pinot** — how to tell a healthy number from a warning sign.
+Here's what they measure, why they matter, and, using **real values from Spring Framework and Apache Pinot**, how to tell a healthy number from a warning sign. At the end, we'll decode the rest of the metric badges you'll see on a Striff diagram.
 
 ## The two directions
 
 Both metrics count dependencies on a single component (a class, or a package). The only difference is which way the arrows point.
 
-**Afferent coupling (Ca)** — arrows *in*. How many components depend on **you**. This is your *blast radius*: if you change, this is how many places can break.
+**Afferent coupling (Ca)**: arrows *in*. How many components depend on **you**. This is your *blast radius*: if you change, this is how many places can break.
 
-**Efferent coupling (Ce)** — arrows *out*. How many components **you** depend on. This is your *exposure*: every outgoing arrow is a reason you might be forced to change.
+**Efferent coupling (Ce)**: arrows *out*. How many components **you** depend on. This is your *exposure*: every outgoing arrow is a reason you might be forced to change.
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Afferent vs. efferent — same node, opposite questions</p>
-<svg class="bp-diagram" viewBox="0 0 820 300" role="img" aria-label="Two diagrams. Left: five arrows point inward to a node labeled AvroUtils, illustrating afferent coupling — who depends on you. Right: arrows point outward from a node labeled AbstractBeanFactory, illustrating efferent coupling — what you depend on.">
+<p class="bp-figure-title">Afferent vs. efferent: same node, opposite questions</p>
+<svg class="bp-diagram" viewBox="0 0 820 300" role="img" aria-label="Two diagrams. Left: five arrows point inward to a node labeled AvroUtils, illustrating afferent coupling, who depends on you. Right: arrows point outward from a node labeled AbstractBeanFactory, illustrating efferent coupling, what you depend on.">
 <defs>
 <marker id="ceArrIn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/></marker>
 <marker id="ceArrOut" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d97706"/></marker>
 </defs>
-<text x="205" y="34" font-size="13" font-weight="700" fill="#1d4ed8" text-anchor="middle">AFFERENT (Ca) — who depends on you</text>
+<text x="205" y="34" font-size="13" font-weight="700" fill="#1d4ed8" text-anchor="middle">AFFERENT (Ca): who depends on you</text>
 <line class="bp-edge-draw" x1="70" y1="90" x2="150" y2="140" stroke="#2563eb" stroke-width="2" marker-end="url(#ceArrIn)"/>
 <line class="bp-edge-draw" x1="60" y1="160" x2="148" y2="160" stroke="#2563eb" stroke-width="2" marker-end="url(#ceArrIn)"/>
 <line class="bp-edge-draw" x1="70" y1="230" x2="150" y2="180" stroke="#2563eb" stroke-width="2" marker-end="url(#ceArrIn)"/>
@@ -33,7 +33,7 @@ Both metrics count dependencies on a single component (a class, or a package). T
 <text x="205" y="156" font-size="11.5" class="bp-mono" fill="#1d4ed8" text-anchor="middle">AvroUtils</text>
 <text x="205" y="174" font-size="10.5" fill="#3b82f6" text-anchor="middle">Ca = 24</text>
 <text x="205" y="284" font-size="11" fill="#64748b" text-anchor="middle" font-style="italic">Change this → 24 places can break</text>
-<text x="612" y="34" font-size="13" font-weight="700" fill="#b45309" text-anchor="middle">EFFERENT (Ce) — what you depend on</text>
+<text x="612" y="34" font-size="13" font-weight="700" fill="#b45309" text-anchor="middle">EFFERENT (Ce): what you depend on</text>
 <line class="bp-edge-draw" x1="660" y1="140" x2="742" y2="92" stroke="#d97706" stroke-width="2" marker-end="url(#ceArrOut)"/>
 <line class="bp-edge-draw" x1="668" y1="160" x2="755" y2="160" stroke="#d97706" stroke-width="2" marker-end="url(#ceArrOut)"/>
 <line class="bp-edge-draw" x1="660" y1="180" x2="742" y2="228" stroke="#d97706" stroke-width="2" marker-end="url(#ceArrOut)"/>
@@ -49,17 +49,17 @@ Both metrics count dependencies on a single component (a class, or a package). T
 <p class="bp-figure-caption">Both numbers are real: <code>AvroUtils</code> has an afferent coupling of <strong>24</strong> in Apache Pinot's parsed scope; <code>AbstractBeanFactory</code> reached an efferent coupling of <strong>102</strong> in Spring Framework. Both come from PRs <a href="/blog/architectural-findings-in-oss">we analyzed with Striff</a>.</p>
 </div>
 
-The definitions go back to Robert C. Martin's package-design metrics, which also give us the derived number worth knowing: **instability**, *I = Ce / (Ce + Ca)*. A component with high Ca and low Ce is *stable* (hard to justify changing, easy to depend on). One with high Ce and low Ca is *unstable* (free to change, dangerous to depend on). Neither is bad on its own — **problems start when a component is high on both axes at once.**
+The definitions go back to Robert C. Martin's package-design metrics, which also give us the derived number worth knowing: **instability**, *I = Ce / (Ce + Ca)*. A component with high Ca and low Ce is *stable* (hard to justify changing, easy to depend on). One with high Ce and low Ca is *unstable* (free to change, dangerous to depend on). Neither is bad on its own. **Problems start when a component is high on both axes at once.**
 
 ## The four quadrants
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Reading Ca and Ce together</p>
 <div class="bp-quad">
-<div class="bp-quad-cell bp-quad-cell--brand"><span class="bp-quad-tag">High Ca · Low Ce</span><p class="bp-quad-title">Stable core</p><p class="bp-quad-desc">Interfaces, domain types, shared contracts. Everyone depends on them; they depend on little. <em>Healthy — but every change here is expensive by design.</em></p></div>
+<div class="bp-quad-cell bp-quad-cell--brand"><span class="bp-quad-tag">High Ca · Low Ce</span><p class="bp-quad-title">Stable core</p><p class="bp-quad-desc">Interfaces, domain types, shared contracts. Everyone depends on them; they depend on little. <em>Healthy, but every change here is expensive by design.</em></p></div>
 <div class="bp-quad-cell bp-quad-cell--danger"><span class="bp-quad-tag">High Ca · High Ce</span><p class="bp-quad-title">The danger zone</p><p class="bp-quad-desc">Many dependents <em>and</em> many dependencies: god classes, "utils" dumping grounds, accidental bridges. Fragile to change, impossible to avoid. <code>AbstractBeanFactory</code> lives here.</p></div>
-<div class="bp-quad-cell"><span class="bp-quad-tag">Low Ca · Low Ce</span><p class="bp-quad-title">Quiet leaf</p><p class="bp-quad-desc">Self-contained helpers and features. Change freely — almost nothing can break.</p></div>
-<div class="bp-quad-cell bp-quad-cell--amber"><span class="bp-quad-tag">Low Ca · High Ce</span><p class="bp-quad-title">Orchestrator</p><p class="bp-quad-desc">Controllers, entry points, wiring code. Volatile but safe — nothing depends on them, so their churn doesn't ripple.</p></div>
+<div class="bp-quad-cell"><span class="bp-quad-tag">Low Ca · Low Ce</span><p class="bp-quad-title">Quiet leaf</p><p class="bp-quad-desc">Self-contained helpers and features. Change freely; almost nothing can break.</p></div>
+<div class="bp-quad-cell bp-quad-cell--amber"><span class="bp-quad-tag">Low Ca · High Ce</span><p class="bp-quad-title">Orchestrator</p><p class="bp-quad-desc">Controllers, entry points, wiring code. Volatile but safe: nothing depends on them, so their churn doesn't ripple.</p></div>
 </div>
 <div class="bp-quad-axis"><span>↑ rows: afferent coupling (Ca)</span><span>columns: efferent coupling (Ce) →</span></div>
 <p class="bp-figure-caption">The quadrant a component sits in matters more than either raw number. A Ce of 40 on an orchestrator is Tuesday; a Ce of 40 on a stable core component means <strong>every one of its many dependents inherits 40 new reasons to break</strong>.</p>
@@ -67,7 +67,7 @@ The definitions go back to Robert C. Martin's package-design metrics, which also
 
 ## Why the *delta* beats the absolute number
 
-Here's where most static-analysis dashboards go wrong: they report absolute values and let you stare at them. But an absolute coupling number without context is nearly meaningless — Spring's `AbstractBeanFactory` has had high coupling for fifteen years and Spring works fine. What matters is **where a change happens, and which direction it's trending**.
+Here's where most static-analysis dashboards go wrong: they report absolute values and let you stare at them. But an absolute coupling number without context is nearly meaningless. Spring's `AbstractBeanFactory` has had high coupling for fifteen years and Spring works fine. What matters is **where a change happens, and which direction it's trending**.
 
 The real Spring finding makes the point:
 
@@ -77,19 +77,50 @@ The real Spring finding makes the point:
 <div class="bp-bar-row"><span class="bp-bar-label">Leaf helper, Ce 5 → 8</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:8%"></div></div><span class="bp-bar-value">low risk</span></div>
 <div class="bp-bar-row"><span class="bp-bar-label"><code>AbstractBeanFactory</code>, Ce 99 → 102</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:100%"></div></div><span class="bp-bar-value">flagged</span></div>
 </div>
-<p class="bp-figure-caption">Both changes add 3 outgoing dependencies. The first is noise. The second lands on a class <strong>hundreds of components depend on</strong> — so all of them inherit three new transitive reasons to break. Same diff-size, wildly different blast radius. Risk = <em>delta × afferent coupling</em>, not delta alone.</p>
+<p class="bp-figure-caption">Both changes add 3 outgoing dependencies. The first is noise. The second lands on a class <strong>hundreds of components depend on</strong>, so all of them inherit three new transitive reasons to break. Same diff-size, wildly different blast radius. Risk = <em>delta × afferent coupling</em>, not delta alone.</p>
 </div>
 
-The Pinot example shows the same logic on the other axis. In [apache/pinot #19073](https://github.com/apache/pinot/pull/19073), `SegmentProcessorAvroUtils` grew its efferent coupling from **36 to 44** in one PR — while sitting next to `AvroUtils`, a contract with **24 dependents**, which the same PR modified. Either number alone is unremarkable. Together they describe a class *becoming a bridge* between the core engine and a plugin — which is exactly what Striff flagged, and exactly what [Copilot's line-level review of the same PR](/blog/architectural-findings-in-oss) had no way to see.
+The Pinot example shows the same logic on the other axis. In [apache/pinot #19073](https://github.com/apache/pinot/pull/19073), `SegmentProcessorAvroUtils` grew its efferent coupling from **36 to 44** in one PR, while sitting next to `AvroUtils`, a contract with **24 dependents**, which the same PR modified. Either number alone is unremarkable. Together they describe a class *becoming a bridge* between the core engine and a plugin, which is exactly what Striff flagged.
+
+## The rest of the instrument panel
+
+Coupling is two gauges on the dashboard. On a Striff diagram, every changed class carries a full row of metric badges, each with its delta since the last version. Here's the row for a class that just absorbed a big refactor, and what each badge means:
+
+<div class="bp-figure" data-reveal>
+<p class="bp-figure-title">The badges on a Striff class box, decoded</p>
+<div class="bp-metric-chips">
+<span class="bp-metric-chip"><span class="k">NOC: 2</span><span class="v">±0</span></span>
+<span class="bp-metric-chip"><span class="k">DIT: 3</span><span class="v">±0</span></span>
+<span class="bp-metric-chip"><span class="k">WMC: 38</span><span class="v up">+36%</span></span>
+<span class="bp-metric-chip"><span class="k">ENC: 0.7</span><span class="v up">+38%</span></span>
+<span class="bp-metric-chip"><span class="k">AC: 5</span><span class="v">±0</span></span>
+<span class="bp-metric-chip"><span class="k">EC: 44</span><span class="v up">+22%</span></span>
+</div>
+<div class="bp-compare-scroll" style="margin-top:1rem">
+<table class="bp-compare">
+<thead><tr><th>Badge</th><th>What it measures</th><th>Why you'd care</th></tr></thead>
+<tbody>
+<tr><td><strong>WMC</strong></td><td>Weighted method complexity: the summed cyclomatic complexity of the class's methods</td><td>The single best "is this becoming a god class?" gauge. A WMC jumping 36% in one PR means logic is pooling here instead of being distributed.</td></tr>
+<tr><td><strong>DIT</strong></td><td>Depth of inheritance tree: how many ancestors the class has</td><td>Deep hierarchies make behavior hard to trace; every layer is a place logic can hide. A DIT that grows during a "simple" change deserves a look.</td></tr>
+<tr><td><strong>NOC</strong></td><td>Number of children: direct subclasses</td><td>High NOC means the class is a contract many things extend. Like high Ca, it multiplies the cost of every change you make here.</td></tr>
+<tr><td><strong>ENC</strong></td><td>Encapsulation ratio: the share of members that are private or protected (0 to 1)</td><td>A falling ENC means the class is exposing more of its internals, inviting exactly the kind of coupling the other badges then measure.</td></tr>
+<tr><td><strong>AC / EC</strong></td><td>Afferent and efferent coupling, as above</td><td>Blast radius and exposure. The two you now know how to read.</td></tr>
+</tbody>
+</table>
+</div>
+<p class="bp-figure-caption">The badges always show the value <em>and</em> the change, because as with coupling, the delta in this PR matters more than the absolute number. A class at WMC 38 is unremarkable; a class that got there <strong>this week</strong> is a trend.</p>
+</div>
+
+Read together, the panel tells a story no single metric can. Rising WMC with rising EC and falling ENC is a class absorbing responsibilities, reaching out for more collaborators, and opening its internals to do it: a god class in the making, visible three PRs before anyone would name it that in review.
 
 ## How to use these numbers on a real team
 
 Skip the thresholds. Rules like "Ce must stay under 20" produce arguments, not architecture. What works:
 
-- **Watch high-Ca components like production config.** Any PR that touches a component with dozens of dependents deserves a closer look — *especially* when the diff looks trivial. Small diffs on high-Ca nodes are where blast-radius accidents live.
+- **Watch high-Ca components like production config.** Any PR that touches a component with dozens of dependents deserves a closer look, *especially* when the diff looks trivial. Small diffs on high-Ca nodes are where blast-radius accidents live.
 - **Treat Ce growth on stable components as a smell.** A stable core component that keeps gaining outgoing dependencies is migrating toward the danger-zone quadrant, one convenient import at a time.
-- **Track trends, not snapshots.** Coupling that grew 99 → 102 this month and 96 → 99 last month is a *direction*, and directions compound. This matters double [when AI tools multiply your PR volume](/blog/architecture-matters-more-not-less) — drift that took a year now takes a quarter.
+- **Track trends, not snapshots.** Coupling that grew 99 → 102 this month and 96 → 99 last month is a *direction*, and directions compound. This matters double [when AI tools multiply your PR volume](/blog/architecture-matters-more-not-less): drift that took a year now takes a quarter.
 
-<div class="bp-callout"><strong>The uncomfortable part: nobody computes this during review.</strong> Ca and Ce aren't in the diff. GitHub doesn't show them. To know that a three-line change grew coupling on a 24-dependent contract, someone has to build the dependency graph of both sides of the PR and compare — per pull request. No human does this by hand, which is why coupling regressions ship silently.</div>
+<div class="bp-callout"><strong>The uncomfortable part: nobody computes this during review.</strong> Ca, Ce, WMC, and the rest aren't in the diff. GitHub doesn't show them. To know that a three-line change grew coupling on a 24-dependent contract, someone has to build the dependency graph of both sides of the PR and compare, per pull request. No human does this by hand, which is why coupling regressions ship silently.</div>
 
-That's the part Striff automates: it parses every PR into a component graph, computes Ca, Ce, and the deltas on the spot, and flags only the changes whose *position* makes them risky — a coupling spike on a high-dependency node, not a helper gaining its fifth import. Install the [browser extension](https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen) and the numbers in this post show up on your own pull requests, automatically.
+That's the part Striff automates: it parses every PR into a component graph, computes the full metric panel and its deltas on the spot, and flags only the changes whose *position* makes them risky: a coupling spike on a high-dependency node, not a helper gaining its fifth import. Install the [browser extension](https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen) and the numbers in this post show up on your own pull requests, automatically.
