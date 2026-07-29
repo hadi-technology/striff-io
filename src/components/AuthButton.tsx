@@ -72,8 +72,13 @@ export default function AuthButton() {
   return (
     <a
       href={oauthUrl}
-      className="text-sm font-medium text-slate-600 hover:text-slate-900"
+      className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl border border-white/25 bg-white/10 px-4 text-sm font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/20"
+      style={{ minHeight: "2.75rem", lineHeight: 1 }}
     >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
       Sign in
     </a>
   );

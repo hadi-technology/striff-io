@@ -3,10 +3,9 @@ const navLinks = [
   { label: "Examples", href: "/#examples" },
   { label: "For Teams", href: "/#how" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Blog", href: "/blog" }
+  { label: "Blog", href: "/blog" },
+  { label: "Contact", href: "/contact" }
 ];
-
-const contactNavLink = { label: "Contact", href: "/contact" };
 const primaryCtaLabel = "Install App";
 const primaryCtaHref = "https://github.com/apps/striff-app/installations/new";
 const extensionCtaLabel = "Extension";
@@ -35,12 +34,8 @@ const extensionCtaHref = "https://chromewebstore.google.com/detail/striffs-for-g
           {link.label}
         </a>
       ))}
-      <a class="nav-link md:ml-auto" href={contactNavLink.href}>
-        {contactNavLink.label}
-      </a>
     </nav>
     <div class="hidden md:flex md:ml-4 items-center gap-3">
-      <div id="auth-button-root"></div>
       <a class="btn-chrome" href={extensionCtaHref} target="_blank" rel="noopener noreferrer">
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="10" />
@@ -57,6 +52,7 @@ const extensionCtaHref = "https://chromewebstore.google.com/detail/striffs-for-g
         </svg>
         {primaryCtaLabel}
       </a>
+      <div id="auth-button-root"></div>
     </div>
     <button
       class="md:hidden"
@@ -95,9 +91,6 @@ const extensionCtaHref = "https://chromewebstore.google.com/detail/striffs-for-g
           {link.label}
         </a>
       ))}
-      <a class="nav-link" href={contactNavLink.href}>
-        {contactNavLink.label}
-      </a>
       <a class="btn-chrome w-full" href={extensionCtaHref} target="_blank" rel="noopener noreferrer">{extensionCtaLabel}</a>
       <a class="btn-primary w-full" href={primaryCtaHref} target="_blank" rel="noopener noreferrer">{primaryCtaLabel}</a>
     </div>
