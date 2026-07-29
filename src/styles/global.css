@@ -5411,6 +5411,13 @@
   margin-top: 0.75rem;
 }
 
+/* Blog CTA slotted into the teams tab column, under its tab */
+.teams-tab-link {
+  align-self: flex-start;
+  margin-top: -0.15rem;
+  margin-left: 1.25rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .blog-link-btn::before {
     animation: none !important;

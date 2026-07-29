@@ -50,6 +50,7 @@ interface TeamPhilosophyItem {
   body: string;
   image?: string;
   preview?: "metrics" | "docs" | "checks";
+  link?: { href: string; label: string };
 }
 
 const teamPhilosophy: TeamPhilosophyItem[] = [
@@ -58,7 +59,8 @@ const teamPhilosophy: TeamPhilosophyItem[] = [
     color: "amber",
     title: "Your architecture decisions, actually enforced.",
     body: "Most teams write ADRs and an ARCHITECTURE.md, then watch PRs quietly drift from them anyway. Striff reads those docs and checks every PR against them. When a change contradicts what your team agreed on, it cites the exact file and line. No rules to configure. The documentation is the rulebook.",
-    preview: "docs"
+    preview: "docs",
+    link: { href: "/blog/design-docs-are-enforceable-now", label: "How Striff turns design docs into enforced checks" }
   },
   {
     icon: "chart",
@@ -505,6 +507,7 @@ const plans = [
         <div class="teams-showcase mt-10" data-teams-showcase data-reveal>
           <div class="teams-tabs" role="tablist">
             {teamPhilosophy.map((item, i) => (
+              <>
               <button
                 class={`teams-tab teams-tab-${item.color} ${i === 0 ? "is-active" : ""}`}
                 type="button"
@@ -529,6 +532,13 @@ const plans = [
                 <span class="teams-tab-body">{item.body}</span>
                 <span class="teams-tab-progress" aria-hidden="true"><span class="teams-tab-progress-fill"></span></span>
               </button>
+              {item.link && (
+                <a class="blog-link-btn blog-link-btn--compact teams-tab-link" href={item.link.href}>
+                  {item.link.label}
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                </a>
+              )}
+              </>
             ))}
           </div>
 
@@ -581,10 +591,6 @@ const plans = [
                           <p><code>DefaultCommandHandlerManager</code> sits in <code>implementation</code>, but <code>REFACTORING.md</code> requires command handlers to live in <code>handler</code>. Doc-grounded: cites the file by name.</p>
                         </div>
                       </div>
-                      <a class="blog-link-btn blog-link-btn--compact" href="/blog/design-docs-are-enforceable-now">
-                        How Striff turns design docs into enforced checks
-                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-                      </a>
                     </div>
                   </div>
                 ) : item.preview === "checks" ? (
