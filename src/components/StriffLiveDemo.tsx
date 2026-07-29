@@ -429,6 +429,18 @@ export default function Demo(){
     });
   },[cancelDemo,svgTransform,view,MIN_SCALE,MAX_SCALE]);
 
+  // React attaches onWheel passively at the root, so preventDefault there can't
+  // stop the page from scrolling; bind a non-passive native listener instead.
+  const wheelZoomRef=useRef(wheelZoom);
+  useEffect(()=>{wheelZoomRef.current=wheelZoom;},[wheelZoom]);
+  useEffect(()=>{
+    const stage=stageR.current as HTMLElement|null;
+    if(!stage)return;
+    const onWheel=(e:WheelEvent)=>wheelZoomRef.current(e);
+    stage.addEventListener("wheel",onWheel,{passive:false});
+    return()=>stage.removeEventListener("wheel",onWheel);
+  },[]);
+
   const svgClick=useCallback(e=>{
     if(dragMovedRef.current){dragMovedRef.current=false;return;}
     cancelDemo();
@@ -748,7 +760,6 @@ export default function Demo(){
 	              onPointerMove={pointerMove}
 	              onPointerUp={pointerUp}
 	              onPointerLeave={pointerUp}
-	              onWheel={wheelZoom}
 	              style={{position:"absolute",inset:0,overflow:"hidden",background:"radial-gradient(circle at 28% 20%, rgba(255,255,255,.96), rgba(243,247,253,.88) 38%, rgba(237,242,248,.95) 100%)",opacity:view==="striffs"?1:0,transition:"opacity .2s",pointerEvents:view==="striffs"?"auto":"none",touchAction:"none",cursor:dragRef.current?"grabbing":"grab"}}
 	            >
 	              <div style={{position:"absolute",top:14,left:16,zIndex:20,display:"flex",alignItems:"center",gap:8,padding:"7px 11px",borderRadius:999,background:"rgba(255,255,255,.84)",backdropFilter:"blur(12px)",border:"1px solid rgba(203,213,225,.8)",boxShadow:"0 8px 24px rgba(15,23,42,.06)",fontSize:11,color:"#475569",fontWeight:600,letterSpacing:".01em"}}>

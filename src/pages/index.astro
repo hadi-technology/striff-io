@@ -261,9 +261,10 @@ const plans = [
               <p class="section-subcopy mt-4">
                 Your team merges more AI-written code every week than anyone can read. Left unchecked, each merge piles on coupling and cycles until the architecture is unmaintainable. Striff catches that structural drift on every pull request.
               </p>
-              <p class="section-subcopy mt-3">
-                Why it matters more in the AI era, not less: <a class="font-medium text-slate-800 underline decoration-slate-300 underline-offset-2 hover:text-blue-600" href="/blog/architecture-matters-more-not-less">read the breakdown</a>.
-              </p>
+              <a class="blog-link-btn" href="/blog/architecture-matters-more-not-less">
+                Why AI makes this worse, not better
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+              </a>
             </div>
 
             <!-- The firehose: branches merging into main, beside the activity feed -->
@@ -455,7 +456,10 @@ const plans = [
                       ) : (
                         <p><InlineCodeText text={example.checkHeader} /></p>
                       )}
-                      <a class="ex-verdict-link" href="/blog/architectural-findings-in-oss">More findings from major OSS repos →</a>
+                      <a class="blog-link-btn blog-link-btn--compact" href="/blog/architectural-findings-in-oss">
+                        More findings from major OSS repos
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -776,7 +780,7 @@ const plans = [
           </details>
           <details class="faq-item">
             <summary class="faq-q">Is it just an LLM wrapper?</summary>
-            <p class="faq-a">No. The findings come from deterministic structural analysis plus a graph neural network trained on 129 well-architected codebases (AUC 0.91). The LLM only explains findings that the analysis already established; it doesn't invent them. That's why Striff stays quiet on clean PRs instead of always producing commentary.</p>
+            <p class="faq-a">No. The findings come from deterministic structural analysis of your dependency graph, backed by a model trained on well-architected codebases to tell risky changes from normal ones. The AI layer only explains findings the analysis already established; it doesn't invent them. That's why Striff stays quiet on clean PRs instead of always producing commentary.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">Will it slow down or block my pull requests?</summary>
@@ -784,7 +788,7 @@ const plans = [
           </details>
           <details class="faq-item">
             <summary class="faq-q">What do I need to set up?</summary>
-            <p class="faq-a">For public repos: install the browser extension and add a GitHub token (a free fine-grained token works; it stays in your browser). For your team's private repos: install the GitHub App, which posts checks automatically on every PR with no per-developer setup. Plans start at $29/month, based on how many repos actually get reviewed each month, not how many you connect.</p>
+            <p class="faq-a">Just install the GitHub App — it works on public and private repos alike and posts checks automatically on every PR, with no per-developer setup. Plans start at $29/month, based on how many repos actually get reviewed each month, not how many you connect. Separately, there's a free browser extension: a standalone tool that analyzes any public PR directly in GitHub's UI — a handy way to try Striff on open-source code without installing anything on the repo (bring a free GitHub token; it stays in your browser).</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">Is my source code sent to a third party or stored?</summary>

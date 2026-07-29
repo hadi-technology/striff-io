@@ -5354,17 +5354,67 @@
   color: #e2e8f0;
 }
 
-.ex-verdict-link {
-  display: inline-block;
-  margin-top: 0.4rem;
-  font-size: 0.84rem;
-  font-weight: 600;
-  color: #67e8f9;
+/* Animated blog-post CTA button (used at the bottom of sections) */
+.blog-link-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.87rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.15) inset,
+    0 4px 14px rgba(37, 99, 235, 0.3);
+  overflow: hidden;
   text-decoration: none;
+  transition: transform 200ms ease, box-shadow 200ms ease;
 }
 
-.ex-verdict-link:hover {
-  text-decoration: underline;
+.blog-link-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.28) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: blogBtnSheen 3.4s ease-in-out infinite;
+}
+
+@keyframes blogBtnSheen {
+  0% { transform: translateX(-100%); }
+  55%, 100% { transform: translateX(100%); }
+}
+
+.blog-link-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.15) inset,
+    0 8px 22px rgba(37, 99, 235, 0.4);
+}
+
+.blog-link-btn svg {
+  flex-shrink: 0;
+  transition: transform 200ms ease;
+}
+
+.blog-link-btn:hover svg {
+  transform: translateX(3px);
+}
+
+.blog-link-btn--compact {
+  padding: 0.5rem 1rem;
+  font-size: 0.82rem;
+  margin-top: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blog-link-btn::before {
+    animation: none !important;
+  }
 }
 
 /* ---- Scoreboard strip ---- */
