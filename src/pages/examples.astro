@@ -300,8 +300,13 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
         }
 
         stage.addEventListener("wheel", function (event) {
+          var next = clamp(scale + (event.deltaY < 0 ? 0.12 : -0.12), 1, 2.8);
+          if (next === scale) {
+            // Already at the zoom limit in this direction: let the page scroll.
+            return;
+          }
           event.preventDefault();
-          scale = clamp(scale + (event.deltaY < 0 ? 0.12 : -0.12), 1, 2.8);
+          scale = next;
           paint();
         }, { passive: false });
 

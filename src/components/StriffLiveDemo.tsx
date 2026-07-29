@@ -408,8 +408,6 @@ export default function Demo(){
 
   const wheelZoom=useCallback(e=>{
     if(view!=="striffs")return;
-    cancelDemo();
-    e.preventDefault();
     const stage=stageR.current;
     if(!stage)return;
     const rect=stage.getBoundingClientRect();
@@ -420,6 +418,10 @@ export default function Demo(){
     const zoom=e.deltaY<0?1.06:0.94;
     const safeScale=svgTransform.scale||1;
     const nextScale=clamp(safeScale*zoom,minScale,maxScale);
+    // At the zoom limit in this direction: don't swallow the event, let the page scroll.
+    if(nextScale===safeScale)return;
+    cancelDemo();
+    e.preventDefault();
     const contentX=(px-svgTransform.x)/safeScale;
     const contentY=(py-svgTransform.y)/safeScale;
     setSvgTransform({
