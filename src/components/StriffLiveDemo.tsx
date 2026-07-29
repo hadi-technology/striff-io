@@ -233,8 +233,8 @@ export default function Demo(){
   const dragRef=useRef(null);
   const dragMovedRef=useRef(false);
   const demoCancelRef=useRef(false);
-  const MIN_SCALE = 0.45;
-  const MAX_SCALE = 2.0;
+  const MIN_SCALE = 0.55;
+  const MAX_SCALE = 1.6;
 
   const scrollDiffTarget=useCallback((fileName,focus)=>{
     const panel=document.getElementById(`d-${fileName}`);
