@@ -1,7 +1,7 @@
 // Netlify function backing the Dashboard "Metrics" tab: authenticates the caller's gh_token,
 // verifies they actually own the requested installation_id (via GitHub's /user/installations),
 // then proxies to striff-api's org metrics endpoint with the required X-Server-Key + HMAC token.
-const crypto = require("crypto");
+import crypto from "node:crypto";
 
 const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
@@ -46,7 +46,7 @@ async function callerOwnsInstallation(ghToken, installationId) {
   return installations.some((inst) => String(inst.id) === String(installationId));
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "GET") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }

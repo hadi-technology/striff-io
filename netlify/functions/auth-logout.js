@@ -1,4 +1,4 @@
-exports.handler = async () => {
+export const handler = async () => {
   return {
     statusCode: 302,
     headers: {

@@ -6,7 +6,7 @@ const PLAN_NAMES = {
   scale: "Scale",
 };
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   const token = parseCookie(event.headers?.cookie || "")["gh_token"];
   if (!token) {
     return { statusCode: 401, body: JSON.stringify({ error: "Not authenticated" }) };

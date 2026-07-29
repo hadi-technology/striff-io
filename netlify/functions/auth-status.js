@@ -1,4 +1,4 @@
-exports.handler = async (event) => {
+export const handler = async (event) => {
   const token = parseCookie(event.headers?.cookie || "")["gh_token"];
   if (!token) {
     return jsonResponse({ authenticated: false });

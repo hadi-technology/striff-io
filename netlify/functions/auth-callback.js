@@ -2,7 +2,7 @@ const CLIENT_ID = process.env.GITHUB_OAUTH_CLIENT_ID;
 const CLIENT_SECRET = process.env.GITHUB_OAUTH_CLIENT_SECRET;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   const code = event.queryStringParameters?.code;
   if (!code) {
     return { statusCode: 400, body: "Missing code parameter" };
