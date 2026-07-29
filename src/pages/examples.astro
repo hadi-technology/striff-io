@@ -280,6 +280,8 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
           return Number.isFinite(value) ? value : fallback;
         }
 
+        var baseScale = 1.6;
+
         function resetView() {
           var mobile = window.innerWidth < 768;
           if (mobile) {
@@ -290,17 +292,23 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
             var stageH = stage.clientHeight;
             var imgH = media.clientHeight || stageH;
             y = Math.min(0, (stageH - imgH) / 2);
+            baseScale = scale;
             paint();
             return;
           }
           scale = numberAttr("data-initial-scale", 1.6);
           x = numberAttr("data-initial-x", -120);
           y = numberAttr("data-initial-y", -80);
+          baseScale = scale;
           paint();
         }
 
         stage.addEventListener("wheel", function (event) {
-          var next = clamp(scale + (event.deltaY < 0 ? 0.48 : -0.48), 1.2, 4);
+          // Zoom bounds relative to each diagram's initial scale, so dense
+          // diagrams that start deeply zoomed can't shrink into a speck.
+          var minScale = Math.max(1, baseScale * 0.55);
+          var maxScale = Math.min(4, baseScale * 2.2);
+          var next = clamp(scale + (event.deltaY < 0 ? 0.48 : -0.48), minScale, maxScale);
           if (next === scale) {
             // Already at the zoom limit in this direction: let the page scroll.
             return;

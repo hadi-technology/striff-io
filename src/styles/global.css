@@ -5411,11 +5411,23 @@
   margin-top: 0.75rem;
 }
 
-/* Blog CTA slotted into the teams tab column, under its tab */
+/* Blog CTA rendered inside the active teams tab rectangle. The tab is a
+   <button> (can't contain an anchor), so the sibling link is pulled up into
+   padding the active tab reserves for it. */
 .teams-tab-link {
+  display: none;
+}
+
+.teams-tab.is-active:has(+ .teams-tab-link) {
+  padding-bottom: 3.6rem;
+}
+
+.teams-tab.is-active + .teams-tab-link {
+  display: inline-flex;
+  position: relative;
+  z-index: 2;
   align-self: flex-start;
-  margin-top: -0.15rem;
-  margin-left: 1.25rem;
+  margin: -3.55rem 0 0 1.25rem;
 }
 
 /* Zoomed real Striff diagram in a blog figure */

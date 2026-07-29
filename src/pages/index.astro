@@ -345,6 +345,10 @@ const plans = [
             <p class="section-subcopy mt-4">
               These are real public pull requests. Each one looked routine file-by-file. Striff read the structure underneath (<strong>a core engine reaching into a plugin, drivers rewired into the platform layer, query internals one step from a namespace cycle</strong>) and posted the findings before merge.
             </p>
+            <a class="blog-link-btn" href="/blog/architectural-findings-in-oss">
+              1 in 3 refactor PRs moves the architecture. See the evidence
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+            </a>
           </div>
           <ul class="example-proof-stack self-start md:self-auto">
             <li>Live public PRs: open any of them and verify</li>
@@ -485,12 +489,6 @@ const plans = [
           </button>
         </div>
 
-        <div class="mt-8 text-center" data-reveal>
-          <a class="blog-link-btn" href="/blog/architectural-findings-in-oss">
-            1 in 3 refactor PRs moves the architecture — see the evidence
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-          </a>
-        </div>
       </div>
     </section>
 
@@ -929,16 +927,23 @@ const plans = [
           return Number.isFinite(value) ? value : fallback;
         }
 
+        var baseScale = 1.6;
+
         function resetView() {
           var mobile = window.innerWidth < 768;
           scale = numberAttr(mobile ? "data-mobile-scale" : "data-initial-scale", mobile ? 1.2 : 1.6);
           x = numberAttr(mobile ? "data-mobile-x" : "data-initial-x", mobile ? -40 : -120);
           y = numberAttr(mobile ? "data-mobile-y" : "data-initial-y", mobile ? -30 : -80);
+          baseScale = scale;
           paint();
         }
 
         stage.addEventListener("wheel", function (event) {
-          var next = clamp(scale + (event.deltaY < 0 ? 0.48 : -0.48), 1.2, 4);
+          // Zoom bounds relative to each diagram's initial scale, so dense
+          // diagrams that start deeply zoomed can't shrink into a speck.
+          var minScale = Math.max(1.2, baseScale * 0.55);
+          var maxScale = Math.min(4, baseScale * 2.2);
+          var next = clamp(scale + (event.deltaY < 0 ? 0.48 : -0.48), minScale, maxScale);
           if (next === scale) {
             // Already at the zoom limit in this direction: let the page scroll.
             return;
