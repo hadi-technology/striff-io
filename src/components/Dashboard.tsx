@@ -232,6 +232,12 @@ function InstallationCard({
     if (installTab === "metrics" && !metrics && !metricsLoading) {
       fetchMetrics();
     }
+    // Refetch on opening Billing while unsubscribed: the cached status may predate a checkout
+    // that completed in another tab or before Stripe's webhook synced, and showing the plan
+    // picker to a subscribed customer invites a confusing already-subscribed rejection.
+    if (installTab === "billing" && !billingInfo?.hasSubscription) {
+      fetchBillingInfo();
+    }
   }, [installTab]);
 
   async function fetchMetrics() {
@@ -329,6 +335,10 @@ function InstallationCard({
       const data = await res.json();
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
+      } else if (res.status === 409) {
+        // Already subscribed: our cached billing state is stale. Refetch so the tab swaps the
+        // plan picker for the usage panel and Manage billing button instead of dead-ending.
+        await fetchBillingInfo();
       } else {
         onError(data.error || "Failed to create checkout session");
         setBillingState("idle");
