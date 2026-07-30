@@ -1,6 +1,10 @@
+import crypto from "node:crypto";
+
 const CLIENT_ID = process.env.GITHUB_OAUTH_CLIENT_ID;
 const CLIENT_SECRET = process.env.GITHUB_OAUTH_CLIENT_SECRET;
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
+const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
+const STRIFF_API_BASE = process.env.STRIFF_API_BASE_URL || "https://api.striff.io";
 
 export const handler = async (event) => {
   const code = event.queryStringParameters?.code;
@@ -56,41 +60,38 @@ export const handler = async (event) => {
     ? emails.find((e) => e.primary)?.email
     : null;
 
-  // Send welcome email (best-effort, don't block on failure). The striff_welcomed cookie keeps
-  // returning users from being re-welcomed on every sign-in — this function is stateless, so a
-  // long-lived cookie is the dedup we have. A new browser/device may re-send once; acceptable.
-  const alreadyWelcomed = parseCookie(event.headers?.cookie || "")["striff_welcomed"] === "1";
-  if (RESEND_API_KEY && primaryEmail && !alreadyWelcomed) {
+  // Report the primary email to the backend for each installation the user can access. The
+  // backend stores it (fill-only) and sends the canonical welcome email on first capture; app
+  // installation tokens can't read private emails, so this OAuth session is the one place a
+  // reliable address exists. Best-effort: sign-in never blocks on it.
+  if (primaryEmail && STRIFF_BILLING_AUTH_SECRET && STRIFF_SERVER_KEY) {
     try {
-      await fetch("https://api.resend.com/emails", {
-        method: "POST",
+      const instRes = await fetch("https://api.github.com/user/installations?per_page=100", {
         headers: {
-          Authorization: `Bearer ${RESEND_API_KEY}`,
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
         },
-        body: JSON.stringify({
-          from: "Striff <noreply@striff.io>",
-          to: [primaryEmail],
-          subject: "Welcome to Striff!",
-          html: `
-            <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px">
-              <h1 style="font-size:20px;font-weight:700;color:#0f172a">Welcome to Striff, ${user.login}!</h1>
-              <p style="color:#475569;font-size:15px;line-height:1.6">
-                Your GitHub account is now connected. Here's what you can do:
-              </p>
-              <ul style="color:#475569;font-size:15px;line-height:1.8">
-                <li><strong>Public repos</strong>: free, no setup needed. Use the browser extension to get started.</li>
-                <li><strong>Private repos</strong>: select a plan from your <a href="https://striff.io/dashboard" style="color:#2563eb">dashboard</a> to enable Striff on private pull requests.</li>
-              </ul>
-              <p style="color:#475569;font-size:15px;line-height:1.6">
-                Questions? Reply to this email or visit <a href="https://striff.io/contact" style="color:#2563eb">striff.io/contact</a>.
-              </p>
-            </div>
-          `,
-        }),
       });
+      const instData = await instRes.json();
+      await Promise.all(
+        (instData.installations || []).map((inst) => {
+          const hmacToken = crypto
+            .createHmac("sha256", STRIFF_BILLING_AUTH_SECRET)
+            .update(String(inst.id))
+            .digest("hex");
+          return fetch(
+            `${STRIFF_API_BASE}/api/v1/billing/account-email?installation_id=${inst.id}&token=${hmacToken}`,
+            {
+              method: "POST",
+              headers: { "X-Server-Key": STRIFF_SERVER_KEY, "Content-Type": "application/json" },
+              body: JSON.stringify({ email: primaryEmail }),
+            }
+          ).catch(() => {});
+        })
+      );
     } catch (e) {
-      console.error("Failed to send welcome email:", e.message);
+      console.error("Failed to report account email:", e.message);
     }
   }
 
@@ -113,7 +114,6 @@ export const handler = async (event) => {
       "Set-Cookie": [
         cookie,
         "gh_oauth_state=; Path=/; Max-Age=0; Secure; SameSite=Lax",
-        "striff_welcomed=1; Path=/; Max-Age=31536000; Secure; SameSite=Lax",
       ],
     },
   };
