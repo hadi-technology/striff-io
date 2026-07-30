@@ -4,6 +4,17 @@ const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
 const STRIFF_API_BASE = process.env.STRIFF_API_BASE_URL || "https://api.striff.io";
 
+// The API's error paths historically returned plain text; parsing unconditionally as JSON
+// surfaced "Unexpected token ..." to the user instead of the actual message.
+async function readBody(res) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text || `Upstream error (${res.status})` };
+  }
+}
+
 function generateToken(installationId) {
   return crypto
     .createHmac("sha256", STRIFF_BILLING_AUTH_SECRET)
@@ -37,7 +48,7 @@ async function callerOwnsInstallation(ghToken, installationId) {
   if (!res.ok) {
     return false;
   }
-  const data = await res.json();
+  const data = await readBody(res);
   return (data.installations || []).some((inst) => String(inst.id) === String(installationId));
 }
 
@@ -87,7 +98,7 @@ export const handler = async (event) => {
           `${STRIFF_API_BASE}/api/v1/billing/checkout?installation_id=${installationId}&plan=${plan}&token=${hmacToken}`,
           { method: "POST", headers: apiHeaders }
         );
-        const data = await res.json();
+        const data = await readBody(res);
         if (!res.ok) {
           return { statusCode: res.status, body: JSON.stringify(data) };
         }
@@ -103,7 +114,7 @@ export const handler = async (event) => {
           `${STRIFF_API_BASE}/api/v1/billing/portal?installation_id=${installationId}&token=${hmacToken}`,
           { method: "POST", headers: apiHeaders }
         );
-        const data = await res.json();
+        const data = await readBody(res);
         if (!res.ok) {
           return { statusCode: res.status, body: JSON.stringify(data) };
         }
@@ -119,7 +130,7 @@ export const handler = async (event) => {
           `${STRIFF_API_BASE}/api/v1/billing/status?installation_id=${installationId}&token=${hmacToken}`,
           { headers: apiHeaders }
         );
-        const data = await res.json();
+        const data = await readBody(res);
         if (!res.ok) {
           return { statusCode: res.status, body: JSON.stringify(data) };
         }

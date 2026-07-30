@@ -138,7 +138,7 @@ const plans = [
 
 <BaseLayout
   title="Striff - Architecture-aware pull request review"
-  description="Striff surfaces unusual dependencies, boundary drift, and structural blast radius in GitHub before merge."
+  description="Architecture review on every GitHub pull request. Catch structural damage before it merges, so your codebase stays easy to change and your team stays fast as it grows."
   canonical="https://striff.io/"
   ogImage="https://striff.io/og-image.png"
 >
@@ -149,7 +149,7 @@ const plans = [
         <div class="hero-copy relative z-10 mx-auto max-w-2xl space-y-6 text-center" data-reveal>
           <h1 class="mx-auto max-w-2xl text-balance">Code review for your <span class="font-bold text-blue-600">architecture</span>.</h1>
           <p class="section-subcopy mx-auto max-w-lg">
-            Striff reviews every pull request as a dependency graph, not a file diff, catching boundary violations, coupling growth, and package cycles before they merge.
+            Striff reviews every pull request as a dependency graph, not a file diff. Structural damage gets caught before it merges, so <strong>your codebase stays easy to change and your team stays fast as it grows</strong>.
           </p>
           <div class="flex flex-wrap justify-center gap-3 pt-1">
             <a class="btn-primary" href={extensionUrl} target="_blank" rel="noopener noreferrer">Get started free</a>
@@ -215,7 +215,7 @@ const plans = [
                         <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
                         <div>
                           <strong>Package structure violation</strong>
-                          <p><code>DefaultCommandHandlerManager</code> sits in <code>implementation</code>, but <code>REFACTORING.md</code> requires command handlers to live in <code>handler</code>. Doc-grounded: cites the file by name.</p>
+                          <p><code>DefaultCommandHandlerManager</code> sits in <code>implementation</code>, but <code>REFACTORING.md</code> requires command handlers to live in <code>handler</code>.</p>
                         </div>
                       </div>
                       <div class="ai-finding ai-finding-danger" data-tour-finding="1">
@@ -261,7 +261,7 @@ const plans = [
               <p class="text-xs font-bold uppercase tracking-[0.2em] text-rose-500">The problem</p>
               <h2 class="mt-3 text-balance">Your architecture is eroding one merge at a time.</h2>
               <p class="section-subcopy mt-4">
-                Your team merges more AI-written code every week than anyone can read. Left unchecked, each merge piles on coupling and cycles until the architecture is unmaintainable. Striff catches that structural drift on every pull request.
+                Your team merges more AI-written code every week than anyone can read. Left unchecked, each merge piles on coupling and cycles until <strong>every change takes twice as long and nobody wants to touch the core</strong>. Striff catches that structural drift on every pull request, while it's still a one-line fix.
               </p>
               <a class="blog-link-btn" href="/blog/architecture-matters-more-not-less">
                 Why AI makes this worse, not better
@@ -499,7 +499,7 @@ const plans = [
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Built for engineering leaders</p>
           <h2 class="mt-3 text-balance">Move fast without breaking your architecture.</h2>
           <p class="section-subcopy mt-4">
-            Architectural drift is the tax your team pays later: slower PRs, harder onboarding, rewrites nobody budgeted for. Striff checks every PR against the architecture you've already documented, rolls it into an org-wide health dashboard, and never slows a single review down to do it.
+            Architectural drift is the tax your team pays later: slower PRs, harder onboarding, rewrites nobody budgeted for. Striff checks every PR against the architecture you've already documented and rolls it into an org-wide health dashboard, <strong>so the codebase that ships fast today still ships fast in year three</strong>, without slowing a single review.
           </p>
         </div>
         <div class="teams-showcase mt-10" data-teams-showcase data-reveal>
@@ -586,7 +586,7 @@ const plans = [
                         <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
                         <div>
                           <strong>Package structure violation</strong>
-                          <p><code>DefaultCommandHandlerManager</code> sits in <code>implementation</code>, but <code>REFACTORING.md</code> requires command handlers to live in <code>handler</code>. Doc-grounded: cites the file by name.</p>
+                          <p><code>DefaultCommandHandlerManager</code> sits in <code>implementation</code>, but <code>REFACTORING.md</code> requires command handlers to live in <code>handler</code>.</p>
                         </div>
                       </div>
                     </div>
@@ -803,7 +803,7 @@ const plans = [
           </details>
           <details class="faq-item">
             <summary class="faq-q">What do I need to set up?</summary>
-            <p class="faq-a">Just install the GitHub App — it works on public and private repos alike and posts checks automatically on every PR, with no per-developer setup. Plans start at $29/month, based on how many repos actually get reviewed each month, not how many you connect. Separately, there's a free browser extension: a standalone tool that analyzes any public PR directly in GitHub's UI — a handy way to try Striff on open-source code without installing anything on the repo (bring a free GitHub token; it stays in your browser).</p>
+            <p class="faq-a">Just install the GitHub App: it works on public and private repos alike and posts checks automatically on every PR, with no per-developer setup. Plans start at $29/month, based on how many repos actually get reviewed each month, not how many you connect. Separately, there's a free browser extension: a standalone tool that analyzes any public PR directly in GitHub's UI, a handy way to try Striff on open-source code without installing anything on the repo (bring a free GitHub token; it stays in your browser).</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">Is my source code sent to a third party or stored?</summary>
@@ -838,9 +838,9 @@ const plans = [
           <div class="cta-veil" aria-hidden="true"></div>
 
           <div class="cta-content mx-auto max-w-3xl text-center">
-            <h2 class="text-balance text-white">Architecture review for every pull request.</h2>
+            <h2 class="text-balance text-white">Stay fast as your codebase grows.</h2>
             <p class="section-subcopy mx-auto mt-4 text-slate-300">
-              Striff works alongside your existing review tools. Install free for public repos and it runs on your next PR.
+              Architecture review on every pull request, alongside the tools you already use. Install free for public repos and it runs on your next PR.
             </p>
             <div class="mt-8 flex flex-wrap justify-center gap-4">
               <a class="btn-primary" href={extensionUrl} target="_blank" rel="noopener noreferrer">Install free in 30 seconds</a>

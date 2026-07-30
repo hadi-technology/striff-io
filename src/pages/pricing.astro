@@ -32,7 +32,10 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Architecture diagrams on any public PR</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Risky-dependency warnings</li>
           </ul>
-          <a href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen" class="btn-secondary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install</a>
+          <div class="mt-auto flex flex-col gap-2">
+            <a href={githubInstallUrl} class="btn-secondary inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install free</a>
+            <a href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen" class="inline-flex w-full justify-center text-xs font-medium text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Get the browser extension</a>
+          </div>
         </article>
 
         <!-- Starter -->
@@ -92,7 +95,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
         <h2 class="text-xl font-bold text-slate-950">How billing works</h2>
         <div class="mt-5 grid gap-6 text-sm leading-7 text-slate-600 md:grid-cols-3">
           <p><strong class="text-slate-900">1.</strong> Install the GitHub App and connect as many private repositories as you want. Connecting is always free.</p>
-          <p><strong class="text-slate-900">2.</strong> Your tier is based on how many of those repos actually <strong>generated a diagram</strong> during your billing period, not how many you've connected. It adjusts automatically in both directions — upgrades and downgrades apply from your <strong>next invoice</strong>, never mid-period, and a fully quiet month drops to $0.</p>
+          <p><strong class="text-slate-900">2.</strong> Your tier is based on how many of those repos actually <strong>generated a diagram</strong> during your billing period, not how many you've connected. It adjusts automatically in both directions: upgrades and downgrades apply from your <strong>next invoice</strong>, never mid-period, and a fully quiet month drops to $0.</p>
           <p><strong class="text-slate-900">3.</strong> Stripe handles billing: invoices, cancellation, and the customer portal are all self-serve.</p>
         </div>
       </div>

@@ -26,7 +26,7 @@ const apiBaseUrl = "https://api.striff.io";
           <h2 class="text-lg font-bold text-slate-900">Planning to use private repositories?</h2>
           <p class="mt-2 text-sm leading-6 text-slate-600">
             Select a plan below to enable Striff on private pull requests. Your tier then adjusts
-            automatically to how many repos are actually active each billing period — upgrades and
+            automatically to how many repos are actually active each billing period: upgrades and
             downgrades apply to your next invoice, and a quiet month drops to $0.
           </p>
         </div>
@@ -81,9 +81,9 @@ const apiBaseUrl = "https://api.striff.io";
       // An org member requested the install; nothing exists until an org owner approves,
       // so success chrome and plan buttons would all be wrong here.
       document.querySelector(".inline-flex").textContent = "Request sent";
-      document.querySelector("h1").textContent = "Installation requested — waiting for approval.";
+      document.querySelector("h1").textContent = "Installation requested. Waiting for owner approval.";
       document.querySelector("h1").nextElementSibling.textContent =
-        "An organization owner needs to approve the Striff installation. Once they do, come back to your dashboard — no further action needed from you right now.";
+        "An organization owner needs to approve the Striff installation. Once they do, come back to your dashboard. No further action is needed from you right now.";
       const prompt = document.getElementById("plan-prompt");
       if (prompt) prompt.remove();
       document.querySelectorAll(".plan-checkout-btn").forEach((btn) => {

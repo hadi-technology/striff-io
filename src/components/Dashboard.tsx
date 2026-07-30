@@ -159,7 +159,7 @@ export default function Dashboard() {
         <div className="dashboard-empty">
           <p className="text-slate-600">
             Striff isn't installed on any of your repositories yet. Install the GitHub App to start
-            analyzing pull requests — public repos are free.
+            analyzing pull requests. Public repos are free.
           </p>
           <a
             href="https://github.com/apps/striff-app/installations/new"
@@ -223,7 +223,7 @@ function InstallationCard({
   useEffect(() => {
     fetchBillingInfo();
     // Fetched on mount (not lazily on tab open) because the Repositories tab's "Active" badges
-    // derive from metrics.activeRepos — lazy loading meant they never appeared until the user
+    // derive from metrics.activeRepos; lazy loading meant they never appeared until the user
     // happened to visit the Metrics tab.
     fetchMetrics();
   }, []);
@@ -519,7 +519,7 @@ function InstallationCard({
                       {billingState === "loading" ? "Loading..." : "Manage billing"}
                     </button>
                     <p className="text-sm text-slate-500">
-                      Invoices, payment methods, and cancellation — handled in the Stripe portal.
+                      Invoices, payment methods, and cancellation are handled in the Stripe portal.
                     </p>
                   </div>
                 </>
@@ -658,7 +658,7 @@ function FaqSection() {
     },
     {
       q: "Which languages does Striff support?",
-      a: "Striff currently supports <b>Java, TypeScript, Python, and C#</b>, with Go support coming soon. We parse source code into a full structural model — not regex or text matching — to build architectural dependency graphs and detect structural changes between pull request versions.",
+      a: "Striff currently supports <b>Java, TypeScript, Python, and C#</b>, with Go support coming soon. We parse source code into a full structural model, not regex or text matching, to build architectural dependency graphs and detect structural changes between pull request versions.",
     },
     {
       q: "What does Striff actually do on my pull requests?",
