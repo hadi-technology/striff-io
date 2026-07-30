@@ -20,6 +20,27 @@ function parseCookie(header) {
   return cookies;
 }
 
+// Authorization, not just authentication: the striff-api billing endpoints trust any request
+// carrying a valid HMAC token, so the ownership check must happen here before minting one.
+// Without it, any signed-in user could read another org's billing status or open its Stripe
+// portal (and cancel its subscription) by passing an arbitrary installation_id. Same check as
+// metrics-proxy.js — kept as a local copy because every file in this directory deploys as its
+// own public endpoint, which makes sharing a module here more fragile than the duplication.
+async function callerOwnsInstallation(ghToken, installationId) {
+  const res = await fetch("https://api.github.com/user/installations?per_page=100", {
+    headers: {
+      Authorization: `Bearer ${ghToken}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+  if (!res.ok) {
+    return false;
+  }
+  const data = await res.json();
+  return (data.installations || []).some((inst) => String(inst.id) === String(installationId));
+}
+
 export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -48,10 +69,15 @@ export const handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: "Server not configured: SERVER_KEY missing" }) };
   }
 
-  const hmacToken = generateToken(installationId);
-  const apiHeaders = { "X-Server-Key": STRIFF_SERVER_KEY || "" };
-
   try {
+    const owns = await callerOwnsInstallation(token, installationId);
+    if (!owns) {
+      return { statusCode: 403, body: JSON.stringify({ error: "Not authorized for this installation" }) };
+    }
+
+    const hmacToken = generateToken(installationId);
+    const apiHeaders = { "X-Server-Key": STRIFF_SERVER_KEY || "" };
+
     switch (action) {
       case "checkout": {
         if (!plan) {

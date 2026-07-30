@@ -63,15 +63,26 @@ export default function AuthButton() {
       ? import.meta.env.PUBLIC_GITHUB_OAUTH_CLIENT_ID
       : "";
 
-  const oauthUrl = clientId
-    ? `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=read:user,user:email&redirect_uri=${encodeURIComponent(
-        `${typeof window !== "undefined" ? window.location.origin : "https://striff.io"}/.netlify/functions/auth-callback`
-      )}`
-    : "#";
+  // Double-submit state: auth-callback compares this cookie against the state GitHub echoes
+  // back, so the URL is built on click rather than at render.
+  function startOAuth(e: { preventDefault: () => void }) {
+    e.preventDefault();
+    if (!clientId) return;
+    const state = crypto.randomUUID();
+    document.cookie = `gh_oauth_state=${state}; path=/; max-age=600; secure; samesite=lax`;
+    const params = new URLSearchParams({
+      client_id: clientId,
+      scope: "read:user,user:email",
+      redirect_uri: `${window.location.origin}/.netlify/functions/auth-callback`,
+      state,
+    });
+    window.location.href = `https://github.com/login/oauth/authorize?${params}`;
+  }
 
   return (
     <a
-      href={oauthUrl}
+      href="#"
+      onClick={startOAuth}
       className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl border border-white/25 bg-white/10 px-4 text-sm font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/20"
       style={{ minHeight: "2.75rem", lineHeight: 1 }}
     >

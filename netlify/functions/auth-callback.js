@@ -8,6 +8,14 @@ export const handler = async (event) => {
     return { statusCode: 400, body: "Missing code parameter" };
   }
 
+  // CSRF check: the state GitHub echoes back must match the cookie set when the sign-in
+  // flow started (see getOAuthUrl / AuthButton).
+  const state = event.queryStringParameters?.state;
+  const cookieState = parseCookie(event.headers?.cookie || "")["gh_oauth_state"];
+  if (!state || !cookieState || state !== cookieState) {
+    return { statusCode: 400, body: "Invalid OAuth state — please start sign-in again from striff.io" };
+  }
+
   // Exchange code for access token
   const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
@@ -48,8 +56,11 @@ export const handler = async (event) => {
     ? emails.find((e) => e.primary)?.email
     : null;
 
-  // Send welcome email (best-effort, don't block on failure)
-  if (RESEND_API_KEY && primaryEmail) {
+  // Send welcome email (best-effort, don't block on failure). The striff_welcomed cookie keeps
+  // returning users from being re-welcomed on every sign-in — this function is stateless, so a
+  // long-lived cookie is the dedup we have. A new browser/device may re-send once; acceptable.
+  const alreadyWelcomed = parseCookie(event.headers?.cookie || "")["striff_welcomed"] === "1";
+  if (RESEND_API_KEY && primaryEmail && !alreadyWelcomed) {
     try {
       await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -97,7 +108,22 @@ export const handler = async (event) => {
     statusCode: 302,
     headers: {
       Location: "/dashboard",
-      "Set-Cookie": cookie,
+    },
+    multiValueHeaders: {
+      "Set-Cookie": [
+        cookie,
+        "gh_oauth_state=; Path=/; Max-Age=0; Secure; SameSite=Lax",
+        "striff_welcomed=1; Path=/; Max-Age=31536000; Secure; SameSite=Lax",
+      ],
     },
   };
 };
+
+function parseCookie(header) {
+  const cookies = {};
+  for (const pair of header.split(";")) {
+    const [k, ...v] = pair.split("=");
+    cookies[k.trim()] = (v.join("=") || "").trim();
+  }
+  return cookies;
+}

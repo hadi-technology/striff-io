@@ -5,7 +5,8 @@ export const handler = async (event) => {
   }
 
   const path = event.queryStringParameters?.path;
-  if (!path || !path.startsWith("/user/")) {
+  // ".." would let a caller escape the /user/ prefix after URL normalization
+  if (!path || !path.startsWith("/user/") || path.includes("..")) {
     return { statusCode: 400, body: JSON.stringify({ error: "Invalid path" }) };
   }
 

@@ -71,22 +71,12 @@ export default function Dashboard() {
       }
       setUser(status.user);
 
-      const installationsRes = await fetch(
-        "/.netlify/functions/github-proxy?path=" +
-          encodeURIComponent("/user/installations?per_page=100")
-      );
-      const installationsData = await installationsRes.json();
-
-      const installs = installationsData.installations || [];
+      const installs = await fetchAllPages("/user/installations", "installations");
       const withRepos = await Promise.all(
         installs.map(async (inst: Installation) => {
           try {
-            const reposRes = await fetch(
-              "/.netlify/functions/github-proxy?path=" +
-                encodeURIComponent(`/user/installations/${inst.id}/repositories?per_page=100`)
-            );
-            const reposData = await reposRes.json();
-            return { ...inst, repositories: reposData.repositories || [] };
+            const repositories = await fetchAllPages(`/user/installations/${inst.id}/repositories`, "repositories");
+            return { ...inst, repositories };
           } catch {
             return { ...inst, repositories: [] };
           }
@@ -146,25 +136,38 @@ export default function Dashboard() {
             <p className="text-sm text-slate-500">@{user?.login}</p>
           </div>
         </div>
-        <button
-          onClick={signOut}
-          className="dashboard-button dashboard-button-secondary"
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href="https://github.com/apps/striff-app/installations/new"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="dashboard-button dashboard-button-secondary"
+          >
+            Add installation
+          </a>
+          <button
+            onClick={signOut}
+            className="dashboard-button dashboard-button-secondary"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
 
       {/* Installations */}
       {installations.length === 0 ? (
         <div className="dashboard-empty">
-          <p className="text-slate-600">No Striff installations found.</p>
+          <p className="text-slate-600">
+            Striff isn't installed on any of your repositories yet. Install the GitHub App to start
+            analyzing pull requests — public repos are free.
+          </p>
           <a
             href="https://github.com/apps/striff-app/installations/new"
-            className="mt-4 inline-block text-sm font-medium text-blue-600 hover:underline"
+            className="dashboard-button dashboard-button-primary mt-4 inline-block"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Install Striff on a repository
+            Install Striff on GitHub
           </a>
         </div>
       ) : (
@@ -208,16 +211,21 @@ function InstallationCard({
   const [repoTab, setRepoTab] = useState<"private" | "public">(
     privateRepos.length > 0 ? "private" : "public"
   );
-  const [billingState, setBillingState] = useState<"idle" | "loading" | "subscribe">("idle");
+  const [billingState, setBillingState] = useState<"idle" | "loading">("idle");
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
-  const [installTab, setInstallTab] = useState<"repos" | "metrics">("repos");
+  const [billingError, setBillingError] = useState(false);
+  const [installTab, setInstallTab] = useState<"repos" | "metrics" | "billing">("repos");
   const [metrics, setMetrics] = useState<OrgMetricsData | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [metricsError, setMetricsError] = useState("");
 
   useEffect(() => {
     fetchBillingInfo();
+    // Fetched on mount (not lazily on tab open) because the Repositories tab's "Active" badges
+    // derive from metrics.activeRepos — lazy loading meant they never appeared until the user
+    // happened to visit the Metrics tab.
+    fetchMetrics();
   }, []);
 
   useEffect(() => {
@@ -247,6 +255,7 @@ function InstallationCard({
   }
 
   async function fetchBillingInfo() {
+    setBillingError(false);
     try {
       const res = await fetch("/.netlify/functions/billing-proxy", {
         method: "POST",
@@ -257,14 +266,21 @@ function InstallationCard({
         }),
       });
       const data = await res.json();
+      // An error payload must not land in billingInfo: hasSubscription would read as false and
+      // show a subscribed customer the plan picker during an API hiccup.
+      if (!res.ok) {
+        setBillingError(true);
+        return;
+      }
       setBillingInfo(data);
     } catch {
-      // Silently fail
+      setBillingError(true);
     }
   }
 
   useEffect(() => {
     if (autoPlan && billingState === "idle" && !checkoutLoading) {
+      setInstallTab("billing");
       handleCheckout(autoPlan);
       onAutoPlanConsumed();
     }
@@ -289,8 +305,8 @@ function InstallationCard({
       setBillingInfo(data);
       if (data.portalUrl) {
         window.location.href = data.portalUrl;
-      } else if (!data.hasSubscription) {
-        setBillingState("subscribe");
+      } else {
+        setBillingState("idle");
       }
     } catch {
       onError("Failed to check billing status");
@@ -345,37 +361,15 @@ function InstallationCard({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {billingInfo?.hasSubscription && billingInfo.planName && (
-            <span className="dashboard-plan-badge">
-              {billingInfo.planName}
-            </span>
-          )}
-          <a
-            href={manageReposUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="dashboard-button dashboard-button-secondary"
-          >
-            Manage repos
-          </a>
-          <button
-            onClick={handleBilling}
-            disabled={billingState !== "idle"}
-            className="dashboard-button dashboard-button-primary disabled:opacity-50"
-          >
-            {billingState === "loading" ? "Loading..." : "Manage billing"}
-          </button>
-        </div>
+        {billingInfo?.hasSubscription && billingInfo.planName && (
+          <span className="dashboard-plan-badge">
+            {billingInfo.planName}
+          </span>
+        )}
       </div>
 
-      {/* Usage this billing period — the basis for what's actually billed */}
-      {billingInfo?.hasSubscription && (
-        <UsagePanel installation={installation} billingInfo={billingInfo} privateRepoCount={privateRepos.length} />
-      )}
-
       {/* No-plan prompt for private repos */}
-      {hasNoPlan && billingState !== "subscribe" && (
+      {hasNoPlan && installTab !== "billing" && (
         <div className="dashboard-plan-notice">
           <div className="dashboard-plan-notice-body">
             <p className="dashboard-plan-notice-title">
@@ -387,7 +381,7 @@ function InstallationCard({
             </p>
           </div>
           <button
-            onClick={() => setBillingState("subscribe")}
+            onClick={() => setInstallTab("billing")}
             className="dashboard-button dashboard-button-primary shrink-0"
           >
             View plans
@@ -395,38 +389,8 @@ function InstallationCard({
         </div>
       )}
 
-      {/* Plan picker */}
-      {billingState === "subscribe" && (
-        <div className="dashboard-plan-picker">
-          <h3 className="text-sm font-bold text-slate-900">Choose a plan</h3>
-          <p className="mt-1 text-xs text-slate-500">
-            Private repo analysis requires a paid plan. Public repos are always free.
-          </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {PLANS.map((plan) => (
-              <div key={plan.id} className="dashboard-plan-option">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{plan.name}</p>
-                <p className="mt-1 text-lg font-black text-slate-950">{plan.price}</p>
-                <p className="text-xs text-slate-500">{plan.repos}</p>
-                <button
-                  onClick={() => handleCheckout(plan.id)}
-                  disabled={checkoutLoading === plan.id}
-                  className="mt-3 w-full rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
-                >
-                  {checkoutLoading === plan.id ? "Loading..." : "Subscribe"}
-                </button>
-              </div>
-            ))}
-          </div>
-          <button onClick={() => setBillingState("idle")} className="mt-3 text-xs text-slate-400 hover:text-slate-600">
-            Cancel
-          </button>
-        </div>
-      )}
-
-      {/* Repositories / Metrics tabs */}
-      {repos.length > 0 && (
-        <div className="mt-5">
+      {/* Repositories / Metrics / Billing tabs */}
+      <div className="mt-5">
           <div className="dashboard-tabs">
             <button
               onClick={() => setInstallTab("repos")}
@@ -440,31 +404,47 @@ function InstallationCard({
             >
               Metrics
             </button>
+            <button
+              onClick={() => setInstallTab("billing")}
+              className={`dashboard-tab ${installTab === "billing" ? "dashboard-tab-active" : ""}`}
+            >
+              Billing
+            </button>
           </div>
 
           {installTab === "repos" ? (
             <div className="dashboard-metric-fade-in">
-              <div className="dashboard-tabs mt-3">
-                <button
-                  onClick={() => setRepoTab("private")}
-                  className={`dashboard-tab ${
-                    repoTab === "private"
-                      ? "dashboard-tab-active"
-                      : ""
-                  }`}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="dashboard-tabs">
+                  <button
+                    onClick={() => setRepoTab("private")}
+                    className={`dashboard-tab ${
+                      repoTab === "private"
+                        ? "dashboard-tab-active"
+                        : ""
+                    }`}
+                  >
+                    Private ({privateRepos.length})
+                  </button>
+                  <button
+                    onClick={() => setRepoTab("public")}
+                    className={`dashboard-tab ${
+                      repoTab === "public"
+                        ? "dashboard-tab-active"
+                        : ""
+                    }`}
+                  >
+                    Public ({publicRepos.length})
+                  </button>
+                </div>
+                <a
+                  href={manageReposUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="dashboard-button dashboard-button-secondary"
                 >
-                  Private ({privateRepos.length})
-                </button>
-                <button
-                  onClick={() => setRepoTab("public")}
-                  className={`dashboard-tab ${
-                    repoTab === "public"
-                      ? "dashboard-tab-active"
-                      : ""
-                  }`}
-                >
-                  Public ({publicRepos.length})
-                </button>
+                  Manage repos
+                </a>
               </div>
 
               {/* Repo grid */}
@@ -497,7 +477,7 @@ function InstallationCard({
                   })}
                 </div>
               ) : (
-                <p className="mt-3 px-3 py-6 text-center text-sm text-slate-400">
+                <p className="mt-3 px-3 py-6 text-center text-sm text-slate-500">
                   No {repoTab} repositories enabled
                   {repoTab === "private" && (
                     <>
@@ -510,13 +490,66 @@ function InstallationCard({
                 </p>
               )}
             </div>
-          ) : (
+          ) : installTab === "metrics" ? (
             <div className="mt-3 dashboard-metric-fade-in">
               <MetricsTab data={metrics} loading={metricsLoading} error={metricsError} />
             </div>
+          ) : (
+            <div className="mt-3 dashboard-metric-fade-in">
+              {!billingInfo ? (
+                billingError ? (
+                  <p className="mt-3 px-3 py-6 text-center text-sm text-slate-500">
+                    Couldn't load billing info.{" "}
+                    <button onClick={fetchBillingInfo} className="font-semibold text-blue-600 hover:underline">
+                      Retry
+                    </button>
+                  </p>
+                ) : (
+                  <p className="mt-3 px-3 py-6 text-center text-sm text-slate-500">Loading billing…</p>
+                )
+              ) : billingInfo.hasSubscription ? (
+                <>
+                  <UsagePanel installation={installation} billingInfo={billingInfo} privateRepoCount={privateRepos.length} />
+                  <div className="mt-4 flex items-center gap-3">
+                    <button
+                      onClick={handleBilling}
+                      disabled={billingState !== "idle"}
+                      className="dashboard-button dashboard-button-primary disabled:opacity-50"
+                    >
+                      {billingState === "loading" ? "Loading..." : "Manage billing"}
+                    </button>
+                    <p className="text-sm text-slate-500">
+                      Invoices, payment methods, and cancellation — handled in the Stripe portal.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="dashboard-plan-picker mt-3">
+                  <h3 className="text-sm font-bold text-slate-900">Choose a plan</h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Private repo analysis requires a paid plan. Public repos are always free.
+                  </p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    {PLANS.map((plan) => (
+                      <div key={plan.id} className="dashboard-plan-option">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{plan.name}</p>
+                        <p className="mt-1 text-lg font-black text-slate-950">{plan.price}</p>
+                        <p className="text-xs text-slate-500">{plan.repos}</p>
+                        <button
+                          onClick={() => handleCheckout(plan.id)}
+                          disabled={checkoutLoading === plan.id}
+                          className="mt-3 w-full rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                        >
+                          {checkoutLoading === plan.id ? "Loading..." : "Subscribe"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -571,11 +604,9 @@ function UsagePanel({
           <p className="dashboard-usage-stat-value">{capitalizeTier(billingInfo.billedTier)}</p>
         </div>
       </div>
-      <p className="mt-3 text-xs text-slate-500">
-        You're billed for the {activeCount} repo{activeCount === 1 ? "" : "s"} that generated a
-        diagram this period, not the {privateRepoCount} you've enabled. Connected repos that
-        haven't produced a diagram yet still run analysis; they just don't count toward your bill.
-        {cap ? ` ${activeCount} of ${cap} active before ${capitalizeTier(nextTier || "")}.` : ""}
+      <p className="mt-3 text-sm text-slate-500">
+        Only repos that generate a diagram count toward your bill.
+        {cap ? ` ${activeCount} of ${cap} before ${capitalizeTier(nextTier || "")}.` : ""}
       </p>
       {activeNames.length > 0 && (
         <p className="mt-2 text-xs text-slate-500">
@@ -607,19 +638,19 @@ function FaqSection() {
     },
     {
       q: "Will I be charged automatically if I add more repos?",
-      a: "<b>Not just for connecting them.</b> Adding private repos to your Striff installation doesn't change your bill by itself \u2014 only repos that go on to generate a diagram count. Your tier for the period is settled once, at your billing period's boundary, based on however many repos were active \u2014 there's no separate charge mid-period just for crossing a tier threshold.",
+      a: "<b>Not just for connecting them.</b> Adding private repos to your Striff installation doesn't change your bill by itself \u2014 only repos that go on to generate a diagram count. Your tier then adjusts <b>automatically in both directions</b>: if more repos were active than your tier covers you're upgraded, and if fewer were active you're downgraded \u2014 a fully quiet month drops to <b>$0</b>. Changes are never charged mid-period; the adjusted tier applies from your next invoice.",
     },
     {
       q: "How do I enable Striff on private repositories?",
-      a: "Click <b>\"Manage repos\"</b> on the installation card above to open GitHub\u2019s App settings. There you can grant Striff access to specific private repositories. Then choose a plan and subscribe to enable analysis on private pull requests.",
+      a: "Open the <b>Repositories</b> tab on your installation card and click <b>\"Manage repos\"</b> to open GitHub\u2019s App settings, where you can grant Striff access to specific private repositories. Then pick a plan in the <b>Billing</b> tab to enable analysis on private pull requests.",
     },
     {
       q: "When will I be charged?",
-      a: "You are charged <b>on the day you subscribe</b>, then on the same date each month. You can see your next billing date and manage payment methods in the Stripe Customer Portal (click <b>\"Manage billing\"</b> above).",
+      a: "You are charged <b>on the day you subscribe</b>, then on the same date each month. You can see your next billing date and manage payment methods in the Stripe Customer Portal (the <b>Billing</b> tab on your installation card).",
     },
     {
       q: "How do I stop being charged?",
-      a: "Click <b>\"Manage billing\"</b> to open the Stripe portal and cancel your subscription. <b>You keep access until the end of your current billing period</b> \u2014 there is no immediate cutoff. You can also remove all private repos from the GitHub App settings to avoid any future need for a paid plan.",
+      a: "Open the <b>Billing</b> tab on your installation card and click <b>\"Manage billing\"</b> to open the Stripe portal and cancel your subscription. <b>You keep access until the end of your current billing period</b> \u2014 there is no immediate cutoff. You can also remove all private repos from the GitHub App settings to avoid any future need for a paid plan.",
     },
     {
       q: "What happens if I cancel my subscription?",
@@ -675,11 +706,33 @@ function FaqSection() {
 
 /* ─── Utility ───────────────────────────────────────────────────── */
 
+// GitHub caps pages at 100 items; a single fetch silently truncated orgs with >100 repos or
+// users with >100 installations. Follows pages until a short page; capped at 5 (500 items) to
+// bound dashboard load time.
+async function fetchAllPages(path: string, listKey: string): Promise<any[]> {
+  const all: any[] = [];
+  for (let page = 1; page <= 5; page++) {
+    const res = await fetch(
+      "/.netlify/functions/github-proxy?path=" + encodeURIComponent(`${path}?per_page=100&page=${page}`)
+    );
+    const data = await res.json();
+    const items = data[listKey] || [];
+    all.push(...items);
+    if (items.length < 100) break;
+  }
+  return all;
+}
+
 function getOAuthUrl() {
+  // Double-submit state: auth-callback compares this cookie against the state GitHub echoes
+  // back, so a forged callback URL can't log the visitor into an attacker's account.
+  const state = crypto.randomUUID();
+  document.cookie = `gh_oauth_state=${state}; path=/; max-age=600; secure; samesite=lax`;
   const params = new URLSearchParams({
     client_id: OAUTH_CLIENT_ID,
     scope: "read:user,user:email",
     redirect_uri: `${window.location.origin}/.netlify/functions/auth-callback`,
+    state,
   });
   return `https://github.com/login/oauth/authorize?${params}`;
 }

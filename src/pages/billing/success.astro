@@ -13,31 +13,19 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           Checkout complete
         </p>
         <h1 class="mt-5 text-4xl font-black tracking-tight text-slate-950 md:text-5xl">
-          Your Striff subscription is active.
+          Payment complete — welcome aboard.
         </h1>
         <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-          Stripe has finished the purchase flow. The backend will sync the subscription state from webhooks, and your GitHub App installation can now use paid entitlements for private repositories.
+          Your subscription is being activated — this usually takes a few seconds while Stripe
+          confirms the payment. Private-repo analysis switches on automatically; your dashboard's
+          Billing tab will show the plan once activation completes.
         </p>
-        <div class="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm leading-7 text-slate-600">
-          <p class="font-semibold text-slate-900">Checkout session</p>
-          <p id="session-id" class="mt-2 break-all">Waiting for session details...</p>
-        </div>
         <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-          <a href="/" class="btn-primary inline-flex justify-center">Back to homepage</a>
-          <a href="https://github.com/settings/installations" class="btn-secondary inline-flex justify-center" target="_blank" rel="noopener noreferrer">Manage GitHub installation</a>
+          <a href="/dashboard" class="btn-primary inline-flex justify-center">Go to your dashboard</a>
+          <a href="/" class="btn-secondary inline-flex justify-center">Back to homepage</a>
         </div>
       </div>
     </section>
   </main>
 
-  <script is:inline>
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get("session_id");
-    const target = document.getElementById("session-id");
-    if (target) {
-      target.textContent = sessionId
-        ? `session_id=${sessionId}`
-        : "No session_id was provided in the return URL.";
-    }
-  </script>
 </BaseLayout>

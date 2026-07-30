@@ -5,7 +5,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
 ---
 <BaseLayout
   title="Pricing | Striff"
-  description="Free for public repositories. Private-repo teams pay based on active repos (repos that actually had a PR reviewed), starting at $29/mo for up to 5."
+  description="Free for public repositories. Private-repo teams pay based on active repos (repos that actually generated a diagram), starting at $29/mo for up to 5."
   canonical="https://striff.io/pricing"
 >
   <main class="pricing-page text-slate-900">
@@ -16,7 +16,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
           Free for public repos. For private repos, pay only for what you use.
         </h1>
         <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600" data-reveal>
-          Start with public pull requests for free. Add the GitHub App when your team wants automated architecture review on private repositories. Connect as many private repos as you want. Your tier is based on how many were <strong>active</strong> (had a PR reviewed) during your billing period, not how many you've connected.
+          Start with public pull requests for free. Add the GitHub App when your team wants automated architecture review on private repositories. Connect as many private repos as you want. Your tier is based on how many were <strong>active</strong> (generated a diagram) during your billing period, not how many you've connected.
         </p>
       </div>
 
@@ -28,6 +28,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
           <p class="mt-1 text-sm text-slate-500">Public repositories</p>
           <ul class="mt-5 space-y-2 text-sm text-slate-600">
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Chrome extension</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Automated GitHub App checks on public PRs</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Architecture diagrams on any public PR</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Risky-dependency warnings</li>
           </ul>
@@ -57,8 +58,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
           <p class="mt-1 text-sm text-slate-500">Up to 15 active repos</p>
           <ul class="mt-5 space-y-2 text-sm text-slate-600">
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Everything in Starter</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Shared team workflow</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Billing management</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Lower cost per active repo</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Email support</li>
           </ul>
           <a href={githubInstallUrl} class="btn-primary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Get started</a>
@@ -71,8 +71,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
           <p class="mt-1 text-sm text-slate-500">Up to 50 active repos</p>
           <ul class="mt-5 space-y-2 text-sm text-slate-600">
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Everything in Team</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Higher analysis volume</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Priority processing</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Lowest cost per active repo</li>
           </ul>
           <a href={githubInstallUrl} class="btn-secondary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Get started</a>
         </article>
@@ -93,7 +92,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
         <h2 class="text-xl font-bold text-slate-950">How billing works</h2>
         <div class="mt-5 grid gap-6 text-sm leading-7 text-slate-600 md:grid-cols-3">
           <p><strong class="text-slate-900">1.</strong> Install the GitHub App and connect as many private repositories as you want. Connecting is always free.</p>
-          <p><strong class="text-slate-900">2.</strong> Your tier is based on how many of those repos actually <strong>had a PR reviewed</strong> during your billing period, not how many you've connected. If your active count crosses a tier boundary, you get a 24-hour heads-up before the upgrade takes effect.</p>
+          <p><strong class="text-slate-900">2.</strong> Your tier is based on how many of those repos actually <strong>generated a diagram</strong> during your billing period, not how many you've connected. It adjusts automatically in both directions — upgrades and downgrades apply from your <strong>next invoice</strong>, never mid-period, and a fully quiet month drops to $0.</p>
           <p><strong class="text-slate-900">3.</strong> Stripe handles billing: invoices, cancellation, and the customer portal are all self-serve.</p>
         </div>
       </div>

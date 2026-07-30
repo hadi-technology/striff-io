@@ -3100,7 +3100,7 @@
 
   .dashboard-plan-notice-sub {
     margin-top: 0.125rem;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     color: #92720a;
   }
 
@@ -3311,7 +3311,7 @@
     background: #1f2328;
     padding: 0.5rem 0.65rem;
     color: #f6f8fa;
-    font-size: 0.7rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     line-height: 1.4;
     letter-spacing: normal;
@@ -3343,7 +3343,7 @@
 
   .dashboard-metric-caption {
     margin-top: 0.2rem;
-    font-size: 0.78rem;
+    font-size: 0.875rem;
     color: #57606a;
   }
 
