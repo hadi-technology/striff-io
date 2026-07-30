@@ -326,8 +326,8 @@ function InstallationCard({
   }
 
   const manageReposUrl = installation.account?.type === "Organization"
-    ? `https://github.com/organizations/${installation.account.login}/settings/installations`
-    : "https://github.com/settings/installations";
+    ? `https://github.com/organizations/${installation.account.login}/settings/installations/${installation.id}`
+    : `https://github.com/settings/installations/${installation.id}`;
 
   const hasNoPlan = billingInfo && !billingInfo.hasSubscription && privateRepos.length > 0;
   const displayedRepos = repoTab === "private" ? privateRepos : publicRepos;
@@ -375,23 +375,23 @@ function InstallationCard({
       )}
 
       {/* No-plan prompt for private repos */}
-      {hasNoPlan && (
+      {hasNoPlan && billingState !== "subscribe" && (
         <div className="dashboard-plan-notice">
-          <p className="font-medium text-red-800">
-            {privateRepos.length} private repo{privateRepos.length > 1 ? "s" : ""} enabled. Choose a plan to enable analysis.
-          </p>
-          <p className="mt-1 text-red-700/80 text-xs">
-            Striff checks cannot run until a subscription is selected.
-          </p>
-          <p className="mt-1 text-slate-500">
-            Public repos are always free.{" "}
-            <button
-              onClick={() => setBillingState("subscribe")}
-              className="font-semibold text-slate-900 underline underline-offset-2 hover:text-slate-700"
-            >
-              View plans
-            </button>
-          </p>
+          <div className="dashboard-plan-notice-body">
+            <p className="dashboard-plan-notice-title">
+              Activate {privateRepos.length} private repo{privateRepos.length > 1 ? "s" : ""}
+            </p>
+            <p className="dashboard-plan-notice-sub">
+              Private pull requests need a paid plan before Striff can analyze them. Public repos are
+              always free.
+            </p>
+          </div>
+          <button
+            onClick={() => setBillingState("subscribe")}
+            className="dashboard-button dashboard-button-primary shrink-0"
+          >
+            View plans
+          </button>
         </div>
       )}
 
@@ -595,7 +595,7 @@ function FaqSection() {
   const items: { q: string; a: string }[] = [
     {
       q: "How does Striff pricing work?",
-      a: "<b>Public repositories are completely free</b> \u2014 no limits, no credit card required. Private repositories need a paid plan (Starter, Team, or Scale). Each tier has a flat monthly price, but the tier you land on is based on <b>how many repos actually generated a diagram during your billing period</b> \u2014 not how many you've connected. Connect as many private repos as you want; you're only billed for the ones that produce a diagram.",
+      a: "<b>Public repositories are completely free</b> \u2014 no limits, no credit card required. Private repositories need a paid plan (Starter, Team, or Scale). Each tier has a flat monthly price, but the tier you land on is based on <b>how many repos actually generated a diagram during your billing period</b> \u2014 not how many you've connected. Connect as many private repos as you want; you're only billed for the ones that produce a diagram. Full tier details are on the <a href=\"/pricing\" class=\"font-semibold text-blue-600 hover:underline\">pricing page</a>.",
     },
     {
       q: "What makes a repo billable?",
@@ -627,15 +627,15 @@ function FaqSection() {
     },
     {
       q: "Which languages does Striff support?",
-      a: "Striff currently supports <b>Java, TypeScript, Python, and C#</b>. We parse source code to build architectural dependency graphs and detect structural changes between pull request versions.",
+      a: "Striff currently supports <b>Java, TypeScript, Python, and C#</b>, with Go support coming soon. We parse source code into a full structural model — not regex or text matching — to build architectural dependency graphs and detect structural changes between pull request versions.",
     },
     {
       q: "What does Striff actually do on my pull requests?",
-      a: "For each PR, Striff analyzes the <b>structural impact</b> of code changes \u2014 new dependencies, broken encapsulation, package cycles, hub formation, and more. Results appear as a <b>GitHub check-run</b> with a summary. Install the <a href=\"https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen\" target=\"_blank\" rel=\"noopener noreferrer\" className=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> to explore interactive architecture diagrams directly on GitHub.",
+      a: "For each PR, Striff analyzes the <b>structural impact</b> of code changes \u2014 new dependencies, broken encapsulation, package cycles, hub formation, and more. Results appear as a <b>GitHub check-run</b> with a summary. Browse <a href=\"/examples\" class=\"font-semibold text-blue-600 hover:underline\">real findings on open-source PRs</a>, or read about <a href=\"/blog/architectural-findings-in-oss\" class=\"font-semibold text-blue-600 hover:underline\">what Striff caught in the wild</a>. Install the <a href=\"https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> to explore interactive architecture diagrams directly on GitHub.",
     },
     {
       q: "What is the browser extension?",
-      a: "The <a href=\"https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen\" target=\"_blank\" rel=\"noopener noreferrer\" className=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> lets you view <b>interactive architectural diagrams</b> directly on GitHub. You can switch between code and architecture views, focus on specific components, and <b>post subdiagrams as PR comments</b> for your team.",
+      a: "The <a href=\"https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> lets you view <b>interactive architectural diagrams</b> directly on GitHub. You can switch between code and architecture views, focus on specific components, and <b>post subdiagrams as PR comments</b> for your team. There's a full walkthrough video on the <a href=\"/\" class=\"font-semibold text-blue-600 hover:underline\">homepage</a>.",
     },
   ];
 

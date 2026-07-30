@@ -96,6 +96,14 @@ function repoGitHubUrl(r: { repoOwner: string; repoName: string }): string {
   return `https://github.com/${r.repoOwner}/${r.repoName}`;
 }
 
+// The backend stores the GitHub *API* pull URL (api.github.com/repos/.../pulls/N), which serves
+// JSON -- opening it in a browser shows a 404 error page. Rewrite to the human-facing PR page;
+// anything already in html form passes through untouched.
+function prHtmlUrl(pullUrl: string): string {
+  const m = pullUrl.match(/^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)\/pulls\/(\d+)/);
+  return m ? `https://github.com/${m[1]}/pull/${m[2]}` : pullUrl;
+}
+
 // month/year label shown on the x-axis -- only spells out the year on the first point or on a
 // January boundary, since 6 months can straddle a year change (e.g. Nov -> Apr).
 function chartMonthLabel(yearMonth: string, includeYear: boolean): string {
@@ -191,6 +199,11 @@ function MetricChart({
   direction?: Direction;
   formatValue?: (v: number) => string;
 }) {
+  // A point-scale x-axis with one month renders as a lone floating dot -- show a caption until
+  // there's a second month to draw a line through.
+  if (data.length < 2) {
+    return <p className="dashboard-metric-caption">Trend chart appears after a second month of data</p>;
+  }
   const values = data.map((d) => d[dataKey] as number);
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
   const gradientId = `chart-${dataKey}`;
@@ -457,6 +470,9 @@ export default function MetricsTab({
         }
         return (
           <>
+            {repoTrendSeries.length < 2 ? (
+              <p className="dashboard-metric-caption">Trend chart appears after a second month of data</p>
+            ) : (
             <div className="dashboard-metric-chart-wrap">
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={repoTrendSeries} margin={{ top: 10, right: 6, bottom: 0, left: 6 }}>
@@ -480,6 +496,7 @@ export default function MetricsTab({
                 </LineChart>
               </ResponsiveContainer>
             </div>
+            )}
             <ul className="dashboard-metric-repo-legend">
               {orderedRepoKeys.map((key, i) => {
                 const meta = repoMeta.get(key)!;
@@ -523,7 +540,7 @@ export default function MetricsTab({
                     <div className="dashboard-metric-pr-main">
                       <a
                         className="dashboard-metric-pr-link truncate"
-                        href={pr.pullUrl}
+                        href={prHtmlUrl(pr.pullUrl)}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

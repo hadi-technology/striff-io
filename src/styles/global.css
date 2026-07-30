@@ -3081,11 +3081,27 @@
 
   .dashboard-plan-notice {
     margin-top: 1rem;
-    border: 1px solid rgba(220, 38, 38, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    border: 1px solid rgba(217, 119, 6, 0.28);
     border-radius: 0.5rem;
-    background: #fef2f2;
-    padding: 1rem;
+    background: #fffbeb;
+    padding: 0.875rem 1rem;
     font-size: 0.875rem;
+  }
+
+  .dashboard-plan-notice-title {
+    font-weight: 600;
+    color: #78350f;
+  }
+
+  .dashboard-plan-notice-sub {
+    margin-top: 0.125rem;
+    font-size: 0.75rem;
+    color: #92720a;
   }
 
   .dashboard-usage-panel {

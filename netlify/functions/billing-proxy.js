@@ -97,10 +97,12 @@ export const handler = async (event) => {
         if (!res.ok) {
           return { statusCode: res.status, body: JSON.stringify(data) };
         }
-        // Translate BillingStatusResponse to the shape the Dashboard expects
-        const hasSubscription =
-          data.tier && data.tier !== "FREE" && data.tier !== "NONE"
-            && data.subscriptionStatus === "active";
+        // Translate BillingStatusResponse to the shape the Dashboard expects. The API's tier is
+        // already status-aware (EntitlementResolver keeps the paid tier through trialing,
+        // past_due grace, and canceled-until-period-end, and drops to FREE otherwise), so a paid
+        // tier IS the subscription signal — additionally requiring status === "active" here made
+        // the dashboard tell trialing/grace-period customers they had no plan.
+        const hasSubscription = Boolean(data.tier && data.tier !== "FREE" && data.tier !== "NONE");
         return {
           statusCode: 200,
           headers: { "Content-Type": "application/json" },
