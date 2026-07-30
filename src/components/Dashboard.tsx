@@ -84,6 +84,11 @@ export default function Dashboard() {
       );
       setInstallations(withRepos);
 
+      // Fire-and-forget: reports the user's primary email to the backend for each installation.
+      // Covers installs made while already signed in, which never re-run the OAuth callback's
+      // capture; the backend dedups and sends any pending welcome email on first capture.
+      fetch("/.netlify/functions/email-sync", { method: "POST" }).catch(() => {});
+
       const params = new URLSearchParams(window.location.search);
       const planParam = params.get("plan");
       const instIdParam = params.get("installation_id");
