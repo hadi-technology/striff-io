@@ -147,7 +147,7 @@ const plans = [
         <div class="hero-copy relative z-10 mx-auto max-w-5xl space-y-6 text-center" data-reveal>
           <h1 class="mx-auto">More code isn't more <span class="font-bold text-blue-600">product</span>.</h1>
           <p class="section-subcopy hero-subcopy mx-auto">
-            Your team merges more code every week than anyone can read. Striff reviews each pull request as a dependency graph, checks it against the architecture you documented, and reports what it found as <strong>one check, before anyone merges</strong>.
+            Your team merges more code every week than anyone can read. <strong>Striff is architecture review for every GitHub pull request.</strong> It reads each PR as a dependency graph, checks it against the architecture you documented, and reports back as one check, before anyone merges.
           </p>
           <div class="flex flex-wrap justify-center gap-3 pt-1">
             <a class="btn-primary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
@@ -1150,194 +1150,7 @@ const plans = [
       if (nextBtn) nextBtn.addEventListener("click", function () { showSlide(current + 1); });
     })();
 
-    (function () {
-      function clamp(value, min, max) {
-        return Math.min(max, Math.max(min, value));
-      }
-
-      document.querySelectorAll("[data-panzoom]").forEach(function (stage) {
-        var id = stage.getAttribute("data-panzoom");
-        var media = stage.querySelector(".github-diff-graphic");
-        var reset = document.querySelector('[data-panzoom-reset="' + id + '"]');
-        if (!media) return;
-
-        // The stylesheet puts a 120ms transition on the image. Now that every frame is
-        // painted from rAF, that transition only adds lag and smearing on top.
-        media.style.transition = "none";
-
-        var hint = stage.querySelector("[data-panzoom-hint]");
-        var hintHidden = false;
-
-        function hideHint() {
-          if (hint && !hintHidden) {
-            hintHidden = true;
-            hint.classList.add("is-hidden");
-          }
-        }
-
-        var scale = 1;
-        var x = 0;
-        var y = 0;
-        var startX = 0;
-        var startY = 0;
-        var dragging = false;
-
-        // Wheel events arrive far faster than a CSS transition can finish, so letting CSS
-        // animate the transform meant every event restarted a half-finished tween. The
-        // rendered state is eased toward a target here instead: bursts of events accumulate
-        // into one continuous motion.
-        var targetScale = 1;
-        var targetX = 0;
-        var targetY = 0;
-        var frame = null;
-
-        function paint() {
-          media.style.transform = "translate(" + x + "px, " + y + "px) scale(" + scale + ")";
-        }
-
-        function settle() {
-          scale = targetScale;
-          x = targetX;
-          y = targetY;
-          if (frame) {
-            cancelAnimationFrame(frame);
-            frame = null;
-          }
-          paint();
-        }
-
-        var lastFrameAt = 0;
-
-        function tick(now) {
-          var dt = lastFrameAt ? Math.min(now - lastFrameAt, 50) : 16.7;
-          lastFrameAt = now;
-
-          var ds = targetScale - scale;
-          var dx = targetX - x;
-          var dy = targetY - y;
-
-          if (Math.abs(ds) < 0.0004 && Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05) {
-            frame = null;
-            settle();
-            return;
-          }
-
-          // Time based rather than per frame, so the feel is identical on a 60Hz and a
-          // 120Hz display. The time constant is what to tune: smaller is snappier.
-          var k = 1 - Math.exp(-dt / 26);
-          scale += ds * k;
-          x += dx * k;
-          y += dy * k;
-          paint();
-          frame = requestAnimationFrame(tick);
-        }
-
-        function animate() {
-          if (!frame) {
-            lastFrameAt = 0;
-            frame = requestAnimationFrame(tick);
-          }
-        }
-
-        function numberAttr(name, fallback) {
-          var value = parseFloat(stage.getAttribute(name) || "");
-          return Number.isFinite(value) ? value : fallback;
-        }
-
-        var baseScale = 1.6;
-
-        // Controls that sit on top of the diagram (findings overlay, report thumbnail) are
-        // buttons, not canvas: pressing one should not start a pan, and scrolling over one
-        // should not zoom.
-        function isOverlayControl(event) {
-          var target = event.target;
-          return !!(target && target.closest && target.closest("[data-panzoom-ignore]"));
-        }
-
-        function resetView() {
-          var mobile = window.innerWidth < 768;
-          targetScale = numberAttr(mobile ? "data-mobile-scale" : "data-initial-scale", mobile ? 1.2 : 1.6);
-          targetX = numberAttr(mobile ? "data-mobile-x" : "data-initial-x", mobile ? -40 : -120);
-          targetY = numberAttr(mobile ? "data-mobile-y" : "data-initial-y", mobile ? -30 : -80);
-          baseScale = targetScale;
-          settle();
-        }
-
-        stage.addEventListener("wheel", function (event) {
-          if (isOverlayControl(event)) return;
-          // Zoom bounds relative to each diagram's initial scale, so dense
-          // diagrams that start deeply zoomed can't shrink into a speck.
-          var minScale = Math.max(1.2, baseScale * 0.55);
-          var maxScale = Math.min(4, baseScale * 2.2);
-
-          // deltaY is in lines or pages on some browsers, and a trackpad sends a stream of
-          // small deltas where a mouse sends one big one. Normalising to pixels and scaling
-          // by the magnitude keeps one wheel notch at ~12% on either device.
-          var unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 100 : 1;
-          var delta = clamp(event.deltaY * unit, -100, 100);
-          // Multiplicative, so a notch feels the same zoomed in as zoomed out. The old
-          // additive 0.48 step was a 31% jump at the hero's starting scale.
-          var next = clamp(targetScale * Math.exp(-delta * 0.0012), minScale, maxScale);
-
-          if (Math.abs(next - targetScale) < 0.0004) {
-            // Already at the zoom limit in this direction: let the page scroll.
-            return;
-          }
-          event.preventDefault();
-          hideHint();
-
-          // Anchor on the cursor so the thing being pointed at stays put. rect.left is the
-          // transformed left edge and the origin is top left, so rect.left - x is the
-          // untransformed origin regardless of where the easing currently sits.
-          var rect = media.getBoundingClientRect();
-          var cx = event.clientX - (rect.left - x);
-          var cy = event.clientY - (rect.top - y);
-          var ratio = next / targetScale;
-
-          targetX = cx - (cx - targetX) * ratio;
-          targetY = cy - (cy - targetY) * ratio;
-          targetScale = next;
-          animate();
-        }, { passive: false });
-
-        stage.addEventListener("pointerdown", function (event) {
-          if (isOverlayControl(event)) return;
-          hideHint();
-          // Land any in-flight zoom before grabbing, so the drag starts from what is on
-          // screen rather than fighting the easing.
-          settle();
-          dragging = true;
-          startX = event.clientX - x;
-          startY = event.clientY - y;
-          stage.setPointerCapture(event.pointerId);
-          stage.classList.add("is-dragging");
-        });
-
-        stage.addEventListener("pointermove", function (event) {
-          if (!dragging) return;
-          // Dragging is 1:1 with the pointer: easing here would feel like lag.
-          targetX = x = event.clientX - startX;
-          targetY = y = event.clientY - startY;
-          paint();
-        });
-
-        function stopDragging() {
-          dragging = false;
-          stage.classList.remove("is-dragging");
-        }
-
-        stage.addEventListener("pointerup", stopDragging);
-        stage.addEventListener("pointercancel", stopDragging);
-        stage.addEventListener("pointerleave", stopDragging);
-
-        if (reset) {
-          reset.addEventListener("click", resetView);
-        }
-
-        stage._panzoomReset = resetView;
-        resetView();
-      });
-    })();
+    // Pan and zoom lives in src/scripts/panzoom.js, shared with the examples page.
 
     // Findings overlay toggle
     (function () {
@@ -1459,5 +1272,11 @@ const plans = [
 
     setupPreviewScale("data-metrics-preview", "data-metrics-preview-scale");
     setupPreviewScale("data-github-preview", "data-github-preview-scale");
+  </script>
+
+  <script>
+    import { initPanzoom } from "../scripts/panzoom.js";
+
+    initPanzoom({ minScaleFloor: 1.2 });
   </script>
 </BaseLayout>
