@@ -58,22 +58,22 @@ const teamPhilosophy: TeamPhilosophyItem[] = [
     icon: "doc",
     color: "amber",
     title: "Your architecture decisions, actually enforced.",
-    body: "Most teams write ADRs and an ARCHITECTURE.md, then watch PRs quietly drift from them anyway. Striff reads those docs and checks every PR against them. When a change contradicts what your team agreed on, it cites the exact file and line. No rules to configure. The documentation is the rulebook.",
+    body: "Most teams write ADRs and an ARCHITECTURE.md, then watch PRs quietly drift from them anyway. Striff reads those docs and checks every PR against them. When a change contradicts what your team agreed on, it names the file and quotes the sentence. No rules to configure. The documentation is the rulebook.",
     preview: "docs",
     link: { href: "/blog/design-docs-are-enforceable-now", label: "How Striff turns design docs into enforced checks" }
   },
   {
     icon: "chart",
     color: "emerald",
-    title: "Org-wide architectural health, on one dashboard.",
-    body: "Clean PR rate, high-risk PR rate, and the repos accumulating the most flags: a live read on where architecture is holding and where it's slipping, across every repo you own. Peace of mind about compliance, without reading every diff yourself.",
+    title: "Find out which repos are rotting before it's a rewrite.",
+    body: "Clean PR rate, high-risk PR rate, and the repos accumulating the most flags: a live read on where architecture is holding and where it's slipping, across every repo you own. You find out which team needs help while it's still a conversation, not a budget request.",
     preview: "metrics"
   },
   {
-    icon: "mute",
+    icon: "checklist",
     color: "blue",
-    title: "Quiet by design. Loud when it matters.",
-    body: "Striff posts once, as a single GitHub Check next to your CI. No comment threads, no bot spam your team learns to tune out. Clean PR, green Check, nothing else. It only speaks up for changes that put your architecture at real risk.",
+    title: "A green check your team can actually trust.",
+    body: "Most tools go quiet when they find nothing, so green means nobody knows what was looked at. Striff runs twelve structural checks plus the rules it read out of your own docs on every PR, and reports every one of them, clean or not. Your team stops assuming and starts knowing. Still one Check next to your CI: no comment threads, no bot spam.",
     preview: "checks"
   }
 ];
@@ -84,26 +84,22 @@ const chromeExtensionHighlights = [
   {
     icon: "diagram",
     color: "blue",
-    title: "Live architecture diagrams, right on the PR",
-    body: "A new \"Striffs\" tab appears next to GitHub's Files changed. Click it and get a real, pannable, zoomable dependency diagram of the change, not a static screenshot."
+    point: "Interactive dependency diagrams on any PR"
   },
   {
     icon: "comment",
     color: "emerald",
-    title: "Click a component, drop a comment",
-    body: "Hover any class or package in the diagram, hit +, and post a real PR comment with a rendered sub-diagram attached. No screenshotting, no leaving the page."
+    point: "Comment straight from the diagram"
   },
   {
     icon: "sparkle",
     color: "amber",
-    title: "AI notes overlaid directly on the graph",
-    body: "Architectural findings sit right on the diagram entities they describe, with inline thumbs up/down so your team can rate findings in place."
+    point: "AI findings pinned to the graph"
   },
   {
     icon: "bolt",
     color: "rose",
-    title: "Fast setup on any public repo",
-    body: "No backend to stand up. Add your GitHub token once (a free fine-grained token works, and it stays in your browser) and go. Repeat visits to the same PR load instantly from cache."
+    point: "No backend, and your token stays local"
   }
 ];
 
@@ -112,7 +108,7 @@ const plans = [
     eyebrow: "Free",
     icon: "globe",
     title: "Public repositories",
-    body: "Browser extension for any public PR. Architecture diagrams, risk findings, and AI review notes.",
+    body: "GitHub App checks on every public PR, plus the browser extension for any public PR you visit. Architecture diagrams, risk findings, and AI review notes.",
     price: "$0",
     priceDetail: "forever"
   },
@@ -146,20 +142,32 @@ const plans = [
     <!-- ==================== HERO ==================== -->
     <section class="hero-section relative overflow-hidden pb-12 pt-14">
       <div class="mx-auto max-w-[90rem] px-6">
-        <div class="hero-copy relative z-10 mx-auto max-w-2xl space-y-6 text-center" data-reveal>
-          <h1 class="mx-auto max-w-2xl text-balance">Code review for your <span class="font-bold text-blue-600">architecture</span>.</h1>
-          <p class="section-subcopy mx-auto max-w-lg">
-            Striff reviews every pull request as a dependency graph, not a file diff. Structural damage gets caught before it merges, so <strong>your codebase stays easy to change and your team stays fast as it grows</strong>.
+        <!-- Wider than the old max-w-2xl so the headline gets two lines instead of three; the
+             subcopy keeps its own narrower measure via .hero-subcopy. -->
+        <div class="hero-copy relative z-10 mx-auto max-w-5xl space-y-6 text-center" data-reveal>
+          <h1 class="mx-auto">More code isn't more <span class="font-bold text-blue-600">product</span>.</h1>
+          <p class="section-subcopy hero-subcopy mx-auto">
+            Your team merges more code every week than anyone can read. Striff reviews each pull request as a dependency graph, checks it against the architecture you documented, and reports what it found as <strong>one check, before anyone merges</strong>.
           </p>
           <div class="flex flex-wrap justify-center gap-3 pt-1">
-            <a class="btn-primary" href={extensionUrl} target="_blank" rel="noopener noreferrer">Get started free</a>
-            <a class="btn-secondary" href={examplesUrl}>See it in action</a>
+            <a class="btn-primary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
+              <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+              </svg>
+              Get started
+            </a>
+            <a class="btn-secondary" href={examplesUrl}>
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="m8 7 3 9M16 7l-3 9M8.5 6h7"/>
+              </svg>
+              See it in action
+            </a>
           </div>
         </div>
 
         <div class="hero-what-you-get" data-reveal>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M12 19l-5-5M12 19l5-5"/></svg>
-          What posts on your pull request: a diagram of what changed, plus ranked findings
+          What posts on your pull request: a diagram of what changed, and a report of every check that ran
         </div>
 
         <div class="relative z-10 mx-auto mt-4 w-full max-w-[90rem]" data-reveal>
@@ -179,12 +187,12 @@ const plans = [
                 class="github-diff-stage example-diff-stage hero-diagram-stage"
                 style="--example-stage-height: 40rem; --example-stage-height-mobile: 26rem;"
                 data-panzoom="pz-hero"
-                data-initial-scale="1.38"
-                data-initial-x="-403"
+                data-initial-scale="1.55"
+                data-initial-x="-453"
                 data-initial-y="-4"
-                data-mobile-scale="2.2"
-                data-mobile-x="-260"
-                data-mobile-y="-140"
+                data-mobile-scale="2.45"
+                data-mobile-x="-290"
+                data-mobile-y="-156"
               >
                 <img
                   src="/examples/fineract.svg"
@@ -203,46 +211,82 @@ const plans = [
                   Architecture diagram of this PR
                 </div>
 
+                <!-- A real miniature of the check report, parked in the corner. A text link asking
+                     people to imagine a second artifact does not work; showing it does. -->
+                <button class="hero-pip" type="button" data-panzoom-ignore data-report-jump="top" aria-label="Jump to the full check report Striff posts on this pull request">
+                  <span class="hero-pip-frame">
+                    <span class="hero-pip-doc" aria-hidden="true">
+                      <span class="hpd-head">
+                        <img src="/icon.svg" alt="" width="13" height="13" />
+                        <span class="hpd-head-text">
+                          <b>Striff / architectural-review</b>
+                          <i>Successful in 26s</i>
+                        </span>
+                      </span>
+                      <span class="hpd-row is-fail"><span class="hpd-dot"></span>Documented rules<em>1 violated</em></span>
+                      <span class="hpd-row is-flag"><span class="hpd-dot"></span>Boundary crossings<em>1 flagged</em></span>
+                      <span class="hpd-row is-flag"><span class="hpd-dot"></span>Complexity growth<em>1 flagged</em></span>
+                      <span class="hpd-row"><span class="hpd-dot"></span>Package cycles<em>clean</em></span>
+                      <span class="hpd-row"><span class="hpd-dot"></span>Layer integrity<em>clean</em></span>
+                      <span class="hpd-row"><span class="hpd-dot"></span>Encapsulation<em>clean</em></span>
+                    </span>
+                    <span class="hero-pip-fade" aria-hidden="true"></span>
+                  </span>
+                  <span class="hero-pip-cap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/><path d="m9 13 1.5 1.5L13 12"/><path d="m9 17.5 1.5 1.5L13 16.5"/></svg>
+                    <span class="hero-pip-cap-text">Check report<em>13 checks</em></span>
+                    <svg class="hero-pip-cap-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M12 19l-5-5M12 19l5-5"/></svg>
+                  </span>
+                </button>
+
                 <!-- Findings overlay (starts open, collapsible) -->
-                <div class="hero-findings-overlay is-open" data-findings-overlay>
+                <div class="hero-findings-overlay is-open" data-findings-overlay data-panzoom-ignore>
                   <button class="hero-findings-toggle" type="button" data-findings-toggle>
                     <span class="hero-findings-badge">4 findings · HIGH risk</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hero-findings-chevron"><path d="M6 9l6 6 6-6"/></svg>
                   </button>
                   <div class="hero-findings-panel">
                     <div class="hero-findings-list">
-                      <div class="ai-finding ai-finding-danger" data-tour-finding="0">
+                      <div class="ai-finding ai-finding-danger" data-tour-finding="0" data-report-target="doc-conflict" role="button" tabindex="0">
                         <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
                         <div>
                           <strong>Package structure violation</strong>
                           <p><code>DefaultCommandHandlerManager</code> sits in <code>implementation</code>, but <code>REFACTORING.md</code> requires command handlers to live in <code>handler</code>.</p>
                         </div>
+                        <span class="hero-finding-go">In the report<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
                       </div>
-                      <div class="ai-finding ai-finding-danger" data-tour-finding="1">
+                      <div class="ai-finding ai-finding-danger" data-tour-finding="1" data-report-target="structural-regression" role="button" tabindex="0">
                         <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
                         <div>
                           <strong>New directional boundary crossing</strong>
                           <p>New dependency from <code>command</code> to <code>command.implementation</code>, with no prior edge in this direction.</p>
                         </div>
+                        <span class="hero-finding-go">In the report<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
                       </div>
-                      <div class="ai-finding ai-finding-warn" data-tour-finding="2">
+                      <div class="ai-finding ai-finding-warn" data-tour-finding="2" data-report-target="complexity" role="button" tabindex="0">
                         <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>MED</span>
                         <div>
                           <strong>Complexity growth: WMC +10</strong>
                           <p><code>DefaultCommandHandlerManager</code> WMC grew from 4 to 14: rising cyclomatic complexity in the misplaced class.</p>
                         </div>
+                        <span class="hero-finding-go">In the report<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
                       </div>
-                      <div class="ai-finding ai-finding-warn" data-tour-finding="3">
+                      <div class="ai-finding ai-finding-warn" data-tour-finding="3" data-report-target="coupling" role="button" tabindex="0">
                         <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>MED</span>
                         <div>
                           <strong>Coupling spike: EC +9</strong>
                           <p><code>DefaultCommandHandlerManager</code> efferent coupling grew from 8 to 17, making it harder to change in isolation.</p>
                         </div>
+                        <span class="hero-finding-go">In the report<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
                       </div>
                     </div>
                     <div class="hero-findings-verdict">
                       No other tool reads your docs. <strong>Striff</strong> cites <strong>REFACTORING.md</strong> by name and flags the exact class that violates it.
                     </div>
+                    <button class="hero-findings-more" type="button" data-report-jump="top">
+                      See all 13 checks that ran
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -252,7 +296,152 @@ const plans = [
       </div>
     </section>
 
-    <!-- ==================== PROBLEM + WHY COMBINED ==================== -->
+    <!-- ==================== THE CHECK REPORT ==================== -->
+    <!-- The report used to sit behind a tab in the hero, where most people never opened it.
+         It is half the product, so it gets its own section and no click. -->
+    <section id="report" class="report-section scroll-mt-24">
+      <div class="mx-auto max-w-[90rem] px-6">
+        <div class="report-intro" data-reveal>
+          <p class="report-eyebrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M12 19l-5-5M12 19l5-5"/></svg>
+            For whoever has to approve it
+          </p>
+          <h2 class="text-balance">Your reviewers stop guessing whether it's safe to merge.</h2>
+          <p class="section-subcopy">
+            Passing tests tell your team the code works today. They say nothing about whether this change made the system harder to work in tomorrow. Striff answers that on the pull request, names the exact class at fault and quotes the rule it broke, so <strong>approving a change stops being a judgment call only your most senior engineer can make</strong>.
+          </p>
+        </div>
+
+        <div class="hero-stage-shell report-stage-shell" data-reveal>
+          <div class="hero-stage-head">
+            <div class="hero-stage-context">
+              <span class="hero-context-chip">apache/fineract</span>
+              <span class="hero-context-chip hero-context-chip-muted">PR #6063</span>
+              <span class="hero-context-chip hero-context-chip-muted">Checks tab</span>
+              <span class="hero-context-chip hero-context-chip-danger">13 checks · 4 flagged</span>
+            </div>
+            <div class="hero-stage-badge">Striff / architectural-review</div>
+          </div>
+          <div class="ghc" data-report-top>
+                <!-- Left rail: the PR's full check list, Striff selected -->
+                <aside class="ghc-rail">
+                  <div class="ghc-rail-head">
+                    <svg class="ghc-icon-success" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
+                    <div>
+                      <p class="ghc-rail-title">All checks have passed</p>
+                      <p class="ghc-rail-sub">4 successful checks</p>
+                    </div>
+                  </div>
+                  <ul class="ghc-rail-list">
+                    <li class="ghc-rail-item">
+                      <svg class="ghc-icon-success" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
+                      <span class="ghc-rail-name">build</span>
+                      <span class="ghc-rail-time">44s</span>
+                    </li>
+                    <li class="ghc-rail-item">
+                      <svg class="ghc-icon-success" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
+                      <span class="ghc-rail-name">test</span>
+                      <span class="ghc-rail-time">1m 12s</span>
+                    </li>
+                    <li class="ghc-rail-item">
+                      <svg class="ghc-icon-success" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
+                      <span class="ghc-rail-name">lint</span>
+                      <span class="ghc-rail-time">18s</span>
+                    </li>
+                    <li class="ghc-rail-item is-selected">
+                      <svg class="ghc-icon-success" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
+                      <span class="ghc-rail-name">Striff / architectural-review</span>
+                      <span class="ghc-rail-time">26s</span>
+                    </li>
+                  </ul>
+                </aside>
+
+                <!-- Right pane: the check run output -->
+                <section class="ghc-pane">
+                  <header class="ghc-pane-head">
+                    <img class="ghc-pane-mark" src="/icon.svg" alt="" width="32" height="32" aria-hidden="true" />
+                    <div class="ghc-pane-headings">
+                      <h3 class="ghc-pane-title">Striff / architectural-review</h3>
+                      <p class="ghc-pane-sub">Successful in 26s</p>
+                    </div>
+                  </header>
+
+                  <div class="ghc-md">
+                    <h3>Review Summary</h3>
+                    <p>This PR moves command-handling responsibility into <code>command.implementation</code>: <code>DefaultCommandHandlerManager</code> is added there, and the <code>command</code> package now depends on it. That dependency direction did not exist between these two packages before.</p>
+                    <h3>Top Review Items</h3>
+                    <ul class="ghc-items">
+                      <li data-report-anchor="doc-conflict">
+                        <p class="ghc-item-head"><span class="ghc-item-badge is-doc">📄 Doc Conflict</span> Handler placed outside the documented package</p>
+                        <p class="ghc-item-why"><code>DefaultCommandHandlerManager</code> sits in <code>implementation</code>. <code>REFACTORING.md</code> requires command handlers in <code>handler</code>.</p>
+                        <p class="ghc-item-fix"><span>Fix</span> Move it, or update the doc.</p>
+                      </li>
+                      <li data-report-anchor="structural-regression">
+                        <p class="ghc-item-head"><span class="ghc-item-badge is-reg">🎯 Structural Regression</span> <code>command</code> now depends on its own implementation package</p>
+                        <p class="ghc-item-why">First edge in this direction. The manager gained a dependent (AC 1 → 2) while reaching into <code>core.exception</code> (EC 8 → 17), so the abstraction points at the dispatcher.</p>
+                        <p class="ghc-item-fix"><span>Fix</span> Invert it: expose the manager as an interface from <code>command</code>, wire the concrete class in config.</p>
+                      </li>
+                    </ul>
+
+                    <div class="ghc-cols">
+                      <section>
+                        <h3>Documented Rules <span class="ghc-h3-meta">2 enforceable · 2 advisory</span></h3>
+                        <p class="ghc-sub">Extracted from this repository's own docs and checked against the dependencies this PR adds. Pass means this change added no violation, not that the codebase is clean.</p>
+                        <ul class="ghc-rules">
+                          <li class="is-fail">
+                            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.042.018.751.751 0 0 0-.018 1.042L6.94 8 4.97 9.97a.749.749 0 0 0 .326 1.275.749.749 0 0 0 .734-.215L8 9.06l1.97 1.97a.749.749 0 0 0 1.275-.326.749.749 0 0 0-.215-.734L9.06 8l1.97-1.97a.749.749 0 0 0-.326-1.275.749.749 0 0 0-.734.215L8 6.94Z"/></svg>
+                            <span class="ghc-rule-text">Command handlers live in the <code>command.handler</code> package<span class="ghc-rule-src">REFACTORING.md</span></span>
+                            <span class="ghc-rule-verdict">Fail</span>
+                          </li>
+                          <li>
+                            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
+                            <span class="ghc-rule-text"><code>core.exception</code> must not depend on command internals<span class="ghc-rule-src">ARCHITECTURE.md</span></span>
+                            <span class="ghc-rule-verdict">Pass</span>
+                          </li>
+                        </ul>
+                        <p class="ghc-advisory-head">Advisory: striff's reading, not a check</p>
+                        <ul class="ghc-rules is-advisory">
+                          <li>
+                            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 0 0-5.6 9.79L1.5 14.5l3.33-.86A6.5 6.5 0 1 0 8 1.5Zm0 1.5a5 5 0 1 1-2.6 9.27l-.3-.18-1.63.42.43-1.6-.19-.3A5 5 0 0 1 8 3Z"/><circle cx="5.4" cy="8" r="0.95"/><circle cx="8" cy="8" r="0.95"/><circle cx="10.6" cy="8" r="0.95"/></svg>
+                            <span class="ghc-rule-text">Each command resolves to exactly one handler<span class="ghc-rule-src">REFACTORING.md</span></span>
+                            <span class="ghc-rule-verdict">may be affected</span>
+                          </li>
+                          <li>
+                            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 0 0-5.6 9.79L1.5 14.5l3.33-.86A6.5 6.5 0 1 0 8 1.5Zm0 1.5a5 5 0 1 1-2.6 9.27l-.3-.18-1.63.42.43-1.6-.19-.3A5 5 0 0 1 8 3Z"/><circle cx="5.4" cy="8" r="0.95"/><circle cx="8" cy="8" r="0.95"/><circle cx="10.6" cy="8" r="0.95"/></svg>
+                            <span class="ghc-rule-text">Command handling must not block the request thread<span class="ghc-rule-src">ARCHITECTURE.md</span></span>
+                            <span class="ghc-rule-verdict">nothing stood out</span>
+                          </li>
+                        </ul>
+                      </section>
+
+                      <section>
+                        <h3>Structural Checks <span class="ghc-h3-meta">4 flagged · 9 clean</span></h3>
+                        <ul class="ghc-checks">
+                          <li class="is-fail"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.042.018.751.751 0 0 0-.018 1.042L6.94 8 4.97 9.97a.749.749 0 0 0 .326 1.275.749.749 0 0 0 .734-.215L8 9.06l1.97 1.97a.749.749 0 0 0 1.275-.326.749.749 0 0 0-.215-.734L9.06 8l1.97-1.97a.749.749 0 0 0-.326-1.275.749.749 0 0 0-.734.215L8 6.94Z"/></svg><span class="ghc-checks-name">Documented dependency rules</span><span class="ghc-checks-result">1 violated</span></li>
+                          <li class="is-flag"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Boundary crossings</span><span class="ghc-checks-result">1 flagged</span></li>
+                          <li class="is-flag" data-report-anchor="complexity"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Complexity growth</span><span class="ghc-checks-result">1 flagged</span></li>
+                          <li class="is-flag" data-report-anchor="coupling"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Coupling stability</span><span class="ghc-checks-result">1 flagged</span></li>
+                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Package cycles</span><span class="ghc-checks-result">clean</span></li>
+                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Cycle seeds</span><span class="ghc-checks-result">clean</span></li>
+                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Module boundaries</span><span class="ghc-checks-result">clean</span></li>
+                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Layer integrity</span><span class="ghc-checks-result">clean</span></li>
+                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Production → test edges</span><span class="ghc-checks-result">clean</span></li>
+                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Public contract stability</span><span class="ghc-checks-result">clean</span></li>
+                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Interface downgrades</span><span class="ghc-checks-result">clean</span></li>
+                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Encapsulation</span><span class="ghc-checks-result">clean</span></li>
+                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Hub formation</span><span class="ghc-checks-result">clean</span></li>
+                        </ul>
+                      </section>
+                    </div>
+                    <p class="ghc-md-foot">Every check reports its result on every PR, clean or not. Advisory rows are never given a pass: striff cannot prove an intention from structure.</p>
+                  </div>
+                </section>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== PROBLEM ==================== -->
     <section id="problem" class="scroll-mt-24 bg-slate-100/60 pb-16 pt-14">
       <div class="mx-auto max-w-[90rem] px-6" data-reveal>
         <div class="rounded-3xl bg-white p-6 shadow-xl border border-slate-200 md:p-8">
@@ -497,9 +686,9 @@ const plans = [
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="max-w-3xl" data-reveal>
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Built for engineering leaders</p>
-          <h2 class="mt-3 text-balance">Move fast without breaking your architecture.</h2>
+          <h2 class="mt-3 text-balance">Writing code was never the hard part.</h2>
           <p class="section-subcopy mt-4">
-            Architectural drift is the tax your team pays later: slower PRs, harder onboarding, rewrites nobody budgeted for. Striff checks every PR against the architecture you've already documented and rolls it into an org-wide health dashboard, <strong>so the codebase that ships fast today still ships fast in year three</strong>, without slowing a single review.
+            Keeping a system coherent while a dozen people change it every day is the hard part, and it's the part nobody owns. Striff checks every pull request against the architecture you've already documented, then rolls the results into an org-wide view, so <strong>the system your team is building stays the system you designed</strong>.
           </p>
         </div>
         <div class="teams-showcase mt-10" data-teams-showcase data-reveal>
@@ -515,8 +704,8 @@ const plans = [
               >
                 <span class="teams-tab-head">
                   <span class={`icon-badge icon-badge-${item.color} teams-tab-icon`} aria-hidden="true">
-                    {item.icon === "mute" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19 6a9 9 0 0 1 0 12"/></svg>
+                    {item.icon === "checklist" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 6 1.8 1.8L8 4.5"/><path d="m3 13 1.8 1.8L8 11.5"/><path d="m3 20 1.8 1.8L8 18.5"/><path d="M12 6h9M12 13h9M12 20h9"/></svg>
                     )}
                     {item.icon === "chart" && (
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M12 20V4M20 20v-7"/><path d="M2 20h20"/></svg>
@@ -648,7 +837,7 @@ const plans = [
                                     </span>
                                     Striff / architecture
                                   </span>
-                                  <p class="gh-mock-check-output">No boundary violations. Rate limiter stays inside <code>gateway/middleware</code>; matches <code>ARCHITECTURE.md</code>.</p>
+                                  <p class="gh-mock-check-output">All 12 structural checks passed. 2 documented rules checked, no new violation. Rate limiter stays inside <code>gateway/middleware</code>, as <code>ARCHITECTURE.md</code> requires.</p>
                                 </div>
                                 <span class="gh-mock-check-time">26s</span>
                                 <span class="gh-mock-check-details">Details</span>
@@ -672,19 +861,53 @@ const plans = [
     <!-- ==================== CHROME EXTENSION ==================== -->
     <section class="section-dark pb-20 pt-20">
       <div class="mx-auto max-w-[90rem] px-6">
-        <div class="max-w-3xl" data-reveal>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Free Chrome extension</p>
-          <h2 class="mt-3 text-balance">See the architecture, right inside GitHub.</h2>
-          <p class="section-subcopy mt-4">
-            Install it and a new "Striffs" tab shows up next to Files changed on any public PR. No backend to run; just bring a GitHub token, which stays in your browser.
-          </p>
-        </div>
-        <div class="chrome-ext-grid mt-8" data-reveal>
+        <div class="chrome-ext-grid" data-reveal>
+          <div class="chrome-ext-copy">
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Free Chrome extension</p>
+            <h2 class="mt-3 text-balance">See what any GitHub PR really touches.</h2>
+            <p class="section-subcopy mt-4">
+              Reviewing an unfamiliar change means holding somebody else's dependency graph in your head. Striff draws it for you, in a tab right beside Files changed, so <strong>you see what a change touches before you approve it</strong>. You never leave GitHub.
+            </p>
+
+            <ul class="chrome-ext-list">
+              {chromeExtensionHighlights.map((item) => (
+                <li class="chrome-ext-point">
+                  <span class={`icon-badge icon-badge-${item.color}`} aria-hidden="true">
+                    {item.icon === "diagram" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M8.5 7.5 11 16M15.5 7.5 13 16M9 6h6"/></svg>
+                    )}
+                    {item.icon === "comment" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 1 1-3.2-6.4"/><path d="M21 3v6h-6"/><path d="M8 12h6M8 9h3"/></svg>
+                    )}
+                    {item.icon === "sparkle" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="m6 6 2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg>
+                    )}
+                    {item.icon === "bolt" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>
+                    )}
+                  </span>
+                  <span class="chrome-ext-point-text">{item.point}</span>
+                </li>
+              ))}
+            </ul>
+
+            <a class="btn-chrome chrome-ext-cta" href={extensionUrl} target="_blank" rel="noopener noreferrer">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="4" />
+                <line x1="21.17" y1="8" x2="12" y2="8" />
+                <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
+                <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
+              </svg>
+              Add to Chrome
+            </a>
+          </div>
+
           <div class="chrome-ext-video rounded-3xl border border-white/10 bg-slate-950 shadow-xl">
             <div class="aspect-video overflow-hidden rounded-3xl">
               <iframe
                 class="h-full w-full"
-                src={`https://www.youtube.com/embed/${chromeExtensionVideoId}?loop=1&playlist=${chromeExtensionVideoId}`}
+                src={`https://www.youtube.com/embed/${chromeExtensionVideoId}?autoplay=1&mute=1&loop=1&playlist=${chromeExtensionVideoId}&playsinline=1&modestbranding=1&rel=0`}
                 title="Striff Chrome extension walkthrough"
                 loading="lazy"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -692,33 +915,6 @@ const plans = [
               ></iframe>
             </div>
           </div>
-          <div class="chrome-ext-points">
-            {chromeExtensionHighlights.map((item) => (
-              <div class="chrome-ext-point">
-                <span class={`icon-badge icon-badge-${item.color}`} aria-hidden="true">
-                  {item.icon === "diagram" && (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M8.5 7.5 11 16M15.5 7.5 13 16M9 6h6"/></svg>
-                  )}
-                  {item.icon === "comment" && (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 1 1-3.2-6.4"/><path d="M21 3v6h-6"/><path d="M8 12h6M8 9h3"/></svg>
-                  )}
-                  {item.icon === "sparkle" && (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="m6 6 2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg>
-                  )}
-                  {item.icon === "bolt" && (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>
-                  )}
-                </span>
-                <div>
-                  <h3 class="text-[0.95rem] font-bold text-white">{item.title}</h3>
-                  <p class="mt-1 text-sm leading-6 text-slate-400">{item.body}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div class="mt-8">
-          <a class="btn-primary" href={extensionUrl} target="_blank" rel="noopener noreferrer">Add to Chrome for free</a>
         </div>
       </div>
     </section>
@@ -730,7 +926,7 @@ const plans = [
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Get started</p>
           <h2 class="mt-3 text-balance">Start with public repos. Scale to your team.</h2>
           <p class="section-subcopy mt-4">
-            Striff runs as a GitHub Check. No new tool to learn, no workflow to change. Start free on public repos, add private repos when you're ready.
+            Nothing to learn and no workflow to change: Striff shows up as one more check on the PRs your team already opens. Start free on public repos, add private repos when you're ready.
           </p>
         </div>
           <div class="mt-10 grid gap-5 lg:grid-cols-3">
@@ -765,9 +961,23 @@ const plans = [
             ))}
           </div>
           <div class="mt-10 flex flex-wrap gap-3">
-            <a class="btn-primary" href={extensionUrl} target="_blank" rel="noopener noreferrer">Get started free</a>
+            <a class="btn-primary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
+              <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+              </svg>
+              Get started
+            </a>
             <a class="btn-secondary" href="/pricing">Team pricing</a>
-            <a class="btn-secondary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">GitHub App</a>
+            <a class="btn-chrome" href={extensionUrl} target="_blank" rel="noopener noreferrer">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="4" />
+                <line x1="21.17" y1="8" x2="12" y2="8" />
+                <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
+                <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
+              </svg>
+              Browser extension
+            </a>
           </div>
         </div>
       </div>
@@ -787,7 +997,7 @@ const plans = [
           </details>
           <details class="faq-item">
             <summary class="faq-q">How does Striff know what my architecture is supposed to look like?</summary>
-            <p class="faq-a">Two ways. Out of the box, eight deterministic detectors flag structural regressions that are almost never intentional: new dependency cycles, first-ever dependency directions between packages, layer skips, and sharp complexity or coupling growth. No configuration needed. On top of that, if your repo contains architecture docs (an ARCHITECTURE.md, ADRs, or design notes), Striff reads them and flags changes that contradict what your team wrote down, citing the exact document.</p>
+            <p class="faq-a">Two ways. Out of the box, twelve deterministic checks run on every PR and flag structural regressions that are almost never intentional: new dependency cycles, first-ever dependency directions between packages, layer skips, and sharp complexity or coupling growth. No configuration needed, and every one of the twelve is listed in the Check with its own result, whether it fired or not. On top of that, if your repo contains architecture docs (an ARCHITECTURE.md, ADRs, or design notes), Striff reads them and checks the dependencies your PR adds against what your team wrote down, quoting the document it came from.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">What languages does Striff support?</summary>
@@ -795,7 +1005,7 @@ const plans = [
           </details>
           <details class="faq-item">
             <summary class="faq-q">Is it just an LLM wrapper?</summary>
-            <p class="faq-a">No. The findings come from deterministic structural analysis of your dependency graph, backed by a model trained on well-architected codebases to tell risky changes from normal ones. The AI layer only explains findings the analysis already established; it doesn't invent them. That's why Striff stays quiet on clean PRs instead of always producing commentary.</p>
+            <p class="faq-a">No. The findings come from deterministic structural analysis of your dependency graph, backed by a model trained on well-architected codebases to tell risky changes from normal ones. The AI layer explains and ranks what the analysis already established, and decides which of those facts are worth your attention; it can never originate a finding of its own. It also writes a short account of what the PR did structurally, which is why a clean PR still gets an explanation rather than a bare verdict.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">Will it slow down or block my pull requests?</summary>
@@ -838,12 +1048,17 @@ const plans = [
           <div class="cta-veil" aria-hidden="true"></div>
 
           <div class="cta-content mx-auto max-w-3xl text-center">
-            <h2 class="text-balance text-white">Stay fast as your codebase grows.</h2>
+            <h2 class="text-balance text-white">Code is cheap now. Changing it isn't.</h2>
             <p class="section-subcopy mx-auto mt-4 text-slate-300">
-              Architecture review on every pull request, alongside the tools you already use. Install free for public repos and it runs on your next PR.
+              Every unchecked merge makes the next change a little more expensive. It compounds quietly, and nobody can point at the day it started. Striff starts checking on your next pull request.
             </p>
             <div class="mt-8 flex flex-wrap justify-center gap-4">
-              <a class="btn-primary" href={extensionUrl} target="_blank" rel="noopener noreferrer">Install free in 30 seconds</a>
+              <a class="btn-primary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
+                <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                </svg>
+                Get started
+              </a>
               <a class="btn-secondary" href={examplesUrl}>See real examples</a>
             </div>
           </div>
@@ -853,6 +1068,51 @@ const plans = [
   </main>
 
   <script is:inline>
+    // Hero findings -> check report. Each finding in the hero overlay is the summary of a
+    // line further down in the report, so clicking one scrolls to that exact line and flashes
+    // it. The report is a section rather than a hidden tab, so nothing here reveals content:
+    // it only saves the reader the hunt.
+    (function () {
+      var reportSection = document.getElementById("report");
+      if (!reportSection) return;
+
+      var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var flashTimer = null;
+
+      function goTo(el, flash) {
+        if (!el) return;
+        el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+        if (!flash) return;
+
+        clearTimeout(flashTimer);
+        document.querySelectorAll(".is-report-flash").forEach(function (n) {
+          n.classList.remove("is-report-flash");
+        });
+        // Restart the animation even when the same row is clicked twice.
+        void el.offsetWidth;
+        el.classList.add("is-report-flash");
+        flashTimer = setTimeout(function () { el.classList.remove("is-report-flash"); }, 2600);
+      }
+
+      document.querySelectorAll("[data-report-jump]").forEach(function (btn) {
+        btn.addEventListener("click", function () { goTo(reportSection, false); });
+      });
+
+      document.querySelectorAll("[data-report-target]").forEach(function (row) {
+        var anchor = document.querySelector(
+          '[data-report-anchor="' + row.getAttribute("data-report-target") + '"]'
+        );
+        if (!anchor) return;
+
+        row.addEventListener("click", function () { goTo(anchor, true); });
+        row.addEventListener("keydown", function (e) {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          goTo(anchor, true);
+        });
+      });
+    })();
+
     (function () {
       var tabs = document.querySelectorAll("[data-tab-index]");
       var slides = document.querySelectorAll("[data-slide-index]");
@@ -901,6 +1161,10 @@ const plans = [
         var reset = document.querySelector('[data-panzoom-reset="' + id + '"]');
         if (!media) return;
 
+        // The stylesheet puts a 120ms transition on the image. Now that every frame is
+        // painted from rAF, that transition only adds lag and smearing on top.
+        media.style.transition = "none";
+
         var hint = stage.querySelector("[data-panzoom-hint]");
         var hintHidden = false;
 
@@ -918,8 +1182,61 @@ const plans = [
         var startY = 0;
         var dragging = false;
 
+        // Wheel events arrive far faster than a CSS transition can finish, so letting CSS
+        // animate the transform meant every event restarted a half-finished tween. The
+        // rendered state is eased toward a target here instead: bursts of events accumulate
+        // into one continuous motion.
+        var targetScale = 1;
+        var targetX = 0;
+        var targetY = 0;
+        var frame = null;
+
         function paint() {
           media.style.transform = "translate(" + x + "px, " + y + "px) scale(" + scale + ")";
+        }
+
+        function settle() {
+          scale = targetScale;
+          x = targetX;
+          y = targetY;
+          if (frame) {
+            cancelAnimationFrame(frame);
+            frame = null;
+          }
+          paint();
+        }
+
+        var lastFrameAt = 0;
+
+        function tick(now) {
+          var dt = lastFrameAt ? Math.min(now - lastFrameAt, 50) : 16.7;
+          lastFrameAt = now;
+
+          var ds = targetScale - scale;
+          var dx = targetX - x;
+          var dy = targetY - y;
+
+          if (Math.abs(ds) < 0.0004 && Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05) {
+            frame = null;
+            settle();
+            return;
+          }
+
+          // Time based rather than per frame, so the feel is identical on a 60Hz and a
+          // 120Hz display. The time constant is what to tune: smaller is snappier.
+          var k = 1 - Math.exp(-dt / 26);
+          scale += ds * k;
+          x += dx * k;
+          y += dy * k;
+          paint();
+          frame = requestAnimationFrame(tick);
+        }
+
+        function animate() {
+          if (!frame) {
+            lastFrameAt = 0;
+            frame = requestAnimationFrame(tick);
+          }
         }
 
         function numberAttr(name, fallback) {
@@ -929,36 +1246,66 @@ const plans = [
 
         var baseScale = 1.6;
 
+        // Controls that sit on top of the diagram (findings overlay, report thumbnail) are
+        // buttons, not canvas: pressing one should not start a pan, and scrolling over one
+        // should not zoom.
+        function isOverlayControl(event) {
+          var target = event.target;
+          return !!(target && target.closest && target.closest("[data-panzoom-ignore]"));
+        }
+
         function resetView() {
           var mobile = window.innerWidth < 768;
-          scale = numberAttr(mobile ? "data-mobile-scale" : "data-initial-scale", mobile ? 1.2 : 1.6);
-          x = numberAttr(mobile ? "data-mobile-x" : "data-initial-x", mobile ? -40 : -120);
-          y = numberAttr(mobile ? "data-mobile-y" : "data-initial-y", mobile ? -30 : -80);
-          baseScale = scale;
-          paint();
+          targetScale = numberAttr(mobile ? "data-mobile-scale" : "data-initial-scale", mobile ? 1.2 : 1.6);
+          targetX = numberAttr(mobile ? "data-mobile-x" : "data-initial-x", mobile ? -40 : -120);
+          targetY = numberAttr(mobile ? "data-mobile-y" : "data-initial-y", mobile ? -30 : -80);
+          baseScale = targetScale;
+          settle();
         }
 
         stage.addEventListener("wheel", function (event) {
+          if (isOverlayControl(event)) return;
           // Zoom bounds relative to each diagram's initial scale, so dense
           // diagrams that start deeply zoomed can't shrink into a speck.
           var minScale = Math.max(1.2, baseScale * 0.55);
           var maxScale = Math.min(4, baseScale * 2.2);
-          var next = clamp(scale + (event.deltaY < 0 ? 0.48 : -0.48), minScale, maxScale);
-          if (next === scale) {
+
+          // deltaY is in lines or pages on some browsers, and a trackpad sends a stream of
+          // small deltas where a mouse sends one big one. Normalising to pixels and scaling
+          // by the magnitude keeps one wheel notch at ~12% on either device.
+          var unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 100 : 1;
+          var delta = clamp(event.deltaY * unit, -100, 100);
+          // Multiplicative, so a notch feels the same zoomed in as zoomed out. The old
+          // additive 0.48 step was a 31% jump at the hero's starting scale.
+          var next = clamp(targetScale * Math.exp(-delta * 0.0012), minScale, maxScale);
+
+          if (Math.abs(next - targetScale) < 0.0004) {
             // Already at the zoom limit in this direction: let the page scroll.
             return;
           }
           event.preventDefault();
           hideHint();
-          // Ease wheel zooms so the larger step doesn't feel choppy.
-          media.style.transition = "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)";
-          scale = next;
-          paint();
+
+          // Anchor on the cursor so the thing being pointed at stays put. rect.left is the
+          // transformed left edge and the origin is top left, so rect.left - x is the
+          // untransformed origin regardless of where the easing currently sits.
+          var rect = media.getBoundingClientRect();
+          var cx = event.clientX - (rect.left - x);
+          var cy = event.clientY - (rect.top - y);
+          var ratio = next / targetScale;
+
+          targetX = cx - (cx - targetX) * ratio;
+          targetY = cy - (cy - targetY) * ratio;
+          targetScale = next;
+          animate();
         }, { passive: false });
 
         stage.addEventListener("pointerdown", function (event) {
+          if (isOverlayControl(event)) return;
           hideHint();
-          media.style.transition = "none";
+          // Land any in-flight zoom before grabbing, so the drag starts from what is on
+          // screen rather than fighting the easing.
+          settle();
           dragging = true;
           startX = event.clientX - x;
           startY = event.clientY - y;
@@ -968,8 +1315,9 @@ const plans = [
 
         stage.addEventListener("pointermove", function (event) {
           if (!dragging) return;
-          x = event.clientX - startX;
-          y = event.clientY - startY;
+          // Dragging is 1:1 with the pointer: easing here would feel like lag.
+          targetX = x = event.clientX - startX;
+          targetY = y = event.clientY - startY;
           paint();
         });
 

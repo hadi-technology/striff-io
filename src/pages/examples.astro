@@ -18,9 +18,9 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
           <p class="examples-kicker">
             Public repo examples
           </p>
-          <h1 class="mt-5 text-balance">Real pull requests, reviewed by Striff.</h1>
+          <h1 class="mt-5 text-balance">Four PRs that passed review and shouldn't have.</h1>
           <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            Four public PRs, one per supported language: Java, Python, TypeScript, and C#. Each one looked routine in the file diff. Open any of them on GitHub and verify what Striff flagged before merge.
+            Real public pull requests in Java, Python, TypeScript, and C#. Every one of them looked routine in the file diff, got approved, and quietly moved a boundary somebody will pay for later. Open any of them on GitHub and check what Striff caught for yourself.
           </p>
         </div>
         <div class="flex flex-wrap gap-4">
@@ -44,7 +44,7 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
         <div class="examples-gallery-head">
           <div>
             <p class="examples-gallery-kicker">The reviews</p>
-            <h2 class="examples-gallery-title">What Striff posted on each pull request.</h2>
+            <h2 class="examples-gallery-title">What a reviewer would have missed.</h2>
           </div>
           <p class="examples-gallery-copy">Each example shows the architecture diagram Striff generated and the GitHub Check it posted, exactly what your team would see on their own PRs.</p>
         </div>
@@ -264,6 +264,10 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
         var reset = document.querySelector('[data-panzoom-reset="' + id + '"]');
         if (!media) return;
 
+        // The stylesheet puts a 120ms transition on the image. Every frame is painted from
+        // rAF below, so that transition would only add lag and smearing on top.
+        media.style.transition = "none";
+
         var scale = 1;
         var x = 0;
         var y = 0;
@@ -271,8 +275,61 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
         var startY = 0;
         var dragging = false;
 
+        // Wheel events arrive far faster than a CSS transition can finish, so letting CSS
+        // animate the transform meant every event restarted a half-finished tween. The
+        // rendered state is eased toward a target here instead: bursts of events accumulate
+        // into one continuous motion.
+        var targetScale = 1;
+        var targetX = 0;
+        var targetY = 0;
+        var frame = null;
+
         function paint() {
           media.style.transform = "translate(" + x + "px, " + y + "px) scale(" + scale + ")";
+        }
+
+        function settle() {
+          scale = targetScale;
+          x = targetX;
+          y = targetY;
+          if (frame) {
+            cancelAnimationFrame(frame);
+            frame = null;
+          }
+          paint();
+        }
+
+        var lastFrameAt = 0;
+
+        function tick(now) {
+          var dt = lastFrameAt ? Math.min(now - lastFrameAt, 50) : 16.7;
+          lastFrameAt = now;
+
+          var ds = targetScale - scale;
+          var dx = targetX - x;
+          var dy = targetY - y;
+
+          if (Math.abs(ds) < 0.0004 && Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05) {
+            frame = null;
+            settle();
+            return;
+          }
+
+          // Time based rather than per frame, so the feel is identical on a 60Hz and a
+          // 120Hz display. The time constant is what to tune: smaller is snappier.
+          var k = 1 - Math.exp(-dt / 26);
+          scale += ds * k;
+          x += dx * k;
+          y += dy * k;
+          paint();
+          frame = requestAnimationFrame(tick);
+        }
+
+        function animate() {
+          if (!frame) {
+            lastFrameAt = 0;
+            frame = requestAnimationFrame(tick);
+          }
         }
 
         function numberAttr(name, fallback) {
@@ -287,20 +344,20 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
           if (mobile) {
             // Fit the full diagram to the stage width; the gallery diagram sits
             // behind the check overlay, so a complete view beats a zoomed crop.
-            scale = 1;
-            x = 0;
+            targetScale = 1;
+            targetX = 0;
             var stageH = stage.clientHeight;
             var imgH = media.clientHeight || stageH;
-            y = Math.min(0, (stageH - imgH) / 2);
-            baseScale = scale;
-            paint();
+            targetY = Math.min(0, (stageH - imgH) / 2);
+            baseScale = targetScale;
+            settle();
             return;
           }
-          scale = numberAttr("data-initial-scale", 1.6);
-          x = numberAttr("data-initial-x", -120);
-          y = numberAttr("data-initial-y", -80);
-          baseScale = scale;
-          paint();
+          targetScale = numberAttr("data-initial-scale", 1.6);
+          targetX = numberAttr("data-initial-x", -120);
+          targetY = numberAttr("data-initial-y", -80);
+          baseScale = targetScale;
+          settle();
         }
 
         stage.addEventListener("wheel", function (event) {
@@ -308,20 +365,39 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
           // diagrams that start deeply zoomed can't shrink into a speck.
           var minScale = Math.max(1, baseScale * 0.55);
           var maxScale = Math.min(4, baseScale * 2.2);
-          var next = clamp(scale + (event.deltaY < 0 ? 0.48 : -0.48), minScale, maxScale);
-          if (next === scale) {
+
+          // deltaY is in lines or pages on some browsers, and a trackpad sends a stream of
+          // small deltas where a mouse sends one big one. Normalising to pixels and scaling
+          // by the magnitude keeps one wheel notch at ~13% on either device.
+          var unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 100 : 1;
+          var delta = clamp(event.deltaY * unit, -100, 100);
+          // Multiplicative, so a notch feels the same zoomed in as zoomed out.
+          var next = clamp(targetScale * Math.exp(-delta * 0.0012), minScale, maxScale);
+
+          if (Math.abs(next - targetScale) < 0.0004) {
             // Already at the zoom limit in this direction: let the page scroll.
             return;
           }
           event.preventDefault();
-          // Ease wheel zooms so the larger step doesn't feel choppy.
-          media.style.transition = "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)";
-          scale = next;
-          paint();
+
+          // Anchor on the cursor so the thing being pointed at stays put. rect.left is the
+          // transformed left edge and the origin is top left, so rect.left - x is the
+          // untransformed origin regardless of where the easing currently sits.
+          var rect = media.getBoundingClientRect();
+          var cx = event.clientX - (rect.left - x);
+          var cy = event.clientY - (rect.top - y);
+          var ratio = next / targetScale;
+
+          targetX = cx - (cx - targetX) * ratio;
+          targetY = cy - (cy - targetY) * ratio;
+          targetScale = next;
+          animate();
         }, { passive: false });
 
         stage.addEventListener("pointerdown", function (event) {
-          media.style.transition = "none";
+          // Land any in-flight zoom before grabbing, so the drag starts from what is on
+          // screen rather than fighting the easing.
+          settle();
           dragging = true;
           startX = event.clientX - x;
           startY = event.clientY - y;
@@ -331,8 +407,9 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
 
         stage.addEventListener("pointermove", function (event) {
           if (!dragging || scale <= 1) return;
-          x = event.clientX - startX;
-          y = event.clientY - startY;
+          // Dragging is 1:1 with the pointer: easing here would feel like lag.
+          targetX = x = event.clientX - startX;
+          targetY = y = event.clientY - startY;
           paint();
         });
 

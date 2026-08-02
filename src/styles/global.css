@@ -5626,8 +5626,17 @@
   color: #f1f5f9;
 }
 
+/* slate-400 on this gradient measured 4.96:1, right at the AA floor, and read as washed
+   out. Light text on dark also needs a touch more size to feel equal to the same copy on
+   a light section. */
 .section-dark .section-subcopy {
-  color: #94a3b8;
+  color: #cbd5e1;
+  font-size: 1.12rem;
+  line-height: 1.75;
+}
+
+.section-dark .section-subcopy strong {
+  color: #f8fafc;
 }
 
 .section-dark .icon-badge {
@@ -6146,6 +6155,13 @@
   .hero-findings-toggle {
     border-radius: 0;
   }
+
+  /* The overlay goes full width here, so it has to fit inside the stage instead of being
+     clipped by it: anything past the stage's bottom edge is simply unreachable, including
+     the link out to the report. */
+  .hero-findings-overlay.is-open .hero-findings-panel {
+    max-height: calc(var(--example-stage-height-mobile, 26rem) - 2.6rem);
+  }
 }
 
 /* ==================== Tour caption ==================== */
@@ -6475,12 +6491,18 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
   gap: 2.5rem;
-  align-items: center;
+  /* Top aligned, not centred: the columns are different heights, and centring pushed the
+     first tab halfway down the row, away from the paragraph it belongs to. */
+  align-items: start;
 }
 
 @media (max-width: 900px) {
   .teams-showcase {
     grid-template-columns: 1fr;
+  }
+
+  .teams-stage {
+    height: 26rem;
   }
 }
 
@@ -6603,7 +6625,9 @@
 
 .teams-stage {
   position: relative;
-  aspect-ratio: 4 / 3;
+  /* Explicit height rather than aspect-ratio: these are tall UI screenshots, and tying
+     height to width meant the frame lost width every time it gained height. */
+  height: 38rem;
   border-radius: 1.75rem;
   overflow: hidden;
   border: 1px solid rgba(15, 23, 42, 0.08);
@@ -6942,33 +6966,56 @@
 }
 
 /* Chrome extension section */
+/* Copy and bullets on the left, video on the right. The video gets the wider column: it is
+   the thing that actually sells this, and a 16:9 embed squeezed narrow shows nothing. */
 .chrome-ext-grid {
   display: grid;
-  gap: 2.5rem;
-  grid-template-columns: 2.4fr 1fr;
+  gap: 3rem;
+  /* The video carries this section, so it takes the larger share. The bullets are short
+     enough now that the copy column does not need the width. */
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.5fr);
   align-items: center;
 }
 
 @media (max-width: 960px) {
   .chrome-ext-grid {
     grid-template-columns: 1fr;
+    gap: 2.25rem;
   }
+}
+
+.chrome-ext-copy .section-subcopy {
+  max-width: 34rem;
 }
 
 .chrome-ext-video {
   overflow: hidden;
 }
 
-.chrome-ext-points {
+.chrome-ext-list {
   display: flex;
   flex-direction: column;
-  gap: 1.15rem;
+  gap: 0.9rem;
+  margin-top: 1.75rem;
+  list-style: none;
+  padding: 0;
 }
 
 .chrome-ext-point {
   display: flex;
   align-items: flex-start;
   gap: 0.8rem;
+}
+
+.chrome-ext-point-text {
+  color: #e2e8f0;
+  font-size: 1rem;
+  line-height: 1.55;
+  padding-top: 0.1rem;
+}
+
+.chrome-ext-cta {
+  margin-top: 2rem;
 }
 
 .chrome-ext-point .icon-badge {
@@ -8094,4 +8141,889 @@
 .github-check-artifact {
   min-width: 0;
   max-width: 100%;
+}
+
+/* ==================== Check report section ==================== */
+
+.report-section {
+  padding: 3.5rem 0 4rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.report-intro {
+  max-width: 42rem;
+  margin: 0 auto 1.75rem;
+  text-align: center;
+}
+
+.report-intro h2 {
+  margin-top: 0.6rem;
+}
+
+.report-intro .section-subcopy {
+  margin-top: 0.85rem;
+}
+
+/* Points back up at the diagram: the two sections are one pull request, in order. */
+.report-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.report-eyebrow svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.report-stage-shell {
+  background: #ffffff;
+}
+
+.report-stage-shell .hero-stage-head {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+}
+
+/* ==================== Hero corner thumbnail of the report ==================== */
+
+/* A link asking the reader to imagine a second artifact gets ignored. A shrunken but
+   legible copy of it, sitting on the diagram, does not. */
+/* Sits under the diagram tag rather than in a bottom corner: the stage is 40rem tall, so
+   anything anchored to its bottom edge lands below the fold and is never seen. */
+.hero-pip {
+  position: absolute;
+  left: 0.75rem;
+  top: 3.4rem;
+  z-index: 12;
+  width: 15.5rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 0.7rem;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 14px 34px -10px rgba(15, 23, 42, 0.4), 0 3px 10px -3px rgba(15, 23, 42, 0.2);
+  transform: rotate(-1.4deg);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.hero-pip:hover,
+.hero-pip:focus-visible {
+  transform: rotate(0deg) translateY(-3px);
+  border-color: rgba(37, 99, 235, 0.5);
+  box-shadow: 0 20px 42px -10px rgba(15, 23, 42, 0.45), 0 0 0 3px rgba(37, 99, 235, 0.16);
+}
+
+.hero-pip-frame {
+  position: relative;
+  display: block;
+  height: 6.6rem;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.hero-pip-doc {
+  display: block;
+  padding: 0.5rem 0.55rem 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+
+.hpd-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.hpd-head img {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.hpd-head-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hpd-head-text b {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #1f2328;
+  line-height: 1.25;
+}
+
+.hpd-head-text i {
+  font-style: normal;
+  font-size: 7.5px;
+  color: #1a7f37;
+  line-height: 1.25;
+}
+
+.hpd-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0;
+  font-size: 7.5px;
+  font-weight: 500;
+  color: #59636e;
+  white-space: nowrap;
+}
+
+.hpd-row em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 7px;
+  color: #8b949e;
+}
+
+.hpd-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #1a7f37;
+  flex-shrink: 0;
+}
+
+.hpd-row.is-fail .hpd-dot {
+  background: #cf222e;
+}
+
+.hpd-row.is-fail em {
+  color: #cf222e;
+  font-weight: 700;
+}
+
+.hpd-row.is-flag .hpd-dot {
+  background: #bf8700;
+}
+
+.hpd-row.is-flag em {
+  color: #bf8700;
+  font-weight: 700;
+}
+
+/* The document runs off the bottom of the frame on purpose: it reads as a page with more
+   below it, which is exactly what the reader is being sent to. */
+.hero-pip-fade {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2.1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #ffffff 85%);
+  pointer-events: none;
+}
+
+.hero-pip-cap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.6rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f6f8fa;
+  color: #1f2328;
+}
+
+.hero-pip-cap svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+  color: #2563eb;
+}
+
+.hero-pip-cap-text {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.hero-pip-cap-text em {
+  font-style: normal;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #59636e;
+  background: rgba(175, 184, 193, 0.24);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.hero-pip-cap-go {
+  margin-left: auto;
+  animation: heroPipNudge 2.4s ease-in-out infinite;
+}
+
+.hero-pip:hover .hero-pip-cap-go,
+.hero-pip:focus-visible .hero-pip-cap-go {
+  animation: none;
+}
+
+@keyframes heroPipNudge {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+  }
+  85% {
+    transform: translateY(2px);
+  }
+}
+
+/* On phones the findings overlay goes full width and covers the stage, so the thumbnail
+   would sit behind it. The overlay's own link to the report covers this case. */
+@media (max-width: 768px) {
+  .hero-pip {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-pip-cap-go {
+    animation: none;
+  }
+}
+
+/* ==================== Findings -> report deep links ==================== */
+
+.hero-findings-list .ai-finding[data-report-target] {
+  position: relative;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.hero-findings-list .ai-finding[data-report-target]:hover,
+.hero-findings-list .ai-finding[data-report-target]:focus-visible {
+  border-color: rgba(37, 99, 235, 0.45);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+/* Sits out of the way until the row is hovered: four permanent "in the report" tags would
+   turn the findings list into a link farm. */
+.hero-finding-go {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 160ms ease, transform 160ms ease;
+  pointer-events: none;
+}
+
+.hero-finding-go svg {
+  width: 0.62rem;
+  height: 0.62rem;
+}
+
+.hero-findings-list .ai-finding[data-report-target]:hover .hero-finding-go,
+.hero-findings-list .ai-finding[data-report-target]:focus-visible .hero-finding-go {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.hero-findings-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  border: none;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  background: #f8fafc;
+  color: #2563eb;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.hero-findings-more:hover {
+  background: #eff6ff;
+}
+
+.hero-findings-more svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  transition: transform 160ms ease;
+}
+
+.hero-findings-more:hover svg {
+  transform: translateX(2px);
+}
+
+/* Landing flash: the reader arrives mid-document, so the line they asked for has to
+   announce itself or they have to hunt for it anyway. */
+.is-report-flash {
+  animation: reportFlash 2.6s ease-out 1;
+}
+
+@keyframes reportFlash {
+  0%,
+  55% {
+    background: rgba(37, 99, 235, 0.13);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.13);
+    border-radius: 0.4rem;
+  }
+  100% {
+    background: rgba(37, 99, 235, 0);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0);
+    border-radius: 0.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-report-flash {
+    animation: none;
+    background: rgba(37, 99, 235, 0.13);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.13);
+    border-radius: 0.4rem;
+  }
+}
+
+/* ---- Check-run detail, on GitHub's own Primer metrics ---- */
+
+/* GitHub centres its page content at 1280px; matching that keeps the rail-to-pane proportion
+   and the markdown line length right instead of stretching both to the hero's full width. */
+.ghc {
+  display: grid;
+  grid-template-columns: 296px minmax(0, 1fr);
+  max-width: 1280px;
+  margin: 0 auto;
+  min-height: 40rem;
+  background: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: #1f2328;
+}
+
+.ghc-icon-success {
+  color: #1a7f37;
+  flex-shrink: 0;
+}
+
+.ghc-rail {
+  border-right: 1px solid #d1d9e0;
+  background: #ffffff;
+}
+
+.ghc-rail-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: 1px solid #d1d9e0;
+}
+
+.ghc-rail-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1f2328;
+}
+
+.ghc-rail-sub {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #59636e;
+}
+
+.ghc-rail-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+}
+
+.ghc-rail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.ghc-rail-name {
+  color: #1f2328;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ghc-rail-time {
+  margin-left: auto;
+  font-size: 12px;
+  color: #59636e;
+  flex-shrink: 0;
+}
+
+.ghc-rail-item.is-selected {
+  background: #ddf4ff;
+}
+
+.ghc-rail-item.is-selected .ghc-rail-name {
+  font-weight: 600;
+}
+
+.ghc-pane {
+  position: relative;
+  min-width: 0;
+}
+
+.ghc-pane-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: 1px solid #d1d9e0;
+}
+
+/* GitHub renders the app's own avatar beside the check name, so this is the real
+   Striff app icon rather than a stand-in glyph. */
+.ghc-pane-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.ghc-pane-title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1f2328;
+}
+
+.ghc-pane-sub {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #59636e;
+}
+
+/* github-markdown-css metrics verbatim: 16px/1.5, 24px heading tops, 16px block bottoms. */
+.ghc-md {
+  padding: 20px 28px 28px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-wrap: break-word;
+  color: #1f2328;
+}
+
+.ghc-md > *:first-child {
+  margin-top: 0 !important;
+}
+
+.ghc-md p {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.ghc-md h3 {
+  margin-top: 22px;
+  margin-bottom: 12px;
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #1f2328;
+}
+
+.ghc-md ul {
+  margin-top: 0;
+  margin-bottom: 16px;
+  padding-left: 2em;
+  list-style: disc;
+}
+
+.ghc-md li + li {
+  margin-top: 0.25em;
+}
+
+.ghc-md code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  border-radius: 6px;
+  background-color: rgba(129, 139, 152, 0.12);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 85%;
+  white-space: break-spaces;
+}
+
+/* Review items: one emphasis per item (the title), colour carried by the badge.
+   The earlier bold-label-per-line format read as a form, not a finding. */
+.ghc-md ul.ghc-items {
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.ghc-md .ghc-items li,
+.ghc-md .ghc-items li + li {
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.ghc-md .ghc-items li:last-child {
+  margin-bottom: 0;
+}
+
+.ghc-md .ghc-items p {
+  margin: 0;
+}
+
+.ghc-item-head {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #1f2328;
+}
+
+.ghc-item-badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+.ghc-item-badge.is-doc {
+  background: #fff8c5;
+  color: #7d4e00;
+}
+
+.ghc-item-badge.is-reg {
+  background: #ffebe9;
+  color: #a40e26;
+}
+
+.ghc-item-why {
+  margin-top: 4px !important;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #59636e;
+}
+
+.ghc-item-fix {
+  margin-top: 5px !important;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #1f2328;
+}
+
+.ghc-item-fix > span {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border: 1px solid #d1d9e0;
+  border-radius: 4px;
+  background: #f6f8fa;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #59636e;
+}
+
+/* The pane is ~980px wide; stacking the two evidence sections wasted all of it. */
+.ghc-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px 44px;
+  align-items: start;
+  margin-top: 30px;
+}
+
+/* Both headings zeroed so the two columns start on the same baseline; the section's own
+   top margin does the separating instead. */
+.ghc-cols > section > h3 {
+  margin-top: 0;
+}
+
+.ghc-sub {
+  margin: 0 0 12px !important;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #59636e;
+}
+
+.ghc-md ul.ghc-rules {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ghc-md .ghc-rules li,
+.ghc-md .ghc-rules li + li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #1f2328;
+}
+
+.ghc-md .ghc-rules li svg {
+  color: #1a7f37;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.ghc-md .ghc-rules li.is-fail svg {
+  color: #d1242f;
+}
+
+.ghc-md .ghc-rules.is-advisory li svg {
+  color: #8250df;
+}
+
+.ghc-rule-text {
+  min-width: 0;
+}
+
+/* Source doc on its own line: the citation is the point of the row, but it must not
+   compete with the rule for the first line. */
+.ghc-rule-src {
+  display: block;
+  margin-top: 2px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  color: #59636e;
+}
+
+.ghc-rule-verdict {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2328;
+}
+
+/* Advisory verdicts are deliberately not styled as a result: they are an opinion. */
+.ghc-rules.is-advisory .ghc-rule-verdict {
+  font-weight: 400;
+  font-style: italic;
+  color: #59636e;
+}
+
+.ghc-advisory-head {
+  margin: 16px 0 4px !important;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8250df;
+}
+
+/* Count beside the heading: the roster's headline number, readable before any row is. */
+.ghc-h3-meta {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #59636e;
+}
+
+/* The full check roster as a dense grid rather than a 13-row table. Every check stays
+   visible at a glance, which is the point, without costing 400px of vertical. */
+.ghc-md ul.ghc-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 2px 20px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.ghc-md .ghc-checks li,
+.ghc-md .ghc-checks li + li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 5px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #1f2328;
+}
+
+.ghc-md .ghc-checks li svg {
+  color: #1a7f37;
+  flex-shrink: 0;
+}
+
+.ghc-md .ghc-checks li.is-flag svg {
+  color: #9a6700;
+}
+
+.ghc-md .ghc-checks li.is-fail svg {
+  color: #d1242f;
+}
+
+.ghc-checks-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ghc-checks-result {
+  margin-left: auto;
+  font-size: 12px;
+  color: #59636e;
+  flex-shrink: 0;
+}
+
+.ghc-md .ghc-checks li.is-flag .ghc-checks-result,
+.ghc-md .ghc-checks li.is-fail .ghc-checks-result {
+  font-weight: 600;
+  color: #1f2328;
+}
+
+.ghc-md-foot {
+  margin: 20px 0 0 !important;
+  padding-top: 14px;
+  border-top: 1px solid #d1d9e0;
+  font-size: 12px;
+  color: #59636e;
+}
+
+@media (max-width: 1023px) {
+  .ghc {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ghc-cols {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .ghc-cols > section + section > h3 {
+    margin-top: 18px;
+  }
+
+  .ghc-rail {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .ghc {
+    min-height: 26rem;
+  }
+
+  .ghc-md {
+    padding: 16px 16px 56px;
+    font-size: 13px;
+  }
+}
+
+/* ==================== Scroll to top ==================== */
+
+.scroll-top {
+  position: fixed;
+  left: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3) inset,
+    0 10px 26px -8px rgba(37, 99, 235, 0.55),
+    0 2px 6px rgba(37, 99, 235, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.5rem);
+  transition: opacity 220ms ease, transform 220ms ease, background 200ms ease, visibility 220ms;
+}
+
+.scroll-top.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.scroll-top:hover {
+  background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+  transform: translateY(-2px);
+}
+
+.scroll-top:focus-visible {
+  outline: none;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3) inset,
+    0 10px 26px -8px rgba(37, 99, 235, 0.55),
+    0 0 0 3px rgba(37, 99, 235, 0.6);
+}
+
+.scroll-top svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+@media (max-width: 768px) {
+  .scroll-top {
+    left: 0.9rem;
+    bottom: 0.9rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-top {
+    transition: opacity 220ms ease, visibility 220ms;
+    transform: none;
+  }
+
+  .scroll-top.is-visible,
+  .scroll-top:hover {
+    transform: none;
+  }
+}
+
+/* The hero subhead carries the "what is this" explanation, so it is set larger than the
+   section subcopy elsewhere on the page. */
+.hero-subcopy {
+  font-size: 1.24rem;
+  line-height: 1.6;
+  max-width: 42rem;
+}
+
+@media (max-width: 640px) {
+  .hero-subcopy {
+    font-size: 1.08rem;
+  }
 }

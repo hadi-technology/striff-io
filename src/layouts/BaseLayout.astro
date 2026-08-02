@@ -43,6 +43,42 @@ const {
     <Header />
     <slot />
     <Footer />
+
+    <button class="scroll-top" type="button" data-scroll-top aria-label="Scroll back to top">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 19V5M5 12l7-7 7 7" />
+      </svg>
+    </button>
+
+    <script is:inline>
+      // Scroll to top. Hidden near the top of the page, where it would cover content and
+      // do nothing anyway.
+      (function () {
+        var btn = document.querySelector("[data-scroll-top]");
+        if (!btn) return;
+
+        var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var queued = false;
+
+        function update() {
+          queued = false;
+          btn.classList.toggle("is-visible", window.scrollY > 600);
+        }
+
+        window.addEventListener("scroll", function () {
+          if (queued) return;
+          queued = true;
+          requestAnimationFrame(update);
+        }, { passive: true });
+
+        btn.addEventListener("click", function () {
+          window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+        });
+
+        update();
+      })();
+    </script>
+
     <script is:inline>
       (function () {
         var items = Array.from(document.querySelectorAll("[data-reveal]"));
