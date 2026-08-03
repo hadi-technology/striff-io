@@ -344,7 +344,7 @@ export default function MetricsTab({
   }));
 
   const rangeLabel =
-    months.length > 1 ? `${fullMonthLabel(months[0].yearMonth)} -- ${fullMonthLabel(latest.yearMonth)}` : fullMonthLabel(latest.yearMonth);
+    months.length > 1 ? `${fullMonthLabel(months[0].yearMonth)} to ${fullMonthLabel(latest.yearMonth)}` : fullMonthLabel(latest.yearMonth);
 
   // Union of every repo that cracked a month's top-flagged list anywhere in the window -- since
   // topFlaggedRepos is a per-month top-N, a reshuffling top spot can surface more than N distinct

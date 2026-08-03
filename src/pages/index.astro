@@ -36,13 +36,6 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
 const githubAppUrl = "https://github.com/apps/striff-app/installations/new";
 const examplesUrl = "/#examples";
 
-const comparisonRows = [
-  {
-    left: "Shows edited lines and moved code.",
-    right: "Shows new dependencies, boundary movement, and architectural blast radius."
-  }
-];
-
 interface TeamPhilosophyItem {
   icon: string;
   color: string;
@@ -65,15 +58,15 @@ const teamPhilosophy: TeamPhilosophyItem[] = [
   {
     icon: "chart",
     color: "emerald",
-    title: "Find out which repos are rotting before it's a rewrite.",
-    body: "Clean PR rate, high-risk PR rate, and the repos accumulating the most flags: a live read on where architecture is holding and where it's slipping, across every repo you own. You find out which team needs help while it's still a conversation, not a budget request.",
+    title: "Know which repos are getting harder to work in.",
+    body: "Clean PR rate, high-risk PR rate, and the repos accumulating the most flags, tracked month over month across your team's repos. When you need to argue for time to fix something, you have the trend rather than an anecdote.",
     preview: "metrics"
   },
   {
     icon: "checklist",
     color: "blue",
     title: "A green check your team can actually trust.",
-    body: "Most tools go quiet when they find nothing, so green means nobody knows what was looked at. Striff runs twelve structural checks plus the rules it read out of your own docs on every PR, and reports every one of them, clean or not. Your team stops assuming and starts knowing. Still one Check next to your CI: no comment threads, no bot spam.",
+    body: "Striff runs twelve structural checks plus the rules it read out of your own docs on every PR, and reports every one of them, clean or not. A green check tells your team exactly what was looked at, so they stop assuming and start knowing. It stays one Check next to your CI: no comment threads, no bot spam.",
     preview: "checks"
   }
 ];
@@ -115,7 +108,7 @@ const plans = [
   {
     eyebrow: "Starter",
     icon: "team",
-    title: "Private repos",
+    title: "One team's private repos",
     body: "GitHub App checks on every private PR. Automated architecture review with the full detector suite and risk scoring.",
     price: "$29",
     priceDetail: "/mo · 5 repos"
@@ -147,7 +140,7 @@ const plans = [
         <div class="hero-copy relative z-10 mx-auto max-w-5xl space-y-6 text-center" data-reveal>
           <h1 class="mx-auto">More code isn't more <span class="font-bold text-blue-600">product</span>.</h1>
           <p class="section-subcopy hero-subcopy mx-auto">
-            Your team merges more code every week than anyone can read. <strong>Striff is architecture review for every GitHub pull request.</strong> It reads each PR as a dependency graph, checks it against the architecture you documented, and reports back as one check, before anyone merges.
+            Your team merges more code every week than anyone can read, and every risky change routes to the one person who can judge it. <strong>Striff is architecture review for every GitHub pull request.</strong> It checks each change against the architecture you documented and reports back as one check, so approving a merge stops being a judgment call only your most senior engineer can make.
           </p>
           <div class="flex flex-wrap justify-center gap-3 pt-1">
             <a class="btn-primary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
@@ -294,7 +287,7 @@ const plans = [
                       </div>
                     </div>
                     <div class="hero-findings-verdict">
-                      No other tool reads your docs. <strong>Striff</strong> cites <strong>REFACTORING.md</strong> by name and flags the exact class that violates it.
+                      <strong>Striff</strong> read <strong>REFACTORING.md</strong> out of this repo and flagged the exact class that contradicts it.
                     </div>
                     <button class="hero-findings-more" type="button" data-report-jump="top">
                       See all 13 checks that ran
@@ -328,7 +321,7 @@ const plans = [
           </p>
           <h2 class="text-balance">Your reviewers stop guessing whether it's safe to merge.</h2>
           <p class="section-subcopy">
-            Passing tests tell your team the code works today. They say nothing about whether this change made the system harder to work in tomorrow. Striff answers that on the pull request, names the exact class at fault and quotes the rule it broke, so <strong>approving a change stops being a judgment call only your most senior engineer can make</strong>.
+            Passing tests tell your team the code works today. They say nothing about whether this change made the system harder to work in tomorrow. Striff answers that on the pull request, names the exact class at fault and quotes the rule it broke, so <strong>any reviewer on your team can approve with the confidence your staff engineer would</strong>.
           </p>
         </div>
 
@@ -571,7 +564,7 @@ const plans = [
           <ul class="example-proof-stack self-start md:self-auto">
             <li>Live public PRs: open any of them and verify</li>
             <li>Findings posted on the PR before merge</li>
-            <li>Zero overlap with AI reviewers' comments</li>
+            <li>Findings you can trace back to the diagram</li>
           </ul>
         </div>
         <!-- Tab selector strip -->
@@ -673,11 +666,7 @@ const plans = [
                     </div>
 
                     <div class="ex-verdict">
-                      {example.aiTool ? (
-                        <p><strong>AI reviewers on this PR caught implementation bugs, and zero of these findings.</strong> Striff reads the layer diff-based tools can't see. Use both.</p>
-                      ) : (
-                        <p><InlineCodeText text={example.checkHeader} /></p>
-                      )}
+                      <p><InlineCodeText text={example.checkHeader} /></p>
                       <a class="blog-link-btn blog-link-btn--compact" href="/blog/architectural-findings-in-oss">
                         More findings from major OSS repos
                         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
@@ -718,10 +707,10 @@ const plans = [
     <section id="how" class="scroll-mt-24 bg-slate-100/60 pb-16 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="max-w-3xl" data-reveal>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Built for engineering leaders</p>
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For engineering managers</p>
           <h2 class="mt-3 text-balance">Writing code was never the hard part.</h2>
           <p class="section-subcopy mt-4">
-            Keeping a system coherent while a dozen people change it every day is the hard part, and it's the part nobody owns. Striff checks every pull request against the architecture you've already documented, then rolls the results into an org-wide view, so <strong>the system your team is building stays the system you designed</strong>.
+            Keeping a system coherent while a dozen people change it every day is the hard part, and it's the part nobody owns. Striff checks every pull request against the architecture you've already documented, then rolls the results into a view of your team's repos, so <strong>the system your team is building stays the system you designed</strong>.
           </p>
         </div>
         <div class="teams-showcase mt-10" data-teams-showcase data-reveal>
@@ -1026,7 +1015,7 @@ const plans = [
         <div class="faq-list" data-reveal>
           <details class="faq-item">
             <summary class="faq-q">Does Striff replace my AI code reviewer (CodeRabbit, Copilot, Claude)?</summary>
-            <p class="faq-a">No, it works alongside them. AI reviewers read the diff and catch code-level bugs, style issues, and logic errors. Striff reads the dependency graph and catches what the diff can't show: new cycles, boundary violations, coupling spikes, and god classes forming. On the example PRs above, the two sets of findings had zero overlap.</p>
+            <p class="faq-a">No, it works alongside them. Striff reviews one layer: the dependency graph your change produces. It reports new cycles, boundary violations, coupling spikes, and god classes forming, and checks the whole thing against the architecture your repo already documents. Line-level bugs, style, and logic stay with your existing review, human or AI.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">How does Striff know what my architecture is supposed to look like?</summary>

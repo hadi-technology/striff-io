@@ -13,17 +13,18 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
       <div class="max-w-3xl">
         <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600" data-reveal>Pricing</p>
         <h1 class="mt-3 text-4xl font-extrabold tracking-tight text-slate-950 md:text-5xl" data-reveal>
-          Free for public repos. For private repos, pay only for what you use.
+          Free for public repos. Private repos cost one of three flat monthly prices.
         </h1>
         <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600" data-reveal>
-          Start free on public pull requests. Connect private repos when you want the same protection on the code you can't afford to break. Connect as many as you like: your tier is based on how many were <strong>active</strong> (generated a diagram) during your billing period, not how many you've connected, so a quiet repo never costs you anything.
+          Start free on public pull requests. Private repos are billed at <strong>$29, $59, or $149 a month</strong>, flat. Which one you land on follows how many repos were actually <strong>active</strong> (generated a diagram) that period, not how many you connected, so connect as many as you like. Your price never changes in the middle of a billing period, and a fully quiet month drops to $0.
         </p>
-        <!-- Four tiers with four "Get started" buttons all pointing at one install URL promised a
-             choice the flow never honoured. There is nothing to pick up front: the tiers are
-             price points you land on, so say that before anyone clicks. -->
+        <!-- The tiers are price points you land on, not a choice made up front, and the whole
+             point of banding rather than metering is that the bill is predictable. So the two
+             questions a band raises (what happens when I cross one, and when does it bite)
+             get answered here, above the cards, rather than below them. -->
         <p class="pricing-note" data-reveal>
           <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13ZM8 4a.9.9 0 1 0 0 1.8A.9.9 0 0 0 8 4Zm.75 3.5a.75.75 0 0 0-1.5 0v4a.75.75 0 0 0 1.5 0Z"/></svg>
-          <span>There is no plan to choose up front. Every tier below starts with the same install, and you land on the one that matches your active repo count. Prices are USD, billed monthly through Stripe.</span>
+          <span>Every paid plan is the same product. The only thing that changes is how many repos can be active. Nothing to pick up front either: every tier below starts with the same install. Crossing a band never stops a review and never charges you mid-period. Striff keeps analyzing every repo you have enabled, and next month's bill reflects how active you were this month. Prices are USD, billed through Stripe.</span>
         </p>
       </div>
 
@@ -38,10 +39,14 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Automated GitHub App checks on public PRs</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Architecture diagrams on any public PR</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Risky-dependency warnings</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Metrics dashboard</li>
           </ul>
+          <!-- The secondary link sits above the button so that the primary CTA is the last
+               element in every card and the four buttons land on one line. With the link
+               below it, this card's button floated a row higher than the other three. -->
           <div class="mt-auto flex flex-col gap-2">
-            <a href={githubInstallUrl} class="btn-secondary inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install free</a>
             <a href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen" class="inline-flex w-full items-center justify-center py-2 text-xs font-medium text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Get the browser extension</a>
+            <a href={githubInstallUrl} class="btn-secondary inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install free</a>
           </div>
         </article>
 
@@ -49,11 +54,11 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
         <article class="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
           <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Starter</p>
           <h2 class="mt-3 text-3xl font-extrabold text-slate-950">$29<span class="text-base font-medium text-slate-400">/mo</span></h2>
-          <p class="mt-1 text-sm text-slate-500">Up to 5 active repos</p>
+          <p class="mt-1 text-sm text-slate-500">Up to 5 active repos. Sized for one team.</p>
           <ul class="mt-5 space-y-2 text-sm text-slate-600">
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> GitHub App checks</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Automated review on every PR</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Full detector suite + risk scoring</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Checks on every private PR</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> 12 structural checks plus your documented rules</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Metrics dashboard</li>
           </ul>
           <a href={githubInstallUrl} class="btn-secondary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install the GitHub App</a>
         </article>
@@ -62,13 +67,12 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
         <article class="flex flex-col rounded-2xl border-2 border-blue-500 bg-white p-6 shadow-lg ring-1 ring-blue-500/10">
           <div class="flex items-center justify-between">
             <p class="text-xs font-bold uppercase tracking-[0.12em] text-blue-600">Team</p>
-            <span class="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-600">Popular</span>
+            <span class="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-600">Recommended</span>
           </div>
           <h2 class="mt-3 text-3xl font-extrabold text-slate-950">$59<span class="text-base font-medium text-slate-400">/mo</span></h2>
-          <p class="mt-1 text-sm text-slate-500">Up to 15 active repos</p>
+          <p class="mt-1 text-sm text-slate-500">Up to 15 active repos. Two or three teams.</p>
           <ul class="mt-5 space-y-2 text-sm text-slate-600">
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Everything in Starter</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Lower cost per active repo</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Same product as Starter, 3x the repos</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Email support</li>
           </ul>
           <a href={githubInstallUrl} class="btn-primary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install the GitHub App</a>
@@ -78,10 +82,10 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
         <article class="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
           <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Scale</p>
           <h2 class="mt-3 text-3xl font-extrabold text-slate-950">$149<span class="text-base font-medium text-slate-400">/mo</span></h2>
-          <p class="mt-1 text-sm text-slate-500">Up to 50 active repos</p>
+          <p class="mt-1 text-sm text-slate-500">Up to 50 active repos. Several teams.</p>
           <ul class="mt-5 space-y-2 text-sm text-slate-600">
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Everything in Team</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Lowest cost per active repo</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Same product as Team, 50 repos</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Email support</li>
           </ul>
           <a href={githubInstallUrl} class="btn-secondary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install the GitHub App</a>
         </article>
@@ -93,6 +97,10 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
           <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Enterprise</p>
           <h3 class="mt-1 text-xl font-bold text-slate-950">50+ repos, self-hosted, or compliance needs</h3>
           <p class="mt-1 text-sm text-slate-600">Private deployment, SSO, audit workflows, and dedicated support.</p>
+          <!-- Crossing the Scale cap holds billing at Scale rather than escalating or failing
+               (ActiveRepoTierSyncJob leaves the price alone above 50). That is the answer to
+               "what happens if we outgrow the top plan", so it belongs on the page. -->
+          <p class="mt-2 text-sm text-slate-500">Go past 50 active repos and you stay at $149 while we get in touch to work out a plan that fits. Nothing changes without a conversation.</p>
         </div>
         <a href="/contact" class="btn-primary inline-flex shrink-0">Talk to us</a>
       </div>
