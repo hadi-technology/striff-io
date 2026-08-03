@@ -9,9 +9,19 @@
  *   .github-diff-graphic          the image to transform (required)
  *   [data-panzoom-hint]           optional hint, hidden on first interaction
  *   [data-panzoom-ignore]         subtree that should not pan or zoom the stage
- *   data-initial-scale/-x/-y      desktop starting view
- *   data-mobile-scale/-x/-y       mobile starting view, unless fitOnMobile is set
+ *   data-focus-x/-y               point to centre, as a 0..1 fraction of the image
+ *   data-mobile-focus-x/-y        optional mobile override of the focal point
+ *   data-focus-offset-x/-y        optional px nudge off centre, for stages with overlays
+ *   data-initial-scale            desktop zoom
+ *   data-mobile-scale             mobile zoom
+ *   data-initial-x/-y             legacy absolute offsets, used only without data-focus-*
+ *   data-mobile-x/-y              same, for mobile
  * A matching [data-panzoom-reset="<id>"] button elsewhere resets the view.
+ *
+ * Prefer data-focus-*. The same diagram is rendered into stages of different widths (854px
+ * in the homepage carousel, 1252px on /examples), and absolute offsets can only ever be
+ * right for one of them: that is why diagrams were opening cropped through the middle of a
+ * class box. A fraction of the image is the same point at any stage size.
  */
 
 function clamp(value, min, max) {
@@ -140,18 +150,73 @@ export function initPanzoom(options) {
         const stageH = stage.clientHeight;
         const imgH = media.clientHeight || stageH;
         targetY = Math.min(0, (stageH - imgH) / 2);
+        baseScale = targetScale;
+        settle();
+        return;
+      }
+
+      targetScale = mobile
+        ? numberAttr("data-mobile-scale", 1.2)
+        : numberAttr("data-initial-scale", 1.6);
+
+      // The focal point is a property of the diagram, so it is normally shared across
+      // breakpoints; the mobile override exists for stages whose overlays differ there.
+      const focusX = mobile
+        ? numberAttr("data-mobile-focus-x", numberAttr("data-focus-x", NaN))
+        : numberAttr("data-focus-x", NaN);
+      const focusY = mobile
+        ? numberAttr("data-mobile-focus-y", numberAttr("data-focus-y", NaN))
+        : numberAttr("data-focus-y", NaN);
+
+      if (Number.isFinite(focusX) && Number.isFinite(focusY)) {
+        // Measured every time rather than cached: the same stage is a different width after
+        // a resize, an orientation change, or a tab becoming visible.
+        const stageW = stage.clientWidth;
+        const stageH = stage.clientHeight;
+        const imgW = media.offsetWidth || stageW;
+        const imgH = media.offsetHeight || stageH;
+
+        targetX = stageW / 2 - focusX * imgW * targetScale + numberAttr("data-focus-offset-x", 0);
+        targetY = stageH / 2 - focusY * imgH * targetScale + numberAttr("data-focus-offset-y", 0);
       } else if (mobile) {
-        targetScale = numberAttr("data-mobile-scale", 1.2);
         targetX = numberAttr("data-mobile-x", -40);
         targetY = numberAttr("data-mobile-y", -30);
       } else {
-        targetScale = numberAttr("data-initial-scale", 1.6);
         targetX = numberAttr("data-initial-x", -120);
         targetY = numberAttr("data-initial-y", -80);
       }
 
       baseScale = targetScale;
       settle();
+    }
+
+    // The framing is derived from measured sizes, so it has to be recomputed whenever those
+    // measurements change. Only while the view is untouched: re-framing under someone who has
+    // panned somewhere deliberately would be worse than leaving it alone.
+    let userHasMoved = false;
+
+    // Carousel diagrams are loading="lazy", so at init the image often has no layout box yet
+    // and the focal-point maths falls back to the stage's own size. That lands the view on an
+    // empty corner of the diagram, which is exactly the failure this was meant to fix.
+    if (!media.complete || !media.naturalWidth) {
+      media.addEventListener(
+        "load",
+        function () {
+          if (!userHasMoved) resetView();
+        },
+        { once: true }
+      );
+    }
+
+    if (typeof ResizeObserver !== "undefined") {
+      let firstObservation = true;
+      new ResizeObserver(function () {
+        if (firstObservation) {
+          firstObservation = false;
+          return;
+        }
+        if (!userHasMoved) resetView();
+      }).observe(stage);
     }
 
     stage.addEventListener(
@@ -177,6 +242,7 @@ export function initPanzoom(options) {
         }
         event.preventDefault();
         hideHint();
+        userHasMoved = true;
 
         // Anchor on the cursor so the thing being pointed at stays put. rect.left is the
         // transformed left edge and the origin is top left, so rect.left - x is the
@@ -197,6 +263,7 @@ export function initPanzoom(options) {
     stage.addEventListener("pointerdown", function (event) {
       if (isOverlayControl(event)) return;
       hideHint();
+      userHasMoved = true;
       // Land any in-flight zoom before grabbing, so the drag starts from what is on
       // screen rather than fighting the easing.
       settle();
@@ -225,9 +292,17 @@ export function initPanzoom(options) {
     stage.addEventListener("pointercancel", stopDragging);
     stage.addEventListener("pointerleave", stopDragging);
 
-    if (reset) reset.addEventListener("click", resetView);
+    if (reset) {
+      reset.addEventListener("click", function () {
+        userHasMoved = false;
+        resetView();
+      });
+    }
 
-    stage._panzoomReset = resetView;
+    stage._panzoomReset = function () {
+      userHasMoved = false;
+      resetView();
+    };
     resetView();
   });
 }

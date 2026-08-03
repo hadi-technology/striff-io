@@ -62,8 +62,17 @@ export default function Dashboard() {
   }, []);
 
   async function init() {
+    setError("");
+    setLoading(true);
     try {
       const statusRes = await fetch("/.netlify/functions/auth-status");
+      // An outage, a cold start or a proxy error page all return HTML here, and .json() then
+      // throws a parser message ("Unexpected token '<'...") that used to be shown to the
+      // customer verbatim. Decide on the content type instead of guessing from the exception.
+      const contentType = statusRes.headers.get("content-type") || "";
+      if (!statusRes.ok || !contentType.includes("application/json")) {
+        throw new Error("UNREACHABLE");
+      }
       const status = await statusRes.json();
       if (!status.authenticated) {
         window.location.href = getOAuthUrl();
@@ -97,7 +106,13 @@ export default function Dashboard() {
         window.history.replaceState({}, "", "/dashboard");
       }
     } catch (e: any) {
-      setError(e.message || "Failed to load dashboard");
+      // Raw exception text is for the console, not for a customer looking at a billing page.
+      console.error("Dashboard failed to load", e);
+      setError(
+        e?.message === "UNREACHABLE"
+          ? "We couldn't reach Striff just now. This is on our side, not yours, and your installations and subscription are unaffected."
+          : "Something went wrong loading your dashboard. Your installations and subscription are unaffected."
+      );
     } finally {
       setLoading(false);
     }
@@ -118,11 +133,24 @@ export default function Dashboard() {
 
   if (error && !user) {
     return (
-      <div className="dashboard-alert dashboard-alert-danger">
-        <p className="text-red-700">{error}</p>
-        <a href="/" className="mt-4 inline-block text-sm text-blue-600 hover:underline">
-          Back to homepage
-        </a>
+      <div className="dashboard-error-state">
+        <h1 className="dashboard-error-title">We can't load your dashboard right now</h1>
+        <p className="dashboard-error-body">{error}</p>
+        <div className="dashboard-error-actions">
+          <button type="button" onClick={init} className="dashboard-button dashboard-button-primary">
+            Try again
+          </button>
+          <a href="/contact" className="dashboard-button dashboard-button-secondary">
+            Contact support
+          </a>
+          <a href="/" className="dashboard-button dashboard-button-secondary">
+            Back to homepage
+          </a>
+        </div>
+        <p className="dashboard-error-foot">
+          Reviews keep running on your pull requests whether or not this page loads. Nothing here
+          affects the checks Striff posts on GitHub.
+        </p>
       </div>
     );
   }

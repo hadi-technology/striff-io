@@ -41,17 +41,16 @@ export type ExampleReview = {
   headline: string;
   body: string;
   svg: string;
+  /**
+   * How the diagram opens. `focus` is the point to centre, as a 0..1 fraction of the image,
+   * and it is deliberately not a pixel offset: the same diagram is rendered into an 854px
+   * stage on the homepage and a 1252px stage on /examples, so pixel offsets could only ever
+   * frame one of the two correctly. Scale differs per breakpoint; the focal point does not.
+   */
   panzoom: {
-    desktop: {
-      scale: number;
-      x: number;
-      y: number;
-    };
-    mobile: {
-      scale: number;
-      x: number;
-      y: number;
-    };
+    focus: { x: number; y: number };
+    desktopScale: number;
+    mobileScale: number;
   };
   viewport: {
     desktopHeight: string;
@@ -84,8 +83,9 @@ export const exampleReviews: ExampleReview[] = [
     body: "This PR teaches Pinot to generate Avro schemas from logical data types. Copilot reviewed the code. Striff caught the direction of the change: org.apache.pinot.core.util now depends on org.apache.pinot.plugin.inputformat.avro, the first edge ever from the core into the Avro plugin package. Plugin boundaries exist so the core never knows about plugins; this PR quietly reversed that.",
     svg: "/examples/pinot.svg",
     panzoom: {
-      desktop: { scale: 3.2, x: -1622, y: -253 },
-      mobile: { scale: 3.4, x: -794, y: -79 }
+      focus: { x: 0.8979, y: 0.3671 },
+      desktopScale: 2.8,
+      mobileScale: 2.8
     },
     viewport: {
       desktopHeight: "30rem",
@@ -151,8 +151,9 @@ export const exampleReviews: ExampleReview[] = [
     body: "This PR stops Gossip from losing absolute event timestamps. The fix is fine. The new smoke tests are the story: t.smoke.tests now imports celery.utils and celery.worker.consumer directly, two dependency directions that never existed before, one of them jumping from the test layer straight to a utility layer four levels down.",
     svg: "/examples/celery.svg",
     panzoom: {
-      desktop: { scale: 1.89, x: -320, y: -444 },
-      mobile: { scale: 2.13, x: -185, y: -152 }
+      focus: { x: 0.4628, y: 0.787 },
+      desktopScale: 1.89,
+      mobileScale: 1.89
     },
     viewport: {
       desktopHeight: "26rem",
@@ -210,8 +211,9 @@ export const exampleReviews: ExampleReview[] = [
     body: "This PR removes require() calls so bundlers can statically analyze TypeORM. Qodo caught real code-level issues. Striff caught the structural side effect: the React Native and Expo drivers now depend directly on src.platform, two boundary crossings with no prior edge in that direction, each skipping a layer.",
     svg: "/examples/typeorm.svg",
     panzoom: {
-      desktop: { scale: 2.4, x: -205, y: -366 },
-      mobile: { scale: 2.7, x: -127, y: -112 }
+      focus: { x: 0.3084, y: 0.7751 },
+      desktopScale: 2.4,
+      mobileScale: 2.4
     },
     viewport: {
       desktopHeight: "26rem",
@@ -282,8 +284,9 @@ export const exampleReviews: ExampleReview[] = [
     body: "This PR fixes split-include queries dropping child rows under concurrent inserts. Copilot reviewed the code. Striff caught the structure: SplitQueryResultCoordinator in Query.Internal now depends on the root Microsoft.EntityFrameworkCore namespace, where the PR's new DbQueryConcurrencyException lives. That direction never existed before, it skips 3 layers, and it leaves the query namespaces one step from a full cycle.",
     svg: "/examples/efcore.svg",
     panzoom: {
-      desktop: { scale: 3.2, x: -1338, y: -2 },
-      mobile: { scale: 3.4, x: -657, y: 42 }
+      focus: { x: 0.7244, y: 0.2296 },
+      desktopScale: 3.6,
+      mobileScale: 3.6
     },
     viewport: {
       desktopHeight: "26rem",

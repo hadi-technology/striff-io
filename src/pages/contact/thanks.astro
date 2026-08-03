@@ -1,0 +1,43 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
+---
+<BaseLayout
+  title="Message received | Striff"
+  description="Your message reached the Striff team."
+  canonical="https://striff.io/contact/thanks"
+  robots="noindex,nofollow"
+>
+  <main class="bg-slate-50 text-slate-900">
+    <section class="mx-auto max-w-3xl px-6 py-20 md:py-28">
+      <div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm md:p-12">
+        <p class="inline-flex rounded-full border border-green-200 bg-green-50 px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-green-800">
+          Message received
+        </p>
+        <h1 class="mt-5 text-4xl font-black tracking-tight text-slate-950 md:text-5xl">
+          Thanks. We've got it.
+        </h1>
+        <p class="mt-5 text-lg leading-8 text-slate-600">
+          A person reads every message that comes through this form, and you'll get a reply by
+          email within two business days. If you sent an enterprise or private-deployment
+          question, expect a longer answer and a couple of follow-up questions.
+        </p>
+
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+          <a href={githubInstallUrl} class="btn-primary inline-flex justify-center" target="_blank" rel="noopener noreferrer">
+            Install the GitHub App
+          </a>
+          <a href="/examples" class="btn-secondary inline-flex justify-center">See example reviews</a>
+          <a href="/" class="btn-secondary inline-flex justify-center">Back to homepage</a>
+        </div>
+
+        <p class="mt-8 border-t border-slate-100 pt-6 text-sm leading-6 text-slate-500">
+          Faster route for anything public: our
+          <a class="text-blue-600 hover:underline" href="https://github.com/hadi-technology/striff-io/discussions" target="_blank" rel="noopener noreferrer">GitHub Discussions</a>
+          page, where questions and answers stay visible to everyone.
+        </p>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

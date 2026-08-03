@@ -18,6 +18,13 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
         <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600" data-reveal>
           Start free on public pull requests. Connect private repos when you want the same protection on the code you can't afford to break. Connect as many as you like: your tier is based on how many were <strong>active</strong> (generated a diagram) during your billing period, not how many you've connected, so a quiet repo never costs you anything.
         </p>
+        <!-- Four tiers with four "Get started" buttons all pointing at one install URL promised a
+             choice the flow never honoured. There is nothing to pick up front: the tiers are
+             price points you land on, so say that before anyone clicks. -->
+        <p class="pricing-note" data-reveal>
+          <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13ZM8 4a.9.9 0 1 0 0 1.8A.9.9 0 0 0 8 4Zm.75 3.5a.75.75 0 0 0-1.5 0v4a.75.75 0 0 0 1.5 0Z"/></svg>
+          <span>There is no plan to choose up front. Every tier below starts with the same install, and you land on the one that matches your active repo count. Prices are USD, billed monthly through Stripe.</span>
+        </p>
       </div>
 
       <div class="grid gap-5 lg:grid-cols-4 items-stretch" data-reveal>
@@ -34,7 +41,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
           </ul>
           <div class="mt-auto flex flex-col gap-2">
             <a href={githubInstallUrl} class="btn-secondary inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install free</a>
-            <a href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen" class="inline-flex w-full justify-center text-xs font-medium text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Get the browser extension</a>
+            <a href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen" class="inline-flex w-full items-center justify-center py-2 text-xs font-medium text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Get the browser extension</a>
           </div>
         </article>
 
@@ -48,7 +55,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Automated review on every PR</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Full detector suite + risk scoring</li>
           </ul>
-          <a href={githubInstallUrl} class="btn-secondary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Get started</a>
+          <a href={githubInstallUrl} class="btn-secondary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install the GitHub App</a>
         </article>
 
         <!-- Team (featured) -->
@@ -64,7 +71,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Lower cost per active repo</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Email support</li>
           </ul>
-          <a href={githubInstallUrl} class="btn-primary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Get started</a>
+          <a href={githubInstallUrl} class="btn-primary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install the GitHub App</a>
         </article>
 
         <!-- Scale -->
@@ -76,7 +83,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Everything in Team</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Lowest cost per active repo</li>
           </ul>
-          <a href={githubInstallUrl} class="btn-secondary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Get started</a>
+          <a href={githubInstallUrl} class="btn-secondary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install the GitHub App</a>
         </article>
       </div>
 

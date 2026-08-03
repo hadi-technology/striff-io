@@ -3587,7 +3587,8 @@
     }
   }
 
-  [data-reveal] {
+  /* .js is set by an inline head script: no script, no hiding. */
+  .js [data-reveal] {
     opacity: 0;
     transform: translateY(20px);
     transition:
@@ -3595,7 +3596,7 @@
       transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  [data-reveal].is-visible {
+  .js [data-reveal].is-visible {
     opacity: 1;
     transform: translateY(0);
   }
@@ -5746,11 +5747,13 @@
   color: #67e8f9;
 }
 
-.examples-band .example-dot {
+/* The dot itself is a pseudo-element (see the tap-target block), so the theme colours have
+   to land there: painting the button would fill the whole 32x44 hit area. */
+.examples-band .example-dot::before {
   background: rgba(255, 255, 255, 0.2);
 }
 
-.examples-band .example-dot.is-active {
+.examples-band .example-dot.is-active::before {
   background: #22d3ee;
 }
 
@@ -8943,9 +8946,11 @@
 
 /* ==================== Scroll to top ==================== */
 
+/* Right, not left: the page content is left-aligned, so a left-anchored button sits on top
+   of CTAs and body copy the whole way down. */
 .scroll-top {
   position: fixed;
-  left: 1.25rem;
+  right: 1.25rem;
   bottom: 1.25rem;
   z-index: 60;
   display: inline-flex;
@@ -8995,7 +9000,7 @@
 
 @media (max-width: 768px) {
   .scroll-top {
-    left: 0.9rem;
+    right: 0.9rem;
     bottom: 0.9rem;
     width: 2.5rem;
     height: 2.5rem;
@@ -9026,4 +9031,278 @@
   .hero-subcopy {
     font-size: 1.08rem;
   }
+}
+
+/* ==================== Skip link ==================== */
+/* Nine header links stand between a keyboard user and the content on every page. */
+
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -100%;
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.7rem 1.1rem;
+  border-radius: 0.65rem;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 12px 28px -10px rgba(15, 23, 42, 0.6);
+}
+
+.skip-link:focus {
+  top: 0.75rem;
+}
+
+#main-content:focus {
+  outline: none;
+}
+
+/* The sign-in control is a desktop dropdown; inside the mobile sheet it should read as a
+   full-width row like the buttons above it. It renders as an Astro island, so the anchor sits
+   inside a wrapper element rather than being a direct child. */
+.mobile-auth-slot,
+.mobile-auth-slot > *,
+.mobile-auth-slot astro-island {
+  display: block;
+  width: 100%;
+}
+
+.mobile-auth-slot a {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ==================== Hero stage actions ==================== */
+
+.hero-stage-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+/* Sits on the dark stage header, so it inverts the light GitHub-style reset button. */
+.hero-stage-reset.github-diff-reset {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #e2e8f0;
+}
+
+.hero-stage-reset.github-diff-reset:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* Now a real link to the report section, so it gets link affordances to match its colour. */
+.hero-what-you-get {
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.hero-what-you-get:hover {
+  background: rgba(37, 99, 235, 0.08);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .hero-stage-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Text this small needs the row height to be tappable even if the glyphs are not. */
+  .hero-what-you-get {
+    padding: 0.6rem;
+    text-align: left;
+  }
+}
+
+/* Reconciles the green GitHub check-run header with a body full of flagged findings. */
+.ghc-pane-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0 1.25rem 0.25rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 0.5rem;
+  background: rgba(37, 99, 235, 0.05);
+  color: #334155;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.ghc-pane-note svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: #2563eb;
+}
+
+@media (max-width: 640px) {
+  .ghc-pane-note {
+    margin: 0 0.9rem 0.25rem;
+  }
+}
+
+/* ==================== Pricing clarifier ==================== */
+
+.pricing-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  max-width: 42rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 0.75rem;
+  background: rgba(37, 99, 235, 0.05);
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.pricing-note svg {
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+  color: #2563eb;
+}
+
+/* ==================== Dashboard error state ==================== */
+/* Replaces a red box containing a raw JS exception message. */
+
+.dashboard-error-state {
+  max-width: 34rem;
+  margin: 3rem auto;
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  background: #ffffff;
+  box-shadow: 0 18px 40px -28px rgba(15, 23, 42, 0.4);
+  text-align: center;
+}
+
+.dashboard-error-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-error-body {
+  margin-top: 0.75rem;
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.dashboard-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+
+.dashboard-error-foot {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #f1f5f9;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+/* ==================== Tap targets ==================== */
+
+/* Dots were 8x8 tap targets. The button becomes the target and the dot moves to a
+   pseudo-element, so the visual stays identical while the hit area reaches 32x44. */
+.example-dot {
+  position: relative;
+  width: 2rem;
+  height: 2.75rem;
+  background: transparent;
+}
+
+.example-dot::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.15);
+  transition: width 180ms ease, background-color 180ms ease;
+}
+
+.example-dot.is-active {
+  width: 2.75rem;
+  background: transparent;
+}
+
+.example-dot.is-active::before {
+  width: 1.5rem;
+  background: var(--brand);
+}
+
+.example-dots {
+  gap: 0.15rem;
+}
+
+/* One pixel under the 32px minimum, on a control that only exists to be clicked. */
+.github-diff-reset {
+  padding: 0.45rem 0.75rem;
+}
+
+/* Footer links sat at 23px tall in a 40px-tall touch world. */
+.footer-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+}
+
+/* 0.6rem is 9.6px. Small caps at that size stop being readable and start being texture. */
+.ex-lane-tag {
+  font-size: 0.68rem;
+}
+
+.panzoom-hint {
+  font-size: 0.72rem;
+}
+
+/* The strip scrolls, but nothing said so: at 390px the fourth tab was simply gone. */
+@media (max-width: 860px) {
+  .example-tabs {
+    position: relative;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 0.5rem;
+    /* Fades the right edge so a cut-off tab reads as "more this way". */
+    mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent 100%);
+  }
+
+  .example-tabs > .example-tab {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+}
+
+/* Sits under the carousel controls, so it centres with them rather than snapping back to
+   the section's left edge. */
+.examples-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
 }

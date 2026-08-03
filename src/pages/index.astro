@@ -165,10 +165,12 @@ const plans = [
           </div>
         </div>
 
-        <div class="hero-what-you-get" data-reveal>
+        <!-- Styled like a link and coloured like a link, so it is one. It also carries the only
+             route to the report section on mobile, where the report thumbnail is hidden. -->
+        <a class="hero-what-you-get" href="#report" data-reveal>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M12 19l-5-5M12 19l5-5"/></svg>
           What posts on your pull request: a diagram of what changed, and a report of every check that ran
-        </div>
+        </a>
 
         <div class="relative z-10 mx-auto mt-4 w-full max-w-[90rem]" data-reveal>
           <div class="hero-stage-shell" data-hero-stage>
@@ -179,20 +181,28 @@ const plans = [
                 <span class="hero-context-chip hero-context-chip-muted">Java</span>
                 <span class="hero-context-chip hero-context-chip-danger">2 HIGH · 2 MEDIUM</span>
               </div>
-              <div class="hero-stage-badge">Striff / architectural-review</div>
+              <div class="hero-stage-actions">
+                <!-- The stage invites scroll-to-zoom and drag-to-pan, so it needs the same way
+                     back that every other diagram on the site has. -->
+                <button class="github-diff-reset hero-stage-reset" type="button" data-panzoom-reset="pz-hero">Reset view</button>
+                <div class="hero-stage-badge">Striff / architectural-review</div>
+              </div>
             </div>
 
             <div class="hero-diagram-wrap">
+              <!-- Framing is constrained on both sides: the report thumbnail floats over the
+                   left ~260px and the findings overlay over the right ~416px. The class the
+                   findings name has to land in the clear band between them, or the diagram
+                   looks like it was cropped at random. Re-tune both axes together. -->
               <div
                 class="github-diff-stage example-diff-stage hero-diagram-stage"
                 style="--example-stage-height: 40rem; --example-stage-height-mobile: 26rem;"
                 data-panzoom="pz-hero"
                 data-initial-scale="1.55"
-                data-initial-x="-453"
-                data-initial-y="-4"
-                data-mobile-scale="2.45"
-                data-mobile-x="-290"
-                data-mobile-y="-156"
+                data-mobile-scale="3.7"
+                data-focus-x="0.6122"
+                data-focus-y="0.4741"
+                data-mobile-focus-y="0.5606"
               >
                 <img
                   src="/examples/fineract.svg"
@@ -239,8 +249,11 @@ const plans = [
                   </span>
                 </button>
 
-                <!-- Findings overlay (starts open, collapsible) -->
-                <div class="hero-findings-overlay is-open" data-findings-overlay data-panzoom-ignore>
+                <!-- Findings overlay. Open on desktop, where it sits beside the diagram; collapsed
+                     on mobile, where it goes full width and would otherwise cover the diagram
+                     entirely. The class is set by the inline script below rather than rendered,
+                     so there is no open-then-collapse flash on a phone. -->
+                <div class="hero-findings-overlay" data-findings-overlay data-panzoom-ignore>
                   <button class="hero-findings-toggle" type="button" data-findings-toggle>
                     <span class="hero-findings-badge">4 findings · HIGH risk</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hero-findings-chevron"><path d="M6 9l6 6 6-6"/></svg>
@@ -289,6 +302,13 @@ const plans = [
                     </button>
                   </div>
                 </div>
+                <script is:inline>
+                  // Runs inline, mid-parse, so the overlay is painted once in its final state.
+                  (function () {
+                    var el = document.currentScript.previousElementSibling;
+                    if (el && window.innerWidth >= 768) el.classList.add("is-open");
+                  })();
+                </script>
               </div>
             </div>
           </div>
@@ -366,6 +386,13 @@ const plans = [
                     </div>
                   </header>
 
+                  <!-- "All checks have passed" beside "4 flagged" reads as a contradiction unless
+                       you already know Striff reports rather than gates. Say so here. -->
+                  <p class="ghc-pane-note">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13ZM8 4a.9.9 0 1 0 0 1.8A.9.9 0 0 0 8 4Zm.75 3.5a.75.75 0 0 0-1.5 0v4a.75.75 0 0 0 1.5 0Z"/></svg>
+                    Green because Striff reports, it doesn't gate. The findings below are advice your reviewer can act on, not a blocked merge. Mark the check required when you want it to hold the merge button.
+                  </p>
+
                   <div class="ghc-md">
                     <h3>Review Summary</h3>
                     <p>This PR moves command-handling responsibility into <code>command.implementation</code>: <code>DefaultCommandHandlerManager</code> is added there, and the <code>command</code> package now depends on it. That dependency direction did not exist between these two packages before.</p>
@@ -415,9 +442,11 @@ const plans = [
                       </section>
 
                       <section>
-                        <h3>Structural Checks <span class="ghc-h3-meta">4 flagged · 9 clean</span></h3>
+                        <!-- The documented-rules result lives in the column to the left; listing it
+                             here too made this column read as 13 structural checks when there are
+                             twelve, which is the number the rest of the site quotes. -->
+                        <h3>Structural Checks <span class="ghc-h3-meta">12 checks · 3 flagged · 9 clean</span></h3>
                         <ul class="ghc-checks">
-                          <li class="is-fail"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.042.018.751.751 0 0 0-.018 1.042L6.94 8 4.97 9.97a.749.749 0 0 0 .326 1.275.749.749 0 0 0 .734-.215L8 9.06l1.97 1.97a.749.749 0 0 0 1.275-.326.749.749 0 0 0-.215-.734L9.06 8l1.97-1.97a.749.749 0 0 0-.326-1.275.749.749 0 0 0-.734.215L8 6.94Z"/></svg><span class="ghc-checks-name">Documented dependency rules</span><span class="ghc-checks-result">1 violated</span></li>
                           <li class="is-flag"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Boundary crossings</span><span class="ghc-checks-result">1 flagged</span></li>
                           <li class="is-flag" data-report-anchor="complexity"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Complexity growth</span><span class="ghc-checks-result">1 flagged</span></li>
                           <li class="is-flag" data-report-anchor="coupling"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Coupling stability</span><span class="ghc-checks-result">1 flagged</span></li>
@@ -433,7 +462,7 @@ const plans = [
                         </ul>
                       </section>
                     </div>
-                    <p class="ghc-md-foot">Every check reports its result on every PR, clean or not. Advisory rows are never given a pass: striff cannot prove an intention from structure.</p>
+                    <p class="ghc-md-foot">Thirteen results in all: twelve structural checks, plus the documented-rules check that reads your own docs. Every one reports on every PR, clean or not. Advisory rows are never given a pass: striff cannot prove an intention from structure.</p>
                   </div>
                 </section>
           </div>
@@ -595,12 +624,10 @@ const plans = [
                       class="github-diff-stage example-diff-stage"
                       style="--example-stage-height: 26rem; --example-stage-height-mobile: 18rem;"
                       data-panzoom={`pz-${example.id}`}
-                      data-initial-scale={example.panzoom.desktop.scale}
-                      data-initial-x={example.panzoom.desktop.x}
-                      data-initial-y={example.panzoom.desktop.y}
-                      data-mobile-scale={example.panzoom.mobile.scale}
-                      data-mobile-x={example.panzoom.mobile.x}
-                      data-mobile-y={example.panzoom.mobile.y}
+                      data-initial-scale={example.panzoom.desktopScale}
+                      data-mobile-scale={example.panzoom.mobileScale}
+                      data-focus-x={example.panzoom.focus.x}
+                      data-focus-y={example.panzoom.focus.y}
                     >
                       <img
                         src={example.svg}
@@ -678,6 +705,12 @@ const plans = [
           </button>
         </div>
 
+        <div class="examples-more" data-reveal>
+          <a class="btn-secondary" href="/examples">
+            See all four reviews side by side
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+          </a>
+        </div>
       </div>
     </section>
 
@@ -786,7 +819,7 @@ const plans = [
                       <div class="gh-mock">
                         <div class="gh-mock-body">
                           <p class="gh-mock-breadcrumb">acme-corp / <strong>platform-api</strong></p>
-                          <h4 class="gh-mock-title">Add token-bucket rate limiter to gateway middleware <span>#1842</span></h4>
+                          <p class="gh-mock-title">Add token-bucket rate limiter to gateway middleware <span>#1842</span></p>
                           <div class="gh-mock-meta">
                             <span class="gh-mock-state">
                               <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg>
@@ -1183,6 +1216,9 @@ const plans = [
       var startedAt = 0;
       var AUTOPLAY_MS = 6000;
       var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      // Set once the reader shows intent (taps, or picks a tab). Rotation never comes back:
+      // having the panel change under you mid-paragraph is worse than a static section.
+      var stopped = false;
 
       function currentFill() {
         var fill = tabs[current] && tabs[current].querySelector(".teams-tab-progress-fill");
@@ -1212,26 +1248,57 @@ const plans = [
 
         panels.forEach(function (panel, i) { panel.classList.toggle("is-active", i === current); });
 
+        // The docs tile is pannable but too small to carry its own reset button, so returning
+        // to a tab returns its diagram to the framing that makes the point.
+        var activePanel = panels[current];
+        if (activePanel) {
+          activePanel.querySelectorAll("[data-panzoom]").forEach(function (stage) {
+            if (stage._panzoomReset) stage._panzoomReset();
+          });
+        }
+
         startedAt = Date.now();
-        if (!reduceMotion) restartTimer(AUTOPLAY_MS);
+        if (!reduceMotion && !stopped) restartTimer(AUTOPLAY_MS);
       }
 
       tabs.forEach(function (tab, i) {
         tab.addEventListener("click", function () { activate(i); });
       });
 
-      root.addEventListener("mouseenter", function () {
+      function pause() {
         if (timer) { clearTimeout(timer); timer = null; }
         var fill = currentFill();
         if (fill) fill.style.animationPlayState = "paused";
-      });
+      }
 
-      root.addEventListener("mouseleave", function () {
-        if (reduceMotion) return;
+      function resume() {
+        if (reduceMotion || stopped) return;
         var fill = currentFill();
         if (fill) fill.style.animationPlayState = "running";
         var elapsed = Date.now() - startedAt;
         restartTimer(Math.max(AUTOPLAY_MS - elapsed, 400));
+      }
+
+      root.addEventListener("mouseenter", pause);
+      root.addEventListener("mouseleave", resume);
+
+      // Hovering was the only way to pause; keyboard and touch users had no way at all, and
+      // this section carries the densest copy on the page.
+      function stopAutoplay() {
+        stopped = true;
+        if (timer) { clearTimeout(timer); timer = null; }
+        var fill = currentFill();
+        if (fill) fill.style.animation = "none";
+      }
+
+      root.addEventListener("focusin", pause);
+      root.addEventListener("focusout", resume);
+      root.addEventListener("touchstart", stopAutoplay, { passive: true });
+      tabs.forEach(function (tab) { tab.addEventListener("click", stopAutoplay); });
+
+      // Rotating on a tab nobody is looking at just means returning to a different panel.
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) pause(); else resume();
       });
 
       activate(0);

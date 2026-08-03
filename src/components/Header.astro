@@ -1,6 +1,8 @@
 ---
+import AuthButton from "../components/AuthButton";
+
 const navLinks = [
-  { label: "Examples", href: "/#examples" },
+  { label: "Examples", href: "/examples" },
   { label: "For Teams", href: "/#how" },
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
@@ -11,6 +13,8 @@ const primaryCtaHref = "https://github.com/apps/striff-app/installations/new";
 const extensionCtaLabel = "Extension";
 const extensionCtaHref = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
 ---
+
+<a class="skip-link" href="#main-content">Skip to content</a>
 
 <header class="site-header sticky top-0 z-50">
   <div class="mx-auto flex max-w-[90rem] items-center justify-between px-6 py-3">
@@ -52,7 +56,7 @@ const extensionCtaHref = "https://chromewebstore.google.com/detail/striffs-for-g
         </svg>
         {primaryCtaLabel}
       </a>
-      <div id="auth-button-root"></div>
+      <AuthButton client:load />
     </div>
     <button
       class="lg:hidden"
@@ -93,6 +97,11 @@ const extensionCtaHref = "https://chromewebstore.google.com/detail/striffs-for-g
       ))}
       <a class="btn-chrome w-full" href={extensionCtaHref} target="_blank" rel="noopener noreferrer">{extensionCtaLabel}</a>
       <a class="btn-primary w-full" href={primaryCtaHref} target="_blank" rel="noopener noreferrer">{primaryCtaLabel}</a>
+      <!-- Returning customers reach their dashboard from here; without it the only sign-in
+           affordance is desktop-only and a phone is a dead end. -->
+      <div class="mobile-auth-slot">
+        <AuthButton client:load />
+      </div>
     </div>
   </div>
 </header>
@@ -123,13 +132,6 @@ const extensionCtaHref = "https://chromewebstore.google.com/detail/striffs-for-g
   }
 </script>
 
-<script>
-  import { createRoot } from "react-dom/client";
-  import { createElement } from "react";
-  import AuthButton from "../components/AuthButton";
-
-  const authRoot = document.getElementById("auth-button-root");
-  if (authRoot) {
-    createRoot(authRoot).render(createElement(AuthButton));
-  }
-</script>
+<!-- AuthButton is an island rather than a hand-rolled createRoot in a plain <script>: mounting
+     React that way skips the refresh preamble the React plugin injects, so the dev server
+     threw "can't detect preamble" on every page and the button never rendered locally. -->

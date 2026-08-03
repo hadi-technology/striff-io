@@ -9,7 +9,8 @@ const {
   description = "Architecture-aware pull request review inside GitHub.",
   canonical = "https://striff.io/",
   ogImage = "https://striff.io/og-image.png",
-  ogType = "website"
+  ogType = "website",
+  robots = "index,follow"
 } = Astro.props;
 ---
 <!DOCTYPE html>
@@ -18,7 +19,7 @@ const {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="robots" content="index,follow" />
+    <meta name="robots" content={robots} />
     <meta name="theme-color" content="#0f172a" />
     <link rel="canonical" href={canonical} />
     <meta property="og:site_name" content="Striff" />
@@ -34,6 +35,10 @@ const {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
     <title>{title}</title>
+    <!-- Scroll reveals start hidden and are only ever unhidden by script, so the hidden state
+         is gated on script actually running. Without this, JS disabled or blocked leaves most
+         of a page permanently invisible. Must stay in <head>, before first paint. -->
+    <script is:inline>document.documentElement.classList.add("js");</script>
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="manifest" href="/manifest.json" />
@@ -41,7 +46,9 @@ const {
   </head>
   <body>
     <Header />
-    <slot />
+    <div id="main-content" tabindex="-1">
+      <slot />
+    </div>
     <Footer />
 
     <button class="scroll-top" type="button" data-scroll-top aria-label="Scroll back to top">
@@ -82,7 +89,13 @@ const {
     <script is:inline>
       (function () {
         var items = Array.from(document.querySelectorAll("[data-reveal]"));
-        if (!items.length || typeof IntersectionObserver === "undefined") return;
+        if (!items.length) return;
+
+        // No observer, no reveal: show everything rather than leaving the page blank.
+        if (typeof IntersectionObserver === "undefined") {
+          items.forEach(function (item) { item.classList.add("is-visible"); });
+          return;
+        }
 
         var observer = new IntersectionObserver(function (entries) {
           entries.forEach(function (entry) {

@@ -49,8 +49,11 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
           <p class="examples-gallery-copy">Each example shows the architecture diagram Striff generated and the GitHub Check it posted, exactly what your team would see on their own PRs.</p>
         </div>
         <div class="grid gap-5">
-        {exampleReviews.map((example) => (
-          <details class="example-accordion rounded-[1.9rem] border border-white/75 bg-white/92 shadow-[0_24px_64px_rgba(15,23,42,0.08)] backdrop-blur-sm" data-reveal open={example.id === "hibernate"}>
+        {exampleReviews.map((example, i) => (
+          <!-- The open condition used to name an example that no longer exists, so the page
+               always rendered as four collapsed rows with every diagram hidden behind a click.
+               The first one carries the page's promise, so it opens. -->
+          <details class="example-accordion rounded-[1.9rem] border border-white/75 bg-white/92 shadow-[0_24px_64px_rgba(15,23,42,0.08)] backdrop-blur-sm" data-reveal open={i === 0}>
             <summary class="example-summary">
               <div class="example-summary-main">
                 <div class="example-summary-top">
@@ -155,12 +158,10 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
                               class="github-diff-stage"
                               style={`--example-stage-height:${example.viewport.desktopHeight}; --example-stage-height-mobile:${example.viewport.mobileHeight};`}
                               data-panzoom={`gallery-${example.id}`}
-                              data-initial-scale={example.panzoom.desktop.scale}
-                              data-initial-x={example.panzoom.desktop.x}
-                              data-initial-y={example.panzoom.desktop.y}
-                              data-mobile-scale={example.panzoom.mobile.scale}
-                              data-mobile-x={example.panzoom.mobile.x}
-                              data-mobile-y={example.panzoom.mobile.y}
+                              data-initial-scale={example.panzoom.desktopScale}
+                              data-mobile-scale={example.panzoom.mobileScale}
+                              data-focus-x={example.panzoom.focus.x}
+                              data-focus-y={example.panzoom.focus.y}
                             >
                               <img
                                 src={example.svg}

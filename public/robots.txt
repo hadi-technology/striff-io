@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /installed
+Disallow: /billing/
+Disallow: /screenshot-metrics
+
+Sitemap: https://striff.io/sitemap.xml

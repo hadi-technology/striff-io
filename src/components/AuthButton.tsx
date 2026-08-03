@@ -6,18 +6,28 @@ interface User {
   name: string | null;
 }
 
+// The button is mounted twice (desktop bar and mobile sheet). Both instances want the same
+// answer, so they share one in-flight request instead of each firing their own.
+let authStatusPromise: Promise<any> | null = null;
+
+function getAuthStatus() {
+  if (!authStatusPromise) {
+    authStatusPromise = fetch("/.netlify/functions/auth-status")
+      .then((r) => r.json())
+      .catch(() => ({ authenticated: false }));
+  }
+  return authStatusPromise;
+}
+
 export default function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/.netlify/functions/auth-status")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.authenticated) setUser(data.user);
-      })
-      .catch(() => {});
+    getAuthStatus().then((data) => {
+      if (data?.authenticated) setUser(data.user);
+    });
 
     function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {

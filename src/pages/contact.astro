@@ -23,10 +23,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         </div>
 
         <div class="contact-panel" data-reveal>
+          <!-- Without an action, a successful submit lands on Netlify's own unbranded success
+               page. Send people to a page that still looks like Striff and tells them what
+               happens next. -->
           <form
             class="contact-form"
             name="contact"
             method="POST"
+            action="/contact/thanks"
             data-netlify="true"
             netlify-honeypot="bot-field"
           >
@@ -50,7 +54,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
               </div>
 
               <div>
-                <label class="waitlist-label" for="contact-topic">Topic</label>
+                <label class="waitlist-label" for="contact-topic">Topic <span class="text-red-500">*</span></label>
                 <select id="contact-topic" class="waitlist-input" name="topic" required>
                   <option value="" disabled selected>Select a topic</option>
                   <option value="general">General question</option>
