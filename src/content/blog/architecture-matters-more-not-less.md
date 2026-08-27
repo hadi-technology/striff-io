@@ -37,9 +37,9 @@ The data backs this up, and it's not subtle:
 <div class="bp-stat bp-stat--danger"><div class="bp-stat-value">8x</div><div class="bp-stat-label">increase in duplicated code blocks in 2024 vs. two years prior (GitClear, 211M changed lines)</div></div>
 <div class="bp-stat bp-stat--amber"><div class="bp-stat-value">-7.2%</div><div class="bp-stat-label">delivery stability per 25% increase in AI adoption (Google DORA 2024)</div></div>
 <div class="bp-stat bp-stat--brand"><div class="bp-stat-value">46%</div><div class="bp-stat-label">of code in Copilot-enabled files is AI-written (GitHub research)</div></div>
-<div class="bp-stat bp-stat--danger"><div class="bp-stat-value">1 in 3</div><div class="bp-stat-label">merged refactor PRs carried unreviewed structural risk (our own analysis)</div></div>
+<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">2024</div><div class="bp-stat-label">the first year copy-pasted code exceeded refactored code, in GitClear's corpus</div></div>
 </div>
-<p class="bp-figure-caption">Sources: <a href="https://www.gitclear.com/ai_assistant_code_quality_2025_research" target="_blank" rel="noopener">GitClear AI Code Quality research</a>, <a href="https://dora.dev/research/2024/dora-report/" target="_blank" rel="noopener">Google's 2024 DORA report</a>, <a href="https://github.blog/news-insights/research/research-quantifying-github-copilots-impact-on-developer-productivity-and-happiness/" target="_blank" rel="noopener">GitHub Copilot research</a>, and <a href="/blog/architectural-findings-in-oss">our analysis of merged refactor PRs</a>.</p>
+<p class="bp-figure-caption">Sources: <a href="https://www.gitclear.com/ai_assistant_code_quality_2025_research" target="_blank" rel="noopener">GitClear AI Code Quality research</a>, <a href="https://dora.dev/research/2024/dora-report/" target="_blank" rel="noopener">Google's 2024 DORA report</a>, and <a href="https://github.blog/news-insights/research/research-quantifying-github-copilots-impact-on-developer-productivity-and-happiness/" target="_blank" rel="noopener">GitHub Copilot research</a>. Every figure here is somebody else's; we have not run a study of our own on this and are not going to invent one.</p>
 </div>
 
 GitClear's number is the one I keep coming back to. Across 211 million changed lines, 2024 was the first year that **copy-pasted code exceeded refactored code**. Duplication rising in lockstep with AI assistance. That isn't a story about bad code. It's a story about *system-level* properties degrading while everyone's attention stays at the line level.
@@ -63,8 +63,9 @@ But look at what's left unguarded:
 <tr><td>Readable code, good names</td><td>Review norms + coding assistants</td><td><span class="bp-yes">✓ Mostly</span></td></tr>
 <tr><td>Small, focused diffs</td><td>Team norms</td><td><span class="bp-yes">✓ If you insist</span></td></tr>
 <tr><td>Dependency direction &amp; boundaries</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
-<tr><td>Coupling staying in check</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
+<tr><td>Modules keeping their internals private</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
 <tr><td>No dependency cycles</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
+<tr><td>The decisions in your own ADRs</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
 </tbody>
 </table>
 </div>
@@ -131,7 +132,7 @@ That proxy is now broken, and here's the mechanism. A diff shows you lines. It d
 <p class="bp-figure-caption">The red edge exists only in the relationship between this change and the edges that were already there. No amount of careful diff-reading surfaces it, because it isn't in the diff.</p>
 </div>
 
-And this is exactly the pattern our own data shows in the wild: [when we analyzed merged refactor PRs from popular open-source repos](/blog/architectural-findings-in-oss), a third of them moved the dependency graph in ways that deserved attention. Contracts with dozens of dependents rewritten. First-ever boundary crossings. A package cycle, born in a PR whose diff looked immaculate. All reviewed. All merged.
+This is the pattern that shows up when you go and look. [Across thirty recent open-source pull requests we analysed](/blog/architectural-findings-in-oss), most moved nothing structural at all — and a handful did something a reviewer would want to know about and could not have seen: a public interface losing a method that twelve components depend on, a component reaching into two packages it had never touched, a README describing an API that no longer exists. Every one of those pull requests was reviewed by people who are good at their jobs. The information simply was not in front of them.
 
 ## The bill comes due quietly
 
@@ -145,6 +146,8 @@ Keep every practice you already have. They matter more now, not less; that's the
 
 Closing that gap doesn't mean hiring architects to trace dependencies by hand, and it certainly doesn't mean slowing your team down to pre-AI speed. It means giving the one unguarded practice the same thing every other practice already has: **an automatic, per-PR guardian.**
 
-That's what Striff is. It models every pull request as a change to your dependency graph, compares before and after, and speaks up only when the structure actually moves: a coupling spike on a component everything depends on, a first-ever boundary crossing, a cycle forming. On clean PRs it stays silent. Your linter guards style, your CI guards correctness, and the graph finally gets a guardian of its own, at whatever speed your team ships.
+That's what Striff is. It parses both revisions of every pull request into a component graph, compares them, and speaks up only when something happened that the diff cannot show: a first-ever edge between two packages, a cycle closing, a reach into another module's internals, a public contract shrinking under things that depend on it — or a sentence in your own architecture docs that this change just made false. On the rest it reports clean and tells you what it looked at.
 
-Install the [browser extension](https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen) and run it on your next pull request. It takes about thirty seconds, and the architecture layer of your codebase stops being the one thing nobody's watching.
+The bar is deliberately high, and the consequence is that it is quiet. That is the same bargain your linter makes: you trust it because it does not shout. Your linter guards style, your CI guards correctness, and the shape of the system finally gets a guardian of its own, at whatever speed your team ships.
+
+[Install it on a repository](https://github.com/apps/striff-app/installations/new) and open your next pull request.
