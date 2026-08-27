@@ -1,42 +1,63 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import InlineCodeText from "../components/InlineCodeText.astro";
-import { exampleReviews } from "../data/exampleReviews";
+import { prExamples, prExampleSample } from "../data/prExamples";
 
-const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
+const extensionUrl =
+  "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
 ---
 
 <BaseLayout
   title="Example Reviews | Striff"
-  description="Real public pull requests analyzed by Striff across Java, Python, TypeScript, and C#."
+  description="Four public pull requests, the structural diagrams Striff drew for them, and the output it produced — every claim checked by hand against both revisions."
   canonical="https://striff.io/examples"
 >
   <main class="pb-20 pt-16 examples-page-shell">
     <section class="mx-auto max-w-[90rem] px-6">
       <div class="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between" data-reveal>
         <div class="max-w-3xl">
-          <p class="examples-kicker">
-            Public repo examples
-          </p>
-          <h1 class="mt-5 text-balance">Four PRs that passed review and shouldn't have.</h1>
+          <p class="examples-kicker">Public pull requests</p>
+          <h1 class="mt-5 text-balance">Four changes, and what the structure said about them.</h1>
           <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            Real public pull requests in Java, Python, TypeScript, and C#. Every one of them looked routine in the file diff, got approved, and quietly moved a boundary somebody will pay for later. Open any of them on GitHub and check what Striff caught for yourself.
+            Every example below is a real pull request in a public repository. The diagram is
+            the one Striff drew; the boxed text is what it produced, word for word. Under each
+            one is the check we ran by hand against both revisions before putting it here — so
+            you can repeat it rather than take our word for it.
           </p>
         </div>
         <div class="flex flex-wrap gap-4">
-          <a class="btn-secondary" href="/#examples">Open homepage gallery</a>
-          <a class="btn-primary" href={extensionUrl} target="_blank" rel="noopener noreferrer">Install extension</a>
+          <a class="btn-secondary" href="/#examples">Homepage gallery</a>
+          <a class="btn-primary" href={extensionUrl} target="_blank" rel="noopener noreferrer">
+            Install extension
+          </a>
         </div>
       </div>
 
-      <div class="examples-overview mt-10" data-reveal>
-        <div class="examples-overview-card">
-          <span class="examples-overview-kicker">What to look for</span>
-          <p>Boundary shifts, duplicated responsibilities, shared hotspots, and the relationships a file diff hides.</p>
+      <div class="ver-strip mt-10" data-reveal>
+        <div class="ver-strip-card">
+          <span class="ver-strip-kicker">What you are looking at</span>
+          <p>
+            A structural diff: the components a change touched, and the dependencies between
+            them at both revisions. Additions in green, removals struck through, and the
+            relationships that only exist on one side of the change.
+          </p>
         </div>
-        <div class="examples-overview-card">
-          <span class="examples-overview-kicker">Why this matters</span>
-          <p>These risks are invisible in a line-by-line diff. They only show up when you look at the change as a dependency graph, the way Striff does on every PR.</p>
+        <div class="ver-strip-card">
+          <span class="ver-strip-kicker">Why these four</span>
+          <p>
+            Each shows something the file diff cannot: a type's dependents, a loop that closes,
+            a module boundary crossed by two files, a sentence in a design doc checked against
+            the code.
+          </p>
+        </div>
+        <div class="ver-strip-card ver-strip-card--quiet">
+          <span class="ver-strip-kicker">How often this fires</span>
+          <p>
+            These four were picked from <strong>{prExampleSample.pullRequests} public pull
+            requests across {prExampleSample.repositories} repositories</strong>. {prExampleSample.noFinding}
+            of them produced no finding at all. Most pull requests do not move the architecture,
+            and Striff is built to say so quietly.
+          </p>
         </div>
       </div>
 
@@ -44,220 +65,596 @@ const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-githu
         <div class="examples-gallery-head">
           <div>
             <p class="examples-gallery-kicker">The reviews</p>
-            <h2 class="examples-gallery-title">What a reviewer would have missed.</h2>
+            <h2 class="examples-gallery-title">Four public pull requests.</h2>
           </div>
-          <p class="examples-gallery-copy">Each example shows the architecture diagram Striff generated and the GitHub Check it posted, exactly what your team would see on their own PRs.</p>
+          <p class="examples-gallery-copy">
+            Open any diagram and drag it. Open the pull request beside it and read the diff. The
+            two should agree.
+          </p>
         </div>
+
         <div class="grid gap-5">
-        {exampleReviews.map((example, i) => (
-          <!-- The open condition used to name an example that no longer exists, so the page
-               always rendered as four collapsed rows with every diagram hidden behind a click.
-               The first one carries the page's promise, so it opens. -->
-          <details class="example-accordion rounded-[1.9rem] border border-white/75 bg-white/92 shadow-[0_24px_64px_rgba(15,23,42,0.08)] backdrop-blur-sm" data-reveal open={i === 0}>
-            <summary class="example-summary">
-              <div class="example-summary-main">
-                <div class="example-summary-top">
-                  <span class={`example-summary-mark example-summary-mark-${example.accent}`} aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h10"/><path d="M8 12h8"/><path d="M8 18h6"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>
-                  </span>
-                  <span class="example-language-label">{example.language}</span>
-                  <span class="example-github-repo">{example.repo}</span>
-                  <span class="example-pr-number">{example.pr}</span>
-                  <span class="example-status-pill">Public PR</span>
+          {prExamples.map((example, i) => (
+            <details
+              class="example-accordion rounded-[1.9rem] border border-white/75 bg-white/92 shadow-[0_24px_64px_rgba(15,23,42,0.08)] backdrop-blur-sm"
+              data-reveal
+              open={i === 0}
+            >
+              <summary class="example-summary">
+                <div class="example-summary-main">
+                  <div class="example-summary-top">
+                    <span class={`ver-kind ver-kind-${example.kind}`}>{example.kindLabel}</span>
+                    <span class="example-github-repo">{example.repo}</span>
+                    <span class="example-pr-number">{example.pr}</span>
+                    <span class="example-status-pill">{example.prState} PR</span>
+                  </div>
+                  <div class="example-summary-copy">
+                    <h2 class="example-summary-title">
+                      <a href={example.href} target="_blank" rel="noopener noreferrer">
+                        {example.prTitle}
+                      </a>
+                    </h2>
+                    <p class="example-summary-subtitle">{example.lede}</p>
+                  </div>
                 </div>
-                <div class="example-summary-copy">
-                  <h2 class="example-summary-title"><a href={example.href} target="_blank" rel="noopener noreferrer">{example.prTitle}</a></h2>
-                  <p class="example-summary-subtitle">{example.summary}</p>
-                </div>
-              </div>
-              <span class="example-chevron" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg>
-              </span>
-            </summary>
+                <span class="example-chevron" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </span>
+              </summary>
 
-            <div class="example-panel">
-              <div class="example-toolbar">
-                <div class="example-toolbar-left">
-                  <span class="example-toolbar-pill example-toolbar-pill-active">Striff review</span>
+              <div class="example-panel">
+                <div class="ver-toolbar">
+                  <div class="ver-toolbar-left">
+                    <span class="ver-toolbar-label">Structural diff</span>
+                    <span class="ver-toolbar-headline">{example.headline}</span>
+                  </div>
+                  <div class="ver-toolbar-right">
+                    <span class="ver-rev">
+                      {example.revisions.baseLabel} <code>{example.revisions.base}</code>
+                    </span>
+                    <span class="ver-rev-arrow" aria-hidden="true">→</span>
+                    <span class="ver-rev">
+                      {example.revisions.headLabel} <code>{example.revisions.head}</code>
+                    </span>
+                    <button
+                      class="github-diff-reset"
+                      type="button"
+                      data-panzoom-reset={`ver-${example.id}`}
+                    >
+                      Reset view
+                    </button>
+                  </div>
                 </div>
-                <div class="example-toolbar-right">
-                  {example.metrics.slice(0, 2).map((metric) => (
-                    <span class="example-metric-chip">{metric}</span>
-                  ))}
-                </div>
-              </div>
 
-              <div class="example-panel-grid">
-                <div class="example-visual-shell">
-                  <div class="github-diff-shell github-diff-shell-background">
-                    <div class="github-pr-bar">
-                      <div class="github-pr-bar-left">
-                        <span class="github-pr-state github-pr-state-open">
-                          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3.75 2a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5ZM3 4.75C3 3.784 3.784 3 4.75 3h6.5a2.75 2.75 0 0 1 2.75 2.75v1.5a.75.75 0 0 1-1.5 0v-1.5c0-.69-.56-1.25-1.25-1.25h-6.5a.25.25 0 0 0-.25.25V13a.75.75 0 0 1-1.5 0V4.75Zm8.75 6.75a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5ZM8 7.25A.75.75 0 0 1 8.75 8v5a.75.75 0 0 1-1.5 0V8A.75.75 0 0 1 8 7.25Zm3.75-3.5a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"/></svg>
-                          Open
-                        </span>
-                        <strong>{example.prTitle}</strong>
+                <div class="ver-stage-wrap">
+                  <div
+                    class="github-diff-stage ver-stage"
+                    style={`--example-stage-height:${example.viewport.desktopHeight}; --example-stage-height-mobile:${example.viewport.mobileHeight};`}
+                    data-panzoom={`ver-${example.id}`}
+                    data-initial-scale={example.panzoom.desktopScale}
+                    data-mobile-scale={example.panzoom.mobileScale}
+                    data-focus-x={example.panzoom.focus.x}
+                    data-focus-y={example.panzoom.focus.y}
+                  >
+                    <img
+                      src={example.svg}
+                      alt={`Striff structural diff for ${example.repo} ${example.pr}`}
+                      class="github-diff-graphic github-diff-image"
+                      loading="lazy"
+                      draggable="false"
+                    />
+                    <div class="panzoom-hint" data-panzoom-hint>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="m21 21-4.3-4.3" />
+                        <path d="M11 8v6M8 11h6" />
+                      </svg>
+                      Scroll to zoom · Drag to pan
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ver-grid">
+                  <div class="ver-col">
+                    <p class="ver-col-kicker">
+                      {example.rules ? "Rules read out of the docs" : "What Striff produced"}
+                    </p>
+
+                    {example.outputs.map((output) => (
+                      <div class={`ver-out ver-out-${output.severity.toLowerCase()}`}>
+                        <div class="ver-out-head">
+                          <span class="ver-out-sev">{output.severity}</span>
+                          <strong>{output.title}</strong>
+                        </div>
+                        <InlineCodeText class="ver-out-body" text={output.body} />
+                        {output.fix && (
+                          <p class="ver-out-fix">
+                            <span>Suggested direction</span>
+                            <InlineCodeText text={output.fix} />
+                          </p>
+                        )}
                       </div>
-                      <span class="github-pr-meta">{example.repo} {example.pr}</span>
-                    </div>
-                    <div class="github-tab-bar">
-                      <span class="github-tab">
-                        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1.75 2A1.75 1.75 0 0 0 0 3.75v8.5C0 13.216.784 14 1.75 14h12.5A1.75 1.75 0 0 0 16 12.25v-8.5A1.75 1.75 0 0 0 14.25 2ZM1.5 3.75a.25.25 0 0 1 .25-.25h12.5a.25.25 0 0 1 .25.25v8.5a.25.25 0 0 1-.25.25H1.75a.25.25 0 0 1-.25-.25Z"/></svg>
-                        Conversation <span class="github-tab-count">22</span>
-                      </span>
-                      <span class="github-tab github-tab-active">
-                        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 3.75A1.75 1.75 0 0 1 3.75 2h8.5A1.75 1.75 0 0 1 14 3.75v8.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25Zm1.75-.25a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25Z"/></svg>
-                        Checks <span class="github-tab-count">11</span>
-                      </span>
-                      <span class="github-tab">
-                        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.5 1.75a.75.75 0 0 1 1.5 0v12.5a.75.75 0 0 1-1.5 0Zm4.25 0a.75.75 0 0 1 1.5 0v12.5a.75.75 0 0 1-1.5 0Zm4.25 0a.75.75 0 0 1 1.5 0v12.5a.75.75 0 0 1-1.5 0Z"/></svg>
-                        Files changed <span class="github-tab-count">17</span>
-                      </span>
-                    </div>
-                    <div class="github-checks-layout">
-                      <aside class="github-checks-sidebar">
-                        <div class="github-checks-sidebar-group">
-                          <button class="github-suite-item github-suite-item-active" type="button">
-                            <span class="github-suite-icon github-suite-icon-success"></span>
-                            <span class="github-suite-copy">
-                              <strong>striff / architectural-review</strong>
-                              <span>1 check run with findings</span>
-                            </span>
-                            <span class="github-suite-count">{example.checks.length}</span>
-                          </button>
-                          <button class="github-suite-item" type="button">
-                            <span class="github-suite-icon"></span>
-                            <span class="github-suite-copy">
-                              <strong>Repository checks</strong>
-                              <span>build and validation</span>
-                            </span>
-                            <span class="github-suite-count">6</span>
-                          </button>
-                          <button class="github-suite-item" type="button">
-                            <span class="github-suite-icon"></span>
-                            <span class="github-suite-copy">
-                              <strong>Test matrix</strong>
-                              <span>unit and integration</span>
-                            </span>
-                            <span class="github-suite-count">3</span>
-                          </button>
-                        </div>
-                      </aside>
-                      <div class="github-checks-main">
-                        <div class="github-checks-main-header">
-                          <div>
-                            <p class="github-checks-run-kicker">striff / architectural-review</p>
-                            <h3 class="github-checks-run-title">Architectural review completed</h3>
-                            <p class="github-checks-run-meta">Completed with {example.checks.length} findings across {example.metrics[0].toLowerCase()}.</p>
-                          </div>
-                          <button class="github-diff-reset" type="button" data-panzoom-reset={`gallery-${example.id}`}>Reset view</button>
-                        </div>
-                        <div class="github-check-artifact">
-                          <div class="github-diff-canvas github-diff-canvas-live">
-                            <div
-                              class="github-diff-stage"
-                              style={`--example-stage-height:${example.viewport.desktopHeight}; --example-stage-height-mobile:${example.viewport.mobileHeight};`}
-                              data-panzoom={`gallery-${example.id}`}
-                              data-initial-scale={example.panzoom.desktopScale}
-                              data-mobile-scale={example.panzoom.mobileScale}
-                              data-focus-x={example.panzoom.focus.x}
-                              data-focus-y={example.panzoom.focus.y}
-                            >
-                              <img
-                                src={example.svg}
-                                alt={`${example.language} Striff structural diff for ${example.repo} ${example.pr}`}
-                                class="github-diff-graphic github-diff-image"
-                                loading="lazy"
-                                draggable="false"
-                              />
+                    ))}
+
+                    {example.rules && (
+                      <ol class="ver-rules">
+                        {example.rules.map((rule) => (
+                          <li class="ver-rule">
+                            <div class="ver-rule-head">
+                              <span class="ver-rule-doc">{rule.doc}</span>
+                              <span class="ver-rule-verdict">{rule.verdict}</span>
                             </div>
-                          </div>
+                            <blockquote class="ver-rule-quote">
+                              <InlineCodeText text={rule.quote} />
+                            </blockquote>
+                            <p class="ver-rule-stmt">
+                              <span aria-hidden="true">↳</span>
+                              <InlineCodeText text={rule.statement} />
+                            </p>
+                            <p class="ver-rule-found">{rule.found}</p>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
 
-                          <details class="github-check-shell github-check-shell-overlay" open>
-                    <summary class="github-check-summary-toggle">
-                      <div class="github-shell-header github-shell-header-checks">
-                        <div class="github-shell-title">
-                          <span class="github-dot github-dot-success"></span>
-                          <strong>striff / architectural-review</strong>
-                        </div>
-                        <div class="github-check-summary-meta">
-                          <span class="github-shell-meta">Completed in GitHub Checks</span>
-                          <span class="github-check-chevron" aria-hidden="true">
-                            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 6 4 4 4-4"/></svg>
-                          </span>
-                        </div>
-                      </div>
-                    </summary>
-                    <div class="github-check-status-row">
-                      <span class="github-check-status">
-                        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.47a.75.75 0 0 0-1.06-1.06L7.19 9 5.28 7.09a.75.75 0 1 0-1.06 1.06l2.44 2.44a.75.75 0 0 0 1.06 0Z"/></svg>
-                        Completed
-                      </span>
-                      <span class="github-check-status-meta">1 check run with findings</span>
-                    </div>
-                    <div class="github-check-tabs">
-                      <span class="github-check-tab github-check-tab-active">Summary</span>
-                      <span class="github-check-tab">Findings {example.checks.length}</span>
-                    </div>
-                    <div class="github-check-overview">
-                      <div class="github-check-overview-main">
-                        <p class="github-check-kicker">Review headline</p>
-                        <h4>{example.headline}</h4>
-                        <p>{example.checkHeader}</p>
-                      </div>
-                      <div class="github-check-stats">
-                        <span>{example.metrics[0]}</span>
-                        <span>{example.metrics[1]}</span>
-                      </div>
-                    </div>
-                    <div class="github-check-list">
-                        {example.checks.map((check) => (
-                          <div class={`github-check-item github-check-item-${check.level}`}>
-                            <span class="github-check-icon">
-                              {check.level === "danger" ? "!" : check.level === "warn" ? "~" : "i"}
-                            </span>
-                            <div>
-                              <p><InlineCodeText text={check.title} /></p>
-                              <InlineCodeText class="github-check-body" text={check.body} />
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                    <div class="github-check-footer">
-                      <p class="github-check-footer-label">Review prompts</p>
-                      <ul class="github-check-footer-list">
-                        {example.highlights.map((highlight) => (
-                          <li><InlineCodeText text={highlight} /></li>
-                        ))}
-                      </ul>
-                    </div>
-                  </details>
-                        </div>
-                      </div>
+                    {example.quietNote && (
+                      <p class="ver-quiet">
+                        <InlineCodeText text={example.quietNote} />
+                      </p>
+                    )}
+                  </div>
+
+                  <div class="ver-col ver-col-audit">
+                    <p class="ver-col-kicker ver-col-kicker--audit">What we checked</p>
+                    <ul class="ver-audit">
+                      {example.audit.map((line) => (
+                        <li>
+                          <InlineCodeText text={line} />
+                        </li>
+                      ))}
+                    </ul>
+                    <div class="ver-audit-actions">
+                      <a
+                        class="btn-secondary"
+                        href={example.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Open the pull request
+                      </a>
+                      <a
+                        class="ver-compare-link"
+                        href={example.revisions.compare}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Compare {example.revisions.base} … {example.revisions.head}
+                      </a>
                     </div>
                   </div>
                 </div>
               </div>
-
-              <div class="example-panel-footer">
-                <p class="text-sm leading-7 text-slate-700">{example.body}</p>
-                <div class="example-panel-actions">
-                  <a class="btn-secondary" href={example.href} target="_blank" rel="noopener noreferrer">Open PR on GitHub</a>
-                </div>
-              </div>
-            </div>
-          </details>
-        ))}
+            </details>
+          ))}
         </div>
       </div>
+
+      <p class="ver-footnote" data-reveal>
+        These are other people's repositories. Nothing here is a judgement about the code or the
+        people who wrote it — it is a record of what a change did to the shape of a codebase, and
+        every one of these pull requests is a perfectly reasonable change to make.
+      </p>
     </section>
   </main>
+
+  <style>
+    /* Scoped to this page. The global sheet already carries the accordion, stage and panzoom
+       chrome; everything below is only for the verified-output blocks and the audit column. */
+
+    .ver-strip {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    }
+
+    .ver-strip-card {
+      padding: 1.15rem 1.25rem 1.3rem;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 1.25rem;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+    }
+
+    .ver-strip-card--quiet {
+      border-color: rgba(217, 119, 6, 0.22);
+      background: linear-gradient(180deg, #fffdf6 0%, #fffbeb 100%);
+    }
+
+    .ver-strip-kicker {
+      display: block;
+      margin-bottom: 0.45rem;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: #2563eb;
+    }
+
+    .ver-strip-card--quiet .ver-strip-kicker {
+      color: #b45309;
+    }
+
+    .ver-strip-card p {
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.65;
+      color: #475569;
+    }
+
+    /* --- the kind badge on each accordion row --- */
+    .ver-kind {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 0.22rem 0.62rem;
+      border: 1px solid transparent;
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .ver-kind-contract {
+      border-color: rgba(220, 38, 38, 0.28);
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .ver-kind-cycle {
+      border-color: rgba(217, 119, 6, 0.28);
+      background: #fffbeb;
+      color: #b45309;
+    }
+
+    .ver-kind-boundary {
+      border-color: rgba(37, 99, 235, 0.28);
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .ver-kind-docs {
+      border-color: rgba(5, 150, 105, 0.28);
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    /* --- toolbar above the diagram --- */
+    .ver-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .ver-toolbar-left {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.6rem;
+    }
+
+    .ver-toolbar-label {
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: #2563eb;
+    }
+
+    .ver-toolbar-headline {
+      font-size: 0.85rem;
+      color: #475569;
+    }
+
+    .ver-toolbar-right {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .ver-rev {
+      font-size: 0.7rem;
+      color: #94a3b8;
+    }
+
+    .ver-rev code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      color: #475569;
+    }
+
+    .ver-rev-arrow {
+      color: #cbd5e1;
+    }
+
+    .ver-stage-wrap {
+      overflow: hidden;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      border-radius: 1.1rem;
+      background: #f8fafc;
+    }
+
+    /* --- the two columns under the diagram --- */
+    .ver-grid {
+      display: grid;
+      gap: 1.5rem;
+      margin-top: 1.4rem;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    }
+
+    @media (max-width: 900px) {
+      .ver-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .ver-col-kicker {
+      margin: 0 0 0.7rem;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: #0f172a;
+    }
+
+    .ver-col-kicker--audit {
+      color: #059669;
+    }
+
+    /* --- one produced finding --- */
+    .ver-out {
+      margin-bottom: 0.8rem;
+      padding: 0.85rem 1rem 0.95rem;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      border-left-width: 3px;
+      border-radius: 0.85rem;
+      background: #ffffff;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .ver-out-high {
+      border-left-color: #dc2626;
+    }
+    .ver-out-medium {
+      border-left-color: #d97706;
+    }
+    .ver-out-low,
+    .ver-out-evidence {
+      border-left-color: #64748b;
+    }
+
+    .ver-out-head {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .ver-out-head strong {
+      font-size: 0.95rem;
+      color: #0f172a;
+    }
+
+    .ver-out-sev {
+      flex-shrink: 0;
+      padding: 0.1rem 0.45rem;
+      border-radius: 0.35rem;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    .ver-out-high .ver-out-sev {
+      background: #b91c1c;
+    }
+    .ver-out-medium .ver-out-sev {
+      background: #b45309;
+    }
+
+    .ver-out-body {
+      display: block;
+      font-size: 0.88rem;
+      line-height: 1.65;
+      color: #334155;
+    }
+
+    .ver-out-fix {
+      margin: 0.7rem 0 0;
+      padding-top: 0.6rem;
+      border-top: 1px dashed rgba(15, 23, 42, 0.12);
+      font-size: 0.83rem;
+      line-height: 1.6;
+      color: #475569;
+    }
+
+    .ver-out-fix > span:first-child {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.63rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+
+    /* --- documented rules --- */
+    .ver-rules {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.7rem;
+    }
+
+    .ver-rule {
+      padding: 0.8rem 0.95rem 0.85rem;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      border-left: 3px solid #059669;
+      border-radius: 0.85rem;
+      background: #ffffff;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .ver-rule-head {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .ver-rule-doc {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .ver-rule-verdict {
+      flex-shrink: 0;
+      margin-left: auto;
+      padding: 0.1rem 0.5rem;
+      border: 1px solid rgba(5, 150, 105, 0.3);
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #047857;
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    }
+
+    .ver-rule-quote {
+      margin: 0;
+      padding: 0.55rem 0.8rem;
+      border-radius: 0.55rem;
+      background: #fffbeb;
+      box-shadow: inset 3px 0 0 #d97706;
+      font-size: 0.87rem;
+      font-weight: 500;
+      line-height: 1.55;
+      color: #422006;
+    }
+
+    .ver-rule-stmt {
+      display: flex;
+      gap: 0.4rem;
+      margin: 0.55rem 0 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: #1e293b;
+    }
+
+    .ver-rule-stmt > span:first-child {
+      color: #94a3b8;
+    }
+
+    .ver-rule-found {
+      margin: 0.4rem 0 0;
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .ver-quiet {
+      margin: 0.9rem 0 0;
+      padding: 0.75rem 0.95rem;
+      border: 1px dashed rgba(15, 23, 42, 0.16);
+      border-radius: 0.8rem;
+      background: rgba(248, 250, 252, 0.9);
+      font-size: 0.84rem;
+      line-height: 1.65;
+      color: #475569;
+    }
+
+    /* --- audit column --- */
+    .ver-col-audit {
+      padding: 1.1rem 1.2rem 1.2rem;
+      border: 1px solid rgba(5, 150, 105, 0.18);
+      border-radius: 1.1rem;
+      background: linear-gradient(180deg, #ffffff 0%, #f6fdfa 100%);
+      align-self: start;
+    }
+
+    .ver-audit {
+      display: grid;
+      gap: 0.7rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .ver-audit li {
+      position: relative;
+      padding-left: 1.4rem;
+      font-size: 0.85rem;
+      line-height: 1.65;
+      color: #334155;
+    }
+
+    .ver-audit li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.55rem;
+      width: 0.72rem;
+      height: 0.38rem;
+      border-left: 2px solid #059669;
+      border-bottom: 2px solid #059669;
+      transform: rotate(-45deg);
+    }
+
+    .ver-audit-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.8rem;
+      margin-top: 1.1rem;
+    }
+
+    .ver-compare-link {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      color: #2563eb;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .ver-footnote {
+      max-width: 52rem;
+      margin: 2.25rem auto 0;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      text-align: center;
+      color: #64748b;
+    }
+  </style>
 
   <script>
     import { initPanzoom } from "../scripts/panzoom.js";
 
-    // The gallery diagrams start less zoomed and fit whole on mobile, and dragging is
-    // locked until the reader has zoomed in.
+    // Gallery diagrams open less zoomed, fit whole on mobile, and stay still until zoomed.
     initPanzoom({ minScaleFloor: 1, fitOnMobile: true, lockPanWhenUnzoomed: true });
   </script>
 </BaseLayout>
