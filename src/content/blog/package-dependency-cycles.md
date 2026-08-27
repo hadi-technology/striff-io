@@ -6,7 +6,7 @@ date: 2026-01-27
 
 Ask any senior engineer to name the worst architectural smell and *dependency cycles* will make the shortlist. Ask them to explain **mechanically** why a cycle is bad (not vibes, mechanisms) and the answers get vague.
 
-That vagueness matters, because cycles never announce themselves. They arrive as one clean, reviewable, entirely reasonable-looking import. We watched it happen in real codebases: [a floci PR](/blog/architectural-findings-in-oss) introduced a new package cycle through its CloudFormation services, and the file diff was unremarkable. So let's make the case properly.
+That vagueness matters, because cycles never announce themselves. They arrive as one clean, reviewable, entirely reasonable-looking import, in a diff where nothing looks wrong. So let's make the case properly: what a cycle costs, mechanically, and why the moment it is cheap to fix is the exact moment it is invisible.
 
 ## What a cycle is, and what it does to a graph
 
@@ -80,10 +80,12 @@ Nobody designs a cycle. In every case we've flagged, the cycle arrived through t
 <div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">3</span><p class="bp-flow-title">The near-cycle</p><p class="bp-flow-desc">The graph now contains a path that's one edge away from a loop. Nobody knows, because nobody is looking at the graph.</p></div>
 <div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">4</span><p class="bp-flow-title">The closing edge</p><p class="bp-flow-desc">Months later, an unrelated PR (increasingly, an AI-written one) adds the edge that closes the loop. That diff looks clean too.</p></div>
 </div>
-<p class="bp-figure-caption">Step 3 is the one to care about. In our scans, HikariCP showed several of these <strong>near-cycle seeds</strong>, and an EF Core PR shipped one alongside an edge that skipped three layers. Caught at step 3, the fix is trivial. Caught at step 4, you're already rebuilding the loop together.</p>
+<p class="bp-figure-caption">Step 3 is the one to care about, and it is the only step where the fix is still one comment. A <strong>near-cycle seed</strong> — a new edge that leaves the graph one hop from a loop — is cheap to redirect and impossible to notice, because noticing it means knowing every path that already existed. By step 4 you are not fixing an import, you are unpicking a strongly connected component.</p>
 </div>
 
 Note what's *absent* from that lifecycle: malice, incompetence, or bad code. Every individual step is locally reasonable. Cycles are an **emergent property of many good diffs**, which is precisely why diff-by-diff review doesn't catch them, and why the problem accelerates as [AI tools multiply PR volume](/blog/architecture-matters-more-not-less).
+
+They are also rare per pull request, and that matters for how you should expect to catch them. Across [thirty recent open-source pull requests we analysed](/blog/architectural-findings-in-oss), not one closed a package cycle. That is not a disappointing result; it is the shape of the problem. A cycle is a rare, expensive, irreversible-in-practice event hiding inside an ordinary-looking change, which makes it precisely the kind of thing worth having a machine watch for on every single change and say nothing about on almost all of them.
 
 ## Finding cycles before they close
 
@@ -96,4 +98,4 @@ Two gaps remain, and they're the expensive ones:
 
 <div class="bp-callout"><strong>A cycle is cheapest to fix in the review of the PR that seeds it, and invisible in exactly that review.</strong> That inversion is the whole problem. The information you need at step 3 lives in the graph, and the diff you're reviewing doesn't contain the graph.</div>
 
-That per-PR graph comparison is what Striff does: it models every pull request as a change to the dependency graph and flags a **new cycle** or a **near-cycle seed** in the PR that introduces it, next to the diff, before merge. Install the [browser extension](https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen) and it runs on your next pull request, no config needed.
+That per-pull-request graph comparison is what Striff does. It parses both revisions, compares them, and reports a **new cycle** or a **near-cycle seed** as one check next to your CI, in the change that introduced it, before merge. On the large majority of pull requests it will report clean and list what it looked at, because on the large majority of pull requests nothing happened to the graph. [Install it on a repository](https://github.com/apps/striff-app/installations/new); there is nothing to configure.
