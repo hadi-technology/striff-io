@@ -83,7 +83,7 @@ export const prExamples: PrExample[] = [
     headline: "1 structural regression detected",
     svg: "/examples/smallrye-graphql-1424.svg",
     panzoom: { focus: { x: 0.575, y: 0.65 }, desktopScale: 2.4, mobileScale: 2.4 },
-    viewport: { desktopHeight: "32rem", mobileHeight: "20rem" },
+    viewport: { desktopHeight: "32rem", mobileHeight: "12rem" },
     revisions: {
       baseLabel: "base",
       base: "6e20902",
@@ -162,7 +162,7 @@ export const prExamples: PrExample[] = [
     headline: "11 components, 13 relationships, no items surfaced (1 evidence-only finding)",
     svg: "/examples/smallrye-graphql-2083.svg",
     panzoom: { focus: { x: 0.55, y: 0.58 }, desktopScale: 1.2, mobileScale: 1.2 },
-    viewport: { desktopHeight: "32rem", mobileHeight: "20rem" },
+    viewport: { desktopHeight: "32rem", mobileHeight: "10rem" },
     revisions: {
       baseLabel: "base",
       base: "c48e433",
