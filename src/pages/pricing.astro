@@ -5,7 +5,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
 ---
 <BaseLayout
   title="Pricing | Striff"
-  description="Free for public repositories. Private-repo teams pay based on active repos (repos that actually generated a diagram), starting at $29/mo for up to 5."
+  description="Free for public repositories, documented rules included. Private-repo teams pay based on active repos (repos that actually generated a diagram), starting at $29/mo for up to 5."
   canonical="https://striff.io/pricing"
 >
   <main class="pricing-page text-slate-900">
@@ -35,17 +35,17 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
           <h2 class="mt-3 text-3xl font-extrabold text-slate-950">$0</h2>
           <p class="mt-1 text-sm text-slate-500">Public repositories</p>
           <ul class="mt-5 space-y-2 text-sm text-slate-600">
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Chrome extension</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Automated GitHub App checks on public PRs</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Architecture diagrams on any public PR</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Risky-dependency warnings</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Your documented rules, read and checked on every PR</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> 14 structural checks on every PR</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Architecture diagram of every change</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Metrics dashboard</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Browser extension for any public PR</li>
           </ul>
           <!-- The secondary link sits above the button so that the primary CTA is the last
                element in every card and the four buttons land on one line. With the link
                below it, this card's button floated a row higher than the other three. -->
           <div class="mt-auto flex flex-col gap-2">
-            <a href="https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen" class="inline-flex w-full items-center justify-center py-2 text-xs font-medium text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Get the browser extension</a>
+            <a href="/extension" class="inline-flex w-full items-center justify-center py-2 text-xs font-medium text-blue-600 hover:underline">Get the browser extension</a>
             <a href={githubInstallUrl} class="btn-secondary inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install free</a>
           </div>
         </article>
@@ -57,7 +57,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
           <p class="mt-1 text-sm text-slate-500">Up to 5 active repos. Sized for one team.</p>
           <ul class="mt-5 space-y-2 text-sm text-slate-600">
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Checks on every private PR</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> 12 structural checks plus your documented rules</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Your documented rules, plus 14 structural checks</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Metrics dashboard</li>
           </ul>
           <a href={githubInstallUrl} class="btn-secondary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install the GitHub App</a>
