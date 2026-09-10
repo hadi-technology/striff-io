@@ -31,6 +31,8 @@ export interface FlaggedPr {
   pullTitle?: string;
   regressionCount: number;
   hotspotCount: number;
+  // Optional: older backend deploys don't send documented-rule counts yet (same schema-drift pattern).
+  docRuleViolationCount?: number;
   createdAtMs: number;
 }
 
@@ -42,6 +44,10 @@ export interface MonthlyMetrics {
   cleanPrCount: number;
   highRiskPrCount: number;
   prCheckWebhooksReceivedCount: number;
+  // Optional for the same reason: documented-rule verdict counts per month (ADR-019 step 4).
+  docRulesHeldCount?: number;
+  docRulesViolatedCount?: number;
+  docRulesPreExistingCount?: number;
   topFlaggedRepos: RepoHotspot[];
   recentFlaggedPrs: FlaggedPr[];
 }
@@ -297,9 +303,15 @@ export default function MetricsTab({
   // Defends against an API response that predates ADR-020 (backend deployed after this frontend,
   // or briefly out of sync during rollout) -- without this, `.length` on a missing field throws
   // and blanks the whole tab instead of just omitting the new cards' data.
+  // A backend that predates documented-rule counts sends none of these fields at all -- show "no data"
+  // on those cards rather than a misleading zero, the same way Coverage handles its field.
+  const hasDocData = data.months.some((m) => m.docRulesHeldCount !== undefined || m.docRulesViolatedCount !== undefined);
   const allMonths = data.months.map((m) => ({
     ...m,
     prCheckWebhooksReceivedCount: m.prCheckWebhooksReceivedCount ?? 0,
+    docRulesHeldCount: m.docRulesHeldCount ?? 0,
+    docRulesViolatedCount: m.docRulesViolatedCount ?? 0,
+    docRulesPreExistingCount: m.docRulesPreExistingCount ?? 0,
     recentFlaggedPrs: m.recentFlaggedPrs ?? [],
   }));
   const months = allMonths.slice(-MAX_HISTORY_MONTHS);
@@ -314,6 +326,11 @@ export default function MetricsTab({
   // Coverage divides by webhooks *received*, not PRs analyzed -- the denominator here is the count
   // of PR-check webhook events GitHub sent, independent of whether analysis completed. See ADR-020.
   const coverageRate = (m: MonthlyMetrics) => ratePct(m.prsAnalyzedCount, m.prCheckWebhooksReceivedCount);
+  // "Checked" is held + violated + pre-existing: rules Striff could not answer are not in the backend
+  // counts at all, so the rate is over rules that actually got a verdict.
+  const docChecked = (m: MonthlyMetrics) =>
+    (m.docRulesHeldCount ?? 0) + (m.docRulesViolatedCount ?? 0) + (m.docRulesPreExistingCount ?? 0);
+  const docHeldRate = (m: MonthlyMetrics) => ratePct(m.docRulesHeldCount ?? 0, docChecked(m));
 
   // The headline number on every card is a 6-month total, not a single month's value -- a lone
   // number sitting on top of a 6-month chart read ambiguously otherwise. Rate cards can't just sum
@@ -329,6 +346,11 @@ export default function MetricsTab({
   const windowCleanPrRate = ratePct(windowCleanPrs, windowPrsAnalyzed);
   const windowHighRiskPrRate = ratePct(windowHighRiskPrs, windowPrsAnalyzed);
   const windowCoverageRate = ratePct(windowPrsAnalyzed, windowWebhooksReceived);
+  const windowDocHeld = sumField("docRulesHeldCount");
+  const windowDocViolated = sumField("docRulesViolatedCount");
+  const windowDocPreExisting = sumField("docRulesPreExistingCount");
+  const windowDocChecked = windowDocHeld + windowDocViolated + windowDocPreExisting;
+  const windowDocHeldRate = ratePct(windowDocHeld, windowDocChecked);
 
   // Chart series shared by every card below: each point carries its own axis label, tooltip
   // label, and index so MetricChart's tooltip can look up "the prior point" without re-deriving
@@ -338,6 +360,7 @@ export default function MetricsTab({
     cleanPrRate: cleanPrRate(m),
     highRiskPrRate: highRiskPrRate(m),
     coverageRate: coverageRate(m),
+    docHeldRate: docHeldRate(m),
     __idx: i,
     __label: chartMonthLabel(m.yearMonth, i === 0 || m.yearMonth.endsWith("-01")),
     __fullLabel: fullMonthLabel(m.yearMonth),
@@ -369,10 +392,47 @@ export default function MetricsTab({
   // backend field) rather than a rewrite of this component.
   const METRIC_CARDS: { key: string; label: string; description: string; wide?: boolean; render: () => any }[] = [
     {
+      key: "docViolated",
+      label: "Documented rules broken",
+      description:
+        "Rules from your own documentation that a pull request broke: true before the change, false after it. The check quotes the sentence and the line it came from. Rules already broken before a PR are counted separately as pre-existing and never charged to it.",
+      render: () =>
+        hasDocData ? (
+          <>
+            <div className="dashboard-metric-value-row">
+              <span className="dashboard-metric-value">{windowDocViolated}</span>
+            </div>
+            <MetricChart data={series} dataKey="docRulesViolatedCount" color="var(--danger)" direction="down" />
+          </>
+        ) : (
+          <p className="dashboard-metric-caption">No documented-rule data yet for this installation</p>
+        ),
+    },
+    {
+      key: "docHeld",
+      label: "Documented rules held",
+      description:
+        "Share of documented-rule checks that held across every PR in the window. Checked is held plus broken plus pre-existing; rules Striff could not answer are left out rather than counted as a pass.",
+      render: () =>
+        hasDocData ? (
+          <>
+            <div className="dashboard-metric-value-row">
+              <span className="dashboard-metric-value">{windowDocHeldRate}%</span>
+            </div>
+            <p className="dashboard-metric-value-caption">
+              {windowDocChecked} checked &middot; {windowDocPreExisting} pre-existing
+            </p>
+            <MetricChart data={series} dataKey="docHeldRate" color="var(--mint)" direction="up" formatValue={(v) => `${v}%`} />
+          </>
+        ) : (
+          <p className="dashboard-metric-caption">No documented-rule data yet for this installation</p>
+        ),
+    },
+    {
       key: "regressions",
       label: "Regressions flagged",
       description:
-        "A high-severity structural break Striff traced directly to this PR -- a new dependency cycle, a one-way boundary crossing, a stable component's contract shifting, or a sharp complexity jump. Deliberately rare: most PRs show zero.",
+        "A high-severity structural break Striff traced directly to this PR -- a new dependency cycle, a first-ever boundary crossing, a stable component's contract shifting, or a documented rule the change broke. Deliberately rare: most PRs show zero.",
       render: () => (
         <>
           <div className="dashboard-metric-value-row">
@@ -386,7 +446,7 @@ export default function MetricsTab({
       key: "hotspots",
       label: "Hotspots flagged",
       description:
-        "A lower-severity or anomaly-only finding worth a second look -- coupling or churn signals that don't rise to a confirmed structural regression. Usually zero or one per PR.",
+        "A lower-severity finding worth a second look -- a component reaching into a namespace it never used, a hub forming, a contract widening -- that doesn't rise to a structural regression. Usually zero or one per PR.",
       render: () => (
         <>
           <div className="dashboard-metric-value-row">
@@ -399,7 +459,7 @@ export default function MetricsTab({
     {
       key: "cleanRate",
       label: "Clean PR rate",
-      description: "Share of analyzed pull requests with zero regressions or hotspots flagged, over the last 6 months.",
+      description: "Share of analyzed pull requests with nothing flagged -- no regression, no hotspot and no documented rule broken -- over the last 6 months.",
       render: () => (
         <>
           <div className="dashboard-metric-value-row">
@@ -526,7 +586,7 @@ export default function MetricsTab({
       key: "recentFlagged",
       label: "Recently flagged PRs",
       description:
-        "The 10 most recent pull requests this month with a structural regression or review hotspot -- click through to see exactly what was flagged.",
+        "The 10 most recent pull requests this month with a structural regression, a review hotspot or a broken documented rule -- click through to see exactly what was flagged.",
       wide: true,
       render: () => (
         <>
@@ -535,6 +595,8 @@ export default function MetricsTab({
             <ul className="dashboard-metric-pr-list">
               {latest.recentFlaggedPrs.map((pr) => {
                 const isRegression = pr.regressionCount > 0;
+                const ruleCount = pr.docRuleViolationCount ?? 0;
+                const hasStructural = pr.regressionCount > 0 || pr.hotspotCount > 0;
                 return (
                   <li key={pr.pullUrl} className="dashboard-metric-pr-row">
                     <div className="dashboard-metric-pr-main">
@@ -548,10 +610,19 @@ export default function MetricsTab({
                       </a>
                       {pr.pullTitle && <p className="dashboard-metric-pr-title truncate">{pr.pullTitle}</p>}
                     </div>
-                    <span className={`dashboard-metric-pr-badge ${isRegression ? "is-regression" : "is-hotspot"}`}>
-                      {isRegression
-                        ? `${pr.regressionCount} regression${pr.regressionCount === 1 ? "" : "s"}`
-                        : `${pr.hotspotCount} hotspot${pr.hotspotCount === 1 ? "" : "s"}`}
+                    <span className="dashboard-metric-pr-badges">
+                      {ruleCount > 0 && (
+                        <span className="dashboard-metric-pr-badge is-rule">
+                          {ruleCount} rule{ruleCount === 1 ? "" : "s"} broken
+                        </span>
+                      )}
+                      {hasStructural && (
+                        <span className={`dashboard-metric-pr-badge ${isRegression ? "is-regression" : "is-hotspot"}`}>
+                          {isRegression
+                            ? `${pr.regressionCount} regression${pr.regressionCount === 1 ? "" : "s"}`
+                            : `${pr.hotspotCount} hotspot${pr.hotspotCount === 1 ? "" : "s"}`}
+                        </span>
+                      )}
                     </span>
                   </li>
                 );

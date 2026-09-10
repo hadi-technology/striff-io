@@ -24,6 +24,9 @@ export const orgMetricsPreviewData: OrgMetricsData = {
       cleanPrCount: 44,
       highRiskPrCount: 5,
       prCheckWebhooksReceivedCount: 66,
+      docRulesHeldCount: 96,
+      docRulesViolatedCount: 4,
+      docRulesPreExistingCount: 9,
       topFlaggedRepos: [
         { repoOwner: "acme-corp", repoName: "core-api", flaggedCount: 7 },
         { repoOwner: "acme-corp", repoName: "billing-service", flaggedCount: 4 },
@@ -41,6 +44,9 @@ export const orgMetricsPreviewData: OrgMetricsData = {
       cleanPrCount: 48,
       highRiskPrCount: 6,
       prCheckWebhooksReceivedCount: 72,
+      docRulesHeldCount: 108,
+      docRulesViolatedCount: 5,
+      docRulesPreExistingCount: 9,
       topFlaggedRepos: [
         { repoOwner: "acme-corp", repoName: "core-api", flaggedCount: 8 },
         { repoOwner: "acme-corp", repoName: "billing-service", flaggedCount: 5 },
@@ -58,6 +64,9 @@ export const orgMetricsPreviewData: OrgMetricsData = {
       cleanPrCount: 51,
       highRiskPrCount: 7,
       prCheckWebhooksReceivedCount: 80,
+      docRulesHeldCount: 121,
+      docRulesViolatedCount: 5,
+      docRulesPreExistingCount: 8,
       topFlaggedRepos: [
         { repoOwner: "acme-corp", repoName: "core-api", flaggedCount: 9 },
         { repoOwner: "acme-corp", repoName: "billing-service", flaggedCount: 6 },
@@ -75,6 +84,9 @@ export const orgMetricsPreviewData: OrgMetricsData = {
       cleanPrCount: 61,
       highRiskPrCount: 5,
       prCheckWebhooksReceivedCount: 84,
+      docRulesHeldCount: 134,
+      docRulesViolatedCount: 3,
+      docRulesPreExistingCount: 7,
       topFlaggedRepos: [
         { repoOwner: "acme-corp", repoName: "core-api", flaggedCount: 7 },
         { repoOwner: "acme-corp", repoName: "billing-service", flaggedCount: 4 },
@@ -92,6 +104,9 @@ export const orgMetricsPreviewData: OrgMetricsData = {
       cleanPrCount: 68,
       highRiskPrCount: 4,
       prCheckWebhooksReceivedCount: 89,
+      docRulesHeldCount: 142,
+      docRulesViolatedCount: 2,
+      docRulesPreExistingCount: 6,
       topFlaggedRepos: [
         { repoOwner: "acme-corp", repoName: "core-api", flaggedCount: 6 },
         { repoOwner: "acme-corp", repoName: "billing-service", flaggedCount: 4 },
@@ -109,6 +124,9 @@ export const orgMetricsPreviewData: OrgMetricsData = {
       cleanPrCount: 47,
       highRiskPrCount: 3,
       prCheckWebhooksReceivedCount: 65,
+      docRulesHeldCount: 151,
+      docRulesViolatedCount: 2,
+      docRulesPreExistingCount: 5,
       topFlaggedRepos: [
         { repoOwner: "acme-corp", repoName: "core-api", flaggedCount: 5 },
         { repoOwner: "acme-corp", repoName: "billing-service", flaggedCount: 3 },
@@ -125,6 +143,7 @@ export const orgMetricsPreviewData: OrgMetricsData = {
           pullTitle: "Merge auth and billing request pipelines",
           regressionCount: 1,
           hotspotCount: 0,
+          docRuleViolationCount: 1,
           createdAtMs: Date.now(),
         },
         {
@@ -155,6 +174,7 @@ export const orgMetricsPreviewData: OrgMetricsData = {
           pullTitle: "Introduce direct DB call from the notifications module",
           regressionCount: 1,
           hotspotCount: 0,
+          docRuleViolationCount: 1,
           createdAtMs: Date.now() - 3 * 24 * 60 * 60 * 1000,
         },
         {
