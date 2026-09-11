@@ -705,7 +705,7 @@ function FaqSection() {
     },
     {
       q: "What does Striff actually do on my pull requests?",
-      a: "For each PR, Striff reads the architecture your repository already documents \u2014 ARCHITECTURE.md, ADRs, READMEs and design notes \u2014 turns each sentence about the code into a rule, and checks it against both revisions of the change, quoting the sentence and the line it came from. Alongside that, <b>14 structural checks</b> look for new dependency cycles, first-ever boundary crossings, changed contracts and more. Results appear as a single <b>GitHub check-run</b>. Read about <a href=\"/blog/architectural-findings-in-oss\" class=\"font-semibold text-blue-600 hover:underline\">what Striff caught in the wild</a>, or install the <a href=\"/extension\" class=\"font-semibold text-blue-600 hover:underline\">browser extension</a> to see the same review drawn on the dependency diagram.",
+      a: "For each PR, Striff reads the architecture your repository already documents \u2014 ARCHITECTURE.md, ADRs, READMEs and design notes \u2014 turns each sentence about the code into a rule, and checks it against both revisions of the change, quoting the sentence and the line it came from. Alongside that, <b>14 structural checks</b> look for new dependency cycles, first-ever boundary crossings, changed contracts and more. Results appear as a single <b>GitHub check-run</b>. Install the <a href=\"/extension\" class=\"font-semibold text-blue-600 hover:underline\">browser extension</a> to see the same review drawn on the dependency diagram.",
     },
     {
       q: "What is the browser extension?",

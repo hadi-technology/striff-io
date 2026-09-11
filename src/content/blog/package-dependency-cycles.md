@@ -85,7 +85,7 @@ Nobody designs a cycle. In every case we've flagged, the cycle arrived through t
 
 Note what's *absent* from that lifecycle: malice, incompetence, or bad code. Every individual step is locally reasonable. Cycles are an **emergent property of many good diffs**, which is precisely why diff-by-diff review doesn't catch them, and why the problem accelerates as [AI tools multiply PR volume](/blog/architecture-matters-more-not-less).
 
-They are also rare per pull request, and that matters for how you should expect to catch them. Across [thirty recent open-source pull requests we analysed](/blog/architectural-findings-in-oss), not one closed a package cycle. That is not a disappointing result; it is the shape of the problem. A cycle is a rare, expensive, irreversible-in-practice event hiding inside an ordinary-looking change, which makes it precisely the kind of thing worth having a machine watch for on every single change and say nothing about on almost all of them.
+They are also rare per pull request, and that matters for how you should expect to catch them. Across thirty recent open-source pull requests we analysed, not one closed a package cycle. That is not a disappointing result; it is the shape of the problem. A cycle is a rare, expensive, irreversible-in-practice event hiding inside an ordinary-looking change, which makes it precisely the kind of thing worth having a machine watch for on every single change and say nothing about on almost all of them.
 
 ## Finding cycles before they close
 

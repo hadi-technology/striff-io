@@ -17,7 +17,7 @@ const staticRoutes: { path: string; changefreq: string; priority: string }[] = [
 ];
 
 export const GET: APIRoute = async () => {
-  const posts = await getCollection("blog");
+  const posts = await getCollection("blog", ({ data }) => !data.draft);
 
   const urls = [
     ...staticRoutes.map(

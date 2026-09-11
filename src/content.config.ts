@@ -7,6 +7,8 @@ const blog = defineCollection({
     description: z.string(),
     date: z.date(),
     ogImage: z.string().optional(),
+    // A draft stays in the repository but is never built, listed or linked.
+    draft: z.boolean().optional(),
   }),
 });
 

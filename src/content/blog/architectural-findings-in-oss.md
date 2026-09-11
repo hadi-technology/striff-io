@@ -2,6 +2,8 @@
 title: "Thirty open-source pull requests, forty-nine rule verdicts, thirteen findings, and a lot of silence"
 description: "A reviewer that flags every pull request is a reviewer nobody reads. The complete output of a quiet one across thirty real pull requests in eleven public repositories: all forty-nine verdicts on rules the repositories' own docs state, all thirteen structural findings, the two we grade as weak, and the six questions it declined to answer."
 date: 2026-08-26
+# Hidden while it is rewritten (see src/content.config.ts).
+draft: true
 ---
 
 The interesting number for an automated reviewer is not how much it finds. It is **how often it says nothing.**
@@ -48,6 +50,11 @@ OneBusAway's `gtfs-modules` documents a customisation recipe, and one line of it
 <div class="bp-facts-line"><span class="bp-facts-key">rule </span>  Stop does not declare <code>extra_stop_info</code> as a field</div>
 <div class="bp-facts-line"><span class="bp-facts-flag" style="background:#059669">✓ HELD</span>  checked at both revisions of three separate pull requests</div>
 </div>
+
+$$
+\varphi \coloneqq \neg\,\mathrm{member}(\mathtt{Stop},\ \mathtt{extra\_stop\_info},\ \mathsf{FIELD}) \qquad \mathcal{M} \htmlClass{sat}{\models} \varphi
+$$
+
 <p class="bp-figure-caption">This is the shape most documented rules have, and it is the one people underrate. The sentence exists because someone will eventually want that field. The day somebody adds it to <code>Stop</code> to save a subclass, the recipe underneath becomes wrong, and this row turns over. Until then it is a green tick on a promise the project made in writing.</p>
 </div>
 

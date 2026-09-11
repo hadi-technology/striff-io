@@ -4,6 +4,10 @@ description: "Coding agents read your docs as context, and nothing checks that t
 date: 2026-09-10
 ---
 
+import RuleRows from "../../components/RuleRows.astro";
+import Formula from "../../components/Formula.astro";
+import { ecchronosRules, baseSha, headSha } from "../../data/ecchronosRules";
+
 For twenty years a design doc had one reader: *other engineers*. You wrote down how the system fits together (what lives where, what calls what, what must never depend on what) and hoped the next person read it before their first pull request.
 
 That changed in **both directions at once**.
@@ -28,12 +32,9 @@ Striff read 39 rules out of that repository's documentation and checked every on
 <p class="bp-figure-title">Ericsson/ecchronos #1786 · documented rules</p>
 <div class="bp-rules-tally"><span><b>39</b> rules in its docs</span><span class="is-held"><b>27</b> held</span><span class="is-violated"><b>1</b> violated</span><span><b>11</b> couldn't be checked</span></div>
 <div class="bp-rules">
-<div class="hcc-thead"><span>What the docs say</span><span>The rule it became</span><span>Verdict</span></div>
-<div class="hcc-row hcc-row-violated"><span class="hcc-quote"><span class="hcc-quote-text">Calls <code>RepairScheduler.<wbr>putConfigurations()</code> to keep jobs up to date</span><span class="hcc-quote-src"><svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914Z"/></svg>core.impl/README.md<b>:136</b></span></span><span class="hcc-rule"><svg class="hcc-rule-arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 3v5a3 3 0 0 0 3 3h9"/><path d="m10.5 7.5 3.5 3.5-3.5 3.5"/></svg><span class="hcc-rule-body"><span class="hcc-rule-text"><code>NodeWorker</code> depends on <code>RepairScheduler</code></span></span></span><span class="hcc-verdict-cell"><span class="hcc-verdict hcc-verdict-violated">Violated</span></span></div>
-<div class="hcc-row hcc-row-held"><span class="hcc-quote"><span class="hcc-quote-text">The <code>ConnectionType</code> enum (from <code>utils</code>) defines the three ecChronos control modes:</span><span class="hcc-quote-src"><svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914Z"/></svg>connection/README.md<b>:57</b></span></span><span class="hcc-rule"><svg class="hcc-rule-arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 3v5a3 3 0 0 0 3 3h9"/><path d="m10.5 7.5 3.5 3.5-3.5 3.5"/></svg><span class="hcc-rule-body"><span class="hcc-craft">General term resolved</span><span class="hcc-rule-text"><code>ConnectionType</code> is in <code>com.<wbr>ericsson.<wbr>bss.<wbr>cassandra.<wbr>ecchronos.<wbr>utils.<wbr>enums.<wbr>connection</code></span></span></span><span class="hcc-verdict-cell"><span class="hcc-verdict hcc-verdict-held">Held</span></span></div>
-<div class="hcc-row hcc-row-held"><span class="hcc-quote"><span class="hcc-quote-text"><code>VnodeRepairTask</code> / <code>IncrementalRepairTask</code> — Concrete <code>RepairTask</code> subclasses for vnode and incremental repair respectively.</span><span class="hcc-quote-src"><svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914Z"/></svg>core.impl/README.md<b>:65</b></span></span><span class="hcc-rule"><svg class="hcc-rule-arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 3v5a3 3 0 0 0 3 3h9"/><path d="m10.5 7.5 3.5 3.5-3.5 3.5"/></svg><span class="hcc-rule-body"><span class="hcc-craft">One sentence, two rules</span><span class="hcc-rule-text"><code>VnodeRepairTask</code> depends on <code>RepairTask</code>, and <code>IncrementalRepairTask</code> depends on <code>RepairTask</code></span></span></span><span class="hcc-verdict-cell"><span class="hcc-verdict hcc-verdict-held">Held</span></span></div>
+<RuleRows rows={ecchronosRules} baseSha={baseSha} headSha={headSha} />
 </div>
-<p class="bp-figure-caption">On the left, the sentence as the maintainers wrote it, with the file and line it came from. In the middle, the rule it became. On the right, the verdict, computed at both revisions. The second row turns a general term, "from <code>utils</code>", into the package it means. The third splits one sentence into two rules and checks each on its own.</p>
+<p class="bp-figure-caption">On the left, the sentence as the maintainers wrote it, with the file and line it came from. In the middle, the rule it became: the formula that is actually evaluated, typeset, with its plain reading under it. On the right, the verdict, stated as what it is: whether the code at each revision satisfies the formula or not. The second row resolves a general term, "from utils", to the package it means; the third turns one sentence into one rule per class it names.</p>
 </div>
 
 ## The violation, as facts you can check
@@ -53,6 +54,12 @@ A finding is only worth something if you can check it without trusting us. This 
 </div>
 <p class="bp-figure-caption">The rule came out of the prose. Everything under it was computed from the parsed code at each revision, which is why the finding can name the line that moved and cannot invent one that did not.</p>
 </div>
+
+In logical terms, the rule is a formula about the code, and the code parsed at each revision is a model that either satisfies it or does not. The whole violation is two facts:
+
+<Formula display tex={String.raw`\begin{gathered} \varphi \coloneqq \htmlClass{lg-q}{\exists} k.\ \mathrm{refs}(\mathtt{NodeWorker},\ \mathtt{RepairScheduler},\ k) \\[8pt] \mathcal{M}_{\mathrm{base}} \htmlClass{sat}{\models} \varphi \qquad \mathcal{M}_{\mathrm{head}} \htmlClass{unsat}{\nvDash} \varphi \end{gathered}`} />
+
+The first line is what the model read out of the README. The second is what the program computed from the code, and it is the only thing a verdict is allowed to rest on.
 
 ## A one-line fix, while it is still one line
 

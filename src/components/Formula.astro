@@ -1,0 +1,18 @@
+---
+/**
+ * One formula, typeset by KaTeX at build time. For MDX, where braces inside $...$ would be
+ * read as expressions; plain .md posts write $...$ and rehype-katex does the same job.
+ */
+import katex from "katex";
+import "katex/dist/katex.min.css";
+
+interface Props {
+  tex: string;
+  display?: boolean;
+}
+
+const { tex, display = false } = Astro.props;
+const html = katex.renderToString(tex, { displayMode: display, output: "html", trust: true, strict: "ignore", throwOnError: true });
+---
+
+<Fragment set:html={html} />

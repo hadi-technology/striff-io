@@ -54,7 +54,7 @@ The compressed version, for pinning next to your review queue:
 </tbody>
 </table>
 </div>
-<p class="bp-figure-caption">Every row here corresponds to something we have watched happen in real open-source pull requests: <a href="/blog/design-docs-are-enforceable-now">a README still crediting a class with work a refactor took away from it</a>, and, in <a href="/blog/architectural-findings-in-oss">a window of thirty more</a>, a public interface losing a method twelve things depend on, a first-ever edge between two packages, a README describing methods that no longer exist.</p>
+<p class="bp-figure-caption">Every row here corresponds to something we have watched happen in real open-source pull requests: <a href="/blog/design-docs-are-enforceable-now">a README still crediting a class with work a refactor took away from it</a>, and, in a window of thirty more, a public interface losing a method twelve things depend on, a first-ever edge between two packages, a README describing methods that no longer exist.</p>
 </div>
 
 ## The honest math

@@ -134,7 +134,7 @@ That proxy is now broken, and here's the mechanism. A diff shows you lines. It d
 <p class="bp-figure-caption">Ericsson/ecchronos <a href="https://github.com/Ericsson/ecchronos/pull/1786">#1786</a>, a real pull request. The call moved to a new class, <code>SchemaRefresher</code>; the sentence on the right did not move with it. It sits in a file the diff does not contain, so no amount of careful diff-reading surfaces it, and it is still on <code>master</code>. <a href="/blog/design-docs-are-enforceable-now">The whole story</a>.</p>
 </div>
 
-This is the pattern that shows up when you go and look. [Across thirty recent open-source pull requests we analysed](/blog/architectural-findings-in-oss), most moved nothing structural at all — and a handful did something a reviewer would want to know about and could not have seen: a public interface losing a method that twelve components depend on, a component reaching into two packages it had never touched, a README describing an API that no longer exists. Every one of those pull requests was reviewed by people who are good at their jobs. The information simply was not in front of them.
+This is the pattern that shows up when you go and look. Across thirty recent open-source pull requests we analysed, most moved nothing structural at all — and a handful did something a reviewer would want to know about and could not have seen: a public interface losing a method that twelve components depend on, a component reaching into two packages it had never touched, a README describing an API that no longer exists. Every one of those pull requests was reviewed by people who are good at their jobs. The information simply was not in front of them.
 
 ## The bill comes due quietly
 
