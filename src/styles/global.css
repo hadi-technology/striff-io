@@ -4161,8 +4161,8 @@
 .hcc-thead,
 .hcc-row {
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.34fr) 6.5rem;
-  gap: 0 1.6rem;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr) 8.5rem;
+  gap: 0 1.5rem;
   align-items: start;
   padding: 1.25rem 1.5rem;
 }
@@ -4275,6 +4275,43 @@
 }
 
 .hcc-verdict-cell { display: flex; justify-content: flex-end; padding-top: 0.1rem; }
+
+/* The rule's truth at the two revisions: what "differential" means, in one glance. */
+.hcc-verdict-cell { flex-direction: column; align-items: flex-end; gap: 0.45rem; }
+
+/* ---- the formal rule, typeset ----
+   KaTeX sets each formula in Computer Modern at build time: identifiers in its typewriter
+   face, variables in italic, quantifiers the only colour. The φ ≔ label sits in the
+   margin the way a paper names an equation. Each chunk is one KaTeX box, so a line can
+   only break between chunks, never inside a term, at any width. */
+.hcc-logic {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.5rem;
+  row-gap: 0.15rem;
+  align-items: baseline;
+  min-width: 0;
+  color: #0f172a;
+}
+
+.hcc-logic .katex { font-size: 1.12em; }
+.hcc-logic-label { grid-row: 1 / span 2; color: #94a3b8; white-space: nowrap; }
+.hcc-logic-line { grid-column: 2; }
+.hcc-logic-line + .hcc-logic-line { padding-left: 1.2rem; }
+.hcc-logic .lg-q { color: #6d28d9; }
+
+
+/* Inside the rule box the formula leads and the plain reading follows it, under a
+   dashed rule: what is evaluated, then how it reads. */
+.hcc-rule-body .hcc-logic { padding: 0.1rem 0 0.1rem; }
+
+.hcc-rule-text.hcc-rule-reading {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  color: #64748b;
+}
 
 .hcc-verdict {
   display: inline-flex;
@@ -4482,7 +4519,6 @@
   background: linear-gradient(180deg, #fbfcfe, #f6f9fc);
 }
 
-.hcc-row-violated .hcc-rule { border-color: #f7dfe2; background: linear-gradient(180deg, #fffbfb, #fef6f7); }
 .hcc-row:hover .hcc-rule { border-color: #e4ebf3; }
 
 .hcc-rule-text .github-inline-code { background: #ffffff; border: 1px solid #e7edf4; }
@@ -5134,9 +5170,7 @@
 
 .hcc-rule { background: #f1f5f9; border-color: #d6dee8; }
 .hcc-row:hover .hcc-rule { border-color: #cbd5e1; }
-.hcc-row-violated .hcc-rule { background: #fef2f2; border-color: #fecaca; }
 .hcc-rule-arrow { color: #94a3b8; }
-.hcc-row-violated .hcc-rule-arrow { color: #f87171; }
 .hcc-rule-text { color: #1e293b; }
 .hcc-rule-text .github-inline-code { background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; }
 .hcc-craft { background: #dbeafe; color: #1d4ed8; }
@@ -5804,3 +5838,304 @@
 
 .bp-facts-neg { color: #fca5a5; font-weight: 600; }
 .bp-facts-quote { color: #e2e8f0; font-style: italic; }
+
+/* ---- hero table, compact ----
+   The formula made every row taller. This pulls them back in: tighter rows and rule box,
+   the craft tag moves down beside the plain reading, formulas flow instead of breaking,
+   and the revision track runs across, so the verdict cell no longer sets the row height.
+   Kept at the end of the file so it wins over the earlier hero passes. */
+.hcc-table .hcc-row { padding-top: 0.95rem; padding-bottom: 0.95rem; }
+.hcc-table .hcc-rule { padding-top: 0.65rem; padding-bottom: 0.65rem; }
+.hcc-table .hcc-rule-body { gap: 0.4rem; }
+.hcc-table .hcc-rule-arrow { margin-top: 0.4rem; }
+
+.hcc-rule-foot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding-top: 0.4rem;
+  border-top: 1px dashed rgba(100, 116, 139, 0.3);
+}
+
+.hcc-table .hcc-rule-text.hcc-rule-reading { padding-top: 0; border-top: 0; }
+.hcc-rule-foot .hcc-craft { flex: 0 0 auto; margin-top: 0.05rem; }
+
+.hcc-table .hcc-rule-text.hcc-rule-reading .github-inline-code {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* ---- On this PR: a status panel ----
+   The verdict, then the two model-theory statements it rests on: the codebase at each
+   revision either satisfies the formula (⊨) or does not (⊭). Tinted by verdict, with the
+   same quiet depth as the rule box beside it. */
+.hcc-table .hcc-verdict-cell { align-items: stretch; padding-top: 0; }
+
+.hcc-status {
+  --st-bd: #bfe6cf;
+  --st-top: #f5fcf8;
+  --st-bottom: #eaf8f0;
+  --st-fg: #17794a;
+  --st-glow: rgba(23, 121, 74, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem 0.6rem;
+  border: 1px solid var(--st-bd);
+  border-radius: 0.7rem;
+  background: linear-gradient(180deg, var(--st-top), var(--st-bottom));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 18px -12px var(--st-glow);
+}
+
+.hcc-status.is-violated {
+  --st-bd: #f2c1c7;
+  --st-top: #fff6f7;
+  --st-bottom: #fdeaec;
+  --st-fg: #b4233c;
+  --st-glow: rgba(211, 58, 75, 0.4);
+}
+
+.hcc-status-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+  color: var(--st-fg);
+}
+
+.hcc-status-sat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--st-bd);
+  color: #334155;
+}
+
+.hcc-status-sat .katex { font-size: 1em; }
+.hcc-status-sat .sat { color: #17794a; }
+.hcc-status-sat .unsat { color: #c9313f; }
+
+@media (max-width: 820px) {
+  .hcc-table .hcc-verdict-cell { align-items: flex-start; }
+  .hcc-status { flex-direction: row; align-items: center; gap: 0.9rem; }
+  .hcc-status-sat { flex-direction: row; gap: 0.9rem; padding: 0 0 0 0.9rem; border-top: 0; border-left: 1px solid var(--st-bd); }
+}
+
+.hcc-rule-foot { border-top: 1px solid rgba(100, 116, 139, 0.16); }
+
+.hcc-table .hcc-rule-text.hcc-rule-reading .github-inline-code {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 1em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #1e293b;
+}
+
+/* ---- Blog: typeset formal logic ----
+   KaTeX display math sits on the same quiet plate as the figures, with the hero's colours:
+   violet quantifiers, a green ⊨ and a red ⊭. It scrolls sideways on a phone rather than
+   shrinking below legibility. */
+.blog-prose .katex { font-size: 1.12em; color: #0f172a; }
+
+.blog-prose .katex-display {
+  margin: 1.6rem 0;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.blog-prose .bp-figure .katex-display { margin: 1rem 0; background: #ffffff; }
+.blog-prose .lg-q { color: #6d28d9; }
+.blog-prose .sat { color: #17794a; }
+.blog-prose .unsat { color: #c9313f; }
+
+/* ---- Rule rows inside a blog figure ----
+   The article column is narrower than the hero, so three columns squeezed the sentence
+   until identifiers broke mid-word. In a figure the verdict drops under the rule box as
+   the same horizontal strip phones use, and the sentence gets the width back. */
+.bp-rules .hcc-thead,
+.bp-rules .hcc-row { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.4fr); row-gap: 0.6rem; }
+.bp-rules .hcc-thead span:last-child { display: none; }
+.bp-rules .hcc-verdict-cell { grid-column: 2; align-items: flex-start; }
+.bp-rules .hcc-status { flex-direction: row; align-items: center; gap: 0.9rem; }
+.bp-rules .hcc-status-sat { flex-direction: row; gap: 0.9rem; padding: 0 0 0 0.9rem; border-top: 0; border-left: 1px solid var(--st-bd); }
+
+/* Names in the plain reading break only when they cannot fit, never mid-word by default. */
+.hcc-table .hcc-rule-text.hcc-rule-reading .github-inline-code { overflow-wrap: break-word; word-break: normal; }
+
+@media (max-width: 560px) {
+  .hcc-rule-foot { flex-direction: column-reverse; align-items: flex-start; gap: 0.35rem; }
+}
+
+/* ---- Blog invitations on the homepage ----
+   One card per section, pointing at the post that goes deeper on it. It should read as an
+   invitation, not a footnote: an icon plate, the kicker with a real read time, the post's
+   own title, and an arrow that fills and nudges on hover. */
+.blog-invite {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  max-width: 36rem;
+  padding: 0.75rem 0.8rem 0.75rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 10px 24px -18px rgba(30, 58, 138, 0.35);
+  color: #0f172a;
+  text-align: left;
+  text-decoration: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.blog-invite:hover,
+.blog-invite:focus-visible {
+  transform: translateY(-2px);
+  border-color: #bfd0f5;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 18px 32px -18px rgba(37, 99, 235, 0.45);
+}
+
+.blog-invite-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #eef2ff, #dbeafe);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+}
+
+.blog-invite-icon svg { width: 1.25rem; height: 1.25rem; }
+.blog-invite-body { min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+
+.blog-invite-kicker {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.blog-invite-kicker i { margin: 0 0.4em; font-style: normal; color: #94a3b8; }
+
+.blog-invite-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+}
+
+.blog-invite-go {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin-left: 0.25rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 999px;
+  color: #475569;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.blog-invite-go svg { width: 0.95rem; height: 0.95rem; }
+
+.blog-invite:hover .blog-invite-go,
+.blog-invite:focus-visible .blog-invite-go {
+  transform: translateX(2px);
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.blog-invite-dark {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+  color: #ffffff;
+}
+
+.blog-invite-dark .blog-invite-title { color: #f8fafc; }
+.blog-invite-dark .blog-invite-kicker { color: #7dd3fc; }
+.blog-invite-dark .blog-invite-icon { background: rgba(125, 211, 252, 0.12); box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.25); color: #7dd3fc; }
+.blog-invite-dark .blog-invite-go { border-color: rgba(255, 255, 255, 0.2); color: #e2e8f0; }
+.blog-invite-dark:hover { border-color: rgba(125, 211, 252, 0.45); }
+
+@media (prefers-reduced-motion: reduce) {
+  .blog-invite, .blog-invite-go { transition: none; }
+  .blog-invite:hover, .blog-invite:hover .blog-invite-go { transform: none; }
+}
+
+.section-invite { display: flex; justify-content: center; margin-top: 2.5rem; }
+.compute-invite { margin-top: 1.75rem; }
+
+/* The diagram section's intro sits centred over the full-width stage below it. */
+.diagram-section .diagram-intro { margin-inline: auto; text-align: center; }
+.diagram-section .diagram-intro .section-subcopy { margin-inline: auto; text-wrap: pretty; }
+
+/* ---- Supported languages, under the hero card ----
+   Pills with a monogram tile in each language's colour: one consistent object instead of
+   four logos drawn in four different styles. */
+.hero-langs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.55rem 0.6rem;
+  margin-top: 1.75rem;
+}
+
+.hero-langs-label {
+  margin-right: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.lang-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.28rem 0.8rem 0.28rem 0.3rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 6px 14px -10px rgba(15, 23, 42, 0.3);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #1e293b;
+}
+
+.lang-chip-mark {
+  display: grid;
+  place-items: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--lang);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.14), 0 1px 2px rgba(15, 23, 42, 0.2);
+  color: #ffffff;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}

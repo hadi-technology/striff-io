@@ -1,0 +1,43 @@
+---
+/**
+ * An invitation to the blog post that goes deeper on the section it sits in. The title and
+ * read time come from the post itself, so a renamed or rewritten post never leaves a stale
+ * link behind.
+ */
+import { getEntry } from "astro:content";
+
+interface Props {
+  slug: string;
+  label?: string;
+  kicker?: string;
+  tone?: "light" | "dark";
+  class?: string;
+}
+
+const { slug, label, kicker = "From the blog", tone = "light", class: extra = "" } = Astro.props;
+const post = await getEntry("blog", slug);
+if (!post || post.data.draft) {
+  throw new Error(`BlogLink: no published blog post "${slug}"`);
+}
+const words = (post.body ?? "")
+  .replace(/^import .*$/gm, " ")
+  .replace(/\$\$[\s\S]*?\$\$/g, " ")
+  .replace(/<[^>]*>/g, " ")
+  .split(/\s+/)
+  .filter(Boolean).length;
+const minutes = Math.max(1, Math.round(words / 230));
+const title = label ?? post.data.title;
+---
+
+<a class={`blog-invite blog-invite-${tone} ${extra}`.trim()} href={`/blog/${slug}`}>
+  <span class="blog-invite-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5A1.5 1.5 0 0 1 3.5 4H9a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5H3.5A1.5 1.5 0 0 1 2 16Z"/><path d="M22 5.5A1.5 1.5 0 0 0 20.5 4H15a3 3 0 0 0-3 3v13a2.5 2.5 0 0 1 2.5-2.5h6a1.5 1.5 0 0 0 1.5-1.5Z"/></svg>
+  </span>
+  <span class="blog-invite-body">
+    <span class="blog-invite-kicker">{kicker}<i aria-hidden="true">·</i>{minutes} min read</span>
+    <span class="blog-invite-title">{title}</span>
+  </span>
+  <span class="blog-invite-go" aria-hidden="true">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+  </span>
+</a>

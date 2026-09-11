@@ -1,0 +1,78 @@
+---
+/**
+ * The documented-rule rows: the sentence from the docs, the formal rule it became
+ * (typeset by KaTeX) with its plain reading, and the verdict as satisfaction at the two
+ * revisions. Used by the homepage hero and the flagship blog post.
+ */
+import InlineCodeText from "./InlineCodeText.astro";
+import { tex } from "../lib/tex";
+import "katex/dist/katex.min.css";
+
+interface Props {
+  rows: any[];
+  baseSha: string;
+  headSha: string;
+}
+
+const { rows, baseSha, headSha } = Astro.props;
+const phiLabel = tex(String.raw`\varphi \coloneqq`);
+const satBase = tex(String.raw`\mathcal{M}_{\mathrm{base}} \htmlClass{sat}{\models} \varphi`);
+const satHead = tex(String.raw`\mathcal{M}_{\mathrm{head}} \htmlClass{sat}{\models} \varphi`);
+const unsatHead = tex(String.raw`\mathcal{M}_{\mathrm{head}} \htmlClass{unsat}{\nvDash} \varphi`);
+---
+
+<div class="hcc-table">
+  <div class="hcc-thead" aria-hidden="true">
+    <span>The sentence in your docs</span>
+    <span>The rule it became</span>
+    <span>On this PR</span>
+  </div>
+  {rows.map((row) => (
+    <div class={`hcc-row hcc-row-${row.verdict}`}>
+      <span class="hcc-quote">
+        <InlineCodeText class="hcc-quote-text" text={row.quote} />
+        <span class="hcc-quote-src">
+          <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914Z"/></svg>
+          {row.doc}<b>:{row.line}</b>
+        </span>
+      </span>
+      <span class="hcc-rule">
+        <svg class="hcc-rule-arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 3v5a3 3 0 0 0 3 3h9"/><path d="m10.5 7.5 3.5 3.5-3.5 3.5"/></svg>
+        <span class="hcc-rule-body">
+          <span class="hcc-logic" aria-hidden="true">
+            <span class="hcc-logic-label" set:html={phiLabel} />
+            {row.logic.map((line) => (
+              <span class="hcc-logic-line">
+                {line.map((chunk, i) => (
+                  <>{i > 0 && " "}<span class="hcc-logic-chunk" set:html={tex(chunk)} /></>
+                ))}
+              </span>
+            ))}
+          </span>
+          <span class="hcc-rule-foot">
+            <InlineCodeText class="hcc-rule-text hcc-rule-reading" text={row.statement} />
+            {row.craft && <span class="hcc-craft">{row.craft}</span>}
+          </span>
+        </span>
+      </span>
+      <span class="hcc-verdict-cell">
+        <span class={`hcc-status is-${row.verdict}`}>
+          <span class="hcc-status-head">
+            {row.verdict === "held" && (
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
+            )}
+            {row.verdict === "violated" && (
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.06 1.06L6.94 8 4.97 9.97a.75.75 0 1 0 1.06 1.06L8 9.06l1.97 1.97a.75.75 0 0 0 1.06-1.06L9.06 8l1.97-1.97a.75.75 0 0 0-1.06-1.06L8 6.94Z"/></svg>
+            )}
+            {row.verdictLabel}
+          </span>
+          <span class="hcc-status-sat" aria-hidden="true">
+            <span title={`base ${baseSha}`} set:html={satBase} />
+            <span title={`head ${headSha}`} set:html={row.head ? satHead : unsatHead} />
+          </span>
+          <span class="sr-only">{row.head ? "The rule holds at the base revision and on this pull request." : "The rule holds at the base revision and fails on this pull request."}</span>
+        </span>
+      </span>
+    </div>
+  ))}
+</div>

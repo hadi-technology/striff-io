@@ -1,6 +1,9 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import InlineCodeText from "../components/InlineCodeText.astro";
+import BlogLink from "../components/BlogLink.astro";
+import RuleRows from "../components/RuleRows.astro";
+import { ecchronosRules as heroRules, baseSha as heroBaseSha, headSha as heroHeadSha } from "../data/ecchronosRules";
 import MetricsTab from "../components/MetricsTab";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 
@@ -45,55 +48,15 @@ const activityFeed = [
 
 const githubAppUrl = "https://github.com/apps/striff-app/installations/new";
 
-/**
- * The hero check card: three of the thirty-nine rules Striff read out of ecchronos'
- * own documents and answered on PR #1786. Verified by hand against both revisions at
- * base d188eb1b33 and head 0288412016 before being put on the page.
- *
- *  - Violated is a real differential result. `NodeWorker.java` imports and calls
- *    `RepairScheduler.putConfigurations()` at base (import line 29, call line 209) and
- *    carries no reference to it at head, while `core.impl/README.md:136` still
- *    documents the call.
- *  - The two held rows are here because they show the extractor doing something a
- *    keyword match cannot. The first resolves the general term "from `utils`" into the
- *    full package path the type actually sits in. The second reads one sentence naming
- *    two types with a slash into two conjoined rules, and reads "subclasses" as a
- *    reference. Both were confirmed in source: ConnectionType.java:15 declares the
- *    package, VnodeRepairTask.java:52 and IncrementalRepairTask.java:43 extend RepairTask.
- *
- * The mix is not curated for drama. Across 1,912 documented-rule outcomes in our own
- * sample the split runs about 70% held, 27% unanswered, 2% pre-existing and well under
- * 1% violated, which is why the tally shows all four numbers rather than one.
- */
-
-const heroRules = [
-  {
-    verdict: "violated",
-    verdictLabel: "Violated",
-    quote: "Calls `RepairScheduler.putConfigurations()` to keep jobs up to date",
-    doc: "core.impl/README.md",
-    line: 136,
-    statement: "`NodeWorker` depends on `RepairScheduler`"
-  },
-  {
-    verdict: "held",
-    verdictLabel: "Held",
-    craft: "General term resolved",
-    quote: "The `ConnectionType` enum (from `utils`) defines the three ecChronos control modes:",
-    doc: "connection/README.md",
-    line: 57,
-    statement: "`ConnectionType` is in `com.ericsson.bss.cassandra.ecchronos.utils.enums.connection`"
-  },
-  {
-    verdict: "held",
-    verdictLabel: "Held",
-    craft: "One sentence, two rules",
-    quote: "`VnodeRepairTask` / `IncrementalRepairTask` \u2014 Concrete `RepairTask` subclasses for vnode and incremental repair respectively.",
-    doc: "core.impl/README.md",
-    line: 65,
-    statement: "`VnodeRepairTask` depends on `RepairTask`, and `IncrementalRepairTask` depends on `RepairTask`"
-  }
+// The languages the parser (Clarpse, via striff-lib) reads, shown under the hero card.
+// Monograms in each language's own colour rather than four mismatched logo styles.
+const heroLanguages = [
+  { name: "Java", mark: "J", color: "#e76f00" },
+  { name: "Python", mark: "Py", color: "#3776ab" },
+  { name: "C#", mark: "C#", color: "#7b3fbd" },
+  { name: "TypeScript", mark: "TS", color: "#3178c6" }
 ];
+
 
 /**
  * The document genre the catalogue admits, and what it deliberately refuses. Kept in sync
@@ -321,45 +284,16 @@ const plans = [
               </span>
             </div>
 
-            <div class="hcc-table">
-              <div class="hcc-thead" aria-hidden="true">
-                <span>The sentence in your docs</span>
-                <span>The rule it became</span>
-                <span>On this PR</span>
-              </div>
-              {heroRules.map((row) => (
-                <div class={`hcc-row hcc-row-${row.verdict}`}>
-                  <span class="hcc-quote">
-                    <InlineCodeText class="hcc-quote-text" text={row.quote} />
-                    <span class="hcc-quote-src">
-                      <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914Z"/></svg>
-                      {row.doc}<b>:{row.line}</b>
-                    </span>
-                  </span>
-                  <span class="hcc-rule">
-                    <svg class="hcc-rule-arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 3v5a3 3 0 0 0 3 3h9"/><path d="m10.5 7.5 3.5 3.5-3.5 3.5"/></svg>
-                    <span class="hcc-rule-body">
-                      {row.craft && <span class="hcc-craft">{row.craft}</span>}
-                      <InlineCodeText class="hcc-rule-text" text={row.statement} />
-                    </span>
-                  </span>
-                  <span class="hcc-verdict-cell">
-                    <span class={`hcc-verdict hcc-verdict-${row.verdict}`}>
-                      {row.verdict === "held" && (
-                        <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
-                      )}
-                      {row.verdict === "violated" && (
-                        <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.06 1.06L6.94 8 4.97 9.97a.75.75 0 1 0 1.06 1.06L8 9.06l1.97 1.97a.75.75 0 0 0 1.06-1.06L9.06 8l1.97-1.97a.75.75 0 0 0-1.06-1.06L8 6.94Z"/></svg>
-                      )}
-                      {row.verdict === "unclear" && (
-                        <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM6.05 6.03a.75.75 0 0 0 1.44.4c.1-.35.42-.68 1-.68.63 0 .95.36.95.78 0 .35-.16.55-.7.9l-.3.19c-.7.45-1.02.93-1.02 1.73v.2a.75.75 0 0 0 1.5 0v-.13c0-.3.1-.45.5-.71l.28-.18c.72-.47 1.24-1.03 1.24-2 0-1.28-1.05-2.28-2.45-2.28-1.25 0-2.18.72-2.44 1.58ZM8 12.75a.95.95 0 1 0 0-1.9.95.95 0 0 0 0 1.9Z"/></svg>
-                      )}
-                      {row.verdictLabel}
-                    </span>
-                  </span>
-                </div>
-              ))}
-            </div>
+            <RuleRows rows={heroRules} baseSha={heroBaseSha} headSha={heroHeadSha} />
+          </div>
+          <div class="hero-langs" aria-label="Supported languages">
+            <span class="hero-langs-label">Works with</span>
+            {heroLanguages.map((lang) => (
+              <span class="lang-chip" style={`--lang: ${lang.color}`}>
+                <span class="lang-chip-mark" aria-hidden="true">{lang.mark}</span>
+                {lang.name}
+              </span>
+            ))}
           </div>
 
         </div>
@@ -377,10 +311,7 @@ const plans = [
               <p class="section-subcopy mt-4">
                 Your agents read your architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. Left unchecked, each merge drifts a little further from what your team agreed until <strong>every change takes twice as long and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
               </p>
-              <a class="blog-link-btn" href="/blog/architecture-matters-more-not-less">
-                Why AI makes this worse, not better
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-              </a>
+              <BlogLink slug="architecture-matters-more-not-less" kicker="Why this is getting worse" class="mt-6" />
             </div>
 
             <!-- The firehose, run by agents: every lane is an agent's branch and every row in the
@@ -470,6 +401,7 @@ const plans = [
                 </li>
               ))}
             </ol>
+            <BlogLink slug="grounded-ai-findings" kicker="How we keep the model honest" class="compute-invite" />
           </div>
 
           <div class="compute-col compute-col-report" id="report" data-reveal>
@@ -548,11 +480,6 @@ const plans = [
             <em>MIT</em>
           </a>
         </div>
-
-        <a class="hero-what-you-get" href="#report" data-reveal>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M12 19l-5-5M12 19l5-5"/></svg>
-          Every finding here also has a row in the report above
-        </a>
 
         <div class="relative z-10 mx-auto mt-4 w-full max-w-[90rem]" data-reveal>
           <div class="hero-stage-shell" data-hero-stage>
@@ -775,6 +702,9 @@ const plans = [
               </button>
             </div>
           </div>
+        </div>
+        <div class="section-invite">
+          <BlogLink slug="architecture-review-checklist" kicker="The checklist, by hand" />
         </div>
       </div>
     </section>

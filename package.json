@@ -10,11 +10,15 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@astrojs/mdx": "^4.3.14",
     "@astrojs/react": "^5.0.3",
     "@astrojs/tailwind": "^5.1.0",
     "astro": "^5.16.15",
+    "katex": "^0.18.7",
     "react": "^19.2.5",
-    "recharts": "^3.9.1"
+    "recharts": "^3.9.1",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",
