@@ -111,7 +111,7 @@ We shipped it as one for a while. "Efferent coupling grew from 8 to 17." "Weight
 <p class="bp-figure-caption">Note what did <em>not</em> change: the metrics are still computed, still shown on every component, still used to order and emphasise what a reviewer sees first. What they lost was the right to interrupt.</p>
 </div>
 
-The test we now apply to any candidate finding is a single question: **does a reviewer already know this from the diff or from the diagram?** A metric delta fails it. So does an added import, which is a line of the diff. What passes are the things that require the whole graph, at both revisions, to know at all: a cycle closing, an edge inverting, a reach into another module's internals, a production-to-test dependency, a sentence in your own documentation that this change contradicts.
+The test we now apply to any candidate finding is a single question: **does a reviewer already know this from the diff or from the diagram?** A metric delta fails it. So does an added import, which is a line of the diff. What passes are the things that need the whole graph, at both revisions, to know at all: a sentence in your own documentation that this change made false, a cycle closing, an edge inverting, a reach into another module's internals, a production-to-test dependency.
 
 ## When fan-in *does* earn a finding
 
@@ -130,4 +130,4 @@ That is the whole distinction. A metric is a property of the code. A finding is 
 - **Use metrics to decide reading order.** That is what they are good for and what they now do here: not "look at this", but "look at this *first*".
 - **Do not set thresholds and argue about them.** "Ce must stay under 20" produces meetings, not architecture. If you want a hard gate on complexity, put it in your linter where it belongs, and let structural review answer the questions a linter cannot see.
 
-The questions a linter cannot see are the ones worth automating: whether this change closed a cycle, inverted a boundary, or broke something [your own documentation already promised](/blog/design-docs-are-enforceable-now). [Install the check](https://github.com/apps/striff-app/installations/new) and it answers those on every pull request, with the metrics on the diagram where you can read them, and out of your notifications where they cannot help.
+The questions a linter cannot see are the ones worth automating: whether this change broke something [your own documentation already promised](/blog/design-docs-are-enforceable-now), closed a cycle, or inverted a boundary. [Install the check](https://github.com/apps/striff-app/installations/new) and it answers those on every pull request, with the metrics on the diagram where you can read them, and out of your notifications where they cannot help.

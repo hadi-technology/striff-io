@@ -2,7 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 
-const allPosts = await getCollection("blog");
+const allPosts = await getCollection("blog", ({ data }) => !data.draft);
 
 const posts = allPosts
   .map((post) => ({
@@ -16,14 +16,14 @@ const posts = allPosts
 
 <BaseLayout
   title="Blog - Striff"
-  description="Architecture-aware code review insights, engineering patterns, and product updates from the Striff team."
+  description="Notes on documented architecture, structural review and keeping a codebase coherent while agents write most of it."
   canonical="https://striff.io/blog"
 >
   <main class="pb-20 pt-16">
     <div class="mx-auto max-w-[90rem] px-6">
       <div class="mx-auto max-w-3xl">
         <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500" data-reveal>Blog</p>
-        <h1 class="mt-3 text-balance" data-reveal>Insights on architecture-aware code review.</h1>
+        <h1 class="mt-3 text-balance" data-reveal>On documented architecture, and making it hold.</h1>
         <p class="section-subcopy mt-4" data-reveal>
           Engineering patterns, real findings from open-source PRs, and updates on making structural review part of every pull request.
         </p>

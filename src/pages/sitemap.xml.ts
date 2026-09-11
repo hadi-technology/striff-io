@@ -7,7 +7,7 @@ const SITE = "https://striff.io";
 // return page are all either gated or single-use, and robots.txt disallows them too.
 const staticRoutes: { path: string; changefreq: string; priority: string }[] = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
-  { path: "/examples", changefreq: "weekly", priority: "0.9" },
+  { path: "/extension", changefreq: "monthly", priority: "0.6" },
   { path: "/pricing", changefreq: "monthly", priority: "0.8" },
   { path: "/blog", changefreq: "weekly", priority: "0.7" },
   { path: "/contact", changefreq: "yearly", priority: "0.5" },
@@ -17,7 +17,7 @@ const staticRoutes: { path: string; changefreq: string; priority: string }[] = [
 ];
 
 export const GET: APIRoute = async () => {
-  const posts = await getCollection("blog");
+  const posts = await getCollection("blog", ({ data }) => !data.draft);
 
   const urls = [
     ...staticRoutes.map(

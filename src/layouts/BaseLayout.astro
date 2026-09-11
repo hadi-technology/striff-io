@@ -6,7 +6,7 @@ import Footer from "../components/Footer.astro";
 
 const {
   title = "Striff",
-  description = "Architecture-aware pull request review inside GitHub.",
+  description = "Your documented architecture, checked on every pull request.",
   canonical = "https://striff.io/",
   ogImage = "https://striff.io/og-image.png",
   ogType = "website",
@@ -109,7 +109,10 @@ const {
             entry.target.classList.add("is-visible");
             observer.unobserve(entry.target);
           });
-        }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+        // threshold 0: reveal once any part is on screen. A ratio (it was 0.12) can never be
+        // reached by an element taller than about eight screens, and a long blog post's
+        // body is one element, so the whole article stayed invisible.
+        }, { threshold: 0, rootMargin: "0px 0px -40px 0px" });
 
         items.forEach(function (item, index) {
           item.style.transitionDelay = Math.min(index * 35, 220) + "ms";

@@ -62,17 +62,17 @@ But look at what's left unguarded:
 <tr><td>Correctness</td><td>Tests, CI, type systems</td><td><span class="bp-yes">✓ Automatic</span></td></tr>
 <tr><td>Readable code, good names</td><td>Review norms + coding assistants</td><td><span class="bp-yes">✓ Mostly</span></td></tr>
 <tr><td>Small, focused diffs</td><td>Team norms</td><td><span class="bp-yes">✓ If you insist</span></td></tr>
+<tr><td>What your docs say about the code</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Goes stale silently</span></td></tr>
 <tr><td>Dependency direction &amp; boundaries</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
 <tr><td>Modules keeping their internals private</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
 <tr><td>No dependency cycles</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
-<tr><td>The decisions in your own ADRs</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
 </tbody>
 </table>
 </div>
 <p class="bp-figure-caption">The unguarded rows share a property: they're <strong>global</strong>. You cannot check them by looking at one file, one diff, or one PR. They exist only in the relationships <em>between</em> components, which is exactly what per-file tooling can't see.</p>
 </div>
 
-This is the transition the comforting story misses. The practices that survived the volume increase are the *local* ones. The practice with no guardian is **architecture**: which component depends on which, whether boundaries hold, whether the system's shape is drifting. And architecture is the practice where damage compounds hardest, because you can't refactor your way out of a shape problem one file at a time.
+This is the transition the comforting story misses. The practices that survived the volume increase are the *local* ones. The practice with no guardian is **architecture**: what your docs say the system is, which component depends on which, whether boundaries hold, whether the shape is drifting. And architecture is the practice where damage compounds hardest, because you can't refactor your way out of a shape problem one file at a time.
 
 ## Why architecture decays at exactly AI speed
 
@@ -89,50 +89,52 @@ Before AI tools, there was an accidental safety mechanism nobody designed: the s
 <p class="bp-figure-caption">The bottleneck on writing disappeared. The bottleneck on <em>noticing what the writing did to the system</em> is still one human head, reading diffs.</p>
 </div>
 
-That proxy is now broken, and here's the mechanism. A diff shows you lines. It does not show you that those lines created the first-ever edge from your core into a plugin, or closed a cycle across five packages, or modified a contract with 35 dependents. That information lives in the relationship between this change and every change before it. It is structurally absent from the thing your reviewers are reading:
+That proxy is now broken, and here's the mechanism. A diff shows you lines. It does not show you that those lines made a sentence in your own README false, or created the first-ever edge from your core into a plugin, or closed a cycle across five packages. That information lives in the relationship between this change and everything around it: other files, other documents, every change before it. It is structurally absent from the thing your reviewers are reading. Here is a real one:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">The same PR, two representations</p>
-<svg class="bp-diagram" viewBox="0 0 820 330" role="img" aria-label="Left: a diff view showing three added lines with all checks passing. Right: a dependency graph view where the same change draws a new red edge that completes a package cycle.">
-<rect x="10" y="14" width="380" height="300" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
+<p class="bp-figure-title">The same pull request, two representations</p>
+<svg class="bp-diagram" viewBox="0 0 860 330" role="img" aria-label="Left: the diff of NodeWorker.java in Ericsson/ecchronos pull request 1786, which removes its RepairScheduler field and adds a SchemaRefresher field; the pull request was approved and merged. Right: lines 133 to 137 of the module's README, not part of the diff, which still say NodeWorker calls RepairScheduler.putConfigurations(), flagged as a violated documented rule.">
+<rect x="10" y="14" width="400" height="300" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
 <text x="30" y="46" font-size="13" font-weight="700" fill="#0f172a">What review sees</text>
-<rect x="30" y="62" width="340" height="26" rx="6" fill="#f1f5f9"/>
-<text x="42" y="79" font-size="12" class="bp-mono" fill="#475569">refactor: extract schema utils · +3 -0</text>
-<rect x="30" y="98" width="340" height="22" rx="4" fill="#dcfce7"/>
-<text x="42" y="113" font-size="11.5" class="bp-mono" fill="#166534">+ import ImageHeapUtils</text>
-<rect x="30" y="124" width="340" height="22" rx="4" fill="#dcfce7"/>
-<text x="42" y="139" font-size="11.5" class="bp-mono" fill="#166534">+ layout = ImageHeapUtils.pack(obj)</text>
-<rect x="30" y="150" width="340" height="22" rx="4" fill="#dcfce7"/>
-<text x="42" y="165" font-size="11.5" class="bp-mono" fill="#166534">+ return layout</text>
-<text x="30" y="207" font-size="12.5" fill="#059669" font-weight="700">✓ Tests passing</text>
-<text x="30" y="231" font-size="12.5" fill="#059669" font-weight="700">✓ Lint clean</text>
-<text x="30" y="255" font-size="12.5" fill="#059669" font-weight="700">✓ Review approved</text>
-<text x="30" y="296" font-size="11.5" fill="#64748b" font-style="italic">Three clean lines. Nothing to flag.</text>
-<rect x="430" y="14" width="380" height="300" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
-<text x="450" y="46" font-size="13" font-weight="700" fill="#0f172a">What the graph sees</text>
-<defs>
-<marker id="bpArrowGray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker>
-<marker id="bpArrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/></marker>
-</defs>
-<line x1="533" y1="112" x2="620" y2="180" stroke="#94a3b8" stroke-width="2" marker-end="url(#bpArrowGray)"/>
-<line x1="640" y1="196" x2="716" y2="126" stroke="#94a3b8" stroke-width="2" marker-end="url(#bpArrowGray)"/>
-<path class="bp-edge-draw" d="M 700 100 C 660 52 570 52 528 92" fill="none" stroke="#dc2626" stroke-width="2.5" marker-end="url(#bpArrowRed)"/>
-<rect x="470" y="86" width="96" height="34" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
-<text x="518" y="107" font-size="12" class="bp-mono" fill="#1d4ed8" text-anchor="middle">core.graph</text>
-<rect class="bp-node-pulse" x="586" y="176" width="88" height="34" rx="8" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
-<text x="630" y="197" font-size="12" class="bp-mono" fill="#b91c1c" text-anchor="middle">core.heap</text>
-<rect x="676" y="86" width="96" height="34" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
-<text x="724" y="107" font-size="12" class="bp-mono" fill="#475569" text-anchor="middle">core.meta</text>
+<rect x="30" y="62" width="360" height="26" rx="6" fill="#f1f5f9"/>
+<text x="42" y="79" font-size="11.5" class="bp-mono" fill="#475569">multithreads/NodeWorker.java · +9 −150</text>
+<rect x="30" y="98" width="360" height="22" rx="4" fill="#fee2e2"/>
+<text x="40" y="113" font-size="10.5" class="bp-mono" fill="#991b1b">− import …repair.scheduler.RepairScheduler;</text>
+<rect x="30" y="124" width="360" height="22" rx="4" fill="#fee2e2"/>
+<text x="40" y="139" font-size="10.5" class="bp-mono" fill="#991b1b">− private final RepairScheduler myRepairScheduler;</text>
+<rect x="30" y="150" width="360" height="22" rx="4" fill="#dcfce7"/>
+<text x="40" y="165" font-size="10.5" class="bp-mono" fill="#166534">+ private final SchemaRefresher mySchemaRefresher;</text>
+<rect x="30" y="176" width="360" height="22" rx="4" fill="#dcfce7"/>
+<text x="40" y="191" font-size="10.5" class="bp-mono" fill="#166534">+ mySchemaRefresher.onTableCreated(myNode, tableEvent);</text>
+<text x="30" y="234" font-size="12.5" fill="#059669" font-weight="700">✓ Review approved</text>
+<text x="30" y="258" font-size="12.5" fill="#059669" font-weight="700">✓ Merged</text>
+<text x="30" y="296" font-size="11.5" fill="#64748b" font-style="italic">A clean refactor. Nothing to flag.</text>
+<rect x="450" y="14" width="400" height="300" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
+<text x="470" y="46" font-size="13" font-weight="700" fill="#0f172a">What the README still says</text>
+<rect x="470" y="62" width="360" height="26" rx="6" fill="#f1f5f9"/>
+<text x="482" y="79" font-size="11.5" class="bp-mono" fill="#475569">core.impl/README.md · not in the diff</text>
+<text x="482" y="113" font-size="10" class="bp-mono" fill="#94a3b8">133</text>
+<text x="512" y="113" font-size="11" fill="#334155"><tspan font-weight="700" class="bp-mono">NodeWorker</tspan> — A continuously-running background thread…</text>
+<text x="482" y="135" font-size="10" class="bp-mono" fill="#94a3b8">134</text>
+<text x="512" y="135" font-size="11" fill="#334155">- Discovers all replicated tables for its node</text>
+<text x="482" y="157" font-size="10" class="bp-mono" fill="#94a3b8">135</text>
+<text x="512" y="157" font-size="11" fill="#334155">- Fetches repair configurations per table</text>
+<rect class="bp-node-pulse" x="472" y="166" width="358" height="40" rx="6" fill="#fef2f2" stroke="#fca5a5"/>
+<text x="482" y="182" font-size="10" class="bp-mono" fill="#b91c1c">136</text>
+<text x="512" y="182" font-size="11" fill="#7f1d1d">- Calls <tspan class="bp-mono">RepairScheduler.putConfigurations()</tspan></text>
+<text x="524" y="198" font-size="11" fill="#7f1d1d">to keep jobs up to date</text>
+<text x="482" y="226" font-size="10" class="bp-mono" fill="#94a3b8">137</text>
+<text x="512" y="226" font-size="11" fill="#334155">- Loops on a configurable refresh interval</text>
 <g class="bp-late">
-<rect x="460" y="238" width="330" height="52" rx="8" fill="#fef2f2" stroke="#fecaca"/>
-<text x="476" y="260" font-size="12" font-weight="700" fill="#b91c1c">⚠ New package-level dependency cycle</text>
-<text x="476" y="279" font-size="11.5" fill="#7f1d1d">heap → meta → graph → heap · new with this PR</text>
+<rect x="470" y="242" width="360" height="54" rx="8" fill="#fef2f2" stroke="#fecaca"/>
+<text x="484" y="264" font-size="12" font-weight="700" fill="#b91c1c">✗ Violated: NodeWorker depends on RepairScheduler</text>
+<text x="484" y="283" font-size="11.5" fill="#7f1d1d">True at the base revision, false after this change</text>
 </g>
 </svg>
-<p class="bp-figure-caption">The red edge exists only in the relationship between this change and the edges that were already there. No amount of careful diff-reading surfaces it, because it isn't in the diff.</p>
+<p class="bp-figure-caption">Ericsson/ecchronos <a href="https://github.com/Ericsson/ecchronos/pull/1786">#1786</a>, a real pull request. The call moved to a new class, <code>SchemaRefresher</code>; the sentence on the right did not move with it. It sits in a file the diff does not contain, so no amount of careful diff-reading surfaces it, and it is still on <code>master</code>. <a href="/blog/design-docs-are-enforceable-now">The whole story</a>.</p>
 </div>
 
-This is the pattern that shows up when you go and look. [Across thirty recent open-source pull requests we analysed](/blog/architectural-findings-in-oss), most moved nothing structural at all — and a handful did something a reviewer would want to know about and could not have seen: a public interface losing a method that twelve components depend on, a component reaching into two packages it had never touched, a README describing an API that no longer exists. Every one of those pull requests was reviewed by people who are good at their jobs. The information simply was not in front of them.
+This is the pattern that shows up when you go and look. Across thirty recent open-source pull requests we analysed, most moved nothing structural at all — and a handful did something a reviewer would want to know about and could not have seen: a public interface losing a method that twelve components depend on, a component reaching into two packages it had never touched, a README describing an API that no longer exists. Every one of those pull requests was reviewed by people who are good at their jobs. The information simply was not in front of them.
 
 ## The bill comes due quietly
 
@@ -146,8 +148,8 @@ Keep every practice you already have. They matter more now, not less; that's the
 
 Closing that gap doesn't mean hiring architects to trace dependencies by hand, and it certainly doesn't mean slowing your team down to pre-AI speed. It means giving the one unguarded practice the same thing every other practice already has: **an automatic, per-PR guardian.**
 
-That's what Striff is. It parses both revisions of every pull request into a component graph, compares them, and speaks up only when something happened that the diff cannot show: a first-ever edge between two packages, a cycle closing, a reach into another module's internals, a public contract shrinking under things that depend on it — or a sentence in your own architecture docs that this change just made false. On the rest it reports clean and tells you what it looked at.
+That's what Striff is. It reads the architecture your docs already describe, turns every checkable sentence into a rule, and evaluates each one at both revisions of every pull request. Alongside the rules, fourteen structural checks speak up only when something happened that the diff cannot show: a first-ever edge between two packages, a cycle closing, a reach into another module's internals, a public contract shrinking under things that depend on it. On the rest it reports clean and tells you what it looked at.
 
-The bar is deliberately high, and the consequence is that it is quiet. That is the same bargain your linter makes: you trust it because it does not shout. Your linter guards style, your CI guards correctness, and the shape of the system finally gets a guardian of its own, at whatever speed your team ships.
+The bar is deliberately high, and the consequence is that it is quiet. That is the same bargain your linter makes: you trust it because it does not shout. Your linter guards style, your CI guards correctness, and what you wrote down about the shape of the system finally gets a guardian of its own, at whatever speed your team ships.
 
 [Install it on a repository](https://github.com/apps/striff-app/installations/new) and open your next pull request.

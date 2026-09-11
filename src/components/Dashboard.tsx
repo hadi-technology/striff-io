@@ -701,15 +701,15 @@ function FaqSection() {
     },
     {
       q: "Which languages does Striff support?",
-      a: "Striff currently supports <b>Java, TypeScript, Python, and C#</b>, with Go support coming soon. We parse source code into a full structural model, not regex or text matching, to build architectural dependency graphs and detect structural changes between pull request versions.",
+      a: "The structural checks and diagrams run on <b>Java, TypeScript, Python and C#</b>, with Go coming. Documented rules are further along on some than others: <b>Java and C# are production-ready</b>, Python extracts rules from your docs but cannot yet answer all of them, and TypeScript is still being proven out. Every language is parsed into a full structural model, not regex or text matching.",
     },
     {
       q: "What does Striff actually do on my pull requests?",
-      a: "For each PR, Striff analyzes the <b>structural impact</b> of code changes \u2014 new dependencies, broken encapsulation, package cycles, hub formation, and more. Results appear as a <b>GitHub check-run</b> with a summary. Browse <a href=\"/examples\" class=\"font-semibold text-blue-600 hover:underline\">real findings on open-source PRs</a>, or read about <a href=\"/blog/architectural-findings-in-oss\" class=\"font-semibold text-blue-600 hover:underline\">what Striff caught in the wild</a>. Install the <a href=\"https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> to explore interactive architecture diagrams directly on GitHub.",
+      a: "For each PR, Striff reads the architecture your repository already documents \u2014 ARCHITECTURE.md, ADRs, READMEs and design notes \u2014 turns each sentence about the code into a rule, and checks it against both revisions of the change, quoting the sentence and the line it came from. Alongside that, <b>14 structural checks</b> look for new dependency cycles, first-ever boundary crossings, changed contracts and more. Results appear as a single <b>GitHub check-run</b>. Install the <a href=\"/extension\" class=\"font-semibold text-blue-600 hover:underline\">browser extension</a> to see the same review drawn on the dependency diagram.",
     },
     {
       q: "What is the browser extension?",
-      a: "The <a href=\"https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> lets you view <b>interactive architectural diagrams</b> directly on GitHub. You can switch between code and architecture views, focus on specific components, and <b>post subdiagrams as PR comments</b> for your team. There's a full walkthrough video on the <a href=\"/\" class=\"font-semibold text-blue-600 hover:underline\">homepage</a>.",
+      a: "The <a href=\"https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> shows <b>interactive architectural diagrams</b> directly on GitHub, with the repository\u2019s own <b>documented rules checked and drawn on the diagram</b>. You can switch between code and architecture views, focus on specific components, and <b>post subdiagrams as PR comments</b> for your team. There\u2019s a walkthrough video on the <a href=\"/extension\" class=\"font-semibold text-blue-600 hover:underline\">extension page</a>.",
     },
   ];
 

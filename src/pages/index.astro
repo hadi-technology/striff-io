@@ -1,107 +1,200 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import InlineCodeText from "../components/InlineCodeText.astro";
-import { exampleReviews } from "../data/exampleReviews";
+import BlogLink from "../components/BlogLink.astro";
+import RuleRows from "../components/RuleRows.astro";
+import { ecchronosRules as heroRules, baseSha as heroBaseSha, headSha as heroHeadSha } from "../data/ecchronosRules";
 import MetricsTab from "../components/MetricsTab";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 
-// ---- Problem-section visualization: the GitHub firehose ----
-// A git graph of branches continuously merging into main (cool colors), beside a
-// live activity feed of issues opened and PRs opened / pushed / merged. Both
-// scroll seamlessly: the block is rendered twice and translated by one copy.
-type Activity = { type: "issue" | "pr" | "push" | "merge"; text: string; meta: string };
-const activityFeed: Activity[] = [
-  { type: "pr", text: "opened PR", meta: "#1841" },
-  { type: "push", text: "pushed 4 commits", meta: "feat/retry" },
-  { type: "merge", text: "merged PR", meta: "#1841" },
-  { type: "issue", text: "opened issue", meta: "#302" },
-  { type: "pr", text: "opened PR", meta: "#1852" },
-  { type: "push", text: "pushed 2 commits", meta: "bulk-import" },
-  { type: "merge", text: "merged PR", meta: "#1852" },
-  { type: "issue", text: "opened issue", meta: "#318" },
-  { type: "pr", text: "opened PR", meta: "#1863" },
-  { type: "merge", text: "merged PR", meta: "#1863" },
+// ---- Problem-section visualization: agents doing the work ----
+// Every push, PR and merge in the feed is authored by an agent, and the side branches in
+// the graph are agent lanes too.
+const agentName = {
+  claude: "claude",
+  codex: "codex",
+  gemini: "gemini",
+  copilot: "copilot",
+  ollama: "ollama"
+};
+// Literal class names (kept out of interpolation so Tailwind's purge keeps them).
+const agentClass = {
+  claude: "ag-claude",
+  codex: "ag-codex",
+  gemini: "ag-gemini",
+  copilot: "ag-copilot",
+  ollama: "ag-ollama"
+};
+// Brand marks from Simple Icons (CC0 path data; each mark remains its owner's trademark).
+const agentIcon = {
+  claude: "m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z",
+  codex: "M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z",
+  gemini: "M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81",
+  copilot: "M23.922 16.997C23.061 18.492 18.063 22.02 12 22.02 5.937 22.02.939 18.492.078 16.997A.641.641 0 0 1 0 16.741v-2.869a.883.883 0 0 1 .053-.22c.372-.935 1.347-2.292 2.605-2.656.167-.429.414-1.055.644-1.517a10.098 10.098 0 0 1-.052-1.086c0-1.331.282-2.499 1.132-3.368.397-.406.89-.717 1.474-.952C7.255 2.937 9.248 1.98 11.978 1.98c2.731 0 4.767.957 6.166 2.093.584.235 1.077.546 1.474.952.85.869 1.132 2.037 1.132 3.368 0 .368-.014.733-.052 1.086.23.462.477 1.088.644 1.517 1.258.364 2.233 1.721 2.605 2.656a.841.841 0 0 1 .053.22v2.869a.641.641 0 0 1-.078.256Zm-11.75-5.992h-.344a4.359 4.359 0 0 1-.355.508c-.77.947-1.918 1.492-3.508 1.492-1.725 0-2.989-.359-3.782-1.259a2.137 2.137 0 0 1-.085-.104L4 11.746v6.585c1.435.779 4.514 2.179 8 2.179 3.486 0 6.565-1.4 8-2.179v-6.585l-.098-.104s-.033.045-.085.104c-.793.9-2.057 1.259-3.782 1.259-1.59 0-2.738-.545-3.508-1.492a4.359 4.359 0 0 1-.355-.508Zm2.328 3.25c.549 0 1 .451 1 1v2c0 .549-.451 1-1 1-.549 0-1-.451-1-1v-2c0-.549.451-1 1-1Zm-5 0c.549 0 1 .451 1 1v2c0 .549-.451 1-1 1-.549 0-1-.451-1-1v-2c0-.549.451-1 1-1Zm3.313-6.185c.136 1.057.403 1.913.878 2.497.442.544 1.134.938 2.344.938 1.573 0 2.292-.337 2.657-.751.384-.435.558-1.15.558-2.361 0-1.14-.243-1.847-.705-2.319-.477-.488-1.319-.862-2.824-1.025-1.487-.161-2.192.138-2.533.529-.269.307-.437.808-.438 1.578v.021c0 .265.021.562.063.893Zm-1.626 0c.042-.331.063-.628.063-.894v-.02c-.001-.77-.169-1.271-.438-1.578-.341-.391-1.046-.69-2.533-.529-1.505.163-2.347.537-2.824 1.025-.462.472-.705 1.179-.705 2.319 0 1.211.175 1.926.558 2.361.365.414 1.084.751 2.657.751 1.21 0 1.902-.394 2.344-.938.475-.584.742-1.44.878-2.497Z",
+  ollama: "M16.361 10.26a.894.894 0 0 0-.558.47l-.072.148.001.207c0 .193.004.217.059.353.076.193.152.312.291.448.24.238.51.3.872.205a.86.86 0 0 0 .517-.436.752.752 0 0 0 .08-.498c-.064-.453-.33-.782-.724-.897a1.06 1.06 0 0 0-.466 0zm-9.203.005c-.305.096-.533.32-.65.639a1.187 1.187 0 0 0-.06.52c.057.309.31.59.598.667.362.095.632.033.872-.205.14-.136.215-.255.291-.448.055-.136.059-.16.059-.353l.001-.207-.072-.148a.894.894 0 0 0-.565-.472 1.02 1.02 0 0 0-.474.007Zm4.184 2c-.131.071-.223.25-.195.383.031.143.157.288.353.407.105.063.112.072.117.136.004.038-.01.146-.029.243-.02.094-.036.194-.036.222.002.074.07.195.143.253.064.052.076.054.255.059.164.005.198.001.264-.03.169-.082.212-.234.15-.525-.052-.243-.042-.28.087-.355.137-.08.281-.219.324-.314a.365.365 0 0 0-.175-.48.394.394 0 0 0-.181-.033c-.126 0-.207.03-.355.124l-.085.053-.053-.032c-.219-.13-.259-.145-.391-.143a.396.396 0 0 0-.193.032zm.39-2.195c-.373.036-.475.05-.654.086-.291.06-.68.195-.951.328-.94.46-1.589 1.226-1.787 2.114-.04.176-.045.234-.045.53 0 .294.005.357.043.524.264 1.16 1.332 2.017 2.714 2.173.3.033 1.596.033 1.896 0 1.11-.125 2.064-.727 2.493-1.571.114-.226.169-.372.22-.602.039-.167.044-.23.044-.523 0-.297-.005-.355-.045-.531-.288-1.29-1.539-2.304-3.072-2.497a6.873 6.873 0 0 0-.855-.031zm.645.937a3.283 3.283 0 0 1 1.44.514c.223.148.537.458.671.662.166.251.26.508.303.82.02.143.01.251-.043.482-.08.345-.332.705-.672.957a3.115 3.115 0 0 1-.689.348c-.382.122-.632.144-1.525.138-.582-.006-.686-.01-.853-.042-.57-.107-1.022-.334-1.35-.68-.264-.28-.385-.535-.45-.946-.03-.192.025-.509.137-.776.136-.326.488-.73.836-.963.403-.269.934-.46 1.422-.512.187-.02.586-.02.773-.002zm-5.503-11a1.653 1.653 0 0 0-.683.298C5.617.74 5.173 1.666 4.985 2.819c-.07.436-.119 1.04-.119 1.503 0 .544.064 1.24.155 1.721.02.107.031.202.023.208a8.12 8.12 0 0 1-.187.152 5.324 5.324 0 0 0-.949 1.02 5.49 5.49 0 0 0-.94 2.339 6.625 6.625 0 0 0-.023 1.357c.091.78.325 1.438.727 2.04l.13.195-.037.064c-.269.452-.498 1.105-.605 1.732-.084.496-.095.629-.095 1.294 0 .67.009.803.088 1.266.095.555.288 1.143.503 1.534.071.128.243.393.264.407.007.003-.014.067-.046.141a7.405 7.405 0 0 0-.548 1.873c-.062.417-.071.552-.071.991 0 .56.031.832.148 1.279L3.42 24h1.478l-.05-.091c-.297-.552-.325-1.575-.068-2.597.117-.472.25-.819.498-1.296l.148-.29v-.177c0-.165-.003-.184-.057-.293a.915.915 0 0 0-.194-.25 1.74 1.74 0 0 1-.385-.543c-.424-.92-.506-2.286-.208-3.451.124-.486.329-.918.544-1.154a.787.787 0 0 0 .223-.531c0-.195-.07-.355-.224-.522a3.136 3.136 0 0 1-.817-1.729c-.14-.96.114-2.005.69-2.834.563-.814 1.353-1.336 2.237-1.475.199-.033.57-.028.776.01.226.04.367.028.512-.041.179-.085.268-.19.374-.431.093-.215.165-.333.36-.576.234-.29.46-.489.822-.729.413-.27.884-.467 1.352-.561.17-.035.25-.04.569-.04.319 0 .398.005.569.04a4.07 4.07 0 0 1 1.914.997c.117.109.398.457.488.602.034.057.095.177.132.267.105.241.195.346.374.43.14.068.286.082.503.045.343-.058.607-.053.943.016 1.144.23 2.14 1.173 2.581 2.437.385 1.108.276 2.267-.296 3.153-.097.15-.193.27-.333.419-.301.322-.301.722-.001 1.053.493.539.801 1.866.708 3.036-.062.772-.26 1.463-.533 1.854a2.096 2.096 0 0 1-.224.258.916.916 0 0 0-.194.25c-.054.109-.057.128-.057.293v.178l.148.29c.248.476.38.823.498 1.295.253 1.008.231 2.01-.059 2.581a.845.845 0 0 0-.044.098c0 .006.329.009.732.009h.73l.02-.074.036-.134c.019-.076.057-.3.088-.516.029-.217.029-1.016 0-1.258-.11-.875-.295-1.57-.597-2.226-.032-.074-.053-.138-.046-.141.008-.005.057-.074.108-.152.376-.569.607-1.284.724-2.228.031-.26.031-1.378 0-1.628-.083-.645-.182-1.082-.348-1.525a6.083 6.083 0 0 0-.329-.7l-.038-.064.131-.194c.402-.604.636-1.262.727-2.04a6.625 6.625 0 0 0-.024-1.358 5.512 5.512 0 0 0-.939-2.339 5.325 5.325 0 0 0-.95-1.02 8.097 8.097 0 0 1-.186-.152.692.692 0 0 1 .023-.208c.208-1.087.201-2.443-.017-3.503-.19-.924-.535-1.658-.98-2.082-.354-.338-.716-.482-1.15-.455-.996.059-1.8 1.205-2.116 3.01a6.805 6.805 0 0 0-.097.726c0 .036-.007.066-.015.066a.96.96 0 0 1-.149-.078A4.857 4.857 0 0 0 12 3.03c-.832 0-1.687.243-2.456.698a.958.958 0 0 1-.148.078c-.008 0-.015-.03-.015-.066a6.71 6.71 0 0 0-.097-.725C8.997 1.392 8.337.319 7.46.048a2.096 2.096 0 0 0-.585-.041Zm.293 1.402c.248.197.523.759.682 1.388.03.113.06.244.069.292.007.047.026.152.041.233.067.365.098.76.102 1.24l.002.475-.12.175-.118.178h-.278c-.324 0-.646.041-.954.124l-.238.06c-.033.007-.038-.003-.057-.144a8.438 8.438 0 0 1 .016-2.323c.124-.788.413-1.501.696-1.711.067-.05.079-.049.157.013zm9.825-.012c.17.126.358.46.498.888.28.854.36 2.028.212 3.145-.019.14-.024.151-.057.144l-.238-.06a3.693 3.693 0 0 0-.954-.124h-.278l-.119-.178-.119-.175.002-.474c.004-.669.066-1.19.214-1.772.157-.623.434-1.185.68-1.382.078-.062.09-.063.159-.012z"
+};
+const activityFeed = [
+  { agent: "claude", text: "opened #1841", time: "2m ago" },
+  { agent: "codex", text: "pushed 4 commits", time: "4m ago" },
+  { agent: "gemini", text: "merged #1838", time: "7m ago" },
+  { agent: "copilot", text: "rewrote 31 files", time: "9m ago" },
+  { agent: "ollama", text: "opened #1843", time: "12m ago" },
+  { agent: "claude", text: "merged #1841", time: "14m ago" },
+  { agent: "codex", text: "closed #302", time: "15m ago" },
+  { agent: "gemini", text: "pushed 9 commits", time: "19m ago" },
+  { agent: "copilot", text: "merged #1842", time: "21m ago" },
+  { agent: "ollama", text: "pushed 2 commits", time: "23m ago" }
 ];
 
-// Literal class names (kept out of interpolation so Tailwind's @layer purge
-// doesn't drop the per-type feed styles).
-const feedTypeClass = {
-  issue: "gs-item-issue",
-  pr: "gs-item-pr",
-  push: "gs-item-push",
-  merge: "gs-item-merge",
-} as const;
-
-const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
 const githubAppUrl = "https://github.com/apps/striff-app/installations/new";
-const examplesUrl = "/#examples";
 
-interface TeamPhilosophyItem {
-  icon: string;
-  color: string;
-  title: string;
-  body: string;
-  image?: string;
-  preview?: "metrics" | "docs" | "checks";
-  link?: { href: string; label: string };
-}
+// The languages the parser (Clarpse, via striff-lib) reads, shown under the hero card.
+// Monograms in each language's own colour rather than four mismatched logo styles.
+const heroLanguages = [
+  { name: "Java", mark: "J", color: "#e76f00" },
+  { name: "Python", mark: "Py", color: "#3776ab" },
+  { name: "C#", mark: "C#", color: "#7b3fbd" },
+  { name: "TypeScript", mark: "TS", color: "#3178c6" }
+];
 
-const teamPhilosophy: TeamPhilosophyItem[] = [
+
+/**
+ * The document genre the catalogue admits, and what it deliberately refuses. Kept in sync
+ * with `CatalogBuilder` in striff-api: the AI-instruction files were admitted in #278 after
+ * an audit of the first external user found its layering rules living only in AGENTS.md.
+ */
+
+
+
+
+/**
+ * The pipeline, stage by stage. Kept honest against the ADRs it describes:
+ * ADR-031 (which documents are catalogued), ADR-024 (the rule language),
+ * ADR-032 (differential evaluation and the six-valued outcome), ADR-022
+ * (fact-first surfacing) and ADR-033 (what a rendered item may say).
+ * Two of six stages involve a model. Neither of them decides what is true.
+ */
+const pipeline = [
   {
-    icon: "doc",
-    color: "amber",
-    title: "Your architecture decisions, actually enforced.",
-    body: "Most teams write ADRs and an ARCHITECTURE.md, then watch PRs quietly drift from them anyway. Striff reads those docs and checks every PR against them. When a change contradicts what your team agreed on, it names the file and quotes the sentence. No rules to configure. The documentation is the rulebook.",
-    preview: "docs",
-    link: { href: "/blog/design-docs-are-enforceable-now", label: "How Striff turns design docs into enforced checks" }
+    kind: "symbolic",
+    name: "Parse",
+    body: "Both revisions become a structural model of types, members, references and packages \u2014 resolved the way a compiler would, not by matching text."
   },
   {
-    icon: "chart",
-    color: "emerald",
-    title: "Know which repos are getting harder to work in.",
-    body: "Clean PR rate, high-risk PR rate, and the repos accumulating the most flags, tracked month over month across your team's repos. When you need to argue for time to fix something, you have the trend rather than an anecdote.",
-    preview: "metrics"
+    kind: "neural",
+    name: "Read",
+    body: "Your documents go to a language model, which proposes candidate rules from prose. The only step that reads English."
   },
   {
-    icon: "checklist",
-    color: "blue",
-    title: "A green check your team can actually trust.",
-    body: "Striff runs twelve structural checks plus the rules it read out of your own docs on every PR, and reports every one of them, clean or not. A green check tells your team exactly what was looked at, so they stop assuming and start knowing. It stays one Check next to your CI: no comment threads, no bot spam.",
-    preview: "checks"
+    kind: "symbolic",
+    name: "Ground and compile",
+    body: "Any candidate naming something absent from the model is dropped. What survives becomes a formal query over it."
+  },
+  {
+    kind: "symbolic",
+    name: "Evaluate",
+    body: "The query runs against both revisions. A rule holds exactly when it returns nothing, and only a violation the change introduced is attributed to it."
+  },
+  {
+    kind: "neural",
+    name: "Narrate",
+    body: "The model ranks and explains what the evaluation already found. It cannot originate a finding, rename one, or turn \u201ccould not answer\u201d into a pass."
   }
 ];
 
-const chromeExtensionVideoId = "YR_DYyJwM-k";
 
-const chromeExtensionHighlights = [
+/**
+ * The four documented rules the check report shows, from the same analysis the hero
+ * draws on (Ericsson/ecchronos #1786) and different rules from it, so the two do not
+ * repeat. Verified at head 0288412016 the same way the hero rows were.
+ *
+ * This replaced a fabricated apache/fineract mockup: neither REFACTORING.md nor
+ * ARCHITECTURE.md exists in that repository, so the rules it showed, and the doc
+ * conflict it led on, were about documents that were never there.
+ */
+const reportRules = [
   {
-    icon: "diagram",
-    color: "blue",
-    point: "Interactive dependency diagrams on any PR"
+    verdict: "violated",
+    label: "Violated",
+    quote: "Calls `RepairScheduler.putConfigurations()` to keep jobs up to date",
+    statement: "`NodeWorker` depends on `RepairScheduler`",
+    doc: "core.impl/README.md",
+    line: 136
   },
   {
-    icon: "comment",
-    color: "emerald",
-    point: "Comment straight from the diagram"
+    verdict: "held",
+    label: "Held",
+    quote: "Maintains a dedicated `NodeWorker` background thread per Cassandra node.",
+    statement: "`NodeWorkerManager` depends on `NodeWorker`",
+    doc: "core.impl/README.md",
+    line: 131
   },
   {
-    icon: "sparkle",
-    color: "amber",
-    point: "AI findings pinned to the graph"
+    verdict: "held",
+    label: "Held",
+    quote: "Alarms are fired by `AlarmPostUpdateHook` in `core.impl` after every repair state update.",
+    statement: "`AlarmPostUpdateHook` is in `core.impl`",
+    doc: "fault.manager/README.md",
+    line: 51
   },
   {
-    icon: "bolt",
-    color: "rose",
-    point: "No backend, and your token stays local"
+    verdict: "held",
+    label: "Held",
+    quote: "Afterwards a single `RepairGroup` is created.",
+    statement: "`IncrementalRepairJob` depends on `RepairGroup`",
+    doc: "docs/ARCHITECTURE.md",
+    line: 461
+  },
+  {
+    // Structural fact, checked at base d188eb1b33 and head 0288412016: RepairStateImpl
+    // never references AlarmPostUpdateHook at either revision; it reaches a hook only
+    // through the PostUpdateHook interface. The analysis itself filed this rule as
+    // unanswerable; it is shown as pre-existing here as a labelled example of that state.
+    verdict: "prior",
+    label: "Pre-existing",
+    quote: "Fires `AlarmPostUpdateHook` if repairs are overdue",
+    statement: "`RepairStateImpl` depends on `AlarmPostUpdateHook`",
+    doc: "core.impl/README.md",
+    line: 93
   }
 ];
+
+/**
+ * For-managers carousel. Slide one is an illustration: the repository, titles and
+ * authors are invented. Every row got the same check; only the one that broke a rule
+ * needs a senior's attention, which is the slide's point. Slide two quotes
+ * the real lines 133-137 of ecchronos core.impl/README.md at head 0288412016 and the
+ * check table as CheckRunFormatter writes it. Slide three is the real dashboard
+ * component on the sample workspace /dashboard previews, labelled as an example.
+ */
+const mgrPrs = [
+  { num: 421, title: "Bump jackson-databind from 2.17.1 to 2.18.2", who: "dependabot[bot]", when: "12 minutes ago", review: "Approved", label: "dependencies", verdict: "held" },
+  { num: 420, title: "Add incremental repair history", who: "kchen", when: "2 hours ago", review: "Approved", verdict: "held" },
+  { num: 419, title: "Fix typo in scheduler log line", who: "sam-new-hire", when: "4 hours ago", review: "Approved", verdict: "held" },
+  { num: 418, title: "Refactor NodeWorker lifecycle", who: "coding-agent[bot]", when: "yesterday", review: "Review required", label: "agent", verdict: "violated" }
+];
+
+const mgrSlides = [
+  {
+    title: "Your senior engineers stop being the bottleneck.",
+    body: "Architecture review usually waits on the few people who know the system, and agent-written pull requests have made that queue longer. Striff checks every one against what those people already wrote down, so they get pulled in when a rule breaks, not to re-check the ones that held."
+  },
+  {
+    title: "Your documentation stops rotting.",
+    body: "A document nobody checks drifts until nobody trusts it, and then nobody writes the next one. Once a sentence is load-bearing it gets fixed: a README describing a call the code has already dropped shows up on the pull request that dropped it."
+  },
+  {
+    title: "You can point at a trend instead of an anecdote.",
+    body: "Documented rules broken and held, clean and high-risk PR rates, and the repositories collecting the most flags, month over month across everything your team owns. When you argue for time to fix something, you bring the chart rather than the feeling."
+  }
+]
 
 const plans = [
   {
     eyebrow: "Free",
     icon: "globe",
     title: "Public repositories",
-    body: "GitHub App checks on every public PR, plus the browser extension for any public PR you visit. Architecture diagrams, risk findings, and AI review notes.",
+    body: "Your documented rules and 14 structural checks on every public pull request, plus the browser extension for any public PR you visit.",
     price: "$0",
     priceDetail: "forever"
   },
@@ -109,7 +202,7 @@ const plans = [
     eyebrow: "Starter",
     icon: "team",
     title: "One team's private repos",
-    body: "GitHub App checks on every private PR. Automated architecture review with the full detector suite and risk scoring.",
+    body: "Your documented rules and 14 structural checks on every private pull request, for one team\u2019s repositories.",
     price: "$29",
     priceDetail: "/mo · 5 repos"
   },
@@ -126,173 +219,337 @@ const plans = [
 ---
 
 <BaseLayout
-  title="Striff - Architecture-aware pull request review"
-  description="Architecture review on every GitHub pull request. Catch structural damage before it merges, so your codebase stays easy to change and your team stays fast as it grows."
+  title="Striff - Your documented architecture, checked on every pull request"
+  description="Striff reads your AGENTS.md, ADRs and architecture docs, turns each sentence about the code into a checkable rule, and answers it on every GitHub pull request. Plus fourteen structural checks and a diagram of what changed."
   canonical="https://striff.io/"
   ogImage="https://striff.io/og-image.png"
 >
   <main>
     <!-- ==================== HERO ==================== -->
-    <section class="hero-section relative overflow-hidden pb-12 pt-14">
+    <!-- The product is a GitHub check, so the hero is one, rendered light and at full
+         fidelity. The summary line carries the coverage denominator (the thing nobody
+         else can claim) and the rows carry the mechanism: your sentence, the line it is
+         on, the rule it became, and what happened to it on this pull request.
+         The violated row leads because that is the row a reviewer needs first. -->
+    <section class="hero-section relative overflow-hidden">
       <div class="mx-auto max-w-[90rem] px-6">
-        <!-- Wider than the old max-w-2xl so the headline gets two lines instead of three; the
-             subcopy keeps its own narrower measure via .hero-subcopy. -->
-        <div class="hero-copy relative z-10 mx-auto max-w-5xl space-y-6 text-center" data-reveal>
-          <h1 class="mx-auto">More code isn't more <span class="font-bold text-blue-600">product</span>.</h1>
+        <div class="hero-copy relative z-10 mx-auto max-w-4xl space-y-5 text-center" data-reveal>
+          <h1 class="mx-auto">
+            <span class="sr-only">Your architecture docs, enforced on every pull request.</span>
+            <span aria-hidden="true">Your <span class="h1-rot" data-h1-rot><span class="h1-rot-word is-on">architecture docs</span><span class="h1-rot-word">design docs</span><span class="h1-rot-word">AGENTS.md</span></span>,<br /> <span class="hero-h1-accent">enforced on every pull request</span>.</span>
+          </h1>
           <p class="section-subcopy hero-subcopy mx-auto">
-            Your team merges more code every week than anyone can read, and every risky change routes to the one person who can judge it. <strong>Striff is architecture review for every GitHub pull request.</strong> It checks each change against the architecture you documented and reports back as one check, so approving a merge stops being a judgment call only your most senior engineer can make.
+            Striff reads the documents already in your repository, turns every sentence that makes a claim about the code into a rule it can evaluate, and answers all of them on each pull request. <strong>When a change contradicts what your team wrote down, it says so before the merge, and quotes the line.</strong>
           </p>
-          <div class="flex flex-wrap justify-center gap-3 pt-1">
-            <a class="btn-primary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
+          <div class="flex flex-wrap justify-center gap-3 pt-2">
+            <a class="btn-primary btn-primary-lg" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
               <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
               </svg>
-              Get started
+              Install the GitHub App
             </a>
-            <a class="btn-secondary" href={examplesUrl}>
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="m8 7 3 9M16 7l-3 9M8.5 6h7"/>
-              </svg>
-              See it in action
-            </a>
+            <a class="btn-secondary btn-secondary-lg" href="#pipeline">How it works</a>
           </div>
+          <p class="hero-microproof">
+            <span>Free on public repos</span>
+            <span>Nothing to configure</span>
+            <span>One check beside your CI</span>
+          </p>
         </div>
 
-        <!-- Styled like a link and coloured like a link, so it is one. It also carries the only
-             route to the report section on mobile, where the report thumbnail is hidden. -->
-        <a class="hero-what-you-get" href="#report" data-reveal>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M12 19l-5-5M12 19l5-5"/></svg>
-          What posts on your pull request: a diagram of what changed, and a report of every check that ran
-        </a>
+        <div class="hero-check-wrap" data-reveal>
+          <div class="hero-check-card">
+            <header class="hcc-head">
+              <span class="hcc-mark"><img src="/icon.svg" alt="" width="20" height="20" /></span>
+              <span class="hcc-headings">
+                <b>Striff / architectural-review</b>
+                <i>Ericsson/ecchronos</i>
+              </span>
+              <span class="hcc-spacer"></span>
+              <a class="hcc-chip hcc-chip-link" href="https://github.com/Ericsson/ecchronos/pull/1786" target="_blank" rel="noopener noreferrer">PR #1786</a>
+              <span class="hcc-chip hcc-chip-muted">6 documents read</span>
+              <span class="hcc-chip hcc-chip-muted">Java</span>
+            </header>
+
+            <div class="hcc-banner">
+              <span class="hcc-banner-dot" aria-hidden="true"></span>
+              <p class="hcc-banner-text">
+                <strong>One of the 29 rules Striff could check in this repository&rsquo;s own docs no longer holds.</strong>
+                <span>Nothing was configured. Striff catalogued 6 documents, turned their sentences into rules, and checked every one against both revisions.</span>
+              </p>
+              <span class="hcc-tally">
+                <span class="hcc-tally-item hcc-tally-violated"><b>1</b><i>violated</i></span>
+                <span class="hcc-tally-item hcc-tally-held"><b>27</b><i>held</i></span>
+                <span class="hcc-tally-item hcc-tally-prior"><b>1</b><i>pre-existing</i></span>
+              </span>
+            </div>
+
+            <RuleRows rows={heroRules} baseSha={heroBaseSha} headSha={heroHeadSha} />
+          </div>
+          <div class="hero-langs" aria-label="Supported languages">
+            <span class="hero-langs-label">Works with</span>
+            {heroLanguages.map((lang) => (
+              <span class="lang-chip" style={`--lang: ${lang.color}`}>
+                <span class="lang-chip-mark" aria-hidden="true">{lang.mark}</span>
+                {lang.name}
+              </span>
+            ))}
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== PROBLEM ==================== -->
+    <section id="problem" class="scroll-mt-24 bg-slate-100/60 pb-16 pt-14">
+      <div class="mx-auto max-w-[90rem] px-6" data-reveal>
+        <div class="rounded-3xl bg-white p-6 shadow-xl border border-slate-200 md:p-8">
+          <div class="problem-split">
+            <div class="problem-copy">
+              <p class="text-xs font-bold uppercase tracking-[0.2em] text-rose-500">The problem</p>
+              <h2 class="mt-3 text-balance">Nobody re-reads the docs on every pull request.</h2>
+              <p class="section-subcopy mt-4">
+                Your agents read your architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. Left unchecked, each merge drifts a little further from what your team agreed until <strong>every change takes twice as long and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
+              </p>
+              <BlogLink slug="architecture-matters-more-not-less" kicker="Why this is getting worse" class="mt-6" />
+            </div>
+
+            <!-- The firehose, run by agents: every lane is an agent's branch and every row in the
+                 feed is an agent acting on the repo. -->
+            <figure class="gs" data-reveal aria-hidden="true">
+              <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="gs-gemini" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f8df9" /><stop offset="55%" stop-color="#9b72cb" /><stop offset="100%" stop-color="#d96570" /></linearGradient></defs></svg>
+              <div class="gs-head">
+                <span class="gs-live"><span class="gs-live-dot"></span><span class="gs-live-repo">5 agents</span> working on acme-corp</span>
+                <span class="gs-head-tag">last hour</span>
+              </div>
+              <div class="gs-body">
+                <div class="gs-col">
+                  <span class="gs-col-head">agent branches → main</span>
+                  <div class="gs-graph">
+                  <div class="gs-graph-scroll">
+                    {[0, 1].map(() => (
+                      <svg class="gs-graph-unit" viewBox="0 0 140 320" preserveAspectRatio="xMidYMid meet">
+                        <path class="gs-line gs-line-main" d="M30 0 L30 320" />
+                        <path class="gs-line gs-line-a" d="M30 256 C 52 256 70 242 70 218 L 70 172 C 70 148 52 144 30 144" />
+                        <path class="gs-line gs-line-b" d="M30 224 C 60 224 104 206 104 178 L 104 92 C 104 66 60 64 30 64" />
+                        <circle class="gs-dot gs-dot-main" cx="30" cy="32" r="5" />
+                        <circle class="gs-dot gs-dot-main" cx="30" cy="96" r="5" />
+                        <circle class="gs-dot gs-dot-main" cx="30" cy="160" r="5" />
+                        <circle class="gs-dot gs-dot-main" cx="30" cy="224" r="5" />
+                        <circle class="gs-dot gs-dot-main" cx="30" cy="288" r="5" />
+                        <g class="gs-agent gs-agent-a"><circle cx="70" cy="196" r="9.5" class="gs-agent-bg" /><g transform="translate(64 190) scale(0.5)"><g class="gs-agent-mark"><path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81" /></g></g></g>
+                        <g class="gs-agent gs-agent-b"><circle cx="104" cy="168" r="9.5" class="gs-agent-bg" /><g transform="translate(98 162) scale(0.5)"><g class="gs-agent-mark"><path d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z" /></g></g></g>
+                        <circle class="gs-dot gs-dot-b" cx="104" cy="102" r="4.5" />
+                        <circle class="gs-merge gs-merge-a" cx="30" cy="144" r="6.5" />
+                        <circle class="gs-merge gs-merge-b" cx="30" cy="64" r="6.5" />
+                      </svg>
+                    ))}
+                  </div>
+                  </div>
+                </div>
+
+                <div class="gs-col gs-col-feed">
+                  <span class="gs-col-head">activity</span>
+                  <div class="gs-feed">
+                  <div class="gs-feed-scroll">
+                    {[0, 1].map(() => activityFeed.map((a) => (
+                      <div class={`gs-item ${agentClass[a.agent]}`}>
+                        <span class="gs-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d={agentIcon[a.agent]} /></svg></span>
+                        <span class="gs-item-text"><b>{agentName[a.agent]}</b> {a.text}</span>
+                        <span class="gs-item-meta">{a.time}</span>
+                      </div>
+                    )))}
+                  </div>
+                  </div>
+                </div>
+              </div>
+              <figcaption class="gs-caption">They all read your architecture docs. <strong>Nothing checks that they followed them.</strong></figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== HOW IT IS COMPUTED, AND WHAT COMES OUT ==================== -->
+    <!-- The pipeline and the artifact it produces, side by side: the mechanism answers
+         where a number came from, the check answers what you actually get. -->
+    <section id="pipeline" class="pipeline-section scroll-mt-24 pb-20 pt-20">
+      <div class="mx-auto max-w-[90rem] px-6">
+        <!-- The heading lives in the left column rather than above both, so the report
+             starts level with the top of the section instead of below a paragraph. -->
+        <div class="compute-split">
+          <div class="compute-col" data-reveal>
+            <div class="compute-intro">
+              <h2 class="text-balance">Computed, not generated.</h2>
+              <p class="section-subcopy mt-4">
+                Striff is neurosymbolic, not an LLM wrapper. A parser resolves every type and reference in your code at both revisions, the way a compiler does, and each sentence in your docs becomes a query over that model. <strong>Verdicts are computed, not predicted.</strong> A language model only reads the prose and ranks the results, and nothing is needed beyond the documents your repository already has.
+              </p>
+            </div>
+            <p class="compute-label"><span>01</span> How a finding is produced</p>
+            <ol class="pipeline-flow">
+              {pipeline.map((step, i) => (
+                <li class={`pipe-step pipe-${step.kind}`}>
+                  <span class="pipe-rail" aria-hidden="true"><span class="pipe-dot"></span></span>
+                  <div class="pipe-body">
+                    <p class="pipe-head">
+                      <span class="pipe-num">{String(i + 1).padStart(2, "0")}</span>
+                      <span class="pipe-name">{step.name}</span>
+                      <span class="pipe-kind">{step.kind === "neural" ? "Language model" : "Deterministic"}</span>
+                    </p>
+                    <p class="pipe-text">{step.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <BlogLink slug="grounded-ai-findings" kicker="How we keep the model honest" class="compute-invite" />
+          </div>
+
+          <div class="compute-col compute-col-report" id="report" data-reveal>
+            <p class="compute-label"><span>02</span> What your reviewer sees</p>
+            <div class="hero-stage-shell report-stage-shell">
+              <div class="ghc ghc-solo" data-report-top>
+                <section class="ghc-pane">
+                  <div class="ghc-md">
+                    <h3>Review Summary</h3>
+                    <p>This PR moves repair-history setup into the incremental path. <code>NodeWorker</code> stops referencing <code>RepairScheduler</code> and the table lookups it used, and now depends on <code>SchemaRefresher</code>. <code>RepairHistory</code> drops a public <code>newSession</code> overload that 11 components reach for.</p>
+
+                    <div class="ghc-stack">
+                      <section>
+                        <h3 class="ghc-h3-lead">Documented Rules <span class="ghc-h3-meta">29 checked &middot; 27 held &middot; 1 violated &middot; 1 pre-existing</span></h3>
+                        <ul class="rulelist">
+                          {reportRules.map((r) => (
+                            <li class={`rulerow rulerow-${r.verdict}`}>
+                              <span class="rulerow-main">
+                                <InlineCodeText class="rulerow-quote" text={r.quote} />
+                                <InlineCodeText class="rulerow-stmt" text={r.statement} />
+                              </span>
+                              <span class="rulerow-side">
+                                <span class={`rulerow-verdict rulerow-verdict-${r.verdict}`}>{r.label}</span>
+                                <span class="rulerow-src">{r.doc}<b>:{r.line}</b></span>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                        <p class="rulelist-more">5 of 29 shown</p>
+                      </section>
+
+                      <section>
+                        <h3>Structural Checks <span class="ghc-h3-meta">14 checks &middot; 5 flagged &middot; 9 clean</span></h3>
+                        <ul class="ghc-checks">
+                            <li class="is-flag"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Component scope</span><span class="ghc-checks-result">3 flagged</span></li>
+                            <li class="is-flag"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Public contract stability</span><span class="ghc-checks-result">2 flagged</span></li>
+                            <li class="is-flag"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Class-level coupling knots</span><span class="ghc-checks-result">1 flagged</span></li>
+                            <li class="is-flag"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Boundary crossings</span><span class="ghc-checks-result">1 flagged</span></li>
+                            <li class="is-flag"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Package cycles</span><span class="ghc-checks-result">1 flagged</span></li>
+                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Cycle seeds</span><span class="ghc-checks-result">clean</span></li>
+                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Module boundaries</span><span class="ghc-checks-result">clean</span></li>
+                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Production &rarr; test edges</span><span class="ghc-checks-result">clean</span></li>
+                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Abstraction contracts</span><span class="ghc-checks-result">clean</span></li>
+                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Tests for changed contracts</span><span class="ghc-checks-result">clean</span></li>
+                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Interface downgrades</span><span class="ghc-checks-result">clean</span></li>
+                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Encapsulation</span><span class="ghc-checks-result">clean</span></li>
+                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Hub formation</span><span class="ghc-checks-result">clean</span></li>
+                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Type relocations</span><span class="ghc-checks-result">clean</span></li>
+                        </ul>
+                      </section>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== THE DIAGRAM ==================== -->
+    <!-- The structural diff, kept exactly as it was but no longer opening the page. The
+         rules are what nobody else does; this is what the same check draws beside them, and
+         it earns a full stage of its own here rather than competing with the headline. -->
+    <section id="diagram" class="diagram-section scroll-mt-24 pb-16 pt-16">
+      <div class="mx-auto max-w-[90rem] px-6">
+        <div class="diagram-intro max-w-3xl" data-reveal>
+          <p class="examples-kicker">The diagram</p>
+          <h2 class="mt-3 text-balance">Every pull request gets a structural diff diagram.</h2>
+          <p class="section-subcopy mt-4">
+            The classes a change touched, what each one gained and lost, and how they connect at both revisions, so you can see the shape of a change you didn&rsquo;t write. <strong>Green was added, red was removed, and each finding is pinned to the class it is about.</strong>
+          </p>
+          <a class="oss-link" href="https://github.com/hadi-technology/striff-lib" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            <span>The diagram engine is open source: <b>striff-lib</b> on GitHub</span>
+            <em>MIT</em>
+          </a>
+        </div>
 
         <div class="relative z-10 mx-auto mt-4 w-full max-w-[90rem]" data-reveal>
           <div class="hero-stage-shell" data-hero-stage>
             <div class="hero-stage-head">
               <div class="hero-stage-context">
-                <span class="hero-context-chip">apache/fineract</span>
-                <span class="hero-context-chip hero-context-chip-muted">PR #6063</span>
+                <span class="hero-context-chip">Ericsson/ecchronos</span>
+                <span class="hero-context-chip hero-context-chip-muted">PR #1786</span>
                 <span class="hero-context-chip hero-context-chip-muted">Java</span>
-                <span class="hero-context-chip hero-context-chip-danger">2 HIGH · 2 MEDIUM</span>
+                <span class="hero-context-chip hero-context-chip-danger">3 HIGH · 5 MEDIUM</span>
               </div>
               <div class="hero-stage-actions">
                 <!-- The stage invites scroll-to-zoom and drag-to-pan, so it needs the same way
                      back that every other diagram on the site has. -->
-                <button class="github-diff-reset hero-stage-reset" type="button" data-panzoom-reset="pz-hero">Reset view</button>
                 <div class="hero-stage-badge">Striff / architectural-review</div>
               </div>
             </div>
 
             <div class="hero-diagram-wrap">
-              <!-- Framing is constrained on both sides: the report thumbnail floats over the
-                   left ~260px and the findings overlay over the right ~416px. The class the
-                   findings name has to land in the clear band between them, or the diagram
-                   looks like it was cropped at random. Re-tune both axes together. -->
+              <!-- Framing is constrained on the right, where the findings overlay covers ~416px
+                   on desktop: the area worth looking at has to land in the band left of it, or
+                   the diagram looks cropped at random. Re-tune both axes together. -->
               <div
-                class="github-diff-stage example-diff-stage hero-diagram-stage"
-                style="--example-stage-height: 40rem; --example-stage-height-mobile: 26rem;"
-                data-panzoom="pz-hero"
-                data-initial-scale="1.55"
-                data-mobile-scale="3.7"
-                data-focus-x="0.6122"
-                data-focus-y="0.4741"
-                data-mobile-focus-y="0.5606"
+                class="github-diff-stage example-diff-stage hero-diagram-stage is-static"
               >
                 <img
-                  src="/examples/fineract.svg"
-                  alt="Striff structural diff for apache/fineract PR #6063"
+                  src="/examples/ecchronos-1786-history.svg"
+                  alt="Striff structural diff of Ericsson/ecchronos PR #1786, framed on the repair history package: RepairHistoryService and RepairSessionImpl with added members in green, changed ones in blue, and the old newSession(...) form removed in red"
                   class="github-diff-graphic github-diff-image"
                   loading="eager"
                   draggable="false"
                 />
-                <div class="panzoom-hint" data-panzoom-hint>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg>
-                  Scroll to zoom · Drag to pan
-                </div>
 
                 <div class="hero-diagram-tag">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="m8 7 3 9M16 7l-3 9M8.5 6h7"/></svg>
                   Architecture diagram of this PR
                 </div>
 
-                <!-- A real miniature of the check report, parked in the corner. A text link asking
-                     people to imagine a second artifact does not work; showing it does. -->
-                <button class="hero-pip" type="button" data-panzoom-ignore data-report-jump="top" aria-label="Jump to the full check report Striff posts on this pull request">
-                  <span class="hero-pip-frame">
-                    <span class="hero-pip-doc" aria-hidden="true">
-                      <span class="hpd-head">
-                        <img src="/icon.svg" alt="" width="13" height="13" />
-                        <span class="hpd-head-text">
-                          <b>Striff / architectural-review</b>
-                          <i>Successful in 26s</i>
-                        </span>
-                      </span>
-                      <span class="hpd-row is-fail"><span class="hpd-dot"></span>Documented rules<em>1 violated</em></span>
-                      <span class="hpd-row is-flag"><span class="hpd-dot"></span>Boundary crossings<em>1 flagged</em></span>
-                      <span class="hpd-row is-flag"><span class="hpd-dot"></span>Complexity growth<em>1 flagged</em></span>
-                      <span class="hpd-row"><span class="hpd-dot"></span>Package cycles<em>clean</em></span>
-                      <span class="hpd-row"><span class="hpd-dot"></span>Layer integrity<em>clean</em></span>
-                      <span class="hpd-row"><span class="hpd-dot"></span>Encapsulation<em>clean</em></span>
-                    </span>
-                    <span class="hero-pip-fade" aria-hidden="true"></span>
-                  </span>
-                  <span class="hero-pip-cap">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/><path d="m9 13 1.5 1.5L13 12"/><path d="m9 17.5 1.5 1.5L13 16.5"/></svg>
-                    <span class="hero-pip-cap-text">Check report<em>13 checks</em></span>
-                    <svg class="hero-pip-cap-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M12 19l-5-5M12 19l5-5"/></svg>
-                  </span>
-                </button>
-
                 <!-- Findings overlay. Open on desktop, where it sits beside the diagram; collapsed
                      on mobile, where it goes full width and would otherwise cover the diagram
                      entirely. The class is set by the inline script below rather than rendered,
                      so there is no open-then-collapse flash on a phone. -->
-                <div class="hero-findings-overlay" data-findings-overlay data-panzoom-ignore>
+                <div class="hero-findings-overlay" data-findings-overlay>
                   <button class="hero-findings-toggle" type="button" data-findings-toggle>
-                    <span class="hero-findings-badge">4 findings · HIGH risk</span>
+                    <span class="hero-findings-badge">3 findings · HIGH risk</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hero-findings-chevron"><path d="M6 9l6 6 6-6"/></svg>
                   </button>
                   <div class="hero-findings-panel">
                     <div class="hero-findings-list">
-                      <div class="ai-finding ai-finding-danger" data-tour-finding="0" data-report-target="doc-conflict" role="button" tabindex="0">
+                      <div class="ai-finding ai-finding-danger">
                         <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
                         <div>
-                          <strong>Package structure violation</strong>
-                          <p><code>DefaultCommandHandlerManager</code> sits in <code>implementation</code>, but <code>REFACTORING.md</code> requires command handlers to live in <code>handler</code>.</p>
+                          <strong>The README no longer matches the code</strong>
+                          <p><code>core.impl/README.md</code> says <code>NodeWorker</code> calls <code>RepairScheduler</code>. After this PR, it doesn&rsquo;t.</p>
                         </div>
-                        <span class="hero-finding-go">In the report<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
                       </div>
-                      <div class="ai-finding ai-finding-danger" data-tour-finding="1" data-report-target="structural-regression" role="button" tabindex="0">
+                      <div class="ai-finding ai-finding-danger">
                         <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
                         <div>
-                          <strong>New directional boundary crossing</strong>
-                          <p>New dependency from <code>command</code> to <code>command.implementation</code>, with no prior edge in this direction.</p>
+                          <strong>New dependency cycle</strong>
+                          <p><code>multithreads</code> and <code>repair</code> now depend on each other.</p>
                         </div>
-                        <span class="hero-finding-go">In the report<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
                       </div>
-                      <div class="ai-finding ai-finding-warn" data-tour-finding="2" data-report-target="complexity" role="button" tabindex="0">
-                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>MED</span>
+                      <div class="ai-finding ai-finding-danger">
+                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
                         <div>
-                          <strong>Complexity growth: WMC +10</strong>
-                          <p><code>DefaultCommandHandlerManager</code> WMC grew from 4 to 14: rising cyclomatic complexity in the misplaced class.</p>
+                          <strong>Public method changed</strong>
+                          <p><code>RepairHistory.newSession(…)</code> changed its signature, and 11 classes depend on <code>RepairHistory</code>.</p>
                         </div>
-                        <span class="hero-finding-go">In the report<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
-                      </div>
-                      <div class="ai-finding ai-finding-warn" data-tour-finding="3" data-report-target="coupling" role="button" tabindex="0">
-                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>MED</span>
-                        <div>
-                          <strong>Coupling spike: EC +9</strong>
-                          <p><code>DefaultCommandHandlerManager</code> efferent coupling grew from 8 to 17, making it harder to change in isolation.</p>
-                        </div>
-                        <span class="hero-finding-go">In the report<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
                       </div>
                     </div>
-                    <div class="hero-findings-verdict">
-                      <strong>Striff</strong> read <strong>REFACTORING.md</strong> out of this repo and flagged the exact class that contradicts it.
-                    </div>
-                    <button class="hero-findings-more" type="button" data-report-jump="top">
-                      See all 13 checks that ran
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
-                    </button>
                   </div>
                 </div>
                 <script is:inline>
@@ -309,634 +566,145 @@ const plans = [
       </div>
     </section>
 
-    <!-- ==================== THE CHECK REPORT ==================== -->
-    <!-- The report used to sit behind a tab in the hero, where most people never opened it.
-         It is half the product, so it gets its own section and no click. -->
-    <section id="report" class="report-section scroll-mt-24">
-      <div class="mx-auto max-w-[90rem] px-6">
-        <div class="report-intro" data-reveal>
-          <p class="report-eyebrow">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M12 19l-5-5M12 19l5-5"/></svg>
-            For whoever has to approve it
-          </p>
-          <h2 class="text-balance">Your reviewers stop guessing whether it's safe to merge.</h2>
-          <p class="section-subcopy">
-            Passing tests tell your team the code works today. They say nothing about whether this change made the system harder to work in tomorrow. Striff answers that on the pull request, names the exact class at fault and quotes the rule it broke, so <strong>any reviewer on your team can approve with the confidence your staff engineer would</strong>.
-          </p>
-        </div>
-
-        <div class="hero-stage-shell report-stage-shell" data-reveal>
-          <div class="hero-stage-head">
-            <div class="hero-stage-context">
-              <span class="hero-context-chip">apache/fineract</span>
-              <span class="hero-context-chip hero-context-chip-muted">PR #6063</span>
-              <span class="hero-context-chip hero-context-chip-muted">Checks tab</span>
-              <span class="hero-context-chip hero-context-chip-danger">13 checks · 4 flagged</span>
-            </div>
-            <div class="hero-stage-badge">Striff / architectural-review</div>
-          </div>
-          <div class="ghc" data-report-top>
-                <!-- Left rail: the PR's full check list, Striff selected -->
-                <aside class="ghc-rail">
-                  <div class="ghc-rail-head">
-                    <svg class="ghc-icon-success" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
-                    <div>
-                      <p class="ghc-rail-title">All checks have passed</p>
-                      <p class="ghc-rail-sub">4 successful checks</p>
-                    </div>
-                  </div>
-                  <ul class="ghc-rail-list">
-                    <li class="ghc-rail-item">
-                      <svg class="ghc-icon-success" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
-                      <span class="ghc-rail-name">build</span>
-                      <span class="ghc-rail-time">44s</span>
-                    </li>
-                    <li class="ghc-rail-item">
-                      <svg class="ghc-icon-success" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
-                      <span class="ghc-rail-name">test</span>
-                      <span class="ghc-rail-time">1m 12s</span>
-                    </li>
-                    <li class="ghc-rail-item">
-                      <svg class="ghc-icon-success" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
-                      <span class="ghc-rail-name">lint</span>
-                      <span class="ghc-rail-time">18s</span>
-                    </li>
-                    <li class="ghc-rail-item is-selected">
-                      <svg class="ghc-icon-success" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
-                      <span class="ghc-rail-name">Striff / architectural-review</span>
-                      <span class="ghc-rail-time">26s</span>
-                    </li>
-                  </ul>
-                </aside>
-
-                <!-- Right pane: the check run output -->
-                <section class="ghc-pane">
-                  <header class="ghc-pane-head">
-                    <img class="ghc-pane-mark" src="/icon.svg" alt="" width="32" height="32" aria-hidden="true" />
-                    <div class="ghc-pane-headings">
-                      <h3 class="ghc-pane-title">Striff / architectural-review</h3>
-                      <p class="ghc-pane-sub">Successful in 26s</p>
-                    </div>
-                  </header>
-
-                  <!-- "All checks have passed" beside "4 flagged" reads as a contradiction unless
-                       you already know Striff reports rather than gates. Say so here. -->
-                  <p class="ghc-pane-note">
-                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13ZM8 4a.9.9 0 1 0 0 1.8A.9.9 0 0 0 8 4Zm.75 3.5a.75.75 0 0 0-1.5 0v4a.75.75 0 0 0 1.5 0Z"/></svg>
-                    Green because Striff reports, it doesn't gate. The findings below are advice your reviewer can act on, not a blocked merge. Mark the check required when you want it to hold the merge button.
-                  </p>
-
-                  <div class="ghc-md">
-                    <h3>Review Summary</h3>
-                    <p>This PR moves command-handling responsibility into <code>command.implementation</code>: <code>DefaultCommandHandlerManager</code> is added there, and the <code>command</code> package now depends on it. That dependency direction did not exist between these two packages before.</p>
-                    <h3>Top Review Items</h3>
-                    <ul class="ghc-items">
-                      <li data-report-anchor="doc-conflict">
-                        <p class="ghc-item-head"><span class="ghc-item-badge is-doc">📄 Doc Conflict</span> Handler placed outside the documented package</p>
-                        <p class="ghc-item-why"><code>DefaultCommandHandlerManager</code> sits in <code>implementation</code>. <code>REFACTORING.md</code> requires command handlers in <code>handler</code>.</p>
-                        <p class="ghc-item-fix"><span>Fix</span> Move it, or update the doc.</p>
-                      </li>
-                      <li data-report-anchor="structural-regression">
-                        <p class="ghc-item-head"><span class="ghc-item-badge is-reg">🎯 Structural Regression</span> <code>command</code> now depends on its own implementation package</p>
-                        <p class="ghc-item-why">First edge in this direction. The manager gained a dependent (AC 1 → 2) while reaching into <code>core.exception</code> (EC 8 → 17), so the abstraction points at the dispatcher.</p>
-                        <p class="ghc-item-fix"><span>Fix</span> Invert it: expose the manager as an interface from <code>command</code>, wire the concrete class in config.</p>
-                      </li>
-                    </ul>
-
-                    <div class="ghc-cols">
-                      <section>
-                        <h3>Documented Rules <span class="ghc-h3-meta">2 enforceable · 2 advisory</span></h3>
-                        <p class="ghc-sub">Extracted from this repository's own docs and checked against the dependencies this PR adds. Pass means this change added no violation, not that the codebase is clean.</p>
-                        <ul class="ghc-rules">
-                          <li class="is-fail">
-                            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.042.018.751.751 0 0 0-.018 1.042L6.94 8 4.97 9.97a.749.749 0 0 0 .326 1.275.749.749 0 0 0 .734-.215L8 9.06l1.97 1.97a.749.749 0 0 0 1.275-.326.749.749 0 0 0-.215-.734L9.06 8l1.97-1.97a.749.749 0 0 0-.326-1.275.749.749 0 0 0-.734.215L8 6.94Z"/></svg>
-                            <span class="ghc-rule-text">Command handlers live in the <code>command.handler</code> package<span class="ghc-rule-src">REFACTORING.md</span></span>
-                            <span class="ghc-rule-verdict">Fail</span>
-                          </li>
-                          <li>
-                            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
-                            <span class="ghc-rule-text"><code>core.exception</code> must not depend on command internals<span class="ghc-rule-src">ARCHITECTURE.md</span></span>
-                            <span class="ghc-rule-verdict">Pass</span>
-                          </li>
-                        </ul>
-                        <p class="ghc-advisory-head">Advisory: striff's reading, not a check</p>
-                        <ul class="ghc-rules is-advisory">
-                          <li>
-                            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 0 0-5.6 9.79L1.5 14.5l3.33-.86A6.5 6.5 0 1 0 8 1.5Zm0 1.5a5 5 0 1 1-2.6 9.27l-.3-.18-1.63.42.43-1.6-.19-.3A5 5 0 0 1 8 3Z"/><circle cx="5.4" cy="8" r="0.95"/><circle cx="8" cy="8" r="0.95"/><circle cx="10.6" cy="8" r="0.95"/></svg>
-                            <span class="ghc-rule-text">Each command resolves to exactly one handler<span class="ghc-rule-src">REFACTORING.md</span></span>
-                            <span class="ghc-rule-verdict">may be affected</span>
-                          </li>
-                          <li>
-                            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 0 0-5.6 9.79L1.5 14.5l3.33-.86A6.5 6.5 0 1 0 8 1.5Zm0 1.5a5 5 0 1 1-2.6 9.27l-.3-.18-1.63.42.43-1.6-.19-.3A5 5 0 0 1 8 3Z"/><circle cx="5.4" cy="8" r="0.95"/><circle cx="8" cy="8" r="0.95"/><circle cx="10.6" cy="8" r="0.95"/></svg>
-                            <span class="ghc-rule-text">Command handling must not block the request thread<span class="ghc-rule-src">ARCHITECTURE.md</span></span>
-                            <span class="ghc-rule-verdict">nothing stood out</span>
-                          </li>
-                        </ul>
-                      </section>
-
-                      <section>
-                        <!-- The documented-rules result lives in the column to the left; listing it
-                             here too made this column read as 13 structural checks when there are
-                             twelve, which is the number the rest of the site quotes. -->
-                        <h3>Structural Checks <span class="ghc-h3-meta">12 checks · 3 flagged · 9 clean</span></h3>
-                        <ul class="ghc-checks">
-                          <li class="is-flag"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Boundary crossings</span><span class="ghc-checks-result">1 flagged</span></li>
-                          <li class="is-flag" data-report-anchor="complexity"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Complexity growth</span><span class="ghc-checks-result">1 flagged</span></li>
-                          <li class="is-flag" data-report-anchor="coupling"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Coupling stability</span><span class="ghc-checks-result">1 flagged</span></li>
-                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Package cycles</span><span class="ghc-checks-result">clean</span></li>
-                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Cycle seeds</span><span class="ghc-checks-result">clean</span></li>
-                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Module boundaries</span><span class="ghc-checks-result">clean</span></li>
-                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Layer integrity</span><span class="ghc-checks-result">clean</span></li>
-                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Production → test edges</span><span class="ghc-checks-result">clean</span></li>
-                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Public contract stability</span><span class="ghc-checks-result">clean</span></li>
-                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Interface downgrades</span><span class="ghc-checks-result">clean</span></li>
-                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Encapsulation</span><span class="ghc-checks-result">clean</span></li>
-                          <li><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Hub formation</span><span class="ghc-checks-result">clean</span></li>
-                        </ul>
-                      </section>
-                    </div>
-                    <p class="ghc-md-foot">Thirteen results in all: twelve structural checks, plus the documented-rules check that reads your own docs. Every one reports on every PR, clean or not. Advisory rows are never given a pass: striff cannot prove an intention from structure.</p>
-                  </div>
-                </section>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== PROBLEM ==================== -->
-    <section id="problem" class="scroll-mt-24 bg-slate-100/60 pb-16 pt-14">
-      <div class="mx-auto max-w-[90rem] px-6" data-reveal>
-        <div class="rounded-3xl bg-white p-6 shadow-xl border border-slate-200 md:p-8">
-          <div class="problem-split">
-            <div class="problem-copy">
-              <p class="text-xs font-bold uppercase tracking-[0.2em] text-rose-500">The problem</p>
-              <h2 class="mt-3 text-balance">Your architecture is eroding one merge at a time.</h2>
-              <p class="section-subcopy mt-4">
-                Your team merges more AI-written code every week than anyone can read. Left unchecked, each merge piles on coupling and cycles until <strong>every change takes twice as long and nobody wants to touch the core</strong>. Striff catches that structural drift on every pull request, while it's still a one-line fix.
-              </p>
-              <a class="blog-link-btn" href="/blog/architecture-matters-more-not-less">
-                Why AI makes this worse, not better
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-              </a>
-            </div>
-
-            <!-- The firehose: branches merging into main, beside the activity feed -->
-            <figure class="gs" data-reveal aria-hidden="true">
-              <div class="gs-head">
-                <span class="gs-live"><span class="gs-live-dot"></span> live on <span class="gs-live-repo">acme-corp</span></span>
-                <span class="gs-head-tag">every day</span>
-              </div>
-              <div class="gs-body">
-                <!-- Git branch graph: feature branches continuously merging into main -->
-                <div class="gs-col">
-                  <span class="gs-col-head">branches → main</span>
-                  <div class="gs-graph">
-                  <div class="gs-graph-scroll">
-                    {[0, 1].map(() => (
-                      <svg class="gs-graph-unit" viewBox="0 0 140 320" preserveAspectRatio="xMidYMid meet">
-                        <path class="gs-line gs-line-main" d="M30 0 L30 320" />
-                        <path class="gs-line gs-line-a" d="M30 256 C 52 256 70 242 70 218 L 70 172 C 70 148 52 144 30 144" />
-                        <path class="gs-line gs-line-b" d="M30 224 C 60 224 104 206 104 178 L 104 92 C 104 66 60 64 30 64" />
-                        <circle class="gs-dot gs-dot-main" cx="30" cy="32" r="5" />
-                        <circle class="gs-dot gs-dot-main" cx="30" cy="96" r="5" />
-                        <circle class="gs-dot gs-dot-main" cx="30" cy="160" r="5" />
-                        <circle class="gs-dot gs-dot-main" cx="30" cy="224" r="5" />
-                        <circle class="gs-dot gs-dot-main" cx="30" cy="288" r="5" />
-                        <circle class="gs-dot gs-dot-a" cx="70" cy="196" r="4.5" />
-                        <circle class="gs-dot gs-dot-b" cx="104" cy="168" r="4.5" />
-                        <circle class="gs-dot gs-dot-b" cx="104" cy="102" r="4.5" />
-                        <circle class="gs-merge gs-merge-a" cx="30" cy="144" r="6.5" />
-                        <circle class="gs-merge gs-merge-b" cx="30" cy="64" r="6.5" />
-                      </svg>
-                    ))}
-                  </div>
-                  </div>
-                </div>
-
-                <!-- Activity feed: issues opened, PRs opened / pushed / merged -->
-                <div class="gs-col gs-col-feed">
-                  <span class="gs-col-head">activity</span>
-                  <div class="gs-feed">
-                  <div class="gs-feed-scroll">
-                    {[0, 1].map(() => activityFeed.map((a) => (
-                      <div class={`gs-item ${feedTypeClass[a.type]}`}>
-                        <span class="gs-item-icon">
-                          {a.type === "issue" ? (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>
-                          ) : a.type === "pr" ? (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M6 8.5v7"/><circle cx="18" cy="7" r="2.5"/><path d="M18 9.5c0 4-6 2.5-6 8"/></svg>
-                          ) : a.type === "push" ? (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9"/><path d="M6 15l6-6 6 6"/><path d="M5 4h14"/></svg>
-                          ) : (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M6 8.5v7"/><circle cx="18" cy="16" r="2.5"/><path d="M18 13.5c0-5-6-1.5-6-7"/></svg>
-                          )}
-                        </span>
-                        <span class="gs-item-text">{a.text}</span>
-                        <span class="gs-item-meta">{a.meta}</span>
-                      </div>
-                    )))}
-                  </div>
-                  </div>
-                </div>
-              </div>
-              <figcaption class="gs-caption">More PRs, branches and issues than any human can review, every single day.</figcaption>
-            </figure>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== EXAMPLES ==================== -->
-    <section id="examples" class="scroll-mt-24 section-dark examples-band pb-20 pt-20">
-      <div class="mx-auto max-w-[90rem] px-6">
-        <div class="examples-section-header flex flex-col gap-5 md:flex-row md:items-end md:justify-between" data-reveal>
-          <div class="max-w-3xl">
-            <p class="examples-kicker">Real pull requests, real findings</p>
-            <h2 class="mt-3 text-balance">The riskiest changes look safe in a file diff.</h2>
-            <p class="section-subcopy mt-4">
-              These are real public pull requests. Each one looked routine file-by-file. Striff read the structure underneath (<strong>a core engine reaching into a plugin, drivers rewired into the platform layer, query internals one step from a namespace cycle</strong>) and posted the findings before merge.
-            </p>
-            <a class="blog-link-btn" href="/blog/architectural-findings-in-oss">
-              1 in 3 refactor PRs moves the architecture. See the evidence
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-            </a>
-          </div>
-          <ul class="example-proof-stack self-start md:self-auto">
-            <li>Live public PRs: open any of them and verify</li>
-            <li>Findings posted on the PR before merge</li>
-            <li>Findings you can trace back to the diagram</li>
-          </ul>
-        </div>
-        <!-- Tab selector strip -->
-        <div class="example-tabs mt-9" data-reveal>
-          {exampleReviews.map((example, i) => (
-            <button
-              class={`example-tab ${i === 0 ? "is-active" : ""}`}
-              type="button"
-              data-tab-index={i}
-            >
-              <span class={`example-tab-lang example-tab-lang-${example.accent}`}>{example.language}</span>
-              <span class="example-tab-repo">{example.repo}</span>
-            </button>
-          ))}
-        </div>
-
-        <!-- Carousel slides -->
-        <div class="example-carousel mt-6" data-reveal>
-          {exampleReviews.map((example, i) => (
-            <div class={`example-slide ${i === 0 ? "is-active" : ""}`} data-slide-index={i}>
-              <div class="example-slide-card">
-                <div class="example-slide-header">
-                  <div>
-                    <h3 class="example-slide-title"><a href={example.href} target="_blank" rel="noopener noreferrer">{example.prTitle}</a></h3>
-                    <p class="example-slide-sub">{example.repo} {example.pr} · {example.summary}</p>
-                  </div>
-                  <a class="btn-secondary example-slide-link" href={example.href} target="_blank" rel="noopener noreferrer">
-                    Open PR
-                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-                  </a>
-                </div>
-
-                <!-- Head-to-head scoreboard -->
-                <div class="ex-score">
-                  {example.scoreboard.map((tile) => (
-                    <div class={`ex-score-tile ex-score-${tile.tone}`}>
-                      <span class="ex-score-value">{tile.value}</span>
-                      <InlineCodeText class="ex-score-label" text={tile.label} />
-                    </div>
-                  ))}
-                </div>
-
-                <div class="example-split">
-                  <div class="example-split-diagram">
-                    <div class="example-diagram-toolbar">
-                      <span class="example-diagram-label">Structural diff</span>
-                      <button class="github-diff-reset" type="button" data-panzoom-reset={`pz-${example.id}`}>Reset view</button>
-                    </div>
-                    <div
-                      class="github-diff-stage example-diff-stage"
-                      style="--example-stage-height: 26rem; --example-stage-height-mobile: 18rem;"
-                      data-panzoom={`pz-${example.id}`}
-                      data-initial-scale={example.panzoom.desktopScale}
-                      data-mobile-scale={example.panzoom.mobileScale}
-                      data-focus-x={example.panzoom.focus.x}
-                      data-focus-y={example.panzoom.focus.y}
-                    >
-                      <img
-                        src={example.svg}
-                        alt={`${example.language} Striff structural diff for ${example.repo} ${example.pr}`}
-                        class="github-diff-graphic github-diff-image"
-                        loading="lazy"
-                        draggable="false"
-                      />
-                      <div class="panzoom-hint" data-panzoom-hint>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg>
-                        Scroll to zoom · Drag to pan
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="example-split-compare">
-                    <!-- Striff lane: hero finding + supporting findings -->
-                    <div class="ex-lane ex-lane-striff">
-                      <div class="ex-lane-head">
-                        <span class="ex-lane-name">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ex-lane-icon"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><path d="m4.9 4.9 2.8 2.8M16.3 16.3l2.8 2.8"/></svg>
-                          Striff
-                        </span>
-                        <span class="ex-lane-tag ex-lane-tag-striff">reads the structure</span>
-                      </div>
-                      <div class="ex-lane-scroll">
-                        <div class="ex-hero">
-                          <p class="ex-hero-stat">{example.hero.stat}</p>
-                          <InlineCodeText class="ex-hero-statlabel" text={example.hero.statLabel} />
-                          <p class="ex-hero-title"><InlineCodeText text={example.hero.title} /></p>
-                          <InlineCodeText class="ex-hero-body" text={example.hero.body} />
-                        </div>
-                        {example.checks.map((check) => (
-                          <div class={`ex-row ex-row-${check.level === "danger" ? "danger" : "warn"}`}>
-                            <span class="ex-row-sev">{check.level === "danger" ? "HIGH" : check.level === "warn" ? "MED" : "INFO"}</span>
-                            <div>
-                              <strong><InlineCodeText text={check.title} /></strong>
-                              <InlineCodeText class="ex-row-body" text={check.body} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div class="ex-verdict">
-                      <p><InlineCodeText text={example.checkHeader} /></p>
-                      <a class="blog-link-btn blog-link-btn--compact" href="/blog/architectural-findings-in-oss">
-                        More findings from major OSS repos
-                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <!-- Navigation -->
-        <div class="example-nav" data-reveal>
-          <button class="example-nav-btn" type="button" data-nav="prev" aria-label="Previous example">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <div class="example-dots">
-            {exampleReviews.map((_, i) => (
-              <button class={`example-dot ${i === 0 ? "is-active" : ""}`} type="button" data-dot-index={i} aria-label={`Go to example ${i + 1}`} />
-            ))}
-          </div>
-          <button class="example-nav-btn" type="button" data-nav="next" aria-label="Next example">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-        </div>
-
-        <div class="examples-more" data-reveal>
-          <a class="btn-secondary" href="/examples">
-            See all four reviews side by side
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== TEAM PHILOSOPHY ==================== -->
-    <section id="how" class="scroll-mt-24 bg-slate-100/60 pb-16 pt-16">
+    <!-- ==================== FOR ENGINEERING MANAGERS ==================== -->
+    <!-- The three outcomes stay on the left as they were; they are also the carousel's
+         tabs, so choosing one shows its illustration on the right. -->
+    <section id="how" class="scroll-mt-24 bg-slate-100/60 pb-20 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="max-w-3xl" data-reveal>
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For engineering managers</p>
-          <h2 class="mt-3 text-balance">Writing code was never the hard part.</h2>
+          <h2 class="mt-3 text-balance">Your architecture stops living in people&rsquo;s heads.</h2>
           <p class="section-subcopy mt-4">
-            Keeping a system coherent while a dozen people change it every day is the hard part, and it's the part nobody owns. Striff checks every pull request against the architecture you've already documented, then rolls the results into a view of your team's repos, so <strong>the system your team is building stays the system you designed</strong>.
+            Keeping a system coherent while people and agents change it every day is the part nobody owns. <strong>Striff makes it part of the process instead: reviews that do not wait on your seniors, documents that stay true, and a trend you can show.</strong>
           </p>
         </div>
-        <div class="teams-showcase mt-10" data-teams-showcase data-reveal>
-          <div class="teams-tabs" role="tablist">
-            {teamPhilosophy.map((item, i) => (
-              <>
+
+        <div class="mgr-split mgr-carousel mt-10" data-mgr-carousel aria-roledescription="carousel" aria-label="What changes for your team" data-reveal>
+          <div class="mgr-points" role="tablist" aria-label="Outcomes" aria-orientation="vertical">
+            {mgrSlides.map((slide, i) => (
               <button
-                class={`teams-tab teams-tab-${item.color} ${i === 0 ? "is-active" : ""}`}
                 type="button"
+                class={`mgr-point ${i === 0 ? "is-active" : ""}`}
                 role="tab"
+                id={`mgr-tab-${i}`}
+                aria-controls={`mgr-slide-${i}`}
                 aria-selected={i === 0 ? "true" : "false"}
-                data-teams-tab-index={i}
+                tabindex={i === 0 ? 0 : -1}
+                data-mgr-tab
               >
-                <span class="teams-tab-head">
-                  <span class={`icon-badge icon-badge-${item.color} teams-tab-icon`} aria-hidden="true">
-                    {item.icon === "checklist" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 6 1.8 1.8L8 4.5"/><path d="m3 13 1.8 1.8L8 11.5"/><path d="m3 20 1.8 1.8L8 18.5"/><path d="M12 6h9M12 13h9M12 20h9"/></svg>
-                    )}
-                    {item.icon === "chart" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M12 20V4M20 20v-7"/><path d="M2 20h20"/></svg>
-                    )}
-                    {item.icon === "doc" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
-                    )}
-                  </span>
-                  <span class="teams-tab-title">{item.title}</span>
+                <span class="mgr-point-num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                <span class="mgr-point-body">
+                  <span class="mgr-point-title">{slide.title}</span>
+                  <span class="mgr-point-text">{slide.body}</span>
                 </span>
-                <span class="teams-tab-body">{item.body}</span>
-                <span class="teams-tab-progress" aria-hidden="true"><span class="teams-tab-progress-fill"></span></span>
               </button>
-              {item.link && (
-                <a class="blog-link-btn blog-link-btn--compact teams-tab-link" href={item.link.href}>
-                  {item.link.label}
-                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-                </a>
-              )}
-              </>
             ))}
           </div>
 
-          <div class="teams-stage">
-            {teamPhilosophy.map((item, i) => (
-              <div class={`teams-stage-panel ${i === 0 ? "is-active" : ""}`} data-teams-panel-index={i}>
-                {item.preview === "metrics" ? (
-                  <div class="metrics-preview-frame" data-metrics-preview>
-                    <div class="metrics-preview-scale" data-metrics-preview-scale>
-                      <div class="dashboard-shell">
-                        <div class="dashboard-account-bar">
-                          <div>
-                            <p class="dashboard-kicker">Striff account</p>
-                            <p class="text-lg font-bold">Acme Corp</p>
-                          </div>
-                          <span class="dashboard-plan-badge">Team plan</span>
-                        </div>
-                        <div class="dashboard-installation-card">
-                          <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
-                        </div>
+          <div class="mgr-stage-col">
+            <div class="mgr-track" data-mgr-track>
+              {mgrSlides.map((slide, i) => (
+                <article class="mgr-slide" id={`mgr-slide-${i}`} role="tabpanel" aria-labelledby={`mgr-tab-${i}`} aria-roledescription="slide" data-mgr-slide>
+                  <div class="mgr-art">
+                  {i === 0 && (
+                    <div class="ghl">
+                      <div class="ghl-head">
+                        <span class="ghl-open"><svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg>4 Open</span>
+                        <span class="ghl-closed"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>212 Closed</span>
+                        <span class="ghl-filters" aria-hidden="true"><span>Author</span><span>Label</span><span>Reviews</span></span>
                       </div>
-                    </div>
-                    <div class="metrics-preview-fade" aria-hidden="true"></div>
-                  </div>
-                ) : item.preview === "docs" ? (
-                  <div class="teams-doc-frame">
-                    <div
-                      class="github-diff-stage example-diff-stage teams-doc-diagram-stage"
-                      data-panzoom="pz-docs-tile"
-                      data-initial-scale="3"
-                      data-initial-x="-746"
-                      data-initial-y="-78"
-                      data-mobile-scale="2.2"
-                      data-mobile-x="-287"
-                      data-mobile-y="-10"
-                    >
-                      <img
-                        src="/examples/fineract.svg"
-                        alt="Striff structural diagram for apache/fineract PR #6063, zoomed on DefaultCommandHandlerManager"
-                        class="github-diff-graphic github-diff-image"
-                        loading="lazy"
-                        draggable="false"
-                      />
-                    </div>
-                    <div class="teams-doc-note-dock">
-                      <div class="ai-finding ai-finding-danger">
-                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
-                        <div>
-                          <strong>Package structure violation</strong>
-                          <p><code>DefaultCommandHandlerManager</code> sits in <code>implementation</code>, but <code>REFACTORING.md</code> requires command handlers to live in <code>handler</code>.</p>
+                      {mgrPrs.map((pr) => (
+                        <div class={`ghl-row${pr.verdict === "violated" ? " is-flag" : ""}`}>
+                          <span class="ghl-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg></span>
+                          <span class="ghl-main">
+                            <span class="ghl-title"><b>{pr.title}</b>{pr.label && <span class={`ghl-label ghl-label-${pr.label}`}>{pr.label}</span>}</span>
+                            <i>#{pr.num} opened {pr.when} by {pr.who} &middot; {pr.review}</i>
+                          </span>
+                          <span class={`ghl-check ghl-check-${pr.verdict}`}>
+                            <img src="/icon.svg" alt="Striff" width="14" height="14" />
+                            {pr.verdict === "held" ? <Fragment set:html={`<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>Rules held`} /> : <Fragment set:html={`<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"/></svg>1 rule broken`} />}
+                          </span>
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  </div>
-                ) : item.preview === "checks" ? (
-                  <div class="teams-github-frame" data-github-preview>
-                    <div class="gh-mock-scale" data-github-preview-scale>
-                      <div class="gh-mock">
-                        <div class="gh-mock-body">
-                          <p class="gh-mock-breadcrumb">acme-corp / <strong>platform-api</strong></p>
-                          <p class="gh-mock-title">Add token-bucket rate limiter to gateway middleware <span>#1842</span></p>
-                          <div class="gh-mock-meta">
-                            <span class="gh-mock-state">
-                              <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg>
-                              Open
-                            </span>
-                            <span class="gh-mock-meta-text"><strong>jordan-lee</strong> wants to merge 6 commits into <code>main</code> from <code>feature/rate-limiter</code></span>
-                          </div>
-                          <div class="gh-mock-tabs">
-                            <span class="gh-mock-tab">Conversation <em>12</em></span>
-                            <span class="gh-mock-tab">Commits <em>6</em></span>
-                            <span class="gh-mock-tab is-active">Checks <em>4</em></span>
-                            <span class="gh-mock-tab">Files changed <em>9</em></span>
-                          </div>
-                          <div class="gh-mock-checkbox">
-                            <div class="gh-mock-checkbox-header">
-                              <svg class="gh-mock-check-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
-                              <div>
-                                <p class="gh-mock-checkbox-title">All checks have passed</p>
-                                <p class="gh-mock-checkbox-sub">4 successful checks</p>
-                              </div>
-                              <button type="button" class="gh-mock-hide">Hide all checks</button>
-                            </div>
-                            <div class="gh-mock-check-list">
-                              <div class="gh-mock-check-row">
-                                <svg class="gh-mock-check-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
-                                <span class="gh-mock-check-name">continuous-integration / build</span>
-                                <span class="gh-mock-check-time">44s</span>
-                                <span class="gh-mock-check-details">Details</span>
-                              </div>
-                              <div class="gh-mock-check-row">
-                                <svg class="gh-mock-check-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
-                                <span class="gh-mock-check-name">continuous-integration / test <em>(312)</em></span>
-                                <span class="gh-mock-check-time">1m 12s</span>
-                                <span class="gh-mock-check-details">Details</span>
-                              </div>
-                              <div class="gh-mock-check-row">
-                                <svg class="gh-mock-check-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
-                                <span class="gh-mock-check-name">lint</span>
-                                <span class="gh-mock-check-time">18s</span>
-                                <span class="gh-mock-check-details">Details</span>
-                              </div>
-                              <div class="gh-mock-check-row gh-mock-check-row-striff">
-                                <svg class="gh-mock-check-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg>
-                                <div class="gh-mock-check-body">
-                                  <span class="gh-mock-check-name">
-                                    <span class="gh-mock-striff-mark" aria-hidden="true">
-                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><path d="m4.9 4.9 2.8 2.8M16.3 16.3l2.8 2.8"/></svg>
-                                    </span>
-                                    Striff / architecture
-                                  </span>
-                                  <p class="gh-mock-check-output">All 12 structural checks passed. 2 documented rules checked, no new violation. Rate limiter stays inside <code>gateway/middleware</code>, as <code>ARCHITECTURE.md</code> requires.</p>
-                                </div>
-                                <span class="gh-mock-check-time">26s</span>
-                                <span class="gh-mock-check-details">Details</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <img src={item.image} alt={item.title} class="teams-stage-image" loading="lazy" />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
+                  )}
 
-    <!-- ==================== CHROME EXTENSION ==================== -->
-    <section class="section-dark pb-20 pt-20">
-      <div class="mx-auto max-w-[90rem] px-6">
-        <div class="chrome-ext-grid" data-reveal>
-          <div class="chrome-ext-copy">
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Free Chrome extension</p>
-            <h2 class="mt-3 text-balance">See what any GitHub PR really touches.</h2>
-            <p class="section-subcopy mt-4">
-              Reviewing an unfamiliar change means holding somebody else's dependency graph in your head. Striff draws it for you, in a tab right beside Files changed, so <strong>you see what a change touches before you approve it</strong>. You never leave GitHub.
-            </p>
+                  {i === 1 && (
+                    <div class="ghr">
+                      <div class="ghr-card ghr-blob">
+                        <div class="ghr-bar">
+                          <span class="ghr-crumbs"><span>ecchronos</span><i>/</i><span>core.impl</span><i>/</i><b>README.md</b></span>
+                          <span class="ghr-seg" aria-hidden="true"><span class="is-on">Preview</span><span>Code</span><span>Blame</span></span>
+                        </div>
+                        <div class="ghr-preview">
+                          <p><strong><code>NodeWorker</code></strong> — A continuously-running background thread per node. It:</p>
+                          <ul>
+                            <li>Discovers all replicated tables for its node</li>
+                            <li>Fetches repair configurations per table</li>
+                            <li class="is-hl"><span>Calls <code>RepairScheduler.putConfigurations()</code> to keep jobs up to date</span><em>L136</em></li>
+                            <li>Loops on a configurable refresh interval</li>
+                          </ul>
+                        </div>
+                      </div>
 
-            <ul class="chrome-ext-list">
-              {chromeExtensionHighlights.map((item) => (
-                <li class="chrome-ext-point">
-                  <span class={`icon-badge icon-badge-${item.color}`} aria-hidden="true">
-                    {item.icon === "diagram" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M8.5 7.5 11 16M15.5 7.5 13 16M9 6h6"/></svg>
-                    )}
-                    {item.icon === "comment" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 1 1-3.2-6.4"/><path d="M21 3v6h-6"/><path d="M8 12h6M8 9h3"/></svg>
-                    )}
-                    {item.icon === "sparkle" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="m6 6 2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg>
-                    )}
-                    {item.icon === "bolt" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>
-                    )}
-                  </span>
-                  <span class="chrome-ext-point-text">{item.point}</span>
-                </li>
+                      <div class="ghr-card ghr-check">
+                        <div class="ghr-bar">
+                          <img src="/icon.svg" alt="" class="ghr-app" width="20" height="20" />
+                          <span class="ghr-check-name"><b>Striff</b><span>📄 1 doc conflict (README.md)</span></span>
+                          <span class="ghr-pr">PR #1786</span>
+                        </div>
+                        <div class="ghr-md">
+                          <p class="ghr-h">Documented Rules</p>
+                          <div class="ghr-table-wrap">
+                            <table>
+                              <thead><tr><th>Rule</th><th>Source</th><th>This PR</th></tr></thead>
+                              <tbody>
+                                <tr class="is-focus"><td>NodeWorker depends on RepairScheduler</td><td><span class="ghr-a"><code>README.md</code></span></td><td class="ghr-out">❌ broken by this change</td></tr>
+                                <tr><td>NodeWorkerManager depends on NodeWorker</td><td><span class="ghr-a"><code>README.md</code></span></td><td class="ghr-out">✅ holds</td></tr>
+                              </tbody>
+                            </table>
+                          </div>
+                          <p class="ghr-foot">11 further rules were read but could not be checked against this codebase.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {i === 2 && (
+                    <div class="mgr-dash" data-metrics-preview>
+                      <div class="mgr-dash-scale" data-metrics-preview-scale>
+                        <div class="dashboard-shell">
+                          <div class="dashboard-account-bar">
+                            <div>
+                              <p class="dashboard-kicker">Striff account</p>
+                              <p class="text-lg font-bold">Acme Corp</p>
+                            </div>
+                            <span class="dashboard-plan-badge">Example workspace</span>
+                          </div>
+                          <div class="dashboard-installation-card">
+                            <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
+                          </div>
+                        </div>
+                      </div>
+                      <div class="mgr-dash-fade" aria-hidden="true"></div>
+                    </div>
+                  )}
+                </div>
+                </article>
               ))}
-            </ul>
-
-            <a class="btn-chrome chrome-ext-cta" href={extensionUrl} target="_blank" rel="noopener noreferrer">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="4" />
-                <line x1="21.17" y1="8" x2="12" y2="8" />
-                <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
-                <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
-              </svg>
-              Add to Chrome
-            </a>
-          </div>
-
-          <div class="chrome-ext-video rounded-3xl border border-white/10 bg-slate-950 shadow-xl">
-            <div class="aspect-video overflow-hidden rounded-3xl">
-              <iframe
-                class="h-full w-full"
-                src={`https://www.youtube.com/embed/${chromeExtensionVideoId}?autoplay=1&mute=1&loop=1&playlist=${chromeExtensionVideoId}&playsinline=1&modestbranding=1&rel=0`}
-                title="Striff Chrome extension walkthrough"
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
+            </div>
+            <div class="mgr-controls">
+              <button type="button" class="mgr-arrow" data-mgr-prev aria-label="Previous">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <button type="button" class="mgr-arrow" data-mgr-next aria-label="Next">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
             </div>
           </div>
+        </div>
+        <div class="section-invite">
+          <BlogLink slug="architecture-review-checklist" kicker="The checklist, by hand" />
         </div>
       </div>
     </section>
@@ -990,7 +758,7 @@ const plans = [
               Get started
             </a>
             <a class="btn-secondary" href="/pricing">Team pricing</a>
-            <a class="btn-chrome" href={extensionUrl} target="_blank" rel="noopener noreferrer">
+            <a class="btn-chrome" href="/extension">
               <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="10" />
                 <circle cx="12" cy="12" r="4" />
@@ -1014,32 +782,28 @@ const plans = [
         </div>
         <div class="faq-list" data-reveal>
           <details class="faq-item">
-            <summary class="faq-q">Does Striff replace my AI code reviewer (CodeRabbit, Copilot, Claude)?</summary>
-            <p class="faq-a">No, it works alongside them. Striff reviews one layer: the dependency graph your change produces. It reports new cycles, boundary violations, coupling spikes, and god classes forming, and checks the whole thing against the architecture your repo already documents. Line-level bugs, style, and logic stay with your existing review, human or AI.</p>
-          </details>
-          <details class="faq-item">
             <summary class="faq-q">How does Striff know what my architecture is supposed to look like?</summary>
-            <p class="faq-a">Two ways. Out of the box, twelve deterministic checks run on every PR and flag structural regressions that are almost never intentional: new dependency cycles, first-ever dependency directions between packages, layer skips, and sharp complexity or coupling growth. No configuration needed, and every one of the twelve is listed in the Check with its own result, whether it fired or not. On top of that, if your repo contains architecture docs (an ARCHITECTURE.md, ADRs, or design notes), Striff reads them and checks the dependencies your PR adds against what your team wrote down, quoting the document it came from.</p>
+            <p class="faq-a"><strong>You already wrote it down.</strong> Striff catalogues the documents in your repository that make claims about the code, turns each of those sentences into a rule it can evaluate, and answers it against the model your pull request produces, quoting the sentence and linking the file it came from. <em>Nothing is configured and no rule format is invented:</em> your documentation is the rulebook. Underneath that, <strong>fourteen deterministic structural checks</strong> run on every PR whether or not you have a single doc, flagging the regressions that are almost never intentional: new dependency cycles, first-ever dependency directions between packages, a component reaching into a namespace it had never touched, a public contract changing with no test. Every one of the fourteen is listed in the Check with its own result, <em>whether it fired or not</em>.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">What languages does Striff support?</summary>
-            <p class="faq-a">Java, TypeScript, Python, and C#. Go support is coming soon. Striff parses source code into a full structural model using its own parser, not regex or text matching, so references, inheritance, and coupling are resolved the way a compiler sees them.</p>
+            <p class="faq-a">The structural checks and the diagram run on <strong>Java, TypeScript, Python and C#</strong>. Striff parses source into a full structural model with its own parser, not regex or text matching, so references, inheritance and coupling resolve the way a compiler sees them. Documented rules are further along on some of those than others: <strong>Java and C# are production-ready</strong>, Python extracts rules from your docs but cannot yet answer all of them, and TypeScript is still being proven out. <em>We would rather say that here than have you install and find out.</em> Go is coming.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">Is it just an LLM wrapper?</summary>
-            <p class="faq-a">No. The findings come from deterministic structural analysis of your dependency graph, backed by a model trained on well-architected codebases to tell risky changes from normal ones. The AI layer explains and ranks what the analysis already established, and decides which of those facts are worth your attention; it can never originate a finding of its own. It also writes a short account of what the PR did structurally, which is why a clean PR still gets an explanation rather than a bare verdict.</p>
+            <p class="faq-a"><strong>No, and the architecture is the answer.</strong> Every finding is produced by <em>deterministic</em> analysis of the structure your change actually creates: the parser builds a model of both revisions, the checks are queries over that model, and a documented rule holds exactly when its query returns nothing. The model is <strong>fact-gated</strong>, which means it can rank findings, explain them and write the summary of what your PR did structurally, but it <em>cannot originate one, rename one, or turn "could not answer" into a pass.</em> That last constraint is why a rule Striff cannot evaluate is reported as unanswered instead of quietly counted as green.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">Will it slow down or block my pull requests?</summary>
-            <p class="faq-a">No. Striff runs as a GitHub Check next to your CI and posts its results when the analysis finishes, typically within a few minutes. It never blocks a merge unless you choose to make the check required.</p>
+            <p class="faq-a"><strong>No.</strong> Striff runs as a GitHub Check next to your CI and posts its results when the analysis finishes, typically <em>within a few minutes</em>. It never blocks a merge <strong>unless you choose to make the check required</strong>.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">What do I need to set up?</summary>
-            <p class="faq-a">Just install the GitHub App: it works on public and private repos alike and posts checks automatically on every PR, with no per-developer setup. Plans start at $29/month, based on how many repos actually get reviewed each month, not how many you connect. Separately, there's a free browser extension: a standalone tool that analyzes any public PR directly in GitHub's UI, a handy way to try Striff on open-source code without installing anything on the repo (bring a free GitHub token; it stays in your browser).</p>
+            <p class="faq-a"><strong>Just install the GitHub App.</strong> It works on public and private repos alike and posts checks automatically on every PR, with <em>no per-developer setup</em>. Plans start at <strong>$29/month</strong>, based on how many repos <em>actually get reviewed</em> each month, not how many you connect. Separately, there's a free browser extension: a standalone tool that analyzes any public PR directly in GitHub's UI, a handy way to try Striff on open-source code without installing anything on the repo <em>(bring a free GitHub token; it stays in your browser)</em>.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">Is my source code sent to a third party or stored?</summary>
-            <p class="faq-a">Your code is parsed on Striff's servers in memory and not persisted. The AI explanation layer works from the structural model (component names, relationships, metrics, and doc excerpts), not your raw source files. For teams that need full control, self-hosted deployment is available on the Enterprise plan.</p>
+            <p class="faq-a">Your code is parsed on Striff's servers <strong>in memory and not persisted</strong>. The AI explanation layer works from the structural model (component names, relationships, metrics, and doc excerpts), <em>not your raw source files</em>. For teams that need full control, <strong>self-hosted deployment</strong> is available on the Enterprise plan.</p>
           </details>
         </div>
       </div>
@@ -1081,7 +845,7 @@ const plans = [
                 </svg>
                 Get started
               </a>
-              <a class="btn-secondary" href={examplesUrl}>See real examples</a>
+              <a class="btn-secondary" href="#pipeline">See how it works</a>
             </div>
           </div>
         </div>
@@ -1090,89 +854,90 @@ const plans = [
   </main>
 
   <script is:inline>
-    // Hero findings -> check report. Each finding in the hero overlay is the summary of a
-    // line further down in the report, so clicking one scrolls to that exact line and flashes
-    // it. The report is a section rather than a hidden tab, so nothing here reveals content:
-    // it only saves the reader the hunt.
+    // For-managers carousel: scroll snap does the swiping; tabs, arrows and keys drive the
+    // track. While a tab-driven scroll is in flight its in-between positions are ignored, so
+    // the tab the reader pressed stays selected instead of flickering back to the old one.
     (function () {
-      var reportSection = document.getElementById("report");
-      if (!reportSection) return;
-
-      var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      var flashTimer = null;
-
-      function goTo(el, flash) {
-        if (!el) return;
-        el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
-        if (!flash) return;
-
-        clearTimeout(flashTimer);
-        document.querySelectorAll(".is-report-flash").forEach(function (n) {
-          n.classList.remove("is-report-flash");
-        });
-        // Restart the animation even when the same row is clicked twice.
-        void el.offsetWidth;
-        el.classList.add("is-report-flash");
-        flashTimer = setTimeout(function () { el.classList.remove("is-report-flash"); }, 2600);
-      }
-
-      document.querySelectorAll("[data-report-jump]").forEach(function (btn) {
-        btn.addEventListener("click", function () { goTo(reportSection, false); });
-      });
-
-      document.querySelectorAll("[data-report-target]").forEach(function (row) {
-        var anchor = document.querySelector(
-          '[data-report-anchor="' + row.getAttribute("data-report-target") + '"]'
-        );
-        if (!anchor) return;
-
-        row.addEventListener("click", function () { goTo(anchor, true); });
-        row.addEventListener("keydown", function (e) {
-          if (e.key !== "Enter" && e.key !== " ") return;
-          e.preventDefault();
-          goTo(anchor, true);
-        });
-      });
-    })();
-
-    (function () {
-      var tabs = document.querySelectorAll("[data-tab-index]");
-      var slides = document.querySelectorAll("[data-slide-index]");
-      var dots = document.querySelectorAll("[data-dot-index]");
-      var prevBtn = document.querySelector('[data-nav="prev"]');
-      var nextBtn = document.querySelector('[data-nav="next"]');
+      var root = document.querySelector("[data-mgr-carousel]");
+      if (!root) return;
+      var track = root.querySelector("[data-mgr-track]");
+      var slides = Array.prototype.slice.call(root.querySelectorAll("[data-mgr-slide]"));
+      var tabs = Array.prototype.slice.call(root.querySelectorAll("[data-mgr-tab]"));
+      var prev = root.querySelector("[data-mgr-prev]");
+      var next = root.querySelector("[data-mgr-next]");
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       var current = 0;
-      var total = tabs.length;
+      var pending = -1;
+      var release = null;
 
-      function showSlide(index) {
-        current = ((index % total) + total) % total;
-
-        tabs.forEach(function (t, i) { t.classList.toggle("is-active", i === current); });
-        slides.forEach(function (s, i) { s.classList.toggle("is-active", i === current); });
-        dots.forEach(function (d, i) { d.classList.toggle("is-active", i === current); });
-
-        var activeSlide = slides[current];
-        if (activeSlide) {
-          var stage = activeSlide.querySelector("[data-panzoom]");
-          if (stage && stage._panzoomReset) {
-            stage._panzoomReset();
-          }
-        }
+      function nearest() {
+        var x = track.scrollLeft, best = 0, bestD = Infinity;
+        slides.forEach(function (sl, k) {
+          var d = Math.abs(sl.offsetLeft - x);
+          if (d < bestD) { bestD = d; best = k; }
+        });
+        return best;
       }
 
-      tabs.forEach(function (tab, i) {
-        tab.addEventListener("click", function () { showSlide(i); });
-      });
+      function mark(i) {
+        current = i;
+        tabs.forEach(function (t, k) {
+          var on = k === i;
+          t.classList.toggle("is-active", on);
+          t.setAttribute("aria-selected", on ? "true" : "false");
+          t.tabIndex = on ? 0 : -1;
+        });
+        slides.forEach(function (sl, k) {
+          if (k === i) sl.removeAttribute("inert"); else sl.setAttribute("inert", "");
+        });
+        if (prev) prev.disabled = i === 0;
+        if (next) next.disabled = i === slides.length - 1;
+      }
 
-      dots.forEach(function (dot, i) {
-        dot.addEventListener("click", function () { showSlide(i); });
-      });
+      function settle() {
+        pending = -1;
+        if (release) { clearTimeout(release); release = null; }
+        var i = nearest();
+        if (i !== current) mark(i);
+      }
 
-      if (prevBtn) prevBtn.addEventListener("click", function () { showSlide(current - 1); });
-      if (nextBtn) nextBtn.addEventListener("click", function () { showSlide(current + 1); });
+      function go(i, focusTab) {
+        i = Math.max(0, Math.min(slides.length - 1, i));
+        pending = i;
+        mark(i);
+        track.scrollTo({ left: slides[i].offsetLeft, behavior: reduce ? "auto" : "smooth" });
+        if (release) clearTimeout(release);
+        release = setTimeout(settle, reduce ? 60 : 900);
+        if (focusTab) tabs[i].focus();
+      }
+
+      tabs.forEach(function (t, k) {
+        t.addEventListener("click", function () { go(k); });
+        t.addEventListener("keydown", function (e) {
+          if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); go(current + 1, true); }
+          if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); go(current - 1, true); }
+          if (e.key === "Home") { e.preventDefault(); go(0, true); }
+          if (e.key === "End") { e.preventDefault(); go(slides.length - 1, true); }
+        });
+      });
+      if (prev) prev.addEventListener("click", function () { go(current - 1); });
+      if (next) next.addEventListener("click", function () { go(current + 1); });
+
+      track.addEventListener("scroll", function () {
+        if (pending !== -1) {
+          if (Math.abs(track.scrollLeft - slides[pending].offsetLeft) < 2) settle();
+          return;
+        }
+        var i = nearest();
+        if (i !== current) mark(i);
+      }, { passive: true });
+      if ("onscrollend" in window) {
+        track.addEventListener("scrollend", settle);
+      }
+
+      mark(0);
     })();
 
-    // Pan and zoom lives in src/scripts/panzoom.js, shared with the examples page.
 
     // Findings overlay toggle
     (function () {
@@ -1180,7 +945,7 @@ const plans = [
       var toggle = document.querySelector("[data-findings-toggle]");
       if (!overlay || !toggle) return;
 
-      // Stop panzoom from swallowing clicks on the overlay
+      // Keep clicks on the overlay from reaching the diagram beneath it
       ["pointerdown", "pointerup", "click", "wheel"].forEach(function (evt) {
         overlay.addEventListener(evt, function (e) { e.stopPropagation(); });
       });
@@ -1192,106 +957,6 @@ const plans = [
       });
     })();
 
-    // Team showcase: autoplaying rotating tabs
-    (function () {
-      var root = document.querySelector("[data-teams-showcase]");
-      if (!root) return;
-
-      var tabs = root.querySelectorAll("[data-teams-tab-index]");
-      var panels = root.querySelectorAll("[data-teams-panel-index]");
-      var total = tabs.length;
-      var current = 0;
-      var timer = null;
-      var startedAt = 0;
-      var AUTOPLAY_MS = 6000;
-      var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      // Set once the reader shows intent (taps, or picks a tab). Rotation never comes back:
-      // having the panel change under you mid-paragraph is worse than a static section.
-      var stopped = false;
-
-      function currentFill() {
-        var fill = tabs[current] && tabs[current].querySelector(".teams-tab-progress-fill");
-        return fill || null;
-      }
-
-      function restartTimer(duration) {
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(function () { activate(current + 1); }, duration);
-      }
-
-      function activate(index) {
-        current = ((index % total) + total) % total;
-
-        tabs.forEach(function (tab, i) {
-          var isActive = i === current;
-          tab.classList.toggle("is-active", isActive);
-          tab.setAttribute("aria-selected", isActive ? "true" : "false");
-          var fill = tab.querySelector(".teams-tab-progress-fill");
-          if (fill) {
-            fill.style.animation = "none";
-            fill.style.animationPlayState = "";
-            void fill.offsetWidth;
-            fill.style.animation = "";
-          }
-        });
-
-        panels.forEach(function (panel, i) { panel.classList.toggle("is-active", i === current); });
-
-        // The docs tile is pannable but too small to carry its own reset button, so returning
-        // to a tab returns its diagram to the framing that makes the point.
-        var activePanel = panels[current];
-        if (activePanel) {
-          activePanel.querySelectorAll("[data-panzoom]").forEach(function (stage) {
-            if (stage._panzoomReset) stage._panzoomReset();
-          });
-        }
-
-        startedAt = Date.now();
-        if (!reduceMotion && !stopped) restartTimer(AUTOPLAY_MS);
-      }
-
-      tabs.forEach(function (tab, i) {
-        tab.addEventListener("click", function () { activate(i); });
-      });
-
-      function pause() {
-        if (timer) { clearTimeout(timer); timer = null; }
-        var fill = currentFill();
-        if (fill) fill.style.animationPlayState = "paused";
-      }
-
-      function resume() {
-        if (reduceMotion || stopped) return;
-        var fill = currentFill();
-        if (fill) fill.style.animationPlayState = "running";
-        var elapsed = Date.now() - startedAt;
-        restartTimer(Math.max(AUTOPLAY_MS - elapsed, 400));
-      }
-
-      root.addEventListener("mouseenter", pause);
-      root.addEventListener("mouseleave", resume);
-
-      // Hovering was the only way to pause; keyboard and touch users had no way at all, and
-      // this section carries the densest copy on the page.
-      function stopAutoplay() {
-        stopped = true;
-        if (timer) { clearTimeout(timer); timer = null; }
-        var fill = currentFill();
-        if (fill) fill.style.animation = "none";
-      }
-
-      root.addEventListener("focusin", pause);
-      root.addEventListener("focusout", resume);
-      root.addEventListener("touchstart", stopAutoplay, { passive: true });
-      tabs.forEach(function (tab) { tab.addEventListener("click", stopAutoplay); });
-
-      // Rotating on a tab nobody is looking at just means returning to a different panel.
-      document.addEventListener("visibilitychange", function () {
-        if (document.hidden) pause(); else resume();
-      });
-
-      activate(0);
-    })();
 
     // Scales a fixed-natural-width mock down to fit its tile, preserving proportions
     // (used by both the live metrics dashboard preview and the GitHub checks mock).
@@ -1324,6 +989,17 @@ const plans = [
         }
         rescale(frame);
       });
+
+      // Recharts' ResponsiveContainer measures itself on mount. Inside this frame it
+      // mounts before the scale factor is applied and latches a zero width, so every
+      // sparkline rendered as an empty box. Nudging it once the frame is sized makes
+      // it re-measure. rAF twice: once past layout, once past React's commit.
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          frames.forEach(rescale);
+          window.dispatchEvent(new Event("resize"));
+        });
+      });
     }
 
     setupPreviewScale("data-metrics-preview", "data-metrics-preview-scale");
@@ -1331,8 +1007,39 @@ const plans = [
   </script>
 
   <script>
-    import { initPanzoom } from "../scripts/panzoom.js";
-
-    initPanzoom({ minScaleFloor: 1.2 });
+    // Headline rotator: the kind of document changes, the promise does not. The slot
+    // eases to each word's own width, so the comma always sits against the word, and
+    // the second line is on its own row so nothing below it reflows. Still under
+    // reduced motion, paused while the tab is hidden.
+    (function () {
+      var rot = document.querySelector("[data-h1-rot]");
+      if (!rot) return;
+      var words = Array.prototype.slice.call(rot.querySelectorAll(".h1-rot-word"));
+      var i = 0;
+      function fit() { rot.style.width = words[i].offsetWidth + "px"; }
+      fit();
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+      window.addEventListener("resize", fit);
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      rot.classList.add("is-live");
+      function tick() {
+        if (document.hidden) return;
+        var out = words[i];
+        i = (i + 1) % words.length;
+        var next = words[i];
+        out.classList.remove("is-on");
+        out.classList.add("is-out");
+        next.classList.add("is-on");
+        fit();
+        setTimeout(function () {
+          out.style.transition = "none";
+          out.classList.remove("is-out");
+          void out.offsetWidth;
+          out.style.transition = "";
+        }, 650);
+      }
+      setInterval(tick, 2800);
+    })();
   </script>
+
 </BaseLayout>
