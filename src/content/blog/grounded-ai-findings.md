@@ -1,139 +1,119 @@
 ---
-title: "The reviewer is not allowed to be the source of any claim"
-description: "AI code review has a trust problem: fluent, plausible statements nobody can check. The fix is not a better prompt. It is an architecture where a language model reads your docs and phrases the result, and everything in between, every rule and every verdict, is computed from two parsed revisions."
+title: "Every Striff finding comes with a receipt"
+description: "AI review comments are easy to write and hard to trust. What a Striff check on your pull request actually says, where each line of it comes from, and how to verify any of it yourself in under a minute."
 date: 2026-08-24
 ---
 
-The common complaint about AI code review is not that it misses things. It is the opposite: **it says too much, too confidently, about too little.** Plausible comments that do not survive a second look. Speculation with the cadence of analysis. Enough of it that developers do the rational thing and stop reading the bot.
+Most developers have the same experience with AI code review. The comments sound right. Some of them are right. You cannot tell which without redoing the analysis yourself, so after a few weeks you stop reading them.
 
-That is an adoption problem, not a prompt problem, and it cannot be fixed by asking the model to be more careful. So the design decision we made is structural: **a language model is never the source of a claim.** Everything below is what that costs and what it buys, including the findings we deliberately do not produce.
+A better prompt does not fix that, because the problem is not how the model writes. It is that the model's opinion *is* the finding, and there is nothing underneath it to check. So Striff works the other way round, with one rule we hold everything to:
 
-## Prose-first versus facts-first
+<div class="bp-callout"><strong>The AI is never the source of a claim.</strong> Every statement in a Striff check is either a sentence quoted from your own docs, with its file and line, or a fact computed from your code at the two revisions of the pull request. A language model reads the docs and writes the sentences. It never decides what is true.</div>
 
-The default way to build an AI reviewer is prose-first. Hand the diff, plus whatever retrieval surfaces, to a model and let it write what it notices. The output *is* the model's judgment; there is nothing underneath to check it against. When it is right, it is useful. When it is wrong, **it is wrong in fluent, confident English**, and the reviewer has to redo the analysis to find out which one they got.
+Here is what that looks like from your side of the pull request.
 
-Inverting that order means the measurement happens in a program, and the model is confined to the two jobs it is actually good at: reading prose, and writing it.
+## What lands on your pull request
 
-<div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Two pipelines, opposite trust models</p>
-<div class="bp-legend" style="margin-top:0;margin-bottom:0.6rem"><span class="bp-chip" style="--bp-chip-color:#d97706">Prose-first</span></div>
-<div class="bp-flow" style="--bp-flow-cols: 3">
-<div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">1</span><p class="bp-flow-title">Diff + context</p><p class="bp-flow-desc">The pull request text and whatever retrieval surfaces.</p></div>
-<div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">2</span><p class="bp-flow-title">The model reads and judges</p><p class="bp-flow-desc">One step is both the analysis and the source of truth. Nothing exists to verify it against.</p></div>
-<div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">3</span><p class="bp-flow-title">Fluent prose</p><p class="bp-flow-desc">Right or wrong, it reads the same. The reviewer inherits the verification work.</p></div>
-</div>
-<div class="bp-legend" style="margin-top:1.1rem;margin-bottom:0.6rem"><span class="bp-chip" style="--bp-chip-color:#2563eb">Facts-first: computed</span><span class="bp-chip" style="--bp-chip-color:#059669">Language model</span></div>
-<div class="bp-flow" style="--bp-flow-cols: 5">
-<div class="bp-flow-step"><span class="bp-flow-num">1</span><p class="bp-flow-title">Parse</p><p class="bp-flow-desc">Both revisions become a compiler-grade model of the code.</p></div>
-<div class="bp-flow-step bp-flow-step--mint"><span class="bp-flow-num">2</span><p class="bp-flow-title">Read</p><p class="bp-flow-desc">A model reads your docs and proposes candidate rules.</p></div>
-<div class="bp-flow-step"><span class="bp-flow-num">3</span><p class="bp-flow-title">Ground and compile</p><p class="bp-flow-desc">Candidates naming anything not in the code are dropped. The rest become queries.</p></div>
-<div class="bp-flow-step"><span class="bp-flow-num">4</span><p class="bp-flow-title">Evaluate</p><p class="bp-flow-desc">Every query, and fourteen structural checks, run at both revisions.</p></div>
-<div class="bp-flow-step bp-flow-step--mint"><span class="bp-flow-num">5</span><p class="bp-flow-title">Narrate</p><p class="bp-flow-desc">A model phrases what was computed. It cannot add a finding.</p></div>
-</div>
-<p class="bp-figure-caption">Two of the five steps use a language model, and neither decides anything. Step 2 proposes; step 3 throws away every proposal that does not match real code. Step 5 phrases a verdict that already exists. A fabrication in either has to contradict its own input, which makes it catchable by a program instead of by the reviewer's patience.</p>
-</div>
+When you open a pull request in a repository with Striff installed, a check appears beside your CI. It has four parts, the same four you can see [on the homepage](/#report):
 
-Some of what a reviewer might expect to be under the hood here is not, on purpose. There is no learned model scoring which parts of the graph look unusual. We built one, ran it, and removed it: nothing a user could see depended on its output, and a score nobody can interrogate is exactly the kind of authority this design exists to refuse. What is left is smaller and entirely inspectable.
+- **A review summary.** A few sentences on what the change does structurally: what gained or lost a dependency, what public surface moved.
+- **Top review items.** Only the things worth your attention, which in practice means places where the change contradicts your own documentation.
+- **Documented rules.** Every rule from your docs that Striff could check, each with the sentence it came from and whether this change kept it or broke it.
+- **A diagram of the change.** The classes the pull request touched, what they gained and lost, and how they connect.
 
-## Every claim traces to something you can look up
+None of it needs configuring. The rules come from the READMEs, ADRs, `ARCHITECTURE.md` and agent instruction files already in the repository.
 
-Abstract claims about grounding are cheap, so here is a real one, decomposed. Ericsson's ecChronos documents its `core.impl` module class by class, and pull request [#1786](https://github.com/Ericsson/ecchronos/pull/1786) made one of those sentences false.
+## Checking one claim, start to finish
+
+Here is a real finding. Ericsson's ecChronos documents its `core.impl` module class by class, and pull request [#1786](https://github.com/Ericsson/ecchronos/pull/1786) made one of those sentences false. The check said:
+
+<div class="bp-annot"><mark><code>NodeWorker</code> no longer depends on <code>RepairScheduler</code></mark>, which <mark class="bp-m-danger"><code>core.impl/README.md</code> line 136 says it calls</mark>. It did at the base revision.</div>
+
+You do not have to trust that. It is made of four things you can look up:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Prose in, facts under, one sentence out</p>
-<div class="bp-facts" style="margin-bottom:0.9rem">
-<div class="bp-facts-line"><span class="bp-facts-key">① doc </span>  core.impl/README.md:136</div>
-<div class="bp-facts-line"><span class="bp-facts-key">  says</span>  "Calls RepairScheduler.putConfigurations() to keep jobs up to date"</div>
-<div class="bp-facts-line"><span class="bp-facts-key">② rule</span>  refs("NodeWorker", "RepairScheduler", "_")  expect: true</div>
-<div class="bp-facts-line"><span class="bp-facts-key">③ base</span>  holds: NodeWorker.java:209 calls putConfigurations(…)</div>
-<div class="bp-facts-line"><span class="bp-facts-key">④ head</span>  fails: NodeWorker has no reference to RepairScheduler</div>
+<p class="bp-figure-title">The receipt for one finding</p>
+<div class="bp-facts">
+<div class="bp-facts-line"><span class="bp-facts-key">doc   </span>core.impl/README.md:136</div>
+<div class="bp-facts-line"><span class="bp-facts-key">says  </span><span class="bp-facts-quote">"Calls RepairScheduler.putConfigurations() to keep jobs up to date"</span></div>
+<div class="bp-facts-line"><span class="bp-facts-key">rule  </span>NodeWorker depends on RepairScheduler</div>
+<div class="bp-facts-line"><span class="bp-facts-key">base  </span>d188eb1b33  holds   NodeWorker.java:209 calls putConfigurations(…)</div>
+<div class="bp-facts-line"><span class="bp-facts-key">head  </span>0288412016  <span class="bp-facts-neg">fails</span>   NodeWorker has no reference to RepairScheduler</div>
+</div>
+<p class="bp-figure-caption">Open the README at line 136 and the sentence is there. Open <code>NodeWorker.java</code> at the base commit and the call is on line 209. Open it at the head commit and it is gone. If any of those lookups disagreed with the check, the check would be wrong, and you would be able to prove it in a minute.</p>
 </div>
 
-$$
-\begin{gathered}
-\varphi \coloneqq \htmlClass{lg-q}{\exists} k.\ \mathrm{refs}(\mathtt{NodeWorker},\ \mathtt{RepairScheduler},\ k) \\[8pt]
-\mathcal{M}_{\mathrm{base}} \htmlClass{sat}{\models} \varphi \qquad \mathcal{M}_{\mathrm{head}} \htmlClass{unsat}{\nvDash} \varphi
-\end{gathered}
-$$
+The language model did exactly one thing in that finding: it read line 136 and proposed the rule "`NodeWorker` depends on `RepairScheduler`". Everything after that was computed. The model did not decide the rule was broken, and it could not have, because the verdict comes from parsing the code at both commits. [The full story of this pull request](/blog/design-docs-are-enforceable-now) is on the blog, including why a one-word README fix mattered.
 
-<div class="bp-annot"><mark><code>NodeWorker</code> no longer depends on <code>RepairScheduler</code></mark><sup>②④</sup>, which <mark class="bp-m-danger"><code>core.impl/README.md</code> line 136 says it calls</mark><sup>①</sup>. It did at the base revision<sup>③</sup>.</div>
-<p class="bp-figure-caption">Step ② is the only neural part: a model read a bullet point and proposed a rule, the query in the rule language, which is the formula φ above. It survived grounding because both names resolve to real types in the parsed code. Steps ③ and ④ evaluate φ against the model of the code at each revision: satisfied at base, not at head. The sentence at the bottom can only be assembled from those two facts. The verdict is symbolic; only the word order is neural.</p>
+## Who decides what
+
+A check is built in four steps. Two use a language model, and neither of those can put a finding in front of you:
+
+<div class="bp-figure" data-reveal>
+<p class="bp-figure-title">Where the language model is allowed in</p>
+<div class="bp-compare-scroll">
+<table class="bp-compare">
+<thead><tr><th>Step</th><th>Done by</th><th>Can it add a finding?</th></tr></thead>
+<tbody>
+<tr><td>Parse both revisions of your code</td><td>A parser, the way a compiler would</td><td><span class="bp-no">✗</span> It produces the facts everything else is checked against.</td></tr>
+<tr><td>Read your docs and propose rules</td><td>Language model</td><td><span class="bp-no">✗</span> It only proposes. A rule that names a class or package your code does not contain is thrown away before it is ever checked, so the model cannot invent a violation by inventing a name.</td></tr>
+<tr><td>Check each rule at the base and the head</td><td>A program</td><td><span class="bp-yes">✓</span> This is the only step that produces a verdict. Only a rule that held before the change and fails after it counts against the change.</td></tr>
+<tr><td>Write the summary and the notes</td><td>Language model</td><td><span class="bp-no">✗</span> It phrases what was computed. A sentence that asserts something the comparison did not find is dropped, and the computed statement is shown instead.</td></tr>
+</tbody>
+</table>
+</div>
+<p class="bp-figure-caption">The model proposes and the program decides. When the model gets something wrong, the mistake has to contradict the code or the docs it was given, which a program can catch. You do not have to.</p>
 </div>
 
-Structural findings work the same way without the document. When [Activiti/activiti-cloud #2552](https://github.com/Activiti/activiti-cloud/pull/2552) removes `getIntegrationRequest()` from the public interface `IntegrationResult`, the finding says twelve components in the parsed scope depend on that type, because the comparison counted twelve. It cannot say "this will break the build", because nothing computed that. **If a fact is not in the extracted set, the sentence cannot contain it.**
+This also means that when Striff is wrong, it is wrong the way ordinary software is wrong. A bad verdict traces back to a sentence, a rule and two parsed facts, so it can be reproduced, fixed and tested. There is no equivalent for "the model felt confident".
 
-The second benefit is less obvious and matters more over time: **when this is wrong, it is wrong in a debuggable way.** A parser defect that dropped references to parameterised types produced findings built on missing edges. Because the fact layer is deterministic, that was an ordinary software bug: reproducible, testable, fixed in the parser, verified by re-running the corpus. There is no equivalent workflow for "the model felt confident". You cannot write a failing test for a vibe.
+## What it will not tell you
 
-## The findings we refuse to produce
-
-Grounding kills fabrication. It does nothing about the second species of noise: claims that are **structurally true and practically useless**. A fact-based system can generate those all day, which means the quality bar has to be about decision relevance, not truth.
-
-The bar is one question: *does a reviewer already know this from the diff or from the diagram?*
+Being true is not enough to earn a line in your check. The bar is one question: *does the reviewer already know this from the diff or the diagram?*
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">True, and still not a finding</p>
 <div class="bp-compare-scroll">
 <table class="bp-compare">
-<thead><tr><th>Candidate</th><th>True?</th><th>Reported as a finding?</th></tr></thead>
+<thead><tr><th>Candidate</th><th>True?</th><th>In your check?</th></tr></thead>
 <tbody>
-<tr><td>"Efferent coupling on this component grew by 4"</td><td><span class="bp-yes">✓</span></td><td><span class="bp-no">✗</span> A metric delta implies no action on its own, a linter reports it better, and the number is already printed on the component. <a href="/blog/afferent-efferent-coupling-explained">Why a coupling delta is not a finding</a>.</td></tr>
-<tr><td>"Weighted method complexity rose 36% in this class"</td><td><span class="bp-yes">✓</span></td><td><span class="bp-no">✗</span> Same reason. The class got bigger; the diff already showed you that.</td></tr>
-<tr><td>"This pull request adds an import"</td><td><span class="bp-yes">✓</span></td><td><span class="bp-no">✗</span> It is a line of the diff. Being able to restate the diff is not analysis.</td></tr>
-<tr><td>"Production code depends on test code" where the edge is an artefact of how test helpers are laid out</td><td><span class="bp-yes">✓</span></td><td><span class="bp-no">✗</span> Suppressed rather than defended, after it read as a false positive on a real repository.</td></tr>
-<tr><td>"This change made a sentence in your README false" / "this edge closes a package cycle" / "this interface lost a method 12 things depend on"</td><td><span class="bp-yes">✓</span></td><td><span class="bp-yes">✓</span> Each needs a document, or the whole graph at both revisions, or both.</td></tr>
+<tr><td>"This pull request adds an import"</td><td><span class="bp-yes">✓</span></td><td><span class="bp-no">✗</span> It is a line of the diff. Restating the diff is not analysis.</td></tr>
+<tr><td>"Coupling on this class went up by 4"</td><td><span class="bp-yes">✓</span></td><td><span class="bp-no">✗</span> The number is on the class in the diagram. On its own it implies no action. <a href="/blog/afferent-efferent-coupling-explained">Why a coupling delta is not a finding</a>.</td></tr>
+<tr><td>"This package now depends on that one", when your docs say nothing about either</td><td><span class="bp-yes">✓</span></td><td><span class="bp-no">✗</span> Possibly exactly what you intended. With no rule your team wrote down, a tool can only guess, so the new edge is drawn on the diagram instead.</td></tr>
+<tr><td>"This change made a sentence in your README false"</td><td><span class="bp-yes">✓</span></td><td><span class="bp-yes">✓</span> It needs your docs and the code at both revisions. The diff contains neither, which is why nobody caught it.</td></tr>
 </tbody>
 </table>
 </div>
-<p class="bp-figure-caption">The retired rows were not marginal. Metric-delta findings were about two thirds of everything the product emitted before they were cut. The metrics themselves are untouched: they still order the report and sit next to each component on the diagram. What they lost was the right to a row of their own.</p>
+<p class="bp-figure-caption">There is no battery of generic heuristics grading the shape of your code. A rule nobody on your team wrote down is a rule nobody on your team agreed to. If you want something checked, write it in your docs.</p>
 </div>
 
-<div class="bp-callout"><strong>A false or irrelevant finding is a bug, not a difference of opinion.</strong> When a run surfaces something technically true and useless, the fix goes into the detection layer the way a crash would. Trust in a review tool is spent one comment at a time and earned back over months, and the exchange rate is bad.</div>
+## It only reports what it can verify
 
-## Five outcomes, because two is a lie
-
-The other half of not making things up is not *implying* things you never checked.
-
-A boolean collapses "we checked and it is clean" into the same value as "we could not look". In front of a maintainer that collapse is worse than silence, because silence is not trusted and a green tick is. So every documented rule reports one of five outcomes:
+The other half of not making things up is not *implying* things. A pass/fail check can put "we looked and it is fine" and "we could not look" behind the same green tick, and a green tick is exactly what a reviewer trusts. Striff does not do that. It is a best-effort check: a rule it cannot answer from the code is left out of the results, never shown as passing. Every rule it does report has one of four outcomes:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Every rule reports one of five</p>
+<p class="bp-figure-title">Every rule it reports is one of four</p>
 <div class="bp-outcomes">
-<div class="bp-outcome bp-outcome--danger"><p class="bp-outcome-name">Violated</p><p class="bp-outcome-desc">True at the base revision, false at yours, with the witness named. Every rule runs at both revisions, so this row is the change's doing and nobody else's.</p></div>
-<div class="bp-outcome bp-outcome--amber"><p class="bp-outcome-name">Pre-existing</p><p class="bp-outcome-desc">False at both revisions, with a witness. Its own row, because failing a pull request for inherited debt gets a check switched off, and folding it in with the passes puts a green tick on a rule the codebase breaks.</p></div>
-<div class="bp-outcome bp-outcome--mint"><p class="bp-outcome-name">Held</p><p class="bp-outcome-desc">Not broken anywhere in the model this change produces, not merely nowhere the change touched.</p></div>
-<div class="bp-outcome bp-outcome--brand"><p class="bp-outcome-name">Restored</p><p class="bp-outcome-desc">False at base, true at head: the change fixed something the docs promised. The only outcome that congratulates an author, so it is withheld when the same pull request also wrote the sentence.</p></div>
-<div class="bp-outcome bp-outcome--slate"><p class="bp-outcome-name">Couldn't check</p><p class="bp-outcome-desc">The rule names something the parsed model does not contain, or asks about a relation this language does not populate. Counted underneath the list: no tick, and never a pass.</p></div>
+<div class="bp-outcome bp-outcome--danger"><p class="bp-outcome-name">Violated</p><p class="bp-outcome-desc">Held before this change, fails after it. The only outcome blamed on the pull request.</p></div>
+<div class="bp-outcome bp-outcome--amber"><p class="bp-outcome-name">Already broken</p><p class="bp-outcome-desc">Broken in the code Striff checked, not by this change. Shown on its own line, never blamed on the author, and never passed off as a pass.</p></div>
+<div class="bp-outcome bp-outcome--mint"><p class="bp-outcome-name">Held</p><p class="bp-outcome-desc">This change keeps it: nothing in this pull request breaks it. It is not a claim about the rest of the codebase.</p></div>
+<div class="bp-outcome bp-outcome--brand"><p class="bp-outcome-name">Restored</p><p class="bp-outcome-desc">Broken before, true after: the change fixed something the docs promised.</p></div>
 </div>
-<p class="bp-figure-caption">The last outcome exists because a source parser sees less than a compiler: no generated members, no annotations, no reflection, no string literals. A tool that renders those blind spots as a pass is lying at exactly the moment you are trusting it most.</p>
-</div>
-
-Each outcome is nothing more than a pair of facts: whether the code at the base revision satisfies the rule, and whether the code at head does. Written out, the whole scheme fits in five lines.
-
-<div class="bp-figure" data-reveal>
-<p class="bp-figure-title">The same five, formally</p>
-
-$$
-\begin{array}{lcc}
- & \mathcal{M}_{\mathrm{base}} & \mathcal{M}_{\mathrm{head}} \\[3pt] \hline
-\textsf{Violated} & \htmlClass{sat}{\models}\,\varphi & \htmlClass{unsat}{\nvDash}\,\varphi \\
-\textsf{Pre-existing} & \htmlClass{unsat}{\nvDash}\,\varphi & \htmlClass{unsat}{\nvDash}\,\varphi \\
-\textsf{Restored} & \htmlClass{unsat}{\nvDash}\,\varphi & \htmlClass{sat}{\models}\,\varphi \\
-\textsf{Held} & \htmlClass{sat}{\models}\,\varphi & \htmlClass{sat}{\models}\,\varphi \\[3pt] \hline
-\textsf{Couldn't check} & \varphi\ \text{undefined over}\ \mathcal{M} & \varphi\ \text{undefined over}\ \mathcal{M}
-\end{array}
-$$
-
-<p class="bp-figure-caption">Each column is the model of the code parsed at that revision, and φ is the rule. Only the first row is attributed to the change: that attribution is all "differential evaluation" means. The last row is not a truth value at all. φ names something the model does not contain, so neither ⊨ nor ⊭ is defined, and the rule is counted rather than passed.</p>
+<p class="bp-figure-caption">A source parser sees less than a compiler: no generated methods, no annotations, no reflection. Say your docs mention <code>Order.total()</code> and <code>Order</code> is a Java record. The compiler generates <code>total()</code>, so the parser never sees it. "The method is missing" would be false, and "the rule held" would be a guess. So Striff says neither, and leaves that rule out.</p>
 </div>
 
-That last outcome is not theoretical, and it is not rare. In one real repository, the documentation refers to a method `currentTurnCount()` on a type called `CompactionRequest`. That type is a Java record with a `currentTurnCount` component, so the accessor is generated by the compiler and a source parser never sees it. "The method is missing" would be false. "The rule held" would be worse. The system says it could not tell, and says why.
+That makes Striff best-effort by design. It can miss a rule a compiler would have answered. What it will not do is tell you a rule held when it could not see whether it did.
 
-Across a scan of 74 public pull requests, 518 of 1,912 rule evaluations came back as couldn't check. A tool that folded those into the passes would have shown 1,862 green ticks, and more than a quarter of them would have been guesses.
+## What you get out of it
 
-## Why this matters more every quarter
+Fewer comments, and every one of them checkable. [Across 1,394 rule checks on 74 public pull requests](/blog/design-docs-are-enforceable-now), Striff found exactly one violation, and it was real. When a check that quiet says something, it is worth reading, and you can verify it faster than you could argue with it.
 
-Coding assistants are pushing pull request volume up, and automated review comments are multiplying in the same feeds. The scarce resource is no longer analysis. It is **attention and trust**, and a review tool only works if engineers still read it in month six.
+It also changes what your docs are for. A sentence in your README stops being a hope and becomes a rule, checked on every pull request, whether a person or a coding agent wrote the code. [Here is how to write docs Striff can check](/blog/design-docs-are-enforceable-now#writing-docs-that-can-be-checked), though it reads the docs you already have without any changes.
 
-That is the whole bet: fewer claims, each one traceable to a sentence quoted verbatim from a file in your repository or to a measured property of your dependency graph, delivered in the pull request where the risk appears. [Across 1,912 documented-rule evaluations](/blog/design-docs-are-enforceable-now), that produced exactly one violation, and it was a real one. Across thirty open-source pull requests, it produced thirteen structural findings and twenty-one silent checks.
+## Try it on a pull request you know
 
-[Install the check](https://github.com/apps/striff-app/installations/new) and open your next pull request. Every claim it makes is one you can go and verify, which is the only property that matters.
+The quickest test is a pull request whose history you already know, so you can judge every line of the check yourself.
+
+- **Your public repositories are free.** [Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open a pull request. Rules, diagram and review notes, on every PR.
+- **Someone else's public pull request.** The [free Chrome extension](/extension) shows the same review in a tab beside Files changed, without installing anything on the repository.
+- **Private repositories** start at $29 a month. [See pricing](/pricing).

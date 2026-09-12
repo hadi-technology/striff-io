@@ -1,6 +1,6 @@
 ---
 title: "Your architecture docs matter more than ever. Now every pull request is checked against them."
-description: "Coding agents read your docs as context, and nothing checks that the code still agrees with them. How Striff turns the sentences already in your repository into rules computed at both revisions of every pull request, and the one real violation it found in 1,912 checks."
+description: "Coding agents read your docs as context, and nothing checks that the code still agrees with them. How Striff turns the sentences already in your repository into rules computed at both revisions of every pull request, and the one real violation it found in 1,394 checks."
 date: 2026-09-10
 ---
 
@@ -26,15 +26,15 @@ Pull request [#1786](https://github.com/Ericsson/ecchronos/pull/1786), *"Add Rep
 
 The pull request was approved and merged on 8 September. The README was not in the diff, so nobody reading the diff had a reason to open it. At the time of writing, line 136 on `master` still credits `NodeWorker`, and so does the execution-flow sketch at line 156 of the same file.
 
-Striff read 39 rules out of that repository's documentation and checked every one at both revisions of the pull request. Three of them:
+Striff checked 28 rules from that repository's documentation at both revisions of the pull request. Three of them:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Ericsson/ecchronos #1786 · documented rules</p>
-<div class="bp-rules-tally"><span><b>39</b> rules in its docs</span><span class="is-held"><b>27</b> held</span><span class="is-violated"><b>1</b> violated</span><span><b>11</b> couldn't be checked</span></div>
+<div class="bp-rules-tally"><span><b>28</b> rules checked</span><span class="is-held"><b>27</b> held</span><span class="is-violated"><b>1</b> violated</span></div>
 <div class="bp-rules">
 <RuleRows rows={ecchronosRules} baseSha={baseSha} headSha={headSha} />
 </div>
-<p class="bp-figure-caption">On the left, the sentence as the maintainers wrote it, with the file and line it came from. In the middle, the rule it became: the formula that is actually evaluated, typeset, with its plain reading under it. On the right, the verdict, stated as what it is: whether the code at each revision satisfies the formula or not. The second row resolves a general term, "from utils", to the package it means; the third turns one sentence into one rule per class it names.</p>
+<p class="bp-figure-caption">On the left, the sentence as the maintainers wrote it, with the file and line it came from. In the middle, the rule it became: the formula that is actually evaluated, typeset, with its plain reading under it. On the right, the verdict, stated as what it is: whether the code Striff checked at each revision satisfies the formula or not. The second row resolves a general term, "from utils", to the package it means; the third turns one sentence into one rule per class it names.</p>
 </div>
 
 ## The violation, as facts you can check
@@ -75,7 +75,7 @@ The documented rules are the headline; the diagram is the context for them. Ever
 <p class="bp-figure-title">Ericsson/ecchronos #1786 · framed on NodeWorker</p>
 <div class="bp-striff-stage" style="height:24rem">
 <span class="bp-striff-tag">ecchronos · PR #1786</span>
-<img src="/examples/ecchronos-1786.svg" alt="Striff structural diff of Ericsson/ecchronos PR #1786, framed on NodeWorker: its RepairScheduler field and calls removed, a SchemaRefresher field and constructor added" loading="lazy" style="width:2000px; transform: translate(-642px, -539px) scale(0.8);" />
+<img src="/examples/ecchronos-1786.svg#svgView(viewBox(6043,2391,1081,500))" alt="Striff structural diff of Ericsson/ecchronos PR #1786, framed on NodeWorker: its RepairScheduler field and calls removed, a SchemaRefresher field and constructor added" loading="lazy" style="width:max(100%, 51.9rem); aspect-ratio:1081/500; transform:translate(-50%, -50%);" />
 </div>
 <p class="bp-figure-caption">The real render for #1786, cropped to <code>NodeWorker</code>. The members it lost are marked, the <code>RepairScheduler</code> field among them, next to the <code>SchemaRefresher</code> it gained. The diagram shows what moved; the rule on the README says which of those moves your docs now disagree with.</p>
 </div>
@@ -94,27 +94,26 @@ Nobody at Ericsson wrote a rule for Striff. There is no rule file and no configu
 <div class="bp-flow-step"><span class="bp-flow-num">4</span><p class="bp-flow-title">Evaluate</p><p class="bp-flow-desc">Each query runs at both revisions. Only a break the change introduced counts against it.</p></div>
 <div class="bp-flow-step bp-flow-step--mint"><span class="bp-flow-num">5</span><p class="bp-flow-title">Narrate</p><p class="bp-flow-desc">A model phrases what was computed. It cannot add a finding.</p></div>
 </div>
-<p class="bp-figure-caption">The model proposes and the program decides. A proposed rule that names a class the parsed code does not contain never reaches evaluation, so the model cannot invent a violation by inventing a name. <a href="/blog/grounded-ai-findings">More on why the model is never the source of a claim</a>.</p>
+<p class="bp-figure-caption">The model proposes and the program decides. A proposed rule that names a class the parsed code does not contain never reaches evaluation, so the model cannot invent a violation by inventing a name. <a href="/blog/grounded-ai-findings">How every claim traces back to your docs or your code</a>.</p>
 </div>
 
-Every rule then gets one of five outcomes: **held**, **violated**, **pre-existing** (already broken before this change, and never blamed on it), **restored**, or **couldn't check**. The last one is the one that earns trust. Eleven of ecChronos's 39 rules could not be answered from a source parse, and they are reported as exactly that. None of them is quietly counted as a pass.
+Every rule Striff reports gets one of four outcomes: **held** (this change keeps it: nothing in this pull request breaks it), **violated** (broken by this change), **already broken** (broken in the code Striff checked, not by this change, and never blamed on it), or **restored** (broken before, true after). Striff only reports what it can verify from the code. A rule it cannot answer from a source parse is left out, never shown as passing.
 
 ## How often this fires
 
-Rarely, and that is the point. Across a scan of 74 public pull requests in 74 different repositories, run between 5 and 9 September, Striff evaluated 1,912 documented rules:
+Rarely, and that is the point. Across a scan of 74 public pull requests in 74 different repositories, run between 5 and 9 September, Striff checked 1,394 documented rules:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">1,912 documented-rule evaluations, 74 pull requests</p>
+<p class="bp-figure-title">1,394 documented-rule checks, 74 pull requests</p>
 <div class="bp-bars">
 <div class="bp-bar-row"><span class="bp-bar-label">Held</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:100%"></div></div><span class="bp-bar-value">1,344</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Couldn't check</span><div class="bp-bar-track"><div class="bp-bar" style="width:38.5%"></div></div><span class="bp-bar-value">518</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Pre-existing</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:3.6%"></div></div><span class="bp-bar-value">49</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Already broken</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:3.6%"></div></div><span class="bp-bar-value">49</span></div>
 <div class="bp-bar-row"><span class="bp-bar-label">Violated by the change</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:0.8%"></div></div><span class="bp-bar-value">1</span></div>
 </div>
-<p class="bp-figure-caption">The repositories were chosen because their docs said something checkable, so this is the rate on documented codebases, not on every codebase. The median pull request carried 17 rules and the largest carried 138. The one violation is the ecChronos rule above. One in 1,912 is what a check you can afford to read looks like: when it fires, it is an event.</p>
+<p class="bp-figure-caption">The repositories were chosen because their docs said something checkable, so this is the rate on documented codebases, not on every codebase. The one violation is the ecChronos rule above. One in 1,394 is what a check you can afford to read looks like: when it fires, it is an event.</p>
 </div>
 
-The 49 pre-existing rows are the other quiet result: rules a repository's own documentation states that its code already breaks. They are never blamed on the pull request in front of you, and they are never shown as a pass either. Whether the fix belongs in the code or in the sentence is the maintainer's call. The difference is that somebody now knows.
+The 49 already-broken rows are the other quiet result: rules a repository's own documentation states that were already broken in the code Striff checked, not by the pull request. They are never blamed on the pull request in front of you, and they are never shown as a pass either. Whether the fix belongs in the code or in the sentence is the maintainer's call. The difference is that somebody now knows.
 
 ## Writing docs that can be checked
 

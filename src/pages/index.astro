@@ -58,21 +58,14 @@ const heroLanguages = [
 ];
 
 
-/**
- * The document genre the catalogue admits, and what it deliberately refuses. Kept in sync
- * with `CatalogBuilder` in striff-api: the AI-instruction files were admitted in #278 after
- * an audit of the first external user found its layering rules living only in AGENTS.md.
- */
 
 
 
 
 /**
- * The pipeline, stage by stage. Kept honest against the ADRs it describes:
- * ADR-031 (which documents are catalogued), ADR-024 (the rule language),
- * ADR-032 (differential evaluation and the six-valued outcome), ADR-022
- * (fact-first surfacing) and ADR-033 (what a rendered item may say).
- * Two of six stages involve a model. Neither of them decides what is true.
+ * The pipeline, stage by stage: which documents are read, how a sentence becomes a rule,
+ * how a rule is evaluated at both revisions, and what a rendered item may say.
+ * Two of five stages involve a model. Neither of them decides what is true.
  */
 const pipeline = [
   {
@@ -93,7 +86,7 @@ const pipeline = [
   {
     kind: "symbolic",
     name: "Evaluate",
-    body: "The query runs against both revisions. A rule holds exactly when it returns nothing, and only a violation the change introduced is attributed to it."
+    body: "The query runs against both revisions. A rule is held when nothing in the pull request breaks it, and only a violation the change introduced is attributed to it."
   },
   {
     kind: "neural",
@@ -145,18 +138,6 @@ const reportRules = [
     doc: "docs/ARCHITECTURE.md",
     line: 461
   },
-  {
-    // Structural fact, checked at base d188eb1b33 and head 0288412016: RepairStateImpl
-    // never references AlarmPostUpdateHook at either revision; it reaches a hook only
-    // through the PostUpdateHook interface. The analysis itself filed this rule as
-    // unanswerable; it is shown as pre-existing here as a labelled example of that state.
-    verdict: "prior",
-    label: "Pre-existing",
-    quote: "Fires `AlarmPostUpdateHook` if repairs are overdue",
-    statement: "`RepairStateImpl` depends on `AlarmPostUpdateHook`",
-    doc: "core.impl/README.md",
-    line: 93
-  }
 ];
 
 /**
@@ -164,7 +145,7 @@ const reportRules = [
  * authors are invented. Every row got the same check; only the one that broke a rule
  * needs a senior's attention, which is the slide's point. Slide two quotes
  * the real lines 133-137 of ecchronos core.impl/README.md at head 0288412016 and the
- * check table as CheckRunFormatter writes it. Slide three is the real dashboard
+ * check table as the check writes it. Slide three is the real dashboard
  * component on the sample workspace /dashboard previews, labelled as an example.
  */
 const mgrPrs = [
@@ -185,7 +166,7 @@ const mgrSlides = [
   },
   {
     title: "You can point at a trend instead of an anecdote.",
-    body: "Documented rules broken and held, clean and high-risk PR rates, and the repositories collecting the most flags, month over month across everything your team owns. When you argue for time to fix something, you bring the chart rather than the feeling."
+    body: "Documented rules held, broken and already broken, the share of pull requests that broke none, and the repositories where rules break most, month over month across everything your team owns. When you argue for time to fix something, you bring the chart rather than the feeling."
   }
 ]
 
@@ -194,7 +175,7 @@ const plans = [
     eyebrow: "Free",
     icon: "globe",
     title: "Public repositories",
-    body: "Your documented rules and 14 structural checks on every public pull request, plus the browser extension for any public PR you visit.",
+    body: "Your documented rules checked on every public pull request, with a diagram of each change, plus the browser extension for any public PR you visit.",
     price: "$0",
     priceDetail: "forever"
   },
@@ -202,7 +183,7 @@ const plans = [
     eyebrow: "Starter",
     icon: "team",
     title: "One team's private repos",
-    body: "Your documented rules and 14 structural checks on every private pull request, for one team\u2019s repositories.",
+    body: "Your documented rules checked on every private pull request, with a diagram of each change, for one team\u2019s repositories.",
     price: "$29",
     priceDetail: "/mo · 5 repos"
   },
@@ -220,7 +201,7 @@ const plans = [
 
 <BaseLayout
   title="Striff - Your documented architecture, checked on every pull request"
-  description="Striff reads your AGENTS.md, ADRs and architecture docs, turns each sentence about the code into a checkable rule, and answers it on every GitHub pull request. Plus fourteen structural checks and a diagram of what changed."
+  description="Striff reads your AGENTS.md, ADRs and architecture docs, turns each sentence about the code into a checkable rule, and answers it on every GitHub pull request, with a diagram of what changed and review notes on the components it touched."
   canonical="https://striff.io/"
   ogImage="https://striff.io/og-image.png"
 >
@@ -267,20 +248,18 @@ const plans = [
               </span>
               <span class="hcc-spacer"></span>
               <a class="hcc-chip hcc-chip-link" href="https://github.com/Ericsson/ecchronos/pull/1786" target="_blank" rel="noopener noreferrer">PR #1786</a>
-              <span class="hcc-chip hcc-chip-muted">6 documents read</span>
               <span class="hcc-chip hcc-chip-muted">Java</span>
             </header>
 
             <div class="hcc-banner">
               <span class="hcc-banner-dot" aria-hidden="true"></span>
               <p class="hcc-banner-text">
-                <strong>One of the 29 rules Striff could check in this repository&rsquo;s own docs no longer holds.</strong>
-                <span>Nothing was configured. Striff catalogued 6 documents, turned their sentences into rules, and checked every one against both revisions.</span>
+                <strong>One of the 28 rules Striff checked in this repository&rsquo;s own docs no longer holds.</strong>
+                <span>Nothing was configured. Striff read the repository&rsquo;s documents, turned their sentences into rules, and checked them against both revisions.</span>
               </p>
               <span class="hcc-tally">
                 <span class="hcc-tally-item hcc-tally-violated"><b>1</b><i>violated</i></span>
                 <span class="hcc-tally-item hcc-tally-held"><b>27</b><i>held</i></span>
-                <span class="hcc-tally-item hcc-tally-prior"><b>1</b><i>pre-existing</i></span>
               </span>
             </div>
 
@@ -415,7 +394,14 @@ const plans = [
 
                     <div class="ghc-stack">
                       <section>
-                        <h3 class="ghc-h3-lead">Documented Rules <span class="ghc-h3-meta">29 checked &middot; 27 held &middot; 1 violated &middot; 1 pre-existing</span></h3>
+                        <h3>Top Review Items</h3>
+                        <ul>
+                          <li><strong>📄 Doc conflict</strong>: <code>NodeWorker</code> no longer depends on <code>RepairScheduler</code>, which <code>core.impl/README.md</code> line 136 says it calls. It did at the base revision.</li>
+                        </ul>
+                      </section>
+
+                      <section>
+                        <h3 class="ghc-h3-lead">Documented Rules <span class="ghc-h3-meta">28 rules checked &middot; 27 held &middot; 1 violated</span></h3>
                         <ul class="rulelist">
                           {reportRules.map((r) => (
                             <li class={`rulerow rulerow-${r.verdict}`}>
@@ -430,29 +416,10 @@ const plans = [
                             </li>
                           ))}
                         </ul>
-                        <p class="rulelist-more">5 of 29 shown</p>
-                      </section>
-
-                      <section>
-                        <h3>Structural Checks <span class="ghc-h3-meta">14 checks &middot; 5 flagged &middot; 9 clean</span></h3>
-                        <ul class="ghc-checks">
-                            <li class="is-flag"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Component scope</span><span class="ghc-checks-result">3 flagged</span></li>
-                            <li class="is-flag"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Public contract stability</span><span class="ghc-checks-result">2 flagged</span></li>
-                            <li class="is-flag"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Class-level coupling knots</span><span class="ghc-checks-result">1 flagged</span></li>
-                            <li class="is-flag"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Boundary crossings</span><span class="ghc-checks-result">1 flagged</span></li>
-                            <li class="is-flag"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg><span class="ghc-checks-name">Package cycles</span><span class="ghc-checks-result">1 flagged</span></li>
-                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Cycle seeds</span><span class="ghc-checks-result">clean</span></li>
-                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Module boundaries</span><span class="ghc-checks-result">clean</span></li>
-                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Production &rarr; test edges</span><span class="ghc-checks-result">clean</span></li>
-                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Abstraction contracts</span><span class="ghc-checks-result">clean</span></li>
-                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Tests for changed contracts</span><span class="ghc-checks-result">clean</span></li>
-                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Interface downgrades</span><span class="ghc-checks-result">clean</span></li>
-                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Encapsulation</span><span class="ghc-checks-result">clean</span></li>
-                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Hub formation</span><span class="ghc-checks-result">clean</span></li>
-                            <li class=""><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z"/></svg><span class="ghc-checks-name">Type relocations</span><span class="ghc-checks-result">clean</span></li>
-                        </ul>
+                        <p class="rulelist-more">4 of 28 shown</p>
                       </section>
                     </div>
+                    <p>The check also carries the architecture diagram of this change, <a href="#diagram">shown below</a>.</p>
                   </div>
                 </section>
               </div>
@@ -472,7 +439,7 @@ const plans = [
           <p class="examples-kicker">The diagram</p>
           <h2 class="mt-3 text-balance">Every pull request gets a structural diff diagram.</h2>
           <p class="section-subcopy mt-4">
-            The classes a change touched, what each one gained and lost, and how they connect at both revisions, so you can see the shape of a change you didn&rsquo;t write. <strong>Green was added, red was removed, and each finding is pinned to the class it is about.</strong>
+            The classes a change touched, what each one gained and lost, and how they connect at both revisions, so you can see the shape of a change you didn&rsquo;t write. <strong>Green was added, red was removed and blue changed.</strong>
           </p>
           <a class="oss-link" href="https://github.com/hadi-technology/striff-lib" target="_blank" rel="noopener noreferrer">
             <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -488,7 +455,7 @@ const plans = [
                 <span class="hero-context-chip">Ericsson/ecchronos</span>
                 <span class="hero-context-chip hero-context-chip-muted">PR #1786</span>
                 <span class="hero-context-chip hero-context-chip-muted">Java</span>
-                <span class="hero-context-chip hero-context-chip-danger">3 HIGH · 5 MEDIUM</span>
+                <span class="hero-context-chip hero-context-chip-danger">1 rule broken</span>
               </div>
               <div class="hero-stage-actions">
                 <!-- The stage invites scroll-to-zoom and drag-to-pan, so it needs the same way
@@ -500,12 +467,14 @@ const plans = [
             <div class="hero-diagram-wrap">
               <!-- Framing is constrained on the right, where the findings overlay covers ~416px
                    on desktop: the area worth looking at has to land in the band left of it, or
-                   the diagram looks cropped at random. Re-tune both axes together. -->
+                   the diagram looks cropped at random. The crop is the view fragment on the image URL,
+                   and the stage CSS keeps the image box at that fragment's aspect: re-tune both
+                   together. -->
               <div
                 class="github-diff-stage example-diff-stage hero-diagram-stage is-static"
               >
                 <img
-                  src="/examples/ecchronos-1786-history.svg"
+                  src="/examples/ecchronos-1786.svg#svgView(viewBox(420,2450,2056,945))"
                   alt="Striff structural diff of Ericsson/ecchronos PR #1786, framed on the repair history package: RepairHistoryService and RepairSessionImpl with added members in green, changed ones in blue, and the old newSession(...) form removed in red"
                   class="github-diff-graphic github-diff-image"
                   loading="eager"
@@ -523,30 +492,16 @@ const plans = [
                      so there is no open-then-collapse flash on a phone. -->
                 <div class="hero-findings-overlay" data-findings-overlay>
                   <button class="hero-findings-toggle" type="button" data-findings-toggle>
-                    <span class="hero-findings-badge">3 findings · HIGH risk</span>
+                    <span class="hero-findings-badge">1 documented rule broken</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hero-findings-chevron"><path d="M6 9l6 6 6-6"/></svg>
                   </button>
                   <div class="hero-findings-panel">
                     <div class="hero-findings-list">
                       <div class="ai-finding ai-finding-danger">
-                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
+                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>Rule</span>
                         <div>
                           <strong>The README no longer matches the code</strong>
                           <p><code>core.impl/README.md</code> says <code>NodeWorker</code> calls <code>RepairScheduler</code>. After this PR, it doesn&rsquo;t.</p>
-                        </div>
-                      </div>
-                      <div class="ai-finding ai-finding-danger">
-                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
-                        <div>
-                          <strong>New dependency cycle</strong>
-                          <p><code>multithreads</code> and <code>repair</code> now depend on each other.</p>
-                        </div>
-                      </div>
-                      <div class="ai-finding ai-finding-danger">
-                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>HIGH</span>
-                        <div>
-                          <strong>Public method changed</strong>
-                          <p><code>RepairHistory.newSession(…)</code> changed its signature, and 11 classes depend on <code>RepairHistory</code>.</p>
                         </div>
                       </div>
                     </div>
@@ -664,7 +619,6 @@ const plans = [
                               </tbody>
                             </table>
                           </div>
-                          <p class="ghr-foot">11 further rules were read but could not be checked against this codebase.</p>
                         </div>
                       </div>
                     </div>
@@ -783,15 +737,15 @@ const plans = [
         <div class="faq-list" data-reveal>
           <details class="faq-item">
             <summary class="faq-q">How does Striff know what my architecture is supposed to look like?</summary>
-            <p class="faq-a"><strong>You already wrote it down.</strong> Striff catalogues the documents in your repository that make claims about the code, turns each of those sentences into a rule it can evaluate, and answers it against the model your pull request produces, quoting the sentence and linking the file it came from. <em>Nothing is configured and no rule format is invented:</em> your documentation is the rulebook. Underneath that, <strong>fourteen deterministic structural checks</strong> run on every PR whether or not you have a single doc, flagging the regressions that are almost never intentional: new dependency cycles, first-ever dependency directions between packages, a component reaching into a namespace it had never touched, a public contract changing with no test. Every one of the fourteen is listed in the Check with its own result, <em>whether it fired or not</em>.</p>
+            <p class="faq-a"><strong>You already wrote it down.</strong> Striff catalogues the documents in your repository that make claims about the code, turns each of those sentences into a rule it can evaluate, and answers it against the model your pull request produces, quoting the sentence and linking the file it came from. <em>Nothing is configured and no rule format is invented:</em> your documentation is the rulebook. A rule can be as plain as where a class lives or as sharp as <em>&ldquo;the domain module must not depend on infrastructure&rdquo;</em>. Alongside the rules, every pull request gets a <strong>diagram of what changed</strong> and <strong>review notes</strong> on the components it touched. If your docs make no checkable claim about the code, Striff says so rather than inventing rules of its own.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">What languages does Striff support?</summary>
-            <p class="faq-a">The structural checks and the diagram run on <strong>Java, TypeScript, Python and C#</strong>. Striff parses source into a full structural model with its own parser, not regex or text matching, so references, inheritance and coupling resolve the way a compiler sees them. Documented rules are further along on some of those than others: <strong>Java and C# are production-ready</strong>, Python extracts rules from your docs but cannot yet answer all of them, and TypeScript is still being proven out. <em>We would rather say that here than have you install and find out.</em> Go is coming.</p>
+            <p class="faq-a">The diagram runs on <strong>Java, TypeScript, Python and C#</strong>. Striff parses source into a full structural model with its own parser, not regex or text matching, so references, inheritance and dependencies resolve the way a compiler sees them. Documented rules are further along on some of those than others: <strong>Java and C# are production-ready</strong>, Python extracts rules from your docs but cannot yet answer all of them, and TypeScript is still being proven out. <em>We would rather say that here than have you install and find out.</em> Go is coming.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">Is it just an LLM wrapper?</summary>
-            <p class="faq-a"><strong>No, and the architecture is the answer.</strong> Every finding is produced by <em>deterministic</em> analysis of the structure your change actually creates: the parser builds a model of both revisions, the checks are queries over that model, and a documented rule holds exactly when its query returns nothing. The model is <strong>fact-gated</strong>, which means it can rank findings, explain them and write the summary of what your PR did structurally, but it <em>cannot originate one, rename one, or turn "could not answer" into a pass.</em> That last constraint is why a rule Striff cannot evaluate is reported as unanswered instead of quietly counted as green.</p>
+            <p class="faq-a"><strong>No, and the architecture is the answer.</strong> Every verdict is produced by <em>deterministic</em> analysis of the structure your change actually creates: the parser builds a model of both revisions, each documented rule is a query over that model, and a rule is held when nothing in the pull request breaks it. The model is <strong>fact-gated</strong>, which means it can rank findings, explain them and write the summary of what your PR did structurally, but it <em>cannot originate one, rename one, or turn "could not answer" into a pass.</em> That last constraint is why a rule Striff cannot answer from the code is left out of the results instead of quietly counted as green.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">Will it slow down or block my pull requests?</summary>

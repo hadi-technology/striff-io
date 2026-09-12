@@ -36,7 +36,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
           <p class="mt-1 text-sm text-slate-500">Public repositories</p>
           <ul class="mt-5 space-y-2 text-sm text-slate-600">
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Your documented rules, read and checked on every PR</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> 14 structural checks on every PR</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> AI review notes on the components each PR changes</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Architecture diagram of every change</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Metrics dashboard</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Browser extension for any public PR</li>
@@ -57,7 +57,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
           <p class="mt-1 text-sm text-slate-500">Up to 5 active repos. Sized for one team.</p>
           <ul class="mt-5 space-y-2 text-sm text-slate-600">
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Checks on every private PR</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Your documented rules, plus 14 structural checks</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Your documented rules, the diagram and review notes</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Metrics dashboard</li>
           </ul>
           <a href={githubInstallUrl} class="btn-secondary mt-auto inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install the GitHub App</a>
@@ -98,7 +98,7 @@ const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
           <h3 class="mt-1 text-xl font-bold text-slate-950">50+ repos, self-hosted, or compliance needs</h3>
           <p class="mt-1 text-sm text-slate-600">Private deployment, SSO, audit workflows, and dedicated support.</p>
           <!-- Crossing the Scale cap holds billing at Scale rather than escalating or failing
-               (ActiveRepoTierSyncJob leaves the price alone above 50). That is the answer to
+               (billing leaves the price alone above 50). That is the answer to
                "what happens if we outgrow the top plan", so it belongs on the page. -->
           <p class="mt-2 text-sm text-slate-500">Go past 50 active repos and you stay at $149 while we get in touch to work out a plan that fits. Nothing changes without a conversation.</p>
         </div>

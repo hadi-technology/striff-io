@@ -1,6 +1,7 @@
-// Renders the org-level manager metrics dashboard (structural regressions, review hotspots, PRs
-// analyzed, flagged repos over time) for one GitHub App installation. Purely presentational --
-// the parent (Dashboard.tsx) owns fetching from metrics-proxy and passes the result down.
+// Renders the org-level manager metrics dashboard (documented rules broken, held and already
+// broken, PRs that broke no rule, PRs analyzed, coverage, most-flagged repos) for one GitHub App
+// installation. Purely presentational -- the parent (Dashboard.tsx) owns fetching from
+// metrics-proxy and passes the result down.
 import { createElement } from "react";
 import {
   ResponsiveContainer,
@@ -14,7 +15,7 @@ import {
   ReferenceLine,
 } from "recharts";
 
-export interface RepoHotspot {
+export interface FlaggedRepo {
   repoOwner: string;
   repoName: string;
   flaggedCount: number;
@@ -29,27 +30,33 @@ export interface FlaggedPr {
   // pattern as prCheckWebhooksReceivedCount below) -- render the row without a title rather than
   // breaking on it.
   pullTitle?: string;
-  regressionCount: number;
-  hotspotCount: number;
-  // Optional: older backend deploys don't send documented-rule counts yet (same schema-drift pattern).
+  // How many documented rules this PR broke. Optional: older backend deploys don't send it.
   docRuleViolationCount?: number;
+  // Still sent by the API for compatibility, never rendered: every flag now comes from a
+  // documented rule, so docRuleViolationCount carries the signal on its own.
+  regressionCount?: number;
+  hotspotCount?: number;
   createdAtMs: number;
 }
 
 export interface MonthlyMetrics {
   yearMonth: string;
-  structuralRegressionCount: number;
-  reviewHotspotCount: number;
   prsAnalyzedCount: number;
+  // PRs that broke no documented rule (and had nothing else flagged).
   cleanPrCount: number;
-  highRiskPrCount: number;
   prCheckWebhooksReceivedCount: number;
-  // Optional for the same reason: documented-rule verdict counts per month (ADR-019 step 4).
+  // Documented-rule verdict counts per month. Optional: older backend deploys don't send them.
   docRulesHeldCount?: number;
   docRulesViolatedCount?: number;
   docRulesPreExistingCount?: number;
-  topFlaggedRepos: RepoHotspot[];
+  topFlaggedRepos: FlaggedRepo[];
   recentFlaggedPrs: FlaggedPr[];
+  // Still sent by the API for compatibility, never rendered. Past months hold values from before
+  // every flag came from a documented rule, so charting them would show a change of method as a
+  // trend.
+  structuralRegressionCount?: number;
+  reviewHotspotCount?: number;
+  highRiskPrCount?: number;
 }
 
 export interface ActiveRepo {
@@ -70,7 +77,7 @@ export interface OrgMetricsData {
 const MAX_HISTORY_MONTHS = 6;
 
 // "up" means an increasing value is the improvement (clean rate, coverage); "down" means a
-// decreasing value is the improvement (regressions, hotspots, high-risk rate). Metrics with no
+// decreasing value is the improvement (rules broken, rules already broken). Metrics with no
 // inherent direction (PR volume) pass undefined and render a neutral, uncolored arrow.
 type Direction = "up" | "down";
 
@@ -90,7 +97,7 @@ const TOOLTIP_TONE_CLASS: Record<"good" | "bad" | "neutral", string> = {
   neutral: "tone-neutral",
 };
 
-// Cycled per repo line/legend entry in the "flagged repos over time" chart -- distinct enough at
+// Cycled per repo line/legend entry in the "most-flagged repos over time" chart -- distinct enough at
 // a glance without trying to carry the good/bad semantics the single-metric charts use.
 const REPO_PALETTE = ["#2563eb", "#dc2626", "#059669", "#d97706", "#7c3aed", "#0891b2", "#db2777", "#65a30d"];
 
@@ -300,9 +307,9 @@ export default function MetricsTab({
     );
   }
 
-  // Defends against an API response that predates ADR-020 (backend deployed after this frontend,
-  // or briefly out of sync during rollout) -- without this, `.length` on a missing field throws
-  // and blanks the whole tab instead of just omitting the new cards' data.
+  // Defends against an API response that predates a newer field (backend deployed after this
+  // frontend, or briefly out of sync during rollout) -- without this, `.length` on a missing field
+  // throws and blanks the whole tab instead of just omitting the new cards' data.
   // A backend that predates documented-rule counts sends none of these fields at all -- show "no data"
   // on those cards rather than a misleading zero, the same way Coverage handles its field.
   const hasDocData = data.months.some((m) => m.docRulesHeldCount !== undefined || m.docRulesViolatedCount !== undefined);
@@ -318,13 +325,12 @@ export default function MetricsTab({
   const latest = months[months.length - 1];
   const latestMonthLabel = shortMonthYear(latest.yearMonth);
 
-  // cleanPrCount/highRiskPrCount come back as counts (same shape as every other backend field --
-  // see MonthlyMetricsDto), not rates. Rate is a display concern, so it's derived here rather
-  // than asking the backend to duplicate the same division per month.
+  // cleanPrCount comes back as a count (same shape as every other backend field), not a rate. Rate
+  // is a display concern, so it's derived here rather than asking the backend to duplicate the
+  // same division per month.
   const cleanPrRate = (m: MonthlyMetrics) => ratePct(m.cleanPrCount, m.prsAnalyzedCount);
-  const highRiskPrRate = (m: MonthlyMetrics) => ratePct(m.highRiskPrCount, m.prsAnalyzedCount);
   // Coverage divides by webhooks *received*, not PRs analyzed -- the denominator here is the count
-  // of PR-check webhook events GitHub sent, independent of whether analysis completed. See ADR-020.
+  // of PR-check webhook events GitHub sent, independent of whether analysis completed.
   const coverageRate = (m: MonthlyMetrics) => ratePct(m.prsAnalyzedCount, m.prCheckWebhooksReceivedCount);
   // "Checked" is held + violated + pre-existing: rules Striff could not answer are not in the backend
   // counts at all, so the rate is over rules that actually got a verdict.
@@ -336,15 +342,20 @@ export default function MetricsTab({
   // number sitting on top of a 6-month chart read ambiguously otherwise. Rate cards can't just sum
   // monthly percentages (that's not a valid average), so they re-derive the rate from summed counts
   // across the window instead -- the same weighted-average approach the backend would use.
-  const sumField = (field: keyof MonthlyMetrics) => months.reduce((total, m) => total + (m[field] as number), 0);
-  const windowRegressions = sumField("structuralRegressionCount");
-  const windowHotspots = sumField("reviewHotspotCount");
+  // Only the fields this tab renders are summable, so it can never come to depend on the legacy
+  // fields the API still sends for compatibility.
+  type SummedField =
+    | "prsAnalyzedCount"
+    | "cleanPrCount"
+    | "prCheckWebhooksReceivedCount"
+    | "docRulesHeldCount"
+    | "docRulesViolatedCount"
+    | "docRulesPreExistingCount";
+  const sumField = (field: SummedField) => months.reduce((total, m) => total + (m[field] ?? 0), 0);
   const windowPrsAnalyzed = sumField("prsAnalyzedCount");
   const windowCleanPrs = sumField("cleanPrCount");
-  const windowHighRiskPrs = sumField("highRiskPrCount");
   const windowWebhooksReceived = sumField("prCheckWebhooksReceivedCount");
   const windowCleanPrRate = ratePct(windowCleanPrs, windowPrsAnalyzed);
-  const windowHighRiskPrRate = ratePct(windowHighRiskPrs, windowPrsAnalyzed);
   const windowCoverageRate = ratePct(windowPrsAnalyzed, windowWebhooksReceived);
   const windowDocHeld = sumField("docRulesHeldCount");
   const windowDocViolated = sumField("docRulesViolatedCount");
@@ -358,7 +369,6 @@ export default function MetricsTab({
   const series = months.map((m, i) => ({
     ...m,
     cleanPrRate: cleanPrRate(m),
-    highRiskPrRate: highRiskPrRate(m),
     coverageRate: coverageRate(m),
     docHeldRate: docHeldRate(m),
     __idx: i,
@@ -372,7 +382,7 @@ export default function MetricsTab({
   // Union of every repo that cracked a month's top-flagged list anywhere in the window -- since
   // topFlaggedRepos is a per-month top-N, a reshuffling top spot can surface more than N distinct
   // repos across 6 months even though no single month ever lists more than its own top few.
-  const repoMeta = new Map<string, RepoHotspot>();
+  const repoMeta = new Map<string, FlaggedRepo>();
   months.forEach((m) => m.topFlaggedRepos.forEach((r) => repoMeta.set(repoKey(r), r)));
   const repoTotals = new Map<string, number>();
   months.forEach((m) =>
@@ -388,14 +398,26 @@ export default function MetricsTab({
     return row;
   });
 
-  // Config array of cards: adding a metric later is a one-entry addition here (plus the matching
+  // The latest month's flagged PRs, ranked by how many documented rules each broke (most first,
+  // then most recent). A row with no broken rule is left out: the rule count is the only thing
+  // this list reports, and a flag without one predates rule-derived flags.
+  const rulePrs = latest.recentFlaggedPrs
+    .filter((pr) => (pr.docRuleViolationCount ?? 0) > 0)
+    .sort((a, b) => (b.docRuleViolationCount ?? 0) - (a.docRuleViolationCount ?? 0) || b.createdAtMs - a.createdAtMs);
+
+  const noDocData = <p className="dashboard-metric-caption">No documented-rule data yet for this installation</p>;
+
+  // Config arrays of cards: adding a metric later is a one-entry addition here (plus the matching
   // backend field) rather than a rewrite of this component.
-  const METRIC_CARDS: { key: string; label: string; description: string; wide?: boolean; render: () => any }[] = [
+  type MetricCard = { key: string; label: string; description: string; wide?: boolean; render: () => any };
+
+  // Documented rules lead the tab: every flag on it comes from one.
+  const RULE_CARDS: MetricCard[] = [
     {
       key: "docViolated",
       label: "Documented rules broken",
       description:
-        "Rules from your own documentation that a pull request broke: true before the change, false after it. The check quotes the sentence and the line it came from. Rules already broken before a PR are counted separately as pre-existing and never charged to it.",
+        "Rules from your own documentation that a pull request broke: true before the change, false after it. The check quotes the sentence and the line it came from. Rules already broken before a PR are counted separately and never charged to it.",
       render: () =>
         hasDocData ? (
           <>
@@ -405,61 +427,48 @@ export default function MetricsTab({
             <MetricChart data={series} dataKey="docRulesViolatedCount" color="var(--danger)" direction="down" />
           </>
         ) : (
-          <p className="dashboard-metric-caption">No documented-rule data yet for this installation</p>
+          noDocData
         ),
     },
     {
       key: "docHeld",
       label: "Documented rules held",
       description:
-        "Share of documented-rule checks that held across every PR in the window. Checked is held plus broken plus pre-existing; rules Striff could not answer are left out rather than counted as a pass.",
+        "Share of documented-rule checks where the pull request kept the rule: nothing in it broke the rule. Checked is held plus broken plus already broken; rules Striff could not answer are left out rather than counted as a pass.",
       render: () =>
         hasDocData ? (
           <>
             <div className="dashboard-metric-value-row">
               <span className="dashboard-metric-value">{windowDocHeldRate}%</span>
             </div>
-            <p className="dashboard-metric-value-caption">
-              {windowDocChecked} checked &middot; {windowDocPreExisting} pre-existing
-            </p>
+            <p className="dashboard-metric-value-caption">{windowDocChecked} checked</p>
             <MetricChart data={series} dataKey="docHeldRate" color="var(--mint)" direction="up" formatValue={(v) => `${v}%`} />
           </>
         ) : (
-          <p className="dashboard-metric-caption">No documented-rule data yet for this installation</p>
+          noDocData
         ),
     },
     {
-      key: "regressions",
-      label: "Regressions flagged",
+      key: "docPreExisting",
+      label: "Documented rules already broken",
       description:
-        "A high-severity structural break Striff traced directly to this PR -- a new dependency cycle, a first-ever boundary crossing, a stable component's contract shifting, or a documented rule the change broke. Deliberately rare: most PRs show zero.",
-      render: () => (
-        <>
-          <div className="dashboard-metric-value-row">
-            <span className="dashboard-metric-value">{windowRegressions}</span>
-          </div>
-          <MetricChart data={series} dataKey="structuralRegressionCount" color="var(--danger)" direction="down" />
-        </>
-      ),
-    },
-    {
-      key: "hotspots",
-      label: "Hotspots flagged",
-      description:
-        "A lower-severity finding worth a second look -- a component reaching into a namespace it never used, a hub forming, a contract widening -- that doesn't rise to a structural regression. Usually zero or one per PR.",
-      render: () => (
-        <>
-          <div className="dashboard-metric-value-row">
-            <span className="dashboard-metric-value">{windowHotspots}</span>
-          </div>
-          <MetricChart data={series} dataKey="reviewHotspotCount" color="var(--brand)" direction="down" />
-        </>
-      ),
+        "Rules your documentation states that were already broken in the code Striff checked, not by the pull request that checked them. Reported so they are never mistaken for a pass, and never charged to that pull request.",
+      render: () =>
+        hasDocData ? (
+          <>
+            <div className="dashboard-metric-value-row">
+              <span className="dashboard-metric-value">{windowDocPreExisting}</span>
+            </div>
+            <MetricChart data={series} dataKey="docRulesPreExistingCount" color="#d97706" direction="down" />
+          </>
+        ) : (
+          noDocData
+        ),
     },
     {
       key: "cleanRate",
-      label: "Clean PR rate",
-      description: "Share of analyzed pull requests with nothing flagged -- no regression, no hotspot and no documented rule broken -- over the last 6 months.",
+      label: "PRs that broke no rule",
+      description: "Share of analyzed pull requests that broke none of your documented rules, over the last 6 months.",
       render: () => (
         <>
           <div className="dashboard-metric-value-row">
@@ -469,23 +478,13 @@ export default function MetricsTab({
         </>
       ),
     },
-    {
-      key: "highRiskRate",
-      label: "High-risk PR rate",
-      description: "Share of analyzed pull requests with at least one regression flagged, the more severe finding type, over the last 6 months.",
-      render: () => (
-        <>
-          <div className="dashboard-metric-value-row">
-            <span className="dashboard-metric-value">{windowHighRiskPrRate}%</span>
-          </div>
-          <MetricChart data={series} dataKey="highRiskPrRate" color="var(--danger)" direction="down" formatValue={(v) => `${v}%`} />
-        </>
-      ),
-    },
+  ];
+
+  const ACTIVITY_CARDS: MetricCard[] = [
     {
       key: "prs",
       label: "PRs analyzed",
-      description: "Total pull requests Striff reviewed for architecture across every active repo in this installation.",
+      description: "Total pull requests Striff checked across every active repo in this installation.",
       render: () => (
         <>
           <div className="dashboard-metric-value-row">
@@ -501,8 +500,8 @@ export default function MetricsTab({
       description:
         "Share of GitHub PR-check webhook events (opened, updated, reopened) that completed analysis, over the last 6 months. Below 100% may mean PRs were skipped -- check billing status or repo connection.",
       render: () => {
-        // Months before this metric shipped have no webhook-receipt data at all (ADR-020 has no
-        // backfill, matching ADR-019's precedent) -- show "no data" rather than a misleading 0%.
+        // Months before this metric shipped have no webhook-receipt data at all (there is no
+        // backfill) -- show "no data" rather than a misleading 0%.
         const hasData = windowWebhooksReceived > 0;
         return (
           <>
@@ -520,9 +519,9 @@ export default function MetricsTab({
     },
     {
       key: "repoTrend",
-      label: "Flagged repos over time",
+      label: "Most-flagged repos over time",
       description:
-        "Every repo that has cracked the top-flagged list at any point in the last 6 months, tracked month by month. A repo can show a lower or zero count in months it wasn't flagged enough to be in that month's own top list -- more than one repo commonly appears here as the top spot reshuffles across months.",
+        "Every repo that has been among a month's most-flagged at any point in the last 6 months, tracked month by month. A flag is a documented rule one of the repo's pull requests broke. A repo can show a lower or zero count in months it wasn't in that month's own top list.",
       wide: true,
       render: () => {
         if (orderedRepoKeys.length === 0) {
@@ -584,19 +583,19 @@ export default function MetricsTab({
     },
     {
       key: "recentFlagged",
-      label: "Recently flagged PRs",
+      label: "PRs that broke a rule",
       description:
-        "The 10 most recent pull requests this month with a structural regression, a review hotspot or a broken documented rule -- click through to see exactly what was flagged.",
+        "This month's recent pull requests that broke at least one documented rule, the most rules broken first -- click through to see each rule and the sentence it came from.",
       wide: true,
       render: () => (
         <>
           <p className="dashboard-metric-value-caption">{latestMonthLabel}</p>
-          {latest.recentFlaggedPrs.length > 0 ? (
+          {!hasDocData ? (
+            noDocData
+          ) : rulePrs.length > 0 ? (
             <ul className="dashboard-metric-pr-list">
-              {latest.recentFlaggedPrs.map((pr) => {
-                const isRegression = pr.regressionCount > 0;
+              {rulePrs.map((pr) => {
                 const ruleCount = pr.docRuleViolationCount ?? 0;
-                const hasStructural = pr.regressionCount > 0 || pr.hotspotCount > 0;
                 return (
                   <li key={pr.pullUrl} className="dashboard-metric-pr-row">
                     <div className="dashboard-metric-pr-main">
@@ -611,30 +610,27 @@ export default function MetricsTab({
                       {pr.pullTitle && <p className="dashboard-metric-pr-title truncate">{pr.pullTitle}</p>}
                     </div>
                     <span className="dashboard-metric-pr-badges">
-                      {ruleCount > 0 && (
-                        <span className="dashboard-metric-pr-badge is-rule">
-                          {ruleCount} rule{ruleCount === 1 ? "" : "s"} broken
-                        </span>
-                      )}
-                      {hasStructural && (
-                        <span className={`dashboard-metric-pr-badge ${isRegression ? "is-regression" : "is-hotspot"}`}>
-                          {isRegression
-                            ? `${pr.regressionCount} regression${pr.regressionCount === 1 ? "" : "s"}`
-                            : `${pr.hotspotCount} hotspot${pr.hotspotCount === 1 ? "" : "s"}`}
-                        </span>
-                      )}
+                      <span className="dashboard-metric-pr-badge is-rule">
+                        {ruleCount} rule{ruleCount === 1 ? "" : "s"} broken
+                      </span>
                     </span>
                   </li>
                 );
               })}
             </ul>
           ) : (
-            <p className="dashboard-metric-caption">No flagged PRs this month</p>
+            <p className="dashboard-metric-caption">No pull request broke a documented rule this month</p>
           )}
         </>
       ),
     },
   ];
+
+  const renderCard = (card: MetricCard) => (
+    <MetricCardShell key={card.key} label={card.label} description={card.description} wide={card.wide}>
+      {card.render()}
+    </MetricCardShell>
+  );
 
   return (
     <div>
@@ -642,13 +638,10 @@ export default function MetricsTab({
         <span className="dashboard-metric-window-title">Last {months.length} month{months.length === 1 ? "" : "s"}</span>
         <span className="dashboard-metric-window-range">{rangeLabel}</span>
       </div>
-      <div className="dashboard-metric-grid">
-        {METRIC_CARDS.map((card) => (
-          <MetricCardShell key={card.key} label={card.label} description={card.description} wide={card.wide}>
-            {card.render()}
-          </MetricCardShell>
-        ))}
-      </div>
+      <p className="dashboard-metric-section-title is-first">Documented rules</p>
+      <div className="dashboard-metric-grid">{RULE_CARDS.map(renderCard)}</div>
+      <p className="dashboard-metric-section-title">Pull requests</p>
+      <div className="dashboard-metric-grid">{ACTIVITY_CARDS.map(renderCard)}</div>
     </div>
   );
 }

@@ -1,8 +1,8 @@
 // Shared by the homepage hero and the flagship blog post, so the two can never drift.
 
 /**
- * The hero check card: three of the thirty-nine rules Striff read out of ecchronos'
- * own documents and answered on PR #1786. Verified by hand against both revisions at
+ * The hero check card: three of the 28 rules Striff checked from ecchronos'
+ * own documents on PR #1786. Verified by hand against both revisions at
  * base d188eb1b33 and head 0288412016 before being put on the page.
  *
  *  - Violated is a real differential result. `NodeWorker.java` imports and calls
@@ -16,19 +16,19 @@
  *    reference. Both were confirmed in source: ConnectionType.java:15 declares the
  *    package, VnodeRepairTask.java:52 and IncrementalRepairTask.java:43 extend RepairTask.
  *
- * The mix is not curated for drama. Across 1,912 documented-rule outcomes in our own
- * sample the split runs about 70% held, 27% unanswered, 2% pre-existing and well under
- * 1% violated, which is why the tally shows all four numbers rather than one.
+ * The mix is not curated for drama. Striff reports only what it can verify: on #1786 it
+ * checked 28 rules, 27 held and 1 violated, and the tallies show exactly those. A rule it
+ * could not answer from the code is left out rather than shown as passing.
  */
 
 /*
  * Each row also carries the sentence's formal rule, typeset as first-order logic. It is
- * the rule-language query (striff-api ADR-024) read as a formula: refs(x, y, k) is a
+ * the rule-language query (Striff's rule language) read as a formula: refs(x, y, k) is a
  * reference of any kind k, "expect: true" becomes an existential over it, a placement
  * rule is set membership, and a family sentence ("A / B are subclasses") is a universal
  * over the named members, exactly the one-rule-per-member expansion the extractor does.
  * The stored verdicts keep the statement, not the query, so these are written from the
- * statements in ADR-024's shapes. base/head: is the formula satisfied at each revision.
+ * statements in the rule language's shapes. base/head: is the formula satisfied at each revision.
  */
 
 /** The two revisions of Ericsson/ecchronos #1786 every rule was evaluated at. */

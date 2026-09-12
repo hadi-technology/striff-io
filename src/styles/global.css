@@ -1546,14 +1546,18 @@
     font-weight: 700;
   }
 
-  .dashboard-metric-pr-badge.is-regression {
-    color: var(--danger);
-    background: rgba(220, 38, 38, 0.1);
+  /* Groups the metric cards: documented rules first, then pull-request volume and coverage. */
+  .dashboard-metric-section-title {
+    margin: 1.5rem 0 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #57606a;
   }
 
-  .dashboard-metric-pr-badge.is-hotspot {
-    color: var(--brand);
-    background: rgba(37, 99, 235, 0.1);
+  .dashboard-metric-section-title.is-first {
+    margin-top: 0;
   }
 
   .dashboard-metric-fade-in {
@@ -3538,67 +3542,12 @@
   white-space: break-spaces;
 }
 
-/* Count beside the heading: the roster's headline number, readable before any row is. */
+/* Count beside a section heading: its headline number, readable before any row is. */
 .ghc-h3-meta {
   margin-left: 8px;
   font-size: 12px;
   font-weight: 500;
   color: #59636e;
-}
-
-/* The full check roster as a dense grid rather than a 13-row table. Every check stays
-   visible at a glance, which is the point, without costing 400px of vertical. */
-.ghc-md ul.ghc-checks {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 2px 20px;
-  margin: 0 0 12px;
-  padding: 0;
-  list-style: none;
-}
-
-.ghc-md .ghc-checks li,
-.ghc-md .ghc-checks li + li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  padding: 5px 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #1f2328;
-}
-
-.ghc-md .ghc-checks li svg {
-  color: #1a7f37;
-  flex-shrink: 0;
-}
-
-.ghc-md .ghc-checks li.is-flag svg {
-  color: #9a6700;
-}
-
-.ghc-md .ghc-checks li.is-fail svg {
-  color: #d1242f;
-}
-
-.ghc-checks-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ghc-checks-result {
-  margin-left: auto;
-  font-size: 12px;
-  color: #59636e;
-  flex-shrink: 0;
-}
-
-.ghc-md .ghc-checks li.is-flag .ghc-checks-result,
-.ghc-md .ghc-checks li.is-fail .ghc-checks-result {
-  font-weight: 600;
-  color: #1f2328;
 }
 
 @media (max-width: 1023px) {
@@ -3866,30 +3815,6 @@
 .verdicts {
   padding-top: 2.75rem;
   border-top: 1px solid rgba(255, 255, 255, 0.09);
-}
-
-/* The roster grew from twelve rows to fourteen and gained the longest names in the
-   set ("Tests for changed contracts", "Class-level coupling knots"), which the old
-   single-line ellipsis cut in half. A check whose name is truncated is a check the
-   reader cannot identify, so the name wraps and the row grows instead. */
-.ghc-md .ghc-checks li,
-.ghc-md .ghc-checks li + li {
-  align-items: flex-start;
-}
-
-.ghc-md .ghc-checks li svg {
-  margin-top: 3px;
-}
-
-.ghc-checks-name {
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
-  line-height: 1.45;
-}
-
-.ghc-checks-result {
-  padding-top: 1px;
 }
 
 /* ============================================================================
@@ -4737,8 +4662,8 @@
 }
 
 /* ---- report pane, condensed ----
-   Documented rules lead at full width; the structural roster is the supporting
-   evidence underneath. Type comes down across the whole pane, because at half
+   The review items and the documented rules stack at full width. Type comes down
+   across the whole pane, because at half
    the section's width the old sizes read as a blown-up screenshot rather than
    a check somebody would actually scroll. */
 .ghc-stack {
@@ -4759,13 +4684,7 @@
 .ghc-md h3 { font-size: 13.5px; }
 .ghc-h3-meta { font-size: 11.5px; }
 
-.ghc-md .ghc-checks li,
-.ghc-md .ghc-checks li + li { font-size: 12px; padding: 4px 0; }
-
-.ghc-checks-result { font-size: 11px; }
 .ghc-md code { font-size: 11px; }
-
-.ghc-md ul.ghc-checks { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 1px 16px; }
 
 /* One line per stage now, so the head and body stack rather than sharing a row. */
 .compute-col .pipe-text { font-size: 0.875rem; line-height: 1.66; }
@@ -4870,7 +4789,7 @@
 /* The shared .ghc frame was built for a full-width mocked Checks tab: a 1280px cap,
    centring, and a 40rem floor so a short report still filled the tab. Alone in half
    a section it needs none of those — the floor left a band of empty white under the
-   roster and the cap left the dark shell showing down one edge. */
+   report and the cap left the dark shell showing down one edge. */
 .ghc-solo {
   max-width: none;
   min-height: 0;
@@ -5049,10 +4968,11 @@
 }
 
 /* ---- the structural-diff stage, static ----
-   The homepage has its own crop of the real render (ecchronos-1786-history.svg,
-   viewBox 435 2441 1640 754): the repair history package, where the change added,
-   modified and removed members and few edges pass through. The crop's aspect is the
-   desktop stage's, so it covers the stage anchored left; the findings overlay sits
+   The homepage frames the repair history package of the real render, where the change
+   added, modified and removed members and few edges pass through. The crop is an SVG
+   view fragment on the image URL (#svgView(viewBox(420,2450,2056,945))), so the file
+   stays exactly as rendered and only the framed region is drawn. The image box keeps
+   the fragment's aspect and covers the stage anchored left; the findings overlay sits
    over the right ~416px and the classes worth reading land in the band beside it.
    Phones zoom in and centre on RepairHistoryService / RepairSessionImpl instead. */
 .hero-diagram-stage.is-static {
@@ -5063,26 +4983,25 @@
 
 .hero-diagram-stage.is-static .github-diff-image {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: auto;
+  top: 50%;
+  left: 0;
+  width: max(100%, 87rem);
+  height: auto;
+  aspect-ratio: 2056 / 945;
   max-width: none;
-  object-fit: cover;
-  object-position: 0% 50%;
-  transform: none;
+  object-fit: fill;
+  transform: translateY(-50%);
   transition: none;
 }
 
 @media (max-width: 767.98px) {
   .hero-diagram-stage.is-static { height: 26rem; }
   .hero-diagram-stage.is-static .github-diff-image {
-    inset: auto;
-    top: 0;
-    left: 0;
-    width: auto;
-    height: 39rem;
-    object-fit: fill;
-    transform: translate(calc(50cqw - 475px), -104px);
+    top: -113px;
+    left: calc(50cqw - 524px);
+    width: 1922px;
+    transform: none;
   }
 }
 
@@ -5322,7 +5241,7 @@
    Drawn in GitHub's vocabulary rather than ours: the README as its Preview renders
    it, with the cited sentence marked, and the check run's
    Documented Rules table as GitHub renders that markdown (the columns, wording
-   and footnote are CheckRunFormatter's own). Primer's light palette and GitHub's
+   and footnote are the check's own). Primer's light palette and GitHub's
    system type stack, so the slide reads as the place the team already works.
    ========================================================================== */
 /* Every flex level gives up its min-content width, so a long identifier or the
@@ -5483,7 +5402,6 @@
 
 .ghr-a, .ghr-a code { color: var(--gh-accent); }
 .ghr-out { white-space: nowrap; }
-.ghr-foot { margin: 0.65rem 0 0; font-size: 0.74rem; font-style: italic; color: var(--gh-muted); }
 
 @media (max-width: 560px) {
   .ghr-blob { margin-right: 0.9rem; }
@@ -5731,7 +5649,7 @@
 .rulerow-verdict-prior { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
 .hcc-tally-prior b { color: #b45309; }
 
-/* Dashboard: a flagged PR can carry a broken-rule badge beside its structural one. */
+/* Dashboard: a flagged PR carries a badge counting the documented rules it broke. */
 .dashboard-metric-pr-badges { display: inline-flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
 .dashboard-metric-pr-badge.is-rule {
   color: #b91c1c;
@@ -5792,9 +5710,8 @@
   .bp-rules { margin: 0 -2rem; }
 }
 
-/* ---- Blog: the five rule outcomes ----
-   Two columns so four cards pair up and the fifth, "couldn't check", spans the row:
-   it is the outcome that qualifies the other four, so it reads as a footnote to them. */
+/* ---- Blog: the rule outcomes ----
+   Two columns so the four cards pair up; an odd last card would span the row. */
 .bp-outcomes {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

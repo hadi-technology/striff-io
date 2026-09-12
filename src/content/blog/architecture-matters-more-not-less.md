@@ -134,7 +134,7 @@ That proxy is now broken, and here's the mechanism. A diff shows you lines. It d
 <p class="bp-figure-caption">Ericsson/ecchronos <a href="https://github.com/Ericsson/ecchronos/pull/1786">#1786</a>, a real pull request. The call moved to a new class, <code>SchemaRefresher</code>; the sentence on the right did not move with it. It sits in a file the diff does not contain, so no amount of careful diff-reading surfaces it, and it is still on <code>master</code>. <a href="/blog/design-docs-are-enforceable-now">The whole story</a>.</p>
 </div>
 
-This is the pattern that shows up when you go and look. Across thirty recent open-source pull requests we analysed, most moved nothing structural at all — and a handful did something a reviewer would want to know about and could not have seen: a public interface losing a method that twelve components depend on, a component reaching into two packages it had never touched, a README describing an API that no longer exists. Every one of those pull requests was reviewed by people who are good at their jobs. The information simply was not in front of them.
+This is not a story about careless review. That pull request was reviewed and approved by people who are good at their jobs. The information simply was not in front of them.
 
 ## The bill comes due quietly
 
@@ -148,7 +148,7 @@ Keep every practice you already have. They matter more now, not less; that's the
 
 Closing that gap doesn't mean hiring architects to trace dependencies by hand, and it certainly doesn't mean slowing your team down to pre-AI speed. It means giving the one unguarded practice the same thing every other practice already has: **an automatic, per-PR guardian.**
 
-That's what Striff is. It reads the architecture your docs already describe, turns every checkable sentence into a rule, and evaluates each one at both revisions of every pull request. Alongside the rules, fourteen structural checks speak up only when something happened that the diff cannot show: a first-ever edge between two packages, a cycle closing, a reach into another module's internals, a public contract shrinking under things that depend on it. On the rest it reports clean and tells you what it looked at.
+That's what Striff is. It reads the architecture your docs already describe, turns every checkable sentence into a rule, and evaluates each one at both revisions of every pull request. A rule can be as plain as where a class lives or as sharp as *"the domain module must not depend on infrastructure"*: if your team wrote it down, the pull request that breaks it is told which sentence it broke, quoted from the file it lives in. Every pull request also gets a diagram of what changed and review notes on the components it touched.
 
 The bar is deliberately high, and the consequence is that it is quiet. That is the same bargain your linter makes: you trust it because it does not shout. Your linter guards style, your CI guards correctness, and what you wrote down about the shape of the system finally gets a guardian of its own, at whatever speed your team ships.
 

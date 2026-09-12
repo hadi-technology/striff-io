@@ -3,9 +3,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
 /**
  * The browser extension has its own page rather than a band on the homepage.
- * It runs the same pipeline the App does -- it reads the repository's documents
- * and answers their rules, drawing the ones that concern a drawn component onto
- * the diagram (see `183b7e6b` in striff-browser-extension). What it does not do is
+ * It runs the same pipeline the App does: one load brings up the diagram and the
+ * review of the repository's documented rules together, and a Findings button opens
+ * that review beside the diagram. What it does not do is
  * run unprompted on every pull request your team opens, post where the team
  * reviews, or accumulate the history that becomes the dashboard. That is the
  * difference the page draws, and it is why this lives here rather than competing
@@ -25,7 +25,7 @@ const chromeExtensionHighlights = [
   {
     icon: "sparkle",
     color: "amber",
-    point: "Its documented rules checked and drawn on that diagram"
+    point: "Its documented rules checked, one click from the diagram"
   },
   {
     icon: "comment",
@@ -46,7 +46,7 @@ const faqs = [
   },
   {
     q: "Does the extension check documented rules too?",
-    a: "Yes. The review starts on its own as the diagram renders, and the headline above the graph goes from \u201cChecking documented rules\u2026\u201d to a count: how many rules that repository's own documents state, and how many are at risk on this change. The rules that concern a drawn component are boxed on the diagram itself, and \u201cView review\u201d opens the full list beside it. Same pipeline as the GitHub App, on a repository you do not have to own."
+    a: "Yes. One load brings up the diagram and checks the rules that repository's own documents state. When it finishes, a \u201cFindings\u201d button with the rule count on it opens the full list beside the diagram. Same pipeline as the GitHub App, on a repository you do not have to own."
   },
   {
     q: "Is it free?",
@@ -57,7 +57,7 @@ const faqs = [
 
 <BaseLayout
   title="Browser extension | Striff"
-  description="See the dependency graph of any public GitHub pull request, with that repository's own documented rules checked and drawn on it, in a tab beside Files changed. Free, and your token stays in your browser."
+  description="See the dependency graph of any public GitHub pull request, and that repository's own documented rules checked against the change, in a tab beside Files changed. Free, and your token stays in your browser."
   canonical="https://striff.io/extension"
 >
   <main>
@@ -68,7 +68,7 @@ const faqs = [
             <p class="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Free Chrome extension</p>
             <h1 class="mt-3 text-balance">See what any GitHub PR really touches.</h1>
             <p class="section-subcopy mt-4">
-              Reviewing an unfamiliar change means holding somebody else's dependency graph in your head. Striff draws it for you, in a tab right beside Files changed, so <strong>you see what a change touches before you approve it</strong>. The rules that repository states in its own documents are checked while the diagram renders and drawn onto it, so the intent sits beside the code. You never leave GitHub.
+              Reviewing an unfamiliar change means holding somebody else's dependency graph in your head. Striff draws it for you, in a tab right beside Files changed, so <strong>you see what a change touches before you approve it</strong>. The rules that repository states in its own documents are checked in the same load, and a Findings button opens them beside the diagram, so the intent sits next to the code. You never leave GitHub.
             </p>
 
             <ul class="chrome-ext-list">

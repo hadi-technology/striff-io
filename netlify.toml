@@ -3,6 +3,12 @@
   publish = "dist"
   functions = "netlify/functions"
 
+# Retired posts: send old links to the blog index instead of a 404.
+[[redirects]]
+  from = "/blog/package-dependency-cycles"
+  to = "/blog"
+  status = 301
+
 [[headers]]
   for = "/dashboard"
   [headers.values]

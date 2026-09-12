@@ -6,7 +6,7 @@ date: 2026-08-18
 
 Every architecture tool eventually shows you two numbers: **afferent coupling** and **efferent coupling**. Most engineers nod, half-recall that the definitions point in opposite directions, and move on. That is a shame, because read together they are the closest thing software has to a blood-pressure reading for a component.
 
-It is also a trap, and we walked into it. For a while, this product reported *changes* in those numbers as findings on a pull request: "efferent coupling grew by 4." Those findings are gone now. This post is both halves of that: what the numbers mean and how to read them, and why a delta on one of them should never have been allowed to interrupt a reviewer.
+They are also a trap. It is tempting to report *changes* in those numbers as findings on a pull request: "efferent coupling grew by 4." This post is both halves of that: what the numbers mean and how to read them, and why a delta on one of them should not be allowed to interrupt a reviewer.
 
 ## The two directions
 
@@ -98,7 +98,7 @@ Coupling is two gauges. On a diagram of a change, each component carries a few m
 
 Everything above is true, and none of it should be a finding on a pull request.
 
-We shipped it as one for a while. "Efferent coupling grew from 8 to 17." "Weighted method complexity grew by 10." They were popular internally, they were easy to compute, and they were about **two thirds of everything the product emitted**. They are all gone now, and the argument for cutting them has four parts.
+It is easy to see why tools report them anyway. "Efferent coupling grew from 8 to 17." "Weighted method complexity grew by 10." They are easy to compute, they look like analysis, and there is always one to report. The argument against them has four parts.
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Why a metric delta is not a finding</p>
@@ -108,16 +108,16 @@ We shipped it as one for a while. "Efferent coupling grew from 8 to 17." "Weight
 <div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">3</span><p class="bp-flow-title">The number is already on the page</p><p class="bp-flow-desc">Every one of these values, with its delta, is printed on the component itself. A finding that restates a label six inches away is not information, it is repetition.</p></div>
 <div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">4</span><p class="bp-flow-title">It crowds out the rest</p><p class="bp-flow-desc">Two thirds of the output being restatement means the one row that needed a human is two thirds less likely to be read. Volume is not free; it is paid for out of the same attention budget.</p></div>
 </div>
-<p class="bp-figure-caption">Note what did <em>not</em> change: the metrics are still computed, still shown on every component, still used to order and emphasise what a reviewer sees first. What they lost was the right to interrupt.</p>
+<p class="bp-figure-caption">None of this is an argument against the metrics. They belong on the component, where a reader can look them up, and in deciding what to read first. What they should not have is the right to interrupt.</p>
 </div>
 
-The test we now apply to any candidate finding is a single question: **does a reviewer already know this from the diff or from the diagram?** A metric delta fails it. So does an added import, which is a line of the diff. What passes are the things that need the whole graph, at both revisions, to know at all: a sentence in your own documentation that this change made false, a cycle closing, an edge inverting, a reach into another module's internals, a production-to-test dependency.
+A better test for any candidate finding is a single question: **does a reviewer already know this from the diff or from the diagram?** A metric delta fails it. So does an added import, which is a line of the diff. What passes is what needs more than the diff to know at all: a sentence in your own documentation that this change made false, or a dependency your team has written down must not exist.
 
 ## When fan-in *does* earn a finding
 
 There is one place a coupling number legitimately reaches the reviewer, and the difference is instructive.
 
-In [Activiti/activiti-cloud #2552](https://github.com/Activiti/activiti-cloud/pull/2552), the public interface `IntegrationResult` loses the method `getIntegrationRequest()`. Twelve components in the parsed scope reference that type.
+In [Activiti/activiti-cloud #2552](https://github.com/Activiti/activiti-cloud/pull/2552), the public interface `IntegrationResult` loses the method `getIntegrationRequest()`. At least twelve components reference that type.
 
 <div class="bp-callout"><strong>The finding is not "afferent coupling is 12". The finding is "a public method was removed from a type twelve things depend on".</strong> The number is not the claim; it is the <em>magnitude</em> attached to a claim that stands on its own. Delete the number and there is still a finding: a public contract shrank. Delete the contract change and there is nothing: twelve dependents is just a fact about the code, and it was true yesterday too.</div>
 
@@ -127,7 +127,7 @@ That is the whole distinction. A metric is a property of the code. A finding is 
 
 - **Read the quadrant, not the value.** A Ce of 40 means nothing until you know the Ca. Instability, not either raw number, is the thing that tells you whether a component is safe to depend on.
 - **Watch high-Ca components the way you watch production config.** Any change touching a component with dozens of dependents deserves a closer read, *especially* when the diff looks trivial. Small diffs on high fan-in nodes are where blast-radius accidents live.
-- **Use metrics to decide reading order.** That is what they are good for and what they now do here: not "look at this", but "look at this *first*".
+- **Use metrics to decide reading order.** That is what they are good for: not "look at this", but "look at this *first*".
 - **Do not set thresholds and argue about them.** "Ce must stay under 20" produces meetings, not architecture. If you want a hard gate on complexity, put it in your linter where it belongs, and let structural review answer the questions a linter cannot see.
 
-The questions a linter cannot see are the ones worth automating: whether this change broke something [your own documentation already promised](/blog/design-docs-are-enforceable-now), closed a cycle, or inverted a boundary. [Install the check](https://github.com/apps/striff-app/installations/new) and it answers those on every pull request, with the metrics on the diagram where you can read them, and out of your notifications where they cannot help.
+The questions a linter cannot see are the ones worth writing down: which module may depend on which, and what lives where. Once they are sentences in your architecture docs, [Striff checks each one at both revisions of every pull request](/blog/design-docs-are-enforceable-now) and quotes the one a change broke. [Install the check](https://github.com/apps/striff-app/installations/new), and keep the metrics on the diagram, where you can read them, and out of your notifications, where they cannot help.
