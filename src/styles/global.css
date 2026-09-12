@@ -1696,7 +1696,11 @@
     grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
     gap: 4rem;
   }
+}
 
+/* The form sits in the right half of a two-column page from 768px, so its own inputs
+   pair up only once that half is wide enough for two. */
+@media (min-width: 1100px) {
   .contact-form-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -2775,6 +2779,7 @@
   border-radius: 0.3rem;
   color: var(--ink);
   font-weight: 500;
+  overflow-wrap: break-word;
 }
 
 .blog-prose pre {
@@ -2833,6 +2838,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  padding-block: 0.6rem;
+  margin-block: -0.6rem;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--ink-muted);
@@ -2863,6 +2870,10 @@
     margin-inline: -3rem;
     padding: 1.75rem 2rem 1.5rem;
   }
+}
+
+@media (max-width: 640px) {
+  .bp-figure { padding: 1.15rem 0.95rem 1.05rem; }
 }
 
 .bp-figure-title {
@@ -3028,6 +3039,12 @@
   overflow-x: auto;
 }
 
+/* On a phone a table keeps columns wide enough to read and scrolls inside its own box,
+   rather than squeezing every cell to a word a line. */
+@media (max-width: 640px) {
+  .bp-compare { min-width: 32rem; }
+}
+
 .bp-yes,
 .bp-no {
   display: inline-flex;
@@ -3081,6 +3098,12 @@
     grid-template-columns: repeat(var(--bp-flow-cols, 3), 1fr);
     gap: 0.85rem;
   }
+}
+
+/* On a tablet four or five steps in one row leave each a sliver, so the row wraps to as
+   many readable columns as fit. */
+@media (min-width: 48rem) and (max-width: 63.99rem) {
+  .bp-flow { grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); }
 }
 
 .bp-flow-step {
@@ -5639,9 +5662,13 @@
   .gs-item-icon svg, .gs-agent-mark { animation: none !important; }
 }
 
-/* The report column gives back a little width to the pipeline beside it. */
-.compute-split { grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); }
-.compute-col-report { max-width: 46rem; justify-self: end; width: 100%; }
+/* The report column gives back a little width to the pipeline beside it. Two columns only
+   above the 1180px break; below it the pipeline and the report stack. */
+.compute-col-report { max-width: 46rem; width: 100%; }
+@media (min-width: 1181px) {
+  .compute-split { grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); }
+  .compute-col-report { justify-self: end; }
+}
 
 /* Pre-existing: already broken before this PR. Amber, so it reads as inherited debt
    rather than as either a pass or something this change did. */
@@ -5885,6 +5912,16 @@
 .bp-rules .hcc-verdict-cell { grid-column: 2; align-items: flex-start; }
 .bp-rules .hcc-status { flex-direction: row; align-items: center; gap: 0.9rem; }
 .bp-rules .hcc-status-sat { flex-direction: row; gap: 0.9rem; padding: 0 0 0 0.9rem; border-top: 0; border-left: 1px solid var(--st-bd); }
+
+/* On a phone even two columns squeeze the sentence to a word a line, so the rows stack the
+   way the hero's do: the sentence, the rule it became, then the verdict. */
+@media (max-width: 640px) {
+  .bp-rules .hcc-row { grid-template-columns: minmax(0, 1fr); }
+  .bp-rules .hcc-verdict-cell { grid-column: auto; }
+  .bp-rules .hcc-status { flex-wrap: wrap; row-gap: 0.4rem; }
+  /* A long formula scrolls inside its rule box rather than running past the edge. */
+  .bp-rules .hcc-logic { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+}
 
 /* Names in the plain reading break only when they cannot fit, never mid-word by default. */
 .hcc-table .hcc-rule-text.hcc-rule-reading .github-inline-code { overflow-wrap: break-word; word-break: normal; }
