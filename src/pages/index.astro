@@ -3,7 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import InlineCodeText from "../components/InlineCodeText.astro";
 import BlogLink from "../components/BlogLink.astro";
 import RuleRows from "../components/RuleRows.astro";
-import { ecchronosRules as heroRules, baseSha as heroBaseSha, headSha as heroHeadSha } from "../data/ecchronosRules";
+import { heroExampleRules, heroExampleRepo, heroExampleTally } from "../data/heroExampleRules";
 import MetricsTab from "../components/MetricsTab";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 
@@ -235,10 +235,10 @@ const plans = [
   <main>
     <!-- ==================== HERO ==================== -->
     <!-- The product is a GitHub check, so the hero is one, rendered light and at full
-         fidelity. The summary line carries the coverage denominator (the thing nobody
-         else can claim) and the rows carry the mechanism: your sentence, the line it is
-         on, the rule it became, and what happened to it on this pull request.
-         The violated row leads because that is the row a reviewer needs first. -->
+         fidelity: an illustrative example (acme/checkout-service, labelled Example), not a
+         real run. Each row is the sentence, the file and line it is on, the rule it became,
+         and what happened to it on this pull request; the broken row leads because that is
+         the row a reviewer needs first. The real ecChronos run is in the report below. -->
     <section class="hero-section relative overflow-hidden">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="hero-copy relative z-10 mx-auto max-w-4xl space-y-5 text-center" data-reveal>
@@ -266,32 +266,32 @@ const plans = [
         </div>
 
         <div class="hero-check-wrap" data-reveal>
-          <p class="hero-check-lede">A language model reads your docs and turns their sentences into rules. Each rule is a logical formula, checked against a formal model of your code before and after the pull request. Here is a real run:</p>
+          <p class="hero-check-lede">A language model reads your docs and turns their sentences into rules. Each rule is a logical formula, checked against a formal model of your code before and after the pull request. Here is what that looks like:</p>
           <div class="hero-check-card">
             <header class="hcc-head">
               <span class="hcc-mark"><img src="/icon.svg" alt="" width="20" height="20" /></span>
               <span class="hcc-headings">
                 <b>Striff / architectural-review</b>
-                <i>Ericsson/ecchronos</i>
+                <i>{heroExampleRepo}</i>
               </span>
               <span class="hcc-spacer"></span>
-              <a class="hcc-chip hcc-chip-link" href="https://github.com/Ericsson/ecchronos/pull/1786" target="_blank" rel="noopener noreferrer">PR #1786</a>
+              <span class="hcc-chip hcc-chip-example">Example</span>
               <span class="hcc-chip hcc-chip-muted">Java</span>
             </header>
 
             <div class="hcc-banner">
               <span class="hcc-banner-dot" aria-hidden="true"></span>
               <p class="hcc-banner-text">
-                <strong>One of the 63 rules Striff checked in this repository&rsquo;s own docs no longer holds.</strong>
+                <strong>One of the {heroExampleTally.broken + heroExampleTally.held} rules Striff checked in this repository&rsquo;s own docs no longer holds.</strong>
                 <span>Nothing was configured. Striff read the repository&rsquo;s documents, turned their sentences into rules, and checked them against both revisions.</span>
               </p>
               <span class="hcc-tally">
-                <span class="hcc-tally-item hcc-tally-violated"><b>1</b><i>violated</i></span>
-                <span class="hcc-tally-item hcc-tally-held"><b>62</b><i>held</i></span>
+                <span class="hcc-tally-item hcc-tally-violated"><b>{heroExampleTally.broken}</b><i>broken</i></span>
+                <span class="hcc-tally-item hcc-tally-held"><b>{heroExampleTally.held}</b><i>held</i></span>
               </span>
             </div>
 
-            <RuleRows rows={heroRules} baseSha={heroBaseSha} headSha={heroHeadSha} logicNote />
+            <RuleRows rows={heroExampleRules} logicNote />
           </div>
           <div class="hero-langs" aria-label="Supported languages">
             <span class="hero-langs-label">Works with</span>

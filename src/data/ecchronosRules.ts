@@ -1,8 +1,7 @@
-// Shared by the homepage hero and the flagship blog post, so the two can never drift.
+// The flagship blog post's rule figure: three rows from the real Ericsson/ecchronos run.
 
 /**
- * The hero check card: three of the rules Striff checked from ecchronos'
- * own documents on PR #1786. Verified by hand against both revisions at
+ * Three of the rules Striff checked from ecchronos' own documents on PR #1786. Verified by hand against both revisions at
  * base d188eb1b33 and head 0288412016 before being put on the page.
  *
  *  - Violated is a real differential result. `NodeWorker.java` imports and calls
@@ -17,17 +16,15 @@
  *    package, VnodeRepairTask.java:52 and IncrementalRepairTask.java:43 extend RepairTask.
  *
  * The mix is not curated for drama. Striff reports only what it can verify. The homepage
- * tallies count the current run on #1786 (63 rules checked: 62 held, 1 violated); the
+ * report counts the current run on #1786 (63 rules checked: 62 held, 1 violated); the
  * flagship post keeps the counts of the dated run it describes (28: 27 held, 1 violated).
  * A rule Striff could not answer from the code is left out rather than shown as passing.
  */
 
 /*
  * Rows read in plain English: the sentence, the rule it became, and the verdict with whether
- * the rule was satisfied before and after the change (base/head). The violated row also
- * carries its formal rule, typeset once in the hero's logic note: the rule-language query
- * read as first-order logic, where refs(x, y, k) is a reference of any kind k and
- * "expect: true" becomes an existential over it.
+ * the rule was satisfied before and after the change (base/head). The post typesets the
+ * violated row's formula in its own text.
  */
 
 /** The two revisions of Ericsson/ecchronos #1786 every rule was evaluated at. */
@@ -42,7 +39,6 @@ export const ecchronosRules = [
     doc: "core.impl/README.md",
     line: 136,
     statement: "`NodeWorker` depends on `RepairScheduler`",
-    logic: [[String.raw`\htmlClass{lg-q}{\exists} k.`, String.raw`\mathrm{refs}(\mathtt{NodeWorker},`, String.raw`\mathtt{RepairScheduler}, k)`]],
     base: true,
     head: false
   },

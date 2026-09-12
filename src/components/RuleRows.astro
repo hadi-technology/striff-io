@@ -3,8 +3,10 @@
  * The documented-rule rows: the sentence from the docs with its file and line, the rule it
  * became in plain English, and the verdict on this pull request with whether the rule held
  * before the change and after it. With `logicNote`, one expandable note under the rows says
- * how a verdict is decided and typesets the violated row's formula once. The homepage hero
- * shows the note; the flagship blog post typesets the same formula in its own text.
+ * how a verdict is decided and typesets the violated row's formula once. An optional witness
+ * line under the rule names what the change did. The homepage hero uses it with an
+ * illustrative example and the note; the flagship blog post shows the real ecChronos run and
+ * typesets its formula in its own text.
  */
 import InlineCodeText from "./InlineCodeText.astro";
 import { tex } from "../lib/tex";
@@ -12,14 +14,14 @@ import "katex/dist/katex.min.css";
 
 interface Props {
   rows: any[];
-  baseSha: string;
-  headSha: string;
+  baseSha?: string;
+  headSha?: string;
   logicNote?: boolean;
 }
 
 const { rows, baseSha, headSha, logicNote = false } = Astro.props;
 const noteRow = logicNote ? rows.find((r) => r.verdict === "violated" && r.logic) : undefined;
-const noteFormula = noteRow ? tex(String.raw`\varphi \coloneqq ` + noteRow.logic.map((line: string[]) => line.join(" ")).join(" ")) : "";
+const noteFormula = noteRow ? tex(String.raw`\varphi \coloneqq ` + noteRow.logic.map((line: string[]) => line.join(String.raw`\ `)).join(String.raw`\ `)) : "";
 const noteSat = noteRow ? tex(String.raw`\mathcal{M}_{\mathrm{base}} \htmlClass{sat}{\models} \varphi \qquad \mathcal{M}_{\mathrm{head}} \htmlClass{unsat}{\nvDash} \varphi`) : "";
 const phi = tex(String.raw`\varphi`);
 const model = tex(String.raw`\mathcal{M}`);
@@ -47,6 +49,7 @@ const model = tex(String.raw`\mathcal{M}`);
             <InlineCodeText class="hcc-rule-text hcc-rule-reading" text={row.statement} />
             {row.craft && <span class="hcc-craft">{row.craft}</span>}
           </span>
+          {row.witness && <InlineCodeText class="hcc-witness" text={row.witness} />}
         </span>
       </span>
       <span class="hcc-verdict-cell">
@@ -61,9 +64,9 @@ const model = tex(String.raw`\mathcal{M}`);
             {row.verdictLabel}
           </span>
           <span class="hcc-status-sat">
-            <span class="hcc-ba is-ok" title={`base ${baseSha}`}>before <b aria-hidden="true">✓</b><span class="sr-only">: the rule held</span></span>
+            <span class="hcc-ba is-ok" title={baseSha ? `base ${baseSha}` : undefined}>before <b aria-hidden="true">✓</b><span class="sr-only">: the rule held</span></span>
             <span class="hcc-ba-sep" aria-hidden="true">·</span>
-            <span class={`hcc-ba ${row.head ? "is-ok" : "is-bad"}`} title={`head ${headSha}`}>after <b aria-hidden="true">{row.head ? "✓" : "✗"}</b><span class="sr-only">{row.head ? ": the rule holds" : ": the rule is broken"}</span></span>
+            <span class={`hcc-ba ${row.head ? "is-ok" : "is-bad"}`} title={headSha ? `head ${headSha}` : undefined}>after <b aria-hidden="true">{row.head ? "✓" : "✗"}</b><span class="sr-only">{row.head ? ": the rule holds" : ": the rule is broken"}</span></span>
           </span>
         </span>
       </span>
