@@ -1,7 +1,7 @@
 // Shared by the homepage hero and the flagship blog post, so the two can never drift.
 
 /**
- * The hero check card: three of the 28 rules Striff checked from ecchronos'
+ * The hero check card: three of the rules Striff checked from ecchronos'
  * own documents on PR #1786. Verified by hand against both revisions at
  * base d188eb1b33 and head 0288412016 before being put on the page.
  *
@@ -16,9 +16,10 @@
  *    reference. Both were confirmed in source: ConnectionType.java:15 declares the
  *    package, VnodeRepairTask.java:52 and IncrementalRepairTask.java:43 extend RepairTask.
  *
- * The mix is not curated for drama. Striff reports only what it can verify: on #1786 it
- * checked 28 rules, 27 held and 1 violated, and the tallies show exactly those. A rule it
- * could not answer from the code is left out rather than shown as passing.
+ * The mix is not curated for drama. Striff reports only what it can verify. The homepage
+ * tallies count the current run on #1786 (63 rules checked: 62 held, 1 violated); the
+ * flagship post keeps the counts of the dated run it describes (28: 27 held, 1 violated).
+ * A rule Striff could not answer from the code is left out rather than shown as passing.
  */
 
 /*

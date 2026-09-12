@@ -107,14 +107,30 @@ const pipeline = [
 
 
 /**
- * The four documented rules the check report shows, from the same analysis the hero
- * draws on (Ericsson/ecchronos #1786) and different rules from it, so the two do not
- * repeat. Verified at head 0288412016 the same way the hero rows were.
+ * The four documented rules the check report shows, all from the current run on
+ * Ericsson/ecchronos #1786 (the run the homepage tallies count), and different from the
+ * hero's rows so the two do not repeat.
  *
  * This replaced a fabricated apache/fineract mockup: neither REFACTORING.md nor
  * ARCHITECTURE.md exists in that repository, so the rules it showed, and the doc
  * conflict it led on, were about documents that were never there.
  */
+/**
+ * The held rules in the diagram section's findings panel: every rule the current run on
+ * Ericsson/ecchronos #1786 checked that names a class the pull request touched, apart from
+ * the one it broke, which leads the panel. Quotes are the documents' own sentences, with
+ * markdown emphasis and link syntax rendered as text.
+ */
+const diagramHeldRules = [
+  { statement: "`NodeWorkerManager` depends on `NodeWorker`", quote: "Maintains a dedicated `NodeWorker` background thread per Cassandra node.", doc: "core.impl/README.md", line: 131 },
+  { statement: "`TableRepairJob` depends on `RepairGroup`", quote: "On each scheduling cycle, yields `RepairGroup` tasks (one per replica set)", doc: "core.impl/README.md", line: 50 },
+  { statement: "`RepairGroup` depends on `RepairTask`", quote: "It acquires the distributed lock then lazily creates and yields `RepairTask` instances via an inner `RepairTaskIterator`.", doc: "core.impl/README.md", line: 58 },
+  { statement: "`RepairGroup` depends on `VnodeRepairTask`", quote: "When the RepairGroup is executed it will generate one `VnodeRepairTask` per token range to repair.", doc: "docs/ARCHITECTURE.md", line: 287 },
+  { statement: "`RepairGroup` depends on `IncrementalRepairTask`", quote: "When the RepairGroup is executed it will generate one `IncrementalRepairTask`.", doc: "docs/ARCHITECTURE.md", line: 287 },
+  { statement: "`VnodeRepairTask` depends on `RepairTask`", quote: "`VnodeRepairTask` / `IncrementalRepairTask` \u2014 Concrete `RepairTask` subclasses for vnode and incremental repair respectively.", doc: "core.impl/README.md", line: 65 },
+  { statement: "`IncrementalRepairTask` depends on `RepairTask`", quote: "`VnodeRepairTask` / `IncrementalRepairTask` \u2014 Concrete `RepairTask` subclasses for vnode and incremental repair respectively.", doc: "core.impl/README.md", line: 65 }
+];
+
 const reportRules = [
   {
     verdict: "violated",
@@ -135,18 +151,18 @@ const reportRules = [
   {
     verdict: "held",
     label: "Held",
-    quote: "Alarms are fired by `AlarmPostUpdateHook` in `core.impl` after every repair state update.",
-    statement: "`AlarmPostUpdateHook` is in `core.impl`",
-    doc: "fault.manager/README.md",
-    line: 51
+    quote: "On each scheduling cycle, yields `RepairGroup` tasks (one per replica set)",
+    statement: "`TableRepairJob` depends on `RepairGroup`",
+    doc: "core.impl/README.md",
+    line: 50
   },
   {
     verdict: "held",
     label: "Held",
-    quote: "Afterwards a single `RepairGroup` is created.",
-    statement: "`IncrementalRepairJob` depends on `RepairGroup`",
-    doc: "docs/ARCHITECTURE.md",
-    line: 461
+    quote: "It acquires the distributed lock then lazily creates and yields `RepairTask` instances via an inner `RepairTaskIterator`.",
+    statement: "`RepairGroup` depends on `RepairTask`",
+    doc: "core.impl/README.md",
+    line: 58
   },
 ];
 
@@ -264,12 +280,12 @@ const plans = [
             <div class="hcc-banner">
               <span class="hcc-banner-dot" aria-hidden="true"></span>
               <p class="hcc-banner-text">
-                <strong>One of the 28 rules Striff checked in this repository&rsquo;s own docs no longer holds.</strong>
+                <strong>One of the 63 rules Striff checked in this repository&rsquo;s own docs no longer holds.</strong>
                 <span>Nothing was configured. Striff read the repository&rsquo;s documents, turned their sentences into rules, and checked them against both revisions.</span>
               </p>
               <span class="hcc-tally">
                 <span class="hcc-tally-item hcc-tally-violated"><b>1</b><i>violated</i></span>
-                <span class="hcc-tally-item hcc-tally-held"><b>27</b><i>held</i></span>
+                <span class="hcc-tally-item hcc-tally-held"><b>62</b><i>held</i></span>
               </span>
             </div>
 
@@ -411,7 +427,7 @@ const plans = [
                       </section>
 
                       <section>
-                        <h3 class="ghc-h3-lead">Documented Rules <span class="ghc-h3-meta">28 rules checked &middot; 27 held &middot; 1 violated</span></h3>
+                        <h3 class="ghc-h3-lead">Documented Rules <span class="ghc-h3-meta">63 rules checked &middot; 62 held &middot; 1 violated</span></h3>
                         <ul class="rulelist">
                           {reportRules.map((r) => (
                             <li class={`rulerow rulerow-${r.verdict}`}>
@@ -426,7 +442,7 @@ const plans = [
                             </li>
                           ))}
                         </ul>
-                        <p class="rulelist-more">4 of 28 shown</p>
+                        <p class="rulelist-more">4 of 63 shown</p>
                       </section>
                     </div>
                     <p>The check also carries the architecture diagram of this change, <a href="#diagram">shown below</a>.</p>
@@ -469,28 +485,32 @@ const plans = [
                 <span class="hero-context-chip hero-context-chip-danger">1 rule broken</span>
               </div>
               <div class="hero-stage-actions">
-                <!-- The stage invites scroll-to-zoom and drag-to-pan, so it needs the same way
-                     back that every other diagram on the site has. -->
                 <div class="hero-stage-badge">Striff / architectural-review</div>
               </div>
             </div>
 
             <div class="hero-diagram-wrap">
-              <!-- Framing is constrained on the right, where the findings overlay covers ~416px
-                   on desktop: the area worth looking at has to land in the band left of it, or
-                   the diagram looks cropped at random. The crop is the view fragment on the image URL,
-                   and the stage CSS keeps the image box at that fragment's aspect: re-tune both
-                   together. -->
+              <!-- Striff's focused diagram of the pull request: the eight classes it touched and only
+                   the relationships among them. Desktop frames NodeWorker, SchemaRefresher and
+                   RepairScheduler in the band left of the findings overlay (~416px); phones get a
+                   tighter crop of NodeWorker that pans sideways. Each crop is a view fragment on
+                   the image URL, and the stage CSS keeps each image box at its fragment's aspect:
+                   re-tune both together. -->
               <div
                 class="github-diff-stage example-diff-stage hero-diagram-stage is-static"
               >
-                <img
-                  src="/examples/ecchronos-1786.svg#svgView(viewBox(420,2450,2056,945))"
-                  alt="Striff structural diff of Ericsson/ecchronos PR #1786, framed on the repair history package: RepairHistoryService and RepairSessionImpl with added members in green, changed ones in blue, and the old newSession(...) form removed in red"
-                  class="github-diff-graphic github-diff-image"
-                  loading="eager"
-                  draggable="false"
-                />
+                <div class="hero-diagram-scroll">
+                  <picture>
+                    <source media="(max-width: 767.98px)" srcset="/examples/ecchronos-1786-focused.svg#svgView(viewBox(-20,1215,1170,606))" />
+                    <img
+                      src="/examples/ecchronos-1786-focused.svg#svgView(viewBox(-250,1150,2506,1500))"
+                      alt="Striff's focused diagram of Ericsson/ecchronos PR #1786: NodeWorker with its RepairScheduler field removed in red and a SchemaRefresher field added in green, the new SchemaRefresher class, and RepairScheduler, with the relationships among them"
+                      class="github-diff-graphic github-diff-image"
+                      loading="eager"
+                      draggable="false"
+                    />
+                  </picture>
+                </div>
 
                 <div class="hero-diagram-tag">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="m8 7 3 9M16 7l-3 9M8.5 6h7"/></svg>
@@ -498,12 +518,11 @@ const plans = [
                 </div>
 
                 <!-- Findings overlay. Open on desktop, where it sits beside the diagram; collapsed
-                     on mobile, where it goes full width and would otherwise cover the diagram
-                     entirely. The class is set by the inline script below rather than rendered,
+                     below 1024px, where it would otherwise cover the diagram. The class is set by the inline script below rather than rendered,
                      so there is no open-then-collapse flash on a phone. -->
                 <div class="hero-findings-overlay" data-findings-overlay>
                   <button class="hero-findings-toggle" type="button" data-findings-toggle>
-                    <span class="hero-findings-badge">1 documented rule broken</span>
+                    <span class="hero-findings-badge">1 broken &middot; 7 held</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hero-findings-chevron"><path d="M6 9l6 6 6-6"/></svg>
                   </button>
                   <div class="hero-findings-panel">
@@ -515,6 +534,21 @@ const plans = [
                           <p><code>core.impl/README.md</code> says <code>NodeWorker</code> calls <code>RepairScheduler</code>. After this PR, it doesn&rsquo;t.</p>
                         </div>
                       </div>
+                      <p class="hero-findings-sub">Held on this change <span>{diagramHeldRules.length}</span></p>
+                      <ul class="rulelist hero-rulelist">
+                        {diagramHeldRules.map((r) => (
+                          <li class="rulerow rulerow-held">
+                            <span class="rulerow-main">
+                              <InlineCodeText class="rulerow-quote" text={r.quote} />
+                              <InlineCodeText class="rulerow-stmt" text={r.statement} />
+                            </span>
+                            <span class="rulerow-side">
+                              <span class="rulerow-verdict rulerow-verdict-held">Held</span>
+                              <span class="rulerow-src">{r.doc}<b>:{r.line}</b></span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
                 </div>
@@ -522,7 +556,7 @@ const plans = [
                   // Runs inline, mid-parse, so the overlay is painted once in its final state.
                   (function () {
                     var el = document.currentScript.previousElementSibling;
-                    if (el && window.innerWidth >= 768) el.classList.add("is-open");
+                    if (el && window.innerWidth >= 1024) el.classList.add("is-open");
                   })();
                 </script>
               </div>

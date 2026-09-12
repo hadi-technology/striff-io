@@ -1760,16 +1760,6 @@
   border: 1px solid rgba(208, 215, 222, 0.88);
   background:
     linear-gradient(180deg, rgba(255,255,255,0.98), rgba(251,253,255,0.98));
-  cursor: grab;
-  touch-action: none;
-}
-
-.github-diff-stage.is-dragging {
-  cursor: grabbing;
-}
-
-.github-diff-stage.is-dragging .github-diff-image {
-  transition: none;
 }
 
 .github-diff-stage::before {
@@ -4991,17 +4981,25 @@
 }
 
 /* ---- the structural-diff stage, static ----
-   The homepage frames the repair history package of the real render, where the change
-   added, modified and removed members and few edges pass through. The crop is an SVG
-   view fragment on the image URL (#svgView(viewBox(420,2450,2056,945))), so the file
-   stays exactly as rendered and only the framed region is drawn. The image box keeps
-   the fragment's aspect and covers the stage anchored left; the findings overlay sits
-   over the right ~416px and the classes worth reading land in the band beside it.
-   Phones zoom in and centre on RepairHistoryService / RepairSessionImpl instead. */
+   The homepage shows Striff's focused diagram of the pull request: only the classes it
+   touched and the relationships among them. Each crop is an SVG view fragment on the image
+   URL, so the file stays exactly as rendered and only the framed region is drawn.
+   Desktop: viewBox(-250,1150,2506,1500). The box keeps that aspect and covers the stage
+   anchored left, which puts NodeWorker, SchemaRefresher and RepairScheduler in the band
+   left of the findings overlay (~416px).
+   Phones: viewBox(-20,1215,1170,606), a tighter crop of NodeWorker at a readable size,
+   below the collapsed findings bar, that pans sideways. */
 .hero-diagram-stage.is-static {
   container-type: inline-size;
-  height: 40rem;
+  height: 52rem;
   cursor: default;
+  --example-stage-height-mobile: 30rem;
+}
+
+.hero-diagram-scroll {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
 }
 
 .hero-diagram-stage.is-static .github-diff-image {
@@ -5009,25 +5007,50 @@
   inset: auto;
   top: 50%;
   left: 0;
-  width: max(100%, 87rem);
+  width: max(100%, 86.9rem);
   height: auto;
-  aspect-ratio: 2056 / 945;
+  aspect-ratio: 2506 / 1500;
   max-width: none;
   object-fit: fill;
   transform: translateY(-50%);
   transition: none;
 }
 
+.hero-diagram-stage.is-static .hero-findings-overlay.is-open .hero-findings-panel { max-height: 46rem; }
+
 @media (max-width: 767.98px) {
-  .hero-diagram-stage.is-static { height: 26rem; }
+  .hero-diagram-stage.is-static { height: 30rem; }
+  .hero-diagram-scroll { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
   .hero-diagram-stage.is-static .github-diff-image {
-    top: -113px;
-    left: calc(50cqw - 524px);
-    width: 1922px;
+    position: static;
+    width: 842px;
+    aspect-ratio: 1170 / 606;
+    margin-top: 2.75rem;
     transform: none;
   }
 }
 
+/* Held rules in the findings panel: the report's rule rows, stacked to fit the panel. */
+.hero-findings-sub {
+  margin: 0.4rem 0.15rem 0;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #57606a;
+}
+
+.hero-findings-sub span { margin-left: 0.3rem; color: #17794a; }
+
+.hero-rulelist .rulerow,
+.hero-rulelist .rulerow + .rulerow {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  padding: 0.55rem 0.2rem 0.55rem 0.6rem;
+}
+
+.hero-rulelist .rulerow-quote { font-size: 12.5px; }
+.hero-rulelist .rulerow-side { flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.55rem; text-align: left; }
 
 /* The diagram section's link to the open-source engine: quiet, one line, GitHub's own mark. */
 .oss-link {
