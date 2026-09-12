@@ -115,5 +115,5 @@ It also changes what your docs are for. A sentence in your README stops being a 
 The quickest test is a pull request whose history you already know, so you can judge every line of the check yourself.
 
 - **Your public repositories are free.** [Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open a pull request. Rules, diagram and review notes, on every PR.
-- **Someone else's public pull request.** The [free Chrome extension](/extension) shows the same review in a tab beside Files changed, without installing anything on the repository.
+- **Someone else's public pull request.** The [free Chrome extension](/#extension) shows the same review in a tab beside Files changed, without installing anything on the repository.
 - **Private repositories** start at $29 a month. [See pricing](/pricing).

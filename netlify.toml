@@ -9,6 +9,17 @@
   to = "/blog"
   status = 301
 
+# The extension's page became a section of the homepage.
+[[redirects]]
+  from = "/extension"
+  to = "/#extension"
+  status = 301
+
+[[redirects]]
+  from = "/extension/"
+  to = "/#extension"
+  status = 301
+
 [[headers]]
   for = "/dashboard"
   [headers.values]
