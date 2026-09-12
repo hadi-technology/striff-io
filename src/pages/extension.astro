@@ -35,14 +35,14 @@ const chromeExtensionHighlights = [
   {
     icon: "bolt",
     color: "rose",
-    point: "No backend, and your token stays local"
+    point: "Works on repositories you do not own"
   }
 ];
 
 const faqs = [
   {
     q: "Do I need to install anything on the repository?",
-    a: "No. The extension runs in your browser on any public pull request you visit, so you can point it at somebody else's repository without touching it. Bring a free GitHub token for rate limits; it never leaves your browser."
+    a: "No. The extension runs in your browser on any public pull request you visit, so you can point it at somebody else's repository without touching it. The analysis itself runs on Striff's servers. A free GitHub token raises GitHub's rate limits. On a public pull request it is only sent to GitHub; on a private repository or a very large pull request, Striff's servers use it to fetch the code themselves."
   },
   {
     q: "Does the extension check documented rules too?",
@@ -57,7 +57,7 @@ const faqs = [
 
 <BaseLayout
   title="Browser extension | Striff"
-  description="See the dependency graph of any public GitHub pull request, and that repository's own documented rules checked against the change, in a tab beside Files changed. Free, and your token stays in your browser."
+  description="See the dependency graph of any public GitHub pull request, and that repository's own documented rules checked against the change, in a tab beside Files changed. Free on public pull requests."
   canonical="https://striff.io/extension"
 >
   <main>
