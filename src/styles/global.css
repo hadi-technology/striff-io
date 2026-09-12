@@ -201,28 +201,6 @@
     color: white;
   }
 
-  .footer-install-link {
-    display: inline-flex;
-    align-items: center;
-    margin-top: 1rem;
-    border-radius: 999px;
-    padding: 0.72rem 1rem;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    color: #f8fbff;
-    font-size: 0.9rem;
-    font-weight: 700;
-    transition:
-      background-color 180ms ease,
-      border-color 180ms ease,
-      transform 180ms ease;
-  }
-
-  .footer-install-link:hover {
-    background: rgba(255, 255, 255, 0.16);
-    border-color: rgba(255, 255, 255, 0.24);
-    transform: translateY(-1px);
-  }
 
   .footer-legal {
     color: rgba(203, 213, 225, 0.9);
