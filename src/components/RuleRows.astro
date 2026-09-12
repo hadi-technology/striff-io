@@ -1,8 +1,10 @@
 ---
 /**
- * The documented-rule rows: the sentence from the docs, the formal rule it became
- * (typeset by KaTeX) with its plain reading, and the verdict as satisfaction at the two
- * revisions. Used by the homepage hero and the flagship blog post.
+ * The documented-rule rows: the sentence from the docs with its file and line, the rule it
+ * became in plain English, and the verdict on this pull request with whether the rule held
+ * before the change and after it. With `logicNote`, one expandable note under the rows says
+ * how a verdict is decided and typesets the violated row's formula once. The homepage hero
+ * shows the note; the flagship blog post typesets the same formula in its own text.
  */
 import InlineCodeText from "./InlineCodeText.astro";
 import { tex } from "../lib/tex";
@@ -12,13 +14,15 @@ interface Props {
   rows: any[];
   baseSha: string;
   headSha: string;
+  logicNote?: boolean;
 }
 
-const { rows, baseSha, headSha } = Astro.props;
-const phiLabel = tex(String.raw`\varphi \coloneqq`);
-const satBase = tex(String.raw`\mathcal{M}_{\mathrm{base}} \htmlClass{sat}{\models} \varphi`);
-const satHead = tex(String.raw`\mathcal{M}_{\mathrm{head}} \htmlClass{sat}{\models} \varphi`);
-const unsatHead = tex(String.raw`\mathcal{M}_{\mathrm{head}} \htmlClass{unsat}{\nvDash} \varphi`);
+const { rows, baseSha, headSha, logicNote = false } = Astro.props;
+const noteRow = logicNote ? rows.find((r) => r.verdict === "violated" && r.logic) : undefined;
+const noteFormula = noteRow ? tex(String.raw`\varphi \coloneqq ` + noteRow.logic.map((line: string[]) => line.join(" ")).join(" ")) : "";
+const noteSat = noteRow ? tex(String.raw`\mathcal{M}_{\mathrm{base}} \htmlClass{sat}{\models} \varphi \qquad \mathcal{M}_{\mathrm{head}} \htmlClass{unsat}{\nvDash} \varphi`) : "";
+const phi = tex(String.raw`\varphi`);
+const model = tex(String.raw`\mathcal{M}`);
 ---
 
 <div class="hcc-table">
@@ -39,16 +43,6 @@ const unsatHead = tex(String.raw`\mathcal{M}_{\mathrm{head}} \htmlClass{unsat}{\
       <span class="hcc-rule">
         <svg class="hcc-rule-arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 3v5a3 3 0 0 0 3 3h9"/><path d="m10.5 7.5 3.5 3.5-3.5 3.5"/></svg>
         <span class="hcc-rule-body">
-          <span class="hcc-logic" aria-hidden="true">
-            <span class="hcc-logic-label" set:html={phiLabel} />
-            {row.logic.map((line) => (
-              <span class="hcc-logic-line">
-                {line.map((chunk, i) => (
-                  <>{i > 0 && " "}<span class="hcc-logic-chunk" set:html={tex(chunk)} /></>
-                ))}
-              </span>
-            ))}
-          </span>
           <span class="hcc-rule-foot">
             <InlineCodeText class="hcc-rule-text hcc-rule-reading" text={row.statement} />
             {row.craft && <span class="hcc-craft">{row.craft}</span>}
@@ -66,13 +60,30 @@ const unsatHead = tex(String.raw`\mathcal{M}_{\mathrm{head}} \htmlClass{unsat}{\
             )}
             {row.verdictLabel}
           </span>
-          <span class="hcc-status-sat" aria-hidden="true">
-            <span title={`base ${baseSha}`} set:html={satBase} />
-            <span title={`head ${headSha}`} set:html={row.head ? satHead : unsatHead} />
+          <span class="hcc-status-sat">
+            <span class="hcc-ba is-ok" title={`base ${baseSha}`}>before <b aria-hidden="true">✓</b><span class="sr-only">: the rule held</span></span>
+            <span class="hcc-ba-sep" aria-hidden="true">·</span>
+            <span class={`hcc-ba ${row.head ? "is-ok" : "is-bad"}`} title={`head ${headSha}`}>after <b aria-hidden="true">{row.head ? "✓" : "✗"}</b><span class="sr-only">{row.head ? ": the rule holds" : ": the rule is broken"}</span></span>
           </span>
-          <span class="sr-only">{row.head ? "The rule holds at the base revision and on this pull request." : "The rule holds at the base revision and fails on this pull request."}</span>
         </span>
       </span>
     </div>
   ))}
 </div>
+{noteRow && (
+  <details class="hcc-proof">
+    <summary>
+      <span class="hcc-proof-kicker">Neurosymbolic &middot; formal model checking</span>
+      <span class="hcc-proof-q">How each verdict is decided</span>
+      <svg class="hcc-proof-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </summary>
+    <div class="hcc-proof-body">
+      <p>A language model reads each sentence in your docs and proposes the rule it states. The rule is compiled into a formula <span set:html={phi} /> in first-order logic, and a parser turns the code before and after the pull request into finite models <span set:html={model} /> of its types, members and references. Every verdict is formal model checking in the logical sense: does the model satisfy the formula? For the first row:</p>
+      <div class="hcc-proof-math">
+        <span set:html={noteFormula} />
+        <span set:html={noteSat} />
+      </div>
+      <p>Satisfied before the change and not after it, so it is broken by this pull request. A rule is held when nothing in the pull request breaks it.</p>
+    </div>
+  </details>
+)}

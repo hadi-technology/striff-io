@@ -91,12 +91,12 @@ const pipeline = [
   {
     kind: "symbolic",
     name: "Ground and compile",
-    body: "A proposed rule that names a class or package your code does not contain is dropped. The rest become precise queries over the model."
+    body: "A proposed rule that names a class or package your code does not contain is dropped. The rest become formulas over the model."
   },
   {
     kind: "symbolic",
     name: "Evaluate",
-    body: "Each query runs against the code before and after the change. A rule is held when nothing in the pull request breaks it, and only a violation the change introduced is attributed to it."
+    body: "Each formula is checked against the model of the code before and after the change. A rule is held when nothing in the pull request breaks it, and only a violation the change introduced is attributed to it."
   },
   {
     kind: "neural",
@@ -118,17 +118,18 @@ const pipeline = [
 /**
  * The held rules in the diagram section's findings panel: every rule the current run on
  * Ericsson/ecchronos #1786 checked that names a class the pull request touched, apart from
- * the one it broke, which leads the panel. Quotes are the documents' own sentences, with
- * markdown emphasis and link syntax rendered as text.
+ * the one it broke, which leads the panel. The panel lists the ones about classes the
+ * diagram draws (inDiagram) and counts the rest. Quotes are the documents' own sentences,
+ * with markdown emphasis and link syntax rendered as text.
  */
 const diagramHeldRules = [
-  { statement: "`NodeWorkerManager` depends on `NodeWorker`", quote: "Maintains a dedicated `NodeWorker` background thread per Cassandra node.", doc: "core.impl/README.md", line: 131 },
-  { statement: "`TableRepairJob` depends on `RepairGroup`", quote: "On each scheduling cycle, yields `RepairGroup` tasks (one per replica set)", doc: "core.impl/README.md", line: 50 },
-  { statement: "`RepairGroup` depends on `RepairTask`", quote: "It acquires the distributed lock then lazily creates and yields `RepairTask` instances via an inner `RepairTaskIterator`.", doc: "core.impl/README.md", line: 58 },
-  { statement: "`RepairGroup` depends on `VnodeRepairTask`", quote: "When the RepairGroup is executed it will generate one `VnodeRepairTask` per token range to repair.", doc: "docs/ARCHITECTURE.md", line: 287 },
-  { statement: "`RepairGroup` depends on `IncrementalRepairTask`", quote: "When the RepairGroup is executed it will generate one `IncrementalRepairTask`.", doc: "docs/ARCHITECTURE.md", line: 287 },
-  { statement: "`VnodeRepairTask` depends on `RepairTask`", quote: "`VnodeRepairTask` / `IncrementalRepairTask` \u2014 Concrete `RepairTask` subclasses for vnode and incremental repair respectively.", doc: "core.impl/README.md", line: 65 },
-  { statement: "`IncrementalRepairTask` depends on `RepairTask`", quote: "`VnodeRepairTask` / `IncrementalRepairTask` \u2014 Concrete `RepairTask` subclasses for vnode and incremental repair respectively.", doc: "core.impl/README.md", line: 65 }
+  { statement: "`RepairGroup` depends on `VnodeRepairTask`", quote: "When the RepairGroup is executed it will generate one `VnodeRepairTask` per token range to repair.", doc: "docs/ARCHITECTURE.md", line: 287, inDiagram: true },
+  { statement: "`RepairGroup` depends on `IncrementalRepairTask`", quote: "When the RepairGroup is executed it will generate one `IncrementalRepairTask`.", doc: "docs/ARCHITECTURE.md", line: 287, inDiagram: true },
+  { statement: "`NodeWorkerManager` depends on `NodeWorker`", quote: "Maintains a dedicated `NodeWorker` background thread per Cassandra node.", doc: "core.impl/README.md", line: 131, inDiagram: true },
+  { statement: "`TableRepairJob` depends on `RepairGroup`", quote: "On each scheduling cycle, yields `RepairGroup` tasks (one per replica set)", doc: "core.impl/README.md", line: 50, inDiagram: false },
+  { statement: "`RepairGroup` depends on `RepairTask`", quote: "It acquires the distributed lock then lazily creates and yields `RepairTask` instances via an inner `RepairTaskIterator`.", doc: "core.impl/README.md", line: 58, inDiagram: false },
+  { statement: "`VnodeRepairTask` depends on `RepairTask`", quote: "`VnodeRepairTask` / `IncrementalRepairTask` \u2014 Concrete `RepairTask` subclasses for vnode and incremental repair respectively.", doc: "core.impl/README.md", line: 65, inDiagram: false },
+  { statement: "`IncrementalRepairTask` depends on `RepairTask`", quote: "`VnodeRepairTask` / `IncrementalRepairTask` \u2014 Concrete `RepairTask` subclasses for vnode and incremental repair respectively.", doc: "core.impl/README.md", line: 65, inDiagram: false }
 ];
 
 const reportRules = [
@@ -265,6 +266,7 @@ const plans = [
         </div>
 
         <div class="hero-check-wrap" data-reveal>
+          <p class="hero-check-lede">A language model reads your docs and turns their sentences into rules. Each rule is a logical formula, checked against a formal model of your code before and after the pull request. Here is a real run:</p>
           <div class="hero-check-card">
             <header class="hcc-head">
               <span class="hcc-mark"><img src="/icon.svg" alt="" width="20" height="20" /></span>
@@ -289,7 +291,7 @@ const plans = [
               </span>
             </div>
 
-            <RuleRows rows={heroRules} baseSha={heroBaseSha} headSha={heroHeadSha} />
+            <RuleRows rows={heroRules} baseSha={heroBaseSha} headSha={heroHeadSha} logicNote />
           </div>
           <div class="hero-langs" aria-label="Supported languages">
             <span class="hero-langs-label">Works with</span>
@@ -387,7 +389,7 @@ const plans = [
             <div class="compute-intro">
               <h2 class="text-balance">Every verdict is computed, not generated.</h2>
               <p class="section-subcopy mt-4">
-                A language model reads your docs; a program decides what is true. A parser resolves every type and reference in your code before and after the pull request, the way a compiler does, and each sentence in your docs becomes a query over that model. <strong>Verdicts are computed, not predicted.</strong> The language model only reads the prose and explains the results, and nothing is needed beyond the documents your repository already has.
+                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> The language model only reads the prose and explains the results, and nothing is needed beyond the documents your repository already has.
               </p>
             </div>
             <p class="compute-label"><span>01</span> How a finding is produced</p>
@@ -490,27 +492,39 @@ const plans = [
             </div>
 
             <div class="hero-diagram-wrap">
-              <!-- Striff's focused diagram of the pull request: the eight classes it touched and only
-                   the relationships among them. Desktop frames NodeWorker, SchemaRefresher and
-                   RepairScheduler in the band left of the findings overlay (~416px); phones get a
-                   tighter crop of NodeWorker that pans sideways. Each crop is a view fragment on
-                   the image URL, and the stage CSS keeps each image box at its fragment's aspect:
-                   re-tune both together. -->
+              <!-- Striff's focused diagram of the pull request: the classes it touched around
+                   RepairGroup and only the relationships among them. Desktop shows the whole
+                   diagram in the band left of the findings overlay (~416px); tablets start at the
+                   RepairGroup chain; phones get a crop centred on RepairGroup that pans sideways.
+                   Each crop is a view fragment on the image URL, and the stage CSS keeps each image
+                   box at its fragment's aspect: re-tune both together. -->
               <div
                 class="github-diff-stage example-diff-stage hero-diagram-stage is-static"
               >
                 <div class="hero-diagram-scroll">
                   <picture>
-                    <source media="(max-width: 767.98px)" srcset="/examples/ecchronos-1786-focused.svg#svgView(viewBox(-20,1215,1170,606))" />
+                    <source media="(max-width: 767.98px)" srcset="/examples/ecchronos-1786-focused.svg#svgView(viewBox(440,440,1250,605))" />
                     <img
-                      src="/examples/ecchronos-1786-focused.svg#svgView(viewBox(-250,1150,2506,1500))"
-                      alt="Striff's focused diagram of Ericsson/ecchronos PR #1786: NodeWorker with its RepairScheduler field removed in red and a SchemaRefresher field added in green, the new SchemaRefresher class, and RepairScheduler, with the relationships among them"
+                      src="/examples/ecchronos-1786-focused.svg#svgView(viewBox(-12,-22,2428,1230))"
+                      alt="Striff's focused diagram of Ericsson/ecchronos PR #1786: IncrementalRepairJob leading to RepairGroup and on to IncrementalRepairTask and VnodeRepairTask, beside NodeWorkerManager, with added members in green, removed ones in red and changed ones in blue"
                       class="github-diff-graphic github-diff-image"
                       loading="eager"
                       draggable="false"
                     />
                   </picture>
                 </div>
+                <script is:inline>
+                  // Phones: open the sideways-panning crop centred on RepairGroup (x 834-1250 in the
+                  // render; the crop starts at x 440 and is 1250 wide).
+                  (function () {
+                    var sc = document.currentScript.previousElementSibling;
+                    if (!sc || window.innerWidth >= 768) return;
+                    var img = sc.querySelector("img");
+                    var place = function () { sc.scrollLeft = (1042 - 440) * (img.clientWidth / 1250) - sc.clientWidth / 2; };
+                    place();
+                    img.addEventListener("load", place);
+                  })();
+                </script>
 
                 <div class="hero-diagram-tag">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="m8 7 3 9M16 7l-3 9M8.5 6h7"/></svg>
@@ -518,7 +532,7 @@ const plans = [
                 </div>
 
                 <!-- Findings overlay. Open on desktop, where it sits beside the diagram; collapsed
-                     below 1024px, where it would otherwise cover the diagram. The class is set by the inline script below rather than rendered,
+                     below 1280px, where it would otherwise cover the diagram. The class is set by the inline script below rather than rendered,
                      so there is no open-then-collapse flash on a phone. -->
                 <div class="hero-findings-overlay" data-findings-overlay>
                   <button class="hero-findings-toggle" type="button" data-findings-toggle>
@@ -536,7 +550,7 @@ const plans = [
                       </div>
                       <p class="hero-findings-sub">Held on this change <span>{diagramHeldRules.length}</span></p>
                       <ul class="rulelist hero-rulelist">
-                        {diagramHeldRules.map((r) => (
+                        {diagramHeldRules.filter((r) => r.inDiagram).map((r) => (
                           <li class="rulerow rulerow-held">
                             <span class="rulerow-main">
                               <InlineCodeText class="rulerow-quote" text={r.quote} />
@@ -549,6 +563,7 @@ const plans = [
                           </li>
                         ))}
                       </ul>
+                      <p class="hero-findings-more">+ {diagramHeldRules.filter((r) => !r.inDiagram).length} more held</p>
                     </div>
                   </div>
                 </div>
@@ -556,7 +571,7 @@ const plans = [
                   // Runs inline, mid-parse, so the overlay is painted once in its final state.
                   (function () {
                     var el = document.currentScript.previousElementSibling;
-                    if (el && window.innerWidth >= 1024) el.classList.add("is-open");
+                    if (el && window.innerWidth >= 1280) el.classList.add("is-open");
                   })();
                 </script>
               </div>
