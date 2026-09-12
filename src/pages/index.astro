@@ -71,7 +71,7 @@ const pipeline = [
   {
     kind: "symbolic",
     name: "Parse",
-    body: "Both revisions become a structural model of types, members, references and packages \u2014 resolved the way a compiler would, not by matching text."
+    body: "The code before and after the pull request becomes a structural model of types, members, references and packages \u2014 resolved the way a compiler would, not by matching text."
   },
   {
     kind: "neural",
@@ -81,12 +81,12 @@ const pipeline = [
   {
     kind: "symbolic",
     name: "Ground and compile",
-    body: "Any candidate naming something absent from the model is dropped. What survives becomes a formal query over it."
+    body: "A proposed rule that names a class or package your code does not contain is dropped. The rest become precise queries over the model."
   },
   {
     kind: "symbolic",
     name: "Evaluate",
-    body: "The query runs against both revisions. A rule is held when nothing in the pull request breaks it, and only a violation the change introduced is attributed to it."
+    body: "Each query runs against the code before and after the change. A rule is held when nothing in the pull request breaks it, and only a violation the change introduced is attributed to it."
   },
   {
     kind: "neural",
@@ -158,15 +158,15 @@ const mgrPrs = [
 const mgrSlides = [
   {
     title: "Your senior engineers stop being the bottleneck.",
-    body: "Architecture review usually waits on the few people who know the system, and agent-written pull requests have made that queue longer. Striff checks every one against what those people already wrote down, so they get pulled in when a rule breaks, not to re-check the ones that held."
+    body: "Architecture review usually waits on the few people who know the system, and agent-written pull requests have made that queue longer. Striff checks every pull request against what those people already wrote down, so they are pulled in when a rule breaks, not to re-check the ones that held."
   },
   {
     title: "Your documentation stops rotting.",
-    body: "A document nobody checks drifts until nobody trusts it, and then nobody writes the next one. Once a sentence is load-bearing it gets fixed: a README describing a call the code has already dropped shows up on the pull request that dropped it."
+    body: "A document nobody checks drifts until nobody trusts it, and then nobody writes the next one. Once every pull request is checked against it, a stale sentence gets caught: a README describing a call the code has just dropped shows up on the pull request that dropped it."
   },
   {
-    title: "You can point at a trend instead of an anecdote.",
-    body: "Documented rules held, broken and already broken, the share of pull requests that broke none, and the repositories where rules break most, month over month across everything your team owns. When you argue for time to fix something, you bring the chart rather than the feeling."
+    title: "See which repositories are drifting from their docs.",
+    body: "The dashboard shows, month over month, which repositories and pull requests break your documented rules: rules held, broken and already broken, the share of pull requests that broke none, and the repositories flagged most. You know where to spend fix-up time."
   }
 ]
 
@@ -220,7 +220,7 @@ const plans = [
             <span aria-hidden="true">Your <span class="h1-rot" data-h1-rot><span class="h1-rot-word is-on">architecture docs</span><span class="h1-rot-word">design docs</span><span class="h1-rot-word">AGENTS.md</span></span>,<br /> <span class="hero-h1-accent">enforced on every pull request</span>.</span>
           </h1>
           <p class="section-subcopy hero-subcopy mx-auto">
-            Striff reads the documents already in your repository, turns every sentence that makes a claim about the code into a rule it can evaluate, and answers all of them on each pull request. <strong>When a change contradicts what your team wrote down, it says so before the merge, and quotes the line.</strong>
+            Striff reads the documents already in your repository, turns the sentences that make claims about the code into rules, and checks every pull request against them. <strong>When a change contradicts what your team wrote down, it says so before the merge, and quotes the line.</strong>
           </p>
           <div class="flex flex-wrap justify-center gap-3 pt-2">
             <a class="btn-primary btn-primary-lg" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
@@ -288,9 +288,9 @@ const plans = [
               <p class="text-xs font-bold uppercase tracking-[0.2em] text-rose-500">The problem</p>
               <h2 class="mt-3 text-balance">Nobody re-reads the docs on every pull request.</h2>
               <p class="section-subcopy mt-4">
-                Your agents read your architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. Left unchecked, each merge drifts a little further from what your team agreed until <strong>every change takes twice as long and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
+                Coding agents read your architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. Left unchecked, each merge drifts a little further from what your team agreed, until <strong>every change costs more than it should and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
               </p>
-              <BlogLink slug="architecture-matters-more-not-less" kicker="Why this is getting worse" class="mt-6" />
+              <BlogLink slug="architecture-matters-more-not-less" kicker="Why coding agents make architecture review matter more" class="mt-6" />
             </div>
 
             <!-- The firehose, run by agents: every lane is an agent's branch and every row in the
@@ -359,9 +359,9 @@ const plans = [
         <div class="compute-split">
           <div class="compute-col" data-reveal>
             <div class="compute-intro">
-              <h2 class="text-balance">Computed, not generated.</h2>
+              <h2 class="text-balance">Every verdict is computed, not generated.</h2>
               <p class="section-subcopy mt-4">
-                Striff is neurosymbolic, not an LLM wrapper. A parser resolves every type and reference in your code at both revisions, the way a compiler does, and each sentence in your docs becomes a query over that model. <strong>Verdicts are computed, not predicted.</strong> A language model only reads the prose and ranks the results, and nothing is needed beyond the documents your repository already has.
+                A language model reads your docs; a program decides what is true. A parser resolves every type and reference in your code before and after the pull request, the way a compiler does, and each sentence in your docs becomes a query over that model. <strong>Verdicts are computed, not predicted.</strong> The language model only reads the prose and explains the results, and nothing is needed beyond the documents your repository already has.
               </p>
             </div>
             <p class="compute-label"><span>01</span> How a finding is produced</p>
@@ -446,6 +446,7 @@ const plans = [
             <span>The diagram engine is open source: <b>striff-lib</b> on GitHub</span>
             <em>MIT</em>
           </a>
+          <BlogLink slug="design-docs-are-enforceable-now" kicker="What this pull request broke, and why it mattered" class="mt-6" />
         </div>
 
         <div class="relative z-10 mx-auto mt-4 w-full max-w-[90rem]" data-reveal>
@@ -528,9 +529,9 @@ const plans = [
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="max-w-3xl" data-reveal>
           <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For engineering managers</p>
-          <h2 class="mt-3 text-balance">Your architecture stops living in people&rsquo;s heads.</h2>
+          <h2 class="mt-3 text-balance">What your senior engineers decided, checked on every pull request.</h2>
           <p class="section-subcopy mt-4">
-            Keeping a system coherent while people and agents change it every day is the part nobody owns. <strong>Striff makes it part of the process instead: reviews that do not wait on your seniors, documents that stay true, and a trend you can show.</strong>
+            Keeping a system coherent while people and agents change it every day is the part nobody owns. <strong>Striff makes it part of every pull request: reviews that do not wait on your seniors, documents that stay true, and a view of where the code is drifting from them.</strong>
           </p>
         </div>
 
@@ -658,7 +659,7 @@ const plans = [
           </div>
         </div>
         <div class="section-invite">
-          <BlogLink slug="architecture-review-checklist" kicker="The checklist, by hand" />
+          <BlogLink slug="architecture-review-checklist" kicker="What your seniors check by hand, step by step" />
         </div>
       </div>
     </section>
@@ -737,7 +738,7 @@ const plans = [
         <div class="faq-list" data-reveal>
           <details class="faq-item">
             <summary class="faq-q">How does Striff know what my architecture is supposed to look like?</summary>
-            <p class="faq-a"><strong>You already wrote it down.</strong> Striff catalogues the documents in your repository that make claims about the code, turns each of those sentences into a rule it can evaluate, and answers it against the model your pull request produces, quoting the sentence and linking the file it came from. <em>Nothing is configured and no rule format is invented:</em> your documentation is the rulebook. A rule can be as plain as where a class lives or as sharp as <em>&ldquo;the domain module must not depend on infrastructure&rdquo;</em>. Alongside the rules, every pull request gets a <strong>diagram of what changed</strong> and <strong>review notes</strong> on the components it touched. If your docs make no checkable claim about the code, Striff says so rather than inventing rules of its own.</p>
+            <p class="faq-a"><strong>You already wrote it down.</strong> Striff catalogues the documents in your repository that make claims about the code, turns those sentences into rules, and checks them against the code your pull request produces, quoting the sentence and linking the file it came from. <em>Nothing is configured and no rule format is invented:</em> your documentation is the rulebook. A rule can be as plain as where a class lives or as sharp as <em>&ldquo;the domain module must not depend on infrastructure&rdquo;</em>. Alongside the rules, every pull request gets a <strong>diagram of what changed</strong> and <strong>review notes</strong> on the components it touched. If your docs make no checkable claim about the code, Striff invents no rules of its own: you still get the diagram and the review notes.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">What languages does Striff support?</summary>
@@ -790,7 +791,7 @@ const plans = [
           <div class="cta-content mx-auto max-w-3xl text-center">
             <h2 class="text-balance text-white">Code is cheap now. Changing it isn't.</h2>
             <p class="section-subcopy mx-auto mt-4 text-slate-300">
-              Every unchecked merge makes the next change a little more expensive. It compounds quietly, and nobody can point at the day it started. Striff starts checking on your next pull request.
+              Every unchecked merge makes the next change a little more expensive. The cost compounds quietly, and nobody can point at the day it started. Striff starts checking on your next pull request.
             </p>
             <div class="mt-8 flex flex-wrap justify-center gap-4">
               <a class="btn-primary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">

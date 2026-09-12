@@ -152,4 +152,4 @@ That's what Striff is. It reads the architecture your docs already describe, tur
 
 The bar is deliberately high, and the consequence is that it is quiet. That is the same bargain your linter makes: you trust it because it does not shout. Your linter guards style, your CI guards correctness, and what you wrote down about the shape of the system finally gets a guardian of its own, at whatever speed your team ships.
 
-[Install it on a repository](https://github.com/apps/striff-app/installations/new) and open your next pull request.
+[Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open your next pull request.
