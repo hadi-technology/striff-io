@@ -1,8 +1,7 @@
-// Shared by the homepage hero and the flagship blog post, so the two can never drift.
+// The flagship blog post's rule figure: three rows from the real Ericsson/ecchronos run.
 
 /**
- * The hero check card: three of the rules Striff checked from ecchronos'
- * own documents on PR #1786. Verified by hand against both revisions at
+ * Three of the rules Striff checked from ecchronos' own documents on PR #1786. Verified by hand against both revisions at
  * base d188eb1b33 and head 0288412016 before being put on the page.
  *
  *  - Violated is a real differential result. `NodeWorker.java` imports and calls
@@ -17,19 +16,17 @@
  *    package, VnodeRepairTask.java:52 and IncrementalRepairTask.java:43 extend RepairTask.
  *
  * The mix is not curated for drama. Striff reports only what it can verify. The homepage
- * tallies count the current run on #1786 (63 rules checked: 62 held, 1 violated); the
+ * report counts the current run on #1786 (63 rules checked: 62 held, 1 violated); the
  * flagship post keeps the counts of the dated run it describes (28: 27 held, 1 violated).
  * A rule Striff could not answer from the code is left out rather than shown as passing.
  */
 
 /*
- * Each row also carries the sentence's formal rule, typeset as first-order logic. It is
- * the rule-language query (Striff's rule language) read as a formula: refs(x, y, k) is a
- * reference of any kind k, "expect: true" becomes an existential over it, a placement
- * rule is set membership, and a family sentence ("A / B are subclasses") is a universal
- * over the named members, exactly the one-rule-per-member expansion the extractor does.
- * The stored verdicts keep the statement, not the query, so these are written from the
- * statements in the rule language's shapes. base/head: is the formula satisfied at each revision.
+ * Each row carries its rule as a formula, typeset under the plain reading: the rule-language
+ * query read as first-order logic, where refs(x, y, k) is a reference of any kind k,
+ * "expect: true" becomes an existential over it, a placement rule is set membership, and a
+ * family sentence ("A / B are subclasses") is a universal over the named members. base/head:
+ * whether the model of the code at each revision satisfies it.
  */
 
 /** The two revisions of Ericsson/ecchronos #1786 every rule was evaluated at. */
@@ -39,7 +36,7 @@ export const headSha = "0288412";
 export const ecchronosRules = [
   {
     verdict: "violated",
-    verdictLabel: "Violated",
+    verdictLabel: "Broken by this PR",
     quote: "Calls `RepairScheduler.putConfigurations()` to keep jobs up to date",
     doc: "core.impl/README.md",
     line: 136,
