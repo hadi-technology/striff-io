@@ -3,6 +3,9 @@
 // kind of rule a team's docs already state and what Striff reports on a pull request. Every real
 // example on the site (the report, the diagram section and the flagship post) uses the real
 // Ericsson/ecchronos run in ecchronosRules.ts and the homepage's own report data.
+//
+// Each rule carries its formula, typeset under the plain reading: one line of KaTeX chunks, so
+// a long formula wraps only between chunks.
 
 export const heroExampleRepo = "acme/checkout-service";
 
@@ -19,10 +22,11 @@ export const heroExampleRules = [
     line: 18,
     statement: "Nothing in `checkout` depends on `legacy`",
     witness: "`CartService` now imports `legacy.pricing.PriceCalculator`",
-    // The formula the hero's logic note typesets for this row.
     logic: [[
       String.raw`\htmlClass{lg-q}{\neg\exists}\, c, d.`,
-      String.raw`\mathrm{in}(c, \mathtt{checkout}) \wedge \mathrm{in}(d, \mathtt{legacy}) \wedge \mathrm{refs}(c, d)`
+      String.raw`\mathrm{in}(c, \mathtt{checkout})`,
+      String.raw`\wedge\ \mathrm{in}(d, \mathtt{legacy})`,
+      String.raw`\wedge\ \mathrm{refs}(c, d)`
     ]],
     base: true,
     head: false
@@ -35,6 +39,12 @@ export const heroExampleRules = [
     doc: "docs/adr/0007-payments.md",
     line: 12,
     statement: "Only `billing` depends on `com.stripe`",
+    logic: [[
+      String.raw`\htmlClass{lg-q}{\forall}\, c, d.`,
+      String.raw`(\mathrm{refs}(c, d)`,
+      String.raw`\wedge\ \mathrm{in}(d, \mathtt{com.stripe}))`,
+      String.raw`\rightarrow\ \mathrm{in}(c, \mathtt{billing})`
+    ]],
     base: true,
     head: true
   },
@@ -46,6 +56,12 @@ export const heroExampleRules = [
     doc: "ARCHITECTURE.md",
     line: 42,
     statement: "Nothing in `domain` depends on `infrastructure`",
+    logic: [[
+      String.raw`\htmlClass{lg-q}{\neg\exists}\, c, d.`,
+      String.raw`\mathrm{in}(c, \mathtt{domain})`,
+      String.raw`\wedge\ \mathrm{in}(d, \mathtt{infrastructure})`,
+      String.raw`\wedge\ \mathrm{refs}(c, d)`
+    ]],
     base: true,
     head: true
   }

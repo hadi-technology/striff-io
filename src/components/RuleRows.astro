@@ -1,12 +1,12 @@
 ---
 /**
- * The documented-rule rows: the sentence from the docs with its file and line, the rule it
- * became in plain English, and the verdict on this pull request with whether the rule held
- * before the change and after it. With `logicNote`, one expandable note under the rows says
- * how a verdict is decided and typesets the violated row's formula once. An optional witness
- * line under the rule names what the change did. The homepage hero uses it with an
- * illustrative example and the note; the flagship blog post shows the real ecChronos run and
- * typesets its formula in its own text.
+ * The documented-rule rows: the sentence from the docs with its file and line; the rule it
+ * became, in plain English and as the formula that is evaluated (typeset by KaTeX at build
+ * time); and the verdict on this pull request with the two satisfaction facts it rests on,
+ * M_before and M_after. An optional witness line names what the change did. With
+ * `logicNote`, a small expandable note says why the verdicts are rigorous. The homepage hero
+ * uses an illustrative example with the note; the flagship blog post shows the real
+ * ecChronos run.
  */
 import InlineCodeText from "./InlineCodeText.astro";
 import { tex } from "../lib/tex";
@@ -20,11 +20,15 @@ interface Props {
 }
 
 const { rows, baseSha, headSha, logicNote = false } = Astro.props;
-const noteRow = logicNote ? rows.find((r) => r.verdict === "violated" && r.logic) : undefined;
-const noteFormula = noteRow ? tex(String.raw`\varphi \coloneqq ` + noteRow.logic.map((line: string[]) => line.join(String.raw`\ `)).join(String.raw`\ `)) : "";
-const noteSat = noteRow ? tex(String.raw`\mathcal{M}_{\mathrm{base}} \htmlClass{sat}{\models} \varphi \qquad \mathcal{M}_{\mathrm{head}} \htmlClass{unsat}{\nvDash} \varphi`) : "";
+const phiLabel = (i: number) => tex(String.raw`\varphi_{${i + 1}} \coloneqq`);
+const satBefore = (i: number) => tex(String.raw`\mathcal{M}_{\mathrm{before}} \htmlClass{sat}{\models} \varphi_{${i + 1}}`);
+const satAfter = (i: number, holds: boolean) =>
+  tex(holds
+    ? String.raw`\mathcal{M}_{\mathrm{after}} \htmlClass{sat}{\models} \varphi_{${i + 1}}`
+    : String.raw`\mathcal{M}_{\mathrm{after}} \htmlClass{unsat}{\nvDash} \varphi_{${i + 1}}`);
 const phi = tex(String.raw`\varphi`);
 const model = tex(String.raw`\mathcal{M}`);
+const brokeFacts = tex(String.raw`\mathcal{M}_{\mathrm{before}} \htmlClass{sat}{\models} \varphi \text{ and } \mathcal{M}_{\mathrm{after}} \htmlClass{unsat}{\nvDash} \varphi`);
 ---
 
 <div class="hcc-table">
@@ -33,7 +37,7 @@ const model = tex(String.raw`\mathcal{M}`);
     <span>The rule it became</span>
     <span>On this PR</span>
   </div>
-  {rows.map((row) => (
+  {rows.map((row, i) => (
     <div class={`hcc-row hcc-row-${row.verdict}`}>
       <span class="hcc-quote">
         <InlineCodeText class="hcc-quote-text" text={row.quote} />
@@ -49,6 +53,18 @@ const model = tex(String.raw`\mathcal{M}`);
             <InlineCodeText class="hcc-rule-text hcc-rule-reading" text={row.statement} />
             {row.craft && <span class="hcc-craft">{row.craft}</span>}
           </span>
+          {row.logic && (
+            <span class="hcc-formula" aria-hidden="true">
+              <span class="hcc-formula-label" set:html={phiLabel(i)} />
+              {row.logic.map((line: string[]) => (
+                <span class="hcc-formula-line">
+                  {line.map((chunk, j) => (
+                    <>{j > 0 && " "}<span class="hcc-formula-chunk" set:html={tex(chunk)} /></>
+                  ))}
+                </span>
+              ))}
+            </span>
+          )}
           {row.witness && <InlineCodeText class="hcc-witness" text={row.witness} />}
         </span>
       </span>
@@ -63,30 +79,26 @@ const model = tex(String.raw`\mathcal{M}`);
             )}
             {row.verdictLabel}
           </span>
-          <span class="hcc-status-sat">
-            <span class="hcc-ba is-ok" title={baseSha ? `base ${baseSha}` : undefined}>before <b aria-hidden="true">✓</b><span class="sr-only">: the rule held</span></span>
-            <span class="hcc-ba-sep" aria-hidden="true">·</span>
-            <span class={`hcc-ba ${row.head ? "is-ok" : "is-bad"}`} title={headSha ? `head ${headSha}` : undefined}>after <b aria-hidden="true">{row.head ? "✓" : "✗"}</b><span class="sr-only">{row.head ? ": the rule holds" : ": the rule is broken"}</span></span>
+          <span class="hcc-status-sat" aria-hidden="true">
+            <span title={baseSha ? `base ${baseSha}` : undefined} set:html={satBefore(i)} />
+            <span title={headSha ? `head ${headSha}` : undefined} set:html={satAfter(i, row.head)} />
           </span>
+          <span class="sr-only">{row.head ? "The rule held before this pull request and still holds after it." : "The rule held before this pull request and is broken after it."}</span>
         </span>
       </span>
     </div>
   ))}
 </div>
-{noteRow && (
+{logicNote && (
   <details class="hcc-proof">
     <summary>
       <span class="hcc-proof-kicker">Neurosymbolic &middot; formal model checking</span>
-      <span class="hcc-proof-q">How each verdict is decided</span>
+      <span class="hcc-proof-q">Why this is rigorous</span>
       <svg class="hcc-proof-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
     </summary>
     <div class="hcc-proof-body">
-      <p>A language model reads each sentence in your docs and proposes the rule it states. The rule is compiled into a formula <span set:html={phi} /> in first-order logic, and a parser turns the code before and after the pull request into finite models <span set:html={model} /> of its types, members and references. Every verdict is formal model checking in the logical sense: does the model satisfy the formula? For the first row:</p>
-      <div class="hcc-proof-math">
-        <span set:html={noteFormula} />
-        <span set:html={noteSat} />
-      </div>
-      <p>Satisfied before the change and not after it, so it is broken by this pull request. A rule is held when nothing in the pull request breaks it.</p>
+      <p>A language model reads each sentence in your docs and proposes the rule it states. The rule is compiled into a formula <span set:html={phi} /> in first-order logic, and a parser turns the code before and after the pull request into finite models <span set:html={model} /> of its types, members and references. Every verdict is formal model checking in the logical sense: does the model satisfy the formula?</p>
+      <p>A rule is broken by the pull request when <span set:html={brokeFacts} />, and held when nothing in the pull request breaks it. The language model reads and proposes; the program decides.</p>
     </div>
   </details>
 )}

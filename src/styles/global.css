@@ -5827,12 +5827,38 @@
   color: #334155;
 }
 
-.hcc-status-sat { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 0.35rem; font-size: 0.75rem; }
-.hcc-ba { color: #475569; font-weight: 500; white-space: nowrap; }
-.hcc-ba b { font-weight: 700; }
-.hcc-ba.is-ok b { color: #17794a; }
-.hcc-ba.is-bad b { color: #c9313f; }
-.hcc-ba-sep { color: #94a3b8; }
+.hcc-status-sat { gap: 0.2rem; color: #334155; }
+.hcc-status-sat .katex { font-size: 1.02em; white-space: nowrap; }
+.hcc-status-sat .sat { color: #17794a; }
+.hcc-status-sat .unsat { color: #c9313f; }
+
+/* ---- the rule as a formula ----
+   Under the plain reading, the formula that is actually evaluated, typeset by KaTeX at build
+   time: identifiers in its typewriter face, quantifiers the only colour, and the phi label in
+   the margin the way a paper names an equation. Each chunk is one KaTeX box, so a long
+   formula wraps only between chunks, never inside a term. */
+.hcc-formula {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.5rem;
+  row-gap: 0.1rem;
+  align-items: baseline;
+  min-width: 0;
+  margin-top: 0.1rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(100, 116, 139, 0.28);
+  color: #0f172a;
+}
+/* On a narrow screen a single term wider than the column scrolls inside the box instead of
+   running past it. Wider screens never need it, so they never show a scrollbar. */
+@media (max-width: 820px) {
+  .hcc-formula { overflow-x: auto; overflow-y: hidden; padding-bottom: 0.15rem; }
+}
+.hcc-formula-label { grid-row: 1 / span 3; color: #94a3b8; white-space: nowrap; }
+.hcc-formula-line { grid-column: 2; line-height: 1.75; }
+.hcc-formula-line + .hcc-formula-line { padding-left: 1.2rem; }
+.hcc-formula .katex { font-size: 1.05em; }
+.hcc-formula .lg-q { color: #6d28d9; }
 
 /* What the change did, under a broken rule: the class and the reference that broke it. */
 .hcc-witness { display: block; margin-top: 0.1rem; font-size: 0.8rem; line-height: 1.5; color: #9f1f33; }
@@ -5857,8 +5883,6 @@
 .hcc-proof[open] .hcc-proof-chev { transform: rotate(180deg); }
 .hcc-proof-body { padding: 0 1.5rem 1.15rem; max-width: 64rem; font-size: 0.86rem; line-height: 1.62; color: #475569; }
 .hcc-proof-body p + p { margin-top: 0.6rem; }
-.hcc-proof-math { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 2.2rem; margin: 0.7rem 0; padding: 0.7rem 0.95rem; border: 1px solid #e2e8f0; border-radius: 0.6rem; background: #ffffff; color: #0f172a; overflow-x: auto; }
-.hcc-proof-math .katex { font-size: 1.05em; }
 .hcc-proof .lg-q { color: #6d28d9; }
 .hcc-proof .sat { color: #17794a; }
 .hcc-proof .unsat { color: #c9313f; }
@@ -5870,8 +5894,9 @@
 
 @media (max-width: 820px) {
   .hcc-table .hcc-verdict-cell { align-items: flex-start; }
-  .hcc-status { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.9rem; }
-  .hcc-status-sat { flex-direction: row; gap: 0.35rem; padding: 0 0 0 0.9rem; border-top: 0; border-left: 1px solid var(--st-bd); }
+  .hcc-status-sat { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0; }
+  .hcc-status-sat > span + span::before { content: "\00b7"; margin: 0 0.75rem; color: #94a3b8; }
+  .hcc-formula .katex { font-size: 1em; }
 }
 
 
@@ -5912,15 +5937,14 @@
 .bp-rules .hcc-row { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.4fr); row-gap: 0.6rem; }
 .bp-rules .hcc-thead span:last-child { display: none; }
 .bp-rules .hcc-verdict-cell { grid-column: 2; align-items: flex-start; }
-.bp-rules .hcc-status { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.9rem; }
-.bp-rules .hcc-status-sat { flex-direction: row; gap: 0.35rem; padding: 0 0 0 0.9rem; border-top: 0; border-left: 1px solid var(--st-bd); }
+.bp-rules .hcc-status-sat { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0; }
+.bp-rules .hcc-status-sat > span + span::before { content: "\00b7"; margin: 0 0.75rem; color: #94a3b8; }
 
 /* On a phone even two columns squeeze the sentence to a word a line, so the rows stack the
    way the hero's do: the sentence, the rule it became, then the verdict. */
 @media (max-width: 640px) {
   .bp-rules .hcc-row { grid-template-columns: minmax(0, 1fr); }
   .bp-rules .hcc-verdict-cell { grid-column: auto; }
-  .bp-rules .hcc-status { flex-wrap: wrap; row-gap: 0.4rem; }
 }
 
 /* Names in the plain reading break only when they cannot fit, never mid-word by default. */

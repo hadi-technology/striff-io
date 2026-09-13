@@ -22,9 +22,11 @@
  */
 
 /*
- * Rows read in plain English: the sentence, the rule it became, and the verdict with whether
- * the rule was satisfied before and after the change (base/head). The post typesets the
- * violated row's formula in its own text.
+ * Each row carries its rule as a formula, typeset under the plain reading: the rule-language
+ * query read as first-order logic, where refs(x, y, k) is a reference of any kind k,
+ * "expect: true" becomes an existential over it, a placement rule is set membership, and a
+ * family sentence ("A / B are subclasses") is a universal over the named members. base/head:
+ * whether the model of the code at each revision satisfies it.
  */
 
 /** The two revisions of Ericsson/ecchronos #1786 every rule was evaluated at. */
@@ -39,6 +41,7 @@ export const ecchronosRules = [
     doc: "core.impl/README.md",
     line: 136,
     statement: "`NodeWorker` depends on `RepairScheduler`",
+    logic: [[String.raw`\htmlClass{lg-q}{\exists} k.`, String.raw`\mathrm{refs}(\mathtt{NodeWorker},`, String.raw`\mathtt{RepairScheduler}, k)`]],
     base: true,
     head: false
   },
@@ -50,6 +53,7 @@ export const ecchronosRules = [
     doc: "connection/README.md",
     line: 57,
     statement: "`ConnectionType` is in `com.\u200bericsson.\u200bbss.\u200bcassandra.\u200becchronos.\u200butils.\u200benums.\u200bconnection`",
+    logic: [[String.raw`\mathtt{ConnectionType}`, String.raw`\in \ldots\mathtt{utils.enums.connection}`]],
     base: true,
     head: true
   },
@@ -61,6 +65,10 @@ export const ecchronosRules = [
     doc: "core.impl/README.md",
     line: 65,
     statement: "`VnodeRepairTask` depends on `RepairTask`, and `IncrementalRepairTask` depends on `RepairTask`",
+    logic: [
+      [String.raw`\htmlClass{lg-q}{\forall} t \in \{\mathtt{VnodeRepairTask},`, String.raw`\mathtt{IncrementalRepairTask}\}.`],
+      [String.raw`\htmlClass{lg-q}{\exists} k.`, String.raw`\mathrm{refs}(t,`, String.raw`\mathtt{RepairTask}, k)`]
+    ],
     base: true,
     head: true
   }
