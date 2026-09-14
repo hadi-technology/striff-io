@@ -2,6 +2,7 @@
 title: "Every Striff finding comes with a receipt"
 description: "AI review comments are easy to write and hard to trust. What a Striff check on your pull request actually says, where each line of it comes from, and how to verify any of it yourself in under a minute."
 date: 2026-08-24
+category: "Product"
 ---
 
 Most developers have the same experience with AI code review. The comments sound right. Some of them are right. You cannot tell which without redoing the analysis yourself, so after a few weeks you stop reading them.

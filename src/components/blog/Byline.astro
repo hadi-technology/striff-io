@@ -1,0 +1,26 @@
+---
+/**
+ * The author line: an avatar (the image when a post names one, initials otherwise), the name and
+ * the role. The avatar is decorative because the name is always printed beside it.
+ */
+import { initials } from "../../lib/blog";
+
+interface Props {
+  name: string;
+  role?: string;
+  avatar?: string;
+  size?: "sm" | "md" | "lg";
+}
+
+const { name, role, avatar, size = "md" } = Astro.props;
+---
+
+<div class={`sb-byline sb-byline--${size}`}>
+  <span class="sb-avatar" aria-hidden="true">
+    {avatar ? <img src={avatar} alt="" width="56" height="56" loading="lazy" decoding="async" /> : initials(name)}
+  </span>
+  <span class="sb-byline-text">
+    <span class="sb-byline-name">{name}</span>
+    {role && <span class="sb-byline-role">{role}</span>}
+  </span>
+</div>

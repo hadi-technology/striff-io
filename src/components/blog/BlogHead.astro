@@ -1,0 +1,11 @@
+---
+/**
+ * Head tags every blog page shares: the RSS feed, and preloads for the two faces the first screen
+ * is set in. The @font-face rules themselves live in styles/blog.css.
+ */
+import { BLOG_NAME } from "../../lib/blog";
+---
+
+<link rel="alternate" type="application/rss+xml" title={BLOG_NAME} href="/blog/rss.xml" />
+<link rel="preload" href="/fonts/newsreader-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />

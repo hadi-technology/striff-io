@@ -1,59 +1,146 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { getCollection } from "astro:content";
+import BlogHead from "../../components/blog/BlogHead.astro";
+import Byline from "../../components/blog/Byline.astro";
+import PostCard from "../../components/blog/PostCard.astro";
+import PostCover from "../../components/blog/PostCover.astro";
+import {
+  BLOG_DESCRIPTION,
+  BLOG_MISSION,
+  BLOG_NAME,
+  SITE,
+  categorySlug,
+  categoryTone,
+  formatDate,
+  getPublishedPosts,
+  readingMinutes,
+} from "../../lib/blog";
+import "../../styles/blog.css";
 
-const allPosts = await getCollection("blog", ({ data }) => !data.draft);
+const posts = await getPublishedPosts();
+const [featured, ...rest] = posts;
 
-const posts = allPosts
-  .map((post) => ({
-    title: post.data.title,
-    description: post.data.description,
-    date: post.data.date,
-    slug: post.slug,
-  }))
-  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+const categories = Array.from(
+  posts
+    .reduce((all, post) => {
+      const key = categorySlug(post.data.category);
+      const entry = all.get(key) ?? { key, name: post.data.category, count: 0 };
+      entry.count += 1;
+      return all.set(key, entry);
+    }, new Map<string, { key: string; name: string; count: number }>())
+    .values()
+).sort((a, b) => a.name.localeCompare(b.name));
 ---
 
 <BaseLayout
-  title="Blog - Striff"
+  title={`${BLOG_NAME} · Blog`}
   description="Notes on documented architecture, structural review and keeping a codebase coherent while agents write most of it."
-  canonical="https://striff.io/blog"
+  canonical={`${SITE}/blog`}
 >
-  <main class="pb-20 pt-16">
-    <div class="mx-auto max-w-[90rem] px-6">
-      <div class="mx-auto max-w-3xl">
-        <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500" data-reveal>Blog</p>
-        <h1 class="mt-3 text-balance" data-reveal>On documented architecture, and making it hold.</h1>
-        <p class="section-subcopy mt-4" data-reveal>
-          Engineering patterns, real findings from open-source PRs, and updates on making structural review part of every pull request.
-        </p>
-      </div>
+  <Fragment slot="head">
+    <BlogHead />
+  </Fragment>
 
-      <div class="mx-auto mt-12 grid max-w-5xl gap-5 md:grid-cols-2">
-        {posts.map((post) => (
-          <a href={`/blog/${post.slug}`} class="blog-card" data-reveal>
-            <p class="blog-card-date">
-              {new Date(post.date).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
-            <h2 class="blog-card-title">{post.title}</h2>
-            <p class="blog-card-desc">{post.description}</p>
-            <span class="blog-card-link">
-              Read more
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-            </span>
+  <main class="sb sb-index">
+    <div class="sb-shell">
+      <header class="sb-masthead">
+        <div class="sb-masthead-bar">
+          <p class="sb-label">Blog</p>
+          <a class="sb-rss" href="/blog/rss.xml">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9" /><path d="M4 4a16 16 0 0 1 16 16" /><circle cx="5" cy="19" r="1" /></svg>
+            RSS feed
           </a>
-        ))}
-      </div>
+        </div>
+        <h1 class="sb-masthead-title">Striff <em>Engineering</em></h1>
+        <div class="sb-masthead-foot">
+          <p class="sb-masthead-mission">{BLOG_MISSION}</p>
+          <p class="sb-masthead-desc">{BLOG_DESCRIPTION}</p>
+        </div>
+      </header>
 
-      {posts.length === 0 && (
-        <div class="mx-auto mt-16 max-w-md text-center">
-          <p class="text-slate-500">No posts yet. Check back soon.</p>
+      {categories.length > 1 && (
+        <div class="sb-filter" data-sb-filter>
+          <p class="sb-label" id="sb-filter-label">Topics</p>
+          <div class="sb-filter-chips" role="group" aria-labelledby="sb-filter-label">
+            <button type="button" class="sb-chip" data-filter="all" aria-pressed="true">
+              All <span class="sb-chip-count">{posts.length}</span>
+            </button>
+            {categories.map((category) => (
+              <button type="button" class="sb-chip" data-filter={category.key} aria-pressed="false">
+                {category.name} <span class="sb-chip-count">{category.count}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
+
+      {featured && (
+        <article class="sb-feature" data-sb-item data-category={categorySlug(featured.data.category)}>
+          <div class="sb-feature-cover">
+            <PostCover slug={featured.slug} category={featured.data.category} />
+            <span class="sb-feature-flag">Latest</span>
+          </div>
+          <div class="sb-feature-body">
+            <p class="sb-meta">
+              <span class={`sb-cat sb-tone-${categoryTone(featured.data.category)}`}>{featured.data.category}</span>
+              <time datetime={featured.data.date.toISOString()}>{formatDate(featured.data.date)}</time>
+              <span>{readingMinutes(featured)} min read</span>
+            </p>
+            <h2 class="sb-feature-title"><a href={`/blog/${featured.slug}`}>{featured.data.title}</a></h2>
+            <p class="sb-feature-dek">{featured.data.description}</p>
+            <div class="sb-feature-foot">
+              <Byline name={featured.data.author} role={featured.data.authorRole} avatar={featured.data.authorAvatar} size="sm" />
+              <span class="sb-readmore" aria-hidden="true">
+                Read article
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+              </span>
+            </div>
+          </div>
+        </article>
+      )}
+
+      {rest.length > 0 && (
+        <section class="sb-more" data-sb-more aria-labelledby="sb-more-title">
+          <div class="sb-section-head">
+            <h2 id="sb-more-title" class="sb-label">More articles</h2>
+          </div>
+          <div class="sb-grid">
+            {rest.map((post) => <PostCard post={post} filterable />)}
+          </div>
+        </section>
+      )}
+
+      {posts.length === 0 && <p class="sb-empty">No posts yet. Check back soon.</p>}
     </div>
   </main>
+
+  <script is:inline>
+    // Topic filter. Every post is in the page; this only hides the ones outside the chosen topic.
+    (function () {
+      var bar = document.querySelector("[data-sb-filter]");
+      if (!bar) return;
+      var buttons = Array.prototype.slice.call(bar.querySelectorAll("button[data-filter]"));
+      var items = Array.prototype.slice.call(document.querySelectorAll("[data-sb-item]"));
+      var more = document.querySelector("[data-sb-more]");
+
+      function apply(key) {
+        var restShown = 0;
+        items.forEach(function (item) {
+          var match = key === "all" || item.getAttribute("data-category") === key;
+          item.hidden = !match;
+          if (match && item.hasAttribute("data-sb-rest")) restShown++;
+        });
+        if (more) more.hidden = restShown === 0;
+        buttons.forEach(function (button) {
+          button.setAttribute("aria-pressed", String(button.getAttribute("data-filter") === key));
+        });
+      }
+
+      buttons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          apply(button.getAttribute("data-filter"));
+        });
+      });
+    })();
+  </script>
 </BaseLayout>
