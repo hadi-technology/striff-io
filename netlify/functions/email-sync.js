@@ -4,6 +4,19 @@ const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
 const STRIFF_API_BASE = process.env.STRIFF_API_BASE_URL || "https://api.striff.io";
 
+// A billing token is valid for 30 days from issue: v1.<expiresAtEpochSec>.<hex HMAC of
+// "v1:<installation id>:<expiry>">. striff-api answers an expired one with 401 token_expired.
+const BILLING_TOKEN_LIFETIME_SEC = 30 * 24 * 60 * 60;
+
+function generateToken(installationId) {
+  const expiresAt = Math.floor(Date.now() / 1000) + BILLING_TOKEN_LIFETIME_SEC;
+  const signature = crypto
+    .createHmac("sha256", STRIFF_BILLING_AUTH_SECRET)
+    .update(`v1:${installationId}:${expiresAt}`)
+    .digest("hex");
+  return `v1.${expiresAt}.${signature}`;
+}
+
 // Reports the signed-in user's primary email to the backend for each installation they can
 // access. auth-callback does the same at sign-in, but a user who installs the app while already
 // signed in never passes through the callback again, so the dashboard fires this on load. The
@@ -45,10 +58,7 @@ export const handler = async (event) => {
     const instData = await instRes.json();
     await Promise.all(
       (instData.installations || []).map((inst) => {
-        const hmacToken = crypto
-          .createHmac("sha256", STRIFF_BILLING_AUTH_SECRET)
-          .update(String(inst.id))
-          .digest("hex");
+        const hmacToken = generateToken(inst.id);
         return fetch(
           `${STRIFF_API_BASE}/api/v1/billing/account-email?installation_id=${inst.id}&token=${hmacToken}`,
           {
