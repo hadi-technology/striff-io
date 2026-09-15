@@ -1,134 +1,226 @@
 ---
-import AuthButton from "../components/AuthButton";
+/**
+ * The site header on every page: the logo lockup (with a section label inside the blog), the main
+ * sections, and the calls to action. On wide screens a pill slides between the sections under the
+ * pointer and rests on the current one, which also carries an accent rule on the header's lower
+ * edge. Below 64rem the sections and actions move into a sheet: the toggle morphs into a close
+ * button, focus stays inside while it is open, and Escape or a link closes it.
+ */
+import AuthButton from "./AuthButton";
+
+const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
+const within = (section: string) => section !== "" && (path === section || path.startsWith(`${section}/`));
+const currentFor = (section: string) => (path === section ? "page" : within(section) ? "true" : undefined);
 
 const navLinks = [
-  { label: "For Teams", href: "/#how" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Blog", href: "/blog" },
-  { label: "Contact", href: "/contact" }
+  { label: "For Teams", href: "/#how", section: "" },
+  { label: "Pricing", href: "/pricing", section: "/pricing" },
+  { label: "Blog", href: "/blog", section: "/blog" },
+  { label: "Contact", href: "/contact", section: "/contact" },
 ];
-const primaryCtaLabel = "Install App";
-const primaryCtaHref = "https://github.com/apps/striff-app/installations/new";
-const extensionCtaLabel = "Extension";
-const extensionCtaHref = "/#extension";
+const inBlog = within("/blog");
+const installUrl = "https://github.com/apps/striff-app/installations/new";
+const extensionHref = "/#extension";
 ---
 
 <a class="skip-link" href="#main-content">Skip to content</a>
 
-<header class="site-header sticky top-0 z-50">
-  <div class="mx-auto flex max-w-[90rem] items-center justify-between px-6 py-3">
-    <a href="/" class="site-brand flex items-center gap-3 text-lg font-bold tracking-tight">
-      <span class="site-logo-tile">
-        <img src="/icon.svg" alt="Striff logo" class="h-6 w-6" />
-      </span>
-      <span class="hidden sm:inline font-logo">Striff</span>
-    </a>
+<header class="site-header" data-site-header>
+  <div class="sh-backdrop" aria-hidden="true"></div>
+  <div class="sh-bar">
+    <div class="sh-brand">
+      <a class="sh-logo" href="/">
+        <span class="sh-tile"><img src="/icon.svg" alt="" width="22" height="22" /></span>
+        <span class="sh-word">Striff</span>
+      </a>
+      {inBlog && (
+        <>
+          <span class="sh-slash" aria-hidden="true"></span>
+          <a class="sh-section" href="/blog" aria-current={path === "/blog" ? "page" : undefined}>Blog</a>
+        </>
+      )}
+    </div>
 
-    <style is:global>
-      .font-logo {
-        font-family: "Inter", system-ui, sans-serif;
-        color: #f1f5f9;
-        letter-spacing: 0;
-      }
-    </style>
-    <nav class="hidden flex-1 items-center gap-2 lg:ml-10 lg:flex">
+    <nav class="sh-nav" aria-label="Main" data-sh-nav>
+      <span class="sh-pill" aria-hidden="true" data-sh-pill></span>
       {navLinks.map((link) => (
-        <a class="nav-link" href={link.href}>
-          {link.label}
-        </a>
+        <a class="sh-link" href={link.href} aria-current={currentFor(link.section)}>{link.label}</a>
       ))}
     </nav>
-    <div class="hidden lg:flex lg:ml-4 items-center gap-3">
-      <a class="btn-chrome" href={extensionCtaHref}>
-        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="12" r="4" />
-          <line x1="21.17" y1="8" x2="12" y2="8" />
-          <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
-          <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
+
+    <div class="sh-actions">
+      <a class="sh-ghost" href={extensionHref}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /><line x1="21.17" y1="8" x2="12" y2="8" /><line x1="3.95" y1="6.06" x2="8.54" y2="14" /><line x1="10.88" y1="21.94" x2="15.46" y2="14" />
         </svg>
-        {extensionCtaLabel}
+        Extension
       </a>
-      <a class="btn-primary" href={primaryCtaHref} target="_blank" rel="noopener noreferrer">
-        <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <div class="sh-auth"><AuthButton client:load /></div>
+      <span class="sh-sep" aria-hidden="true"></span>
+      <a class="sh-cta" href={installUrl} target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
           <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
         </svg>
-        {primaryCtaLabel}
+        Install App
+        <svg class="sh-cta-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" /></svg>
+        <span class="sr-only"> (opens in a new tab)</span>
       </a>
-      <AuthButton client:load />
     </div>
-    <button
-      class="lg:hidden"
-      data-menu-toggle
-      aria-label="Toggle navigation"
-      aria-expanded="false"
-      aria-controls="mobile-menu"
-    >
-      <span class="sr-only">Open menu</span>
-      <div class="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-100">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <line x1="4" y1="7" x2="20" y2="7" />
-          <line x1="4" y1="12" x2="20" y2="12" />
-          <line x1="4" y1="17" x2="20" y2="17" />
-        </svg>
-      </div>
+
+    <button class="sh-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu" data-menu-toggle>
+      <span class="sh-toggle-box" aria-hidden="true"><span></span><span></span></span>
     </button>
   </div>
-  <div
-    id="mobile-menu"
-    data-mobile-menu
-    class="hidden border-t border-white/10 bg-slate-950/95 px-6 py-4 backdrop-blur lg:hidden"
-  >
-    <div class="flex flex-col gap-2">
-      {navLinks.map((link) => (
-        <a class="nav-link" href={link.href}>
-          {link.label}
+
+  <div id="mobile-menu" class="sh-sheet" role="dialog" aria-label="Site menu" data-mobile-menu>
+    <div class="sh-sheet-inner">
+      <nav aria-label="Sections">
+        <ul class="sh-mnav">
+          {navLinks.map((link, i) => (
+            <li class="sh-stagger" style={`--i:${i}`}>
+              <a class="sh-mlink" href={link.href} aria-current={currentFor(link.section)}>
+                <span>{link.label}</span>
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" /></svg>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <div class="sh-mactions sh-stagger" style="--i:4">
+        <a class="sh-cta sh-cta--block" href={installUrl} target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+          </svg>
+          Install the GitHub App
+          <span class="sr-only"> (opens in a new tab)</span>
         </a>
-      ))}
-      <a class="btn-chrome w-full" href={extensionCtaHref}>{extensionCtaLabel}</a>
-      <a class="btn-primary w-full" href={primaryCtaHref} target="_blank" rel="noopener noreferrer">{primaryCtaLabel}</a>
-      <!-- Returning customers reach their dashboard from here; without it the only sign-in
-           affordance is desktop-only and a phone is a dead end. -->
-      <div class="mobile-auth-slot">
-        <AuthButton client:load />
+        <a class="sh-ghost sh-ghost--block" href={extensionHref}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /><line x1="21.17" y1="8" x2="12" y2="8" /><line x1="3.95" y1="6.06" x2="8.54" y2="14" /><line x1="10.88" y1="21.94" x2="15.46" y2="14" />
+          </svg>
+          Get the Chrome extension
+        </a>
+        <!-- Returning customers reach their dashboard from here; without it the only sign-in
+             affordance is desktop-only and a phone is a dead end. -->
+        <div class="mobile-auth-slot sh-auth sh-auth--block">
+          <AuthButton client:load />
+        </div>
       </div>
+      <p class="sh-mfoot sh-stagger" style="--i:5">
+        <a href="/blog/rss.xml">RSS feed</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/hadi-technology/striff-lib">GitHub</a>
+        <span aria-hidden="true">·</span>
+        <a href="/privacy">Privacy</a>
+      </p>
     </div>
   </div>
 </header>
 
 <script is:inline>
-  var siteHeader = document.querySelector(".site-header");
-  if (siteHeader) {
-    var onHeaderScroll = function () {
-      siteHeader.classList.toggle("is-scrolled", window.scrollY > 8);
-    };
-    window.addEventListener("scroll", onHeaderScroll, { passive: true });
-    onHeaderScroll();
-  }
+  (function () {
+    var header = document.querySelector("[data-site-header]");
+    if (!header) return;
 
-  var toggle = document.querySelector("[data-menu-toggle]");
-  var menu = document.querySelector("[data-mobile-menu]");
-  if (toggle && menu) {
-    toggle.addEventListener("click", function () {
-      var isHidden = menu.classList.toggle("hidden");
-      toggle.setAttribute("aria-expanded", String(!isHidden));
-    });
-    menu.querySelectorAll("a").forEach(function (link) {
-      link.addEventListener("click", function () {
-        menu.classList.add("hidden");
-        toggle.setAttribute("aria-expanded", "false");
+    // Glass, hairline and shadow once the page has scrolled.
+    var onScroll = function () {
+      header.classList.toggle("is-scrolled", window.scrollY > 4);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    // The section pill: follows the pointer or keyboard focus, and rests on the current section.
+    var nav = header.querySelector("[data-sh-nav]");
+    var pill = header.querySelector("[data-sh-pill]");
+    if (nav && pill) {
+      var current = nav.querySelector(".sh-link[aria-current]");
+      var moveTo = function (link, instant) {
+        if (!link || !link.offsetWidth) {
+          nav.classList.remove("pill-on");
+          return;
+        }
+        if (instant) pill.style.transition = "none";
+        pill.style.width = link.offsetWidth + "px";
+        pill.style.transform = "translateX(" + link.offsetLeft + "px)";
+        nav.classList.add("pill-on");
+        if (instant) {
+          void pill.offsetWidth;
+          pill.style.transition = "";
+        }
+      };
+      nav.classList.add("has-pill");
+      moveTo(current, true);
+      nav.querySelectorAll(".sh-link").forEach(function (link) {
+        link.addEventListener("pointerenter", function () { moveTo(link); });
+        link.addEventListener("focus", function () { moveTo(link); });
       });
+      nav.addEventListener("pointerleave", function () { moveTo(current); });
+      nav.addEventListener("focusout", function (event) {
+        if (!nav.contains(event.relatedTarget)) moveTo(current);
+      });
+      var settle = function () { moveTo(current, true); };
+      window.addEventListener("resize", settle);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(settle);
+    }
+
+    // The phone menu.
+    var toggle = header.querySelector("[data-menu-toggle]");
+    var sheet = header.querySelector("[data-mobile-menu]");
+    if (!toggle || !sheet) return;
+    // Looked up when the menu opens: this script runs before the page below the header is parsed.
+    var outside = function () {
+      return [
+        document.getElementById("main-content"),
+        document.querySelector(".site-footer"),
+        document.querySelector("[data-scroll-top]"),
+      ];
+    };
+    var isOpen = function () { return header.classList.contains("is-open"); };
+    var focusable = function () {
+      return [toggle].concat(Array.prototype.slice.call(sheet.querySelectorAll("a[href], button:not([disabled])")));
+    };
+    var setOpen = function (open) {
+      header.classList.toggle("is-open", open);
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      document.documentElement.classList.toggle("sh-lock", open);
+      outside().forEach(function (el) { if (el) el.inert = open; });
+      if (open) {
+        var first = sheet.querySelector("a[href]");
+        if (first) first.focus({ preventScroll: true });
+      }
+    };
+    toggle.addEventListener("click", function () { setOpen(!isOpen()); });
+    sheet.addEventListener("click", function (event) {
+      if (event.target.closest("a[href]")) setOpen(false);
     });
-  }
+    document.addEventListener("keydown", function (event) {
+      if (!isOpen()) return;
+      if (event.key === "Escape") {
+        setOpen(false);
+        toggle.focus();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      var items = focusable();
+      var first = items[0];
+      var last = items[items.length - 1];
+      var at = items.indexOf(document.activeElement);
+      if (at === -1) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && at === 0) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && at === items.length - 1) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+    var wide = window.matchMedia("(min-width: 64rem)");
+    var onWide = function () { if (wide.matches && isOpen()) setOpen(false); };
+    if (wide.addEventListener) wide.addEventListener("change", onWide);
+  })();
 </script>
 
 <!-- AuthButton is an island rather than a hand-rolled createRoot in a plain <script>: mounting
