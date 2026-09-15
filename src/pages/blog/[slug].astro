@@ -61,7 +61,9 @@ const jsonLd = JSON.stringify({
   headline: title,
   description,
   datePublished: published,
-  author: { "@type": "Person", name: author, jobTitle: authorRole },
+  author: authorRole
+    ? { "@type": "Person", name: author, jobTitle: authorRole }
+    : { "@type": "Organization", name: author, url: SITE },
   publisher: {
     "@type": "Organization",
     name: "Striff",

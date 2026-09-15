@@ -9,11 +9,11 @@ const blog = defineCollection({
     ogImage: z.string().optional(),
     // A draft stays in the repository but is never built, listed or linked.
     draft: z.boolean().optional(),
-    // The byline. Every post so far is the founder's; a guest post overrides these.
-    author: z.string().default("Muntazir Fadhel"),
-    authorRole: z.string().default("Founder, Striff"),
-    // A path under public/, e.g. "/authors/jane.jpg". Without one the byline shows initials.
-    authorAvatar: z.string().optional(),
+    // The byline. Posts are published by the team; a guest post overrides these.
+    author: z.string().default("Striff Engineering"),
+    authorRole: z.string().default(""),
+    // A path under public/, e.g. "/authors/jane.jpg". The team byline uses the Striff mark.
+    authorAvatar: z.string().default("/icon.svg"),
     // The section a post is filed under: its eyebrow, its index filter and its cover tint.
     category: z.string().default("Engineering"),
     // Minutes. Estimated from the body when absent; set it only to override the estimate.
