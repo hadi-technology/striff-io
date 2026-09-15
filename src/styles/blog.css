@@ -220,9 +220,29 @@
   vertical-align: 0.2em;
 }
 
+/* The category as a chip: a tinted pill with a dot, in the category's tone. */
 .sb .sb-cat {
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.24rem 0.62rem 0.24rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sb-tone, var(--sb-accent)) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sb-tone, var(--sb-accent)) 22%, transparent);
   color: var(--sb-tone, var(--sb-accent));
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+.sb .sb-cat::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .sb .sb-tone-blue { --sb-tone: var(--sb-accent); }
@@ -230,36 +250,239 @@
 .sb .sb-tone-violet { --sb-tone: var(--sb-violet); }
 .sb .sb-tone-amber { --sb-tone: var(--sb-amber); }
 
-/* ---- Cover art ---- */
+/* The page ground behind the sticky header, so the header's glass sits on the blog's own paper. */
+html[data-scheme="auto"] body { background: #fbfbfa; }
 
-.sb-cover {
+@media (prefers-color-scheme: dark) {
+  html[data-scheme="auto"] body { background: #0a0d13; }
+}
+
+/* ---- Cover art ----
+   One fixed palette for every drawing (components/blog/covers), not re-pointed for dark mode: the
+   plate is dark on a light page and a dark page alike, so the drawings keep their contrast and read
+   as one family. The colours are Striff's diagram colours: green added, red removed or violated,
+   blue modified, amber for the outward, efferent direction. */
+
+.sb .cv {
   display: block;
   width: 100%;
   height: 100%;
-  --cv-bg1: #0a1226;
-  --cv-bg2: #121c38;
-  --cv-tone: #6f9bff;
+  --cv-bg: #0a0f1b;
+  --cv-box: #121a2b;
+  --cv-head: #182238;
+  --cv-stroke: rgba(203, 213, 225, 0.16);
+  --cv-edge: rgba(203, 213, 225, 0.36);
+  --cv-ink: #e8edf6;
+  --cv-muted: #9ca8bd;
+  --cv-faint: #68758d;
+  --cv-add: #3fd68f;
+  --cv-del: #ff6b7a;
+  --cv-mod: #6aa8ff;
+  --cv-warn: #f7b955;
+  --cv-slate: #3b475d;
+  --cv-tone: #6aa8ff;
+  font-family: var(--sb-sans);
 }
 
-.sb-cover--teal { --cv-bg1: #07161a; --cv-bg2: #0d2529; --cv-tone: #3fd3b5; }
-.sb-cover--violet { --cv-bg1: #100c22; --cv-bg2: #1b1536; --cv-tone: #a98bff; }
-.sb-cover--amber { --cv-bg1: #150f09; --cv-bg2: #251b10; --cv-tone: #f0b35a; }
+.sb .cv--teal { --cv-tone: #3fd3b5; }
+.sb .cv--violet { --cv-tone: #a98bff; }
+.sb .cv--amber { --cv-tone: #f0b35a; }
 
-.sb-cover .cv-s1 { stop-color: var(--cv-bg1); }
-.sb-cover .cv-s2 { stop-color: var(--cv-bg2); }
-.sb-cover .cv-g1 { stop-color: var(--cv-tone); stop-opacity: 0.38; }
-.sb-cover .cv-g2 { stop-color: var(--cv-tone); stop-opacity: 0; }
-.sb-cover .cv-dot { fill: rgba(255, 255, 255, 0.07); }
-.sb-cover .cv-edge { fill: none; stroke: rgba(255, 255, 255, 0.22); stroke-width: 1.4; }
-.sb-cover .cv-edge--added { stroke: var(--cv-tone); stroke-width: 1.8; }
-.sb-cover .cv-edge--removed { stroke: #ff7a85; stroke-opacity: 0.8; stroke-dasharray: 4 4; }
-.sb-cover .cv-box { fill: var(--cv-bg2); stroke: rgba(255, 255, 255, 0.2); }
-.sb-cover .cv-rule { stroke: rgba(255, 255, 255, 0.12); }
-.sb-cover .cv-bar { fill: rgba(255, 255, 255, 0.32); }
-.sb-cover .cv-bar--dim { fill: rgba(255, 255, 255, 0.14); }
-.sb-cover .cv-node--hot .cv-box { stroke: var(--cv-tone); fill: color-mix(in srgb, var(--cv-tone) 16%, var(--cv-bg2)); }
-.sb-cover .cv-node--hot .cv-bar { fill: var(--cv-tone); }
-.sb-cover .cv-node--hot .cv-bar--dim { fill: var(--cv-tone); fill-opacity: 0.45; }
+.sb .cv .cv-plate { fill: var(--cv-bg); }
+.sb .cv .cv-g1 { stop-color: var(--cv-tone); stop-opacity: 0.2; }
+.sb .cv .cv-g2 { stop-color: var(--cv-tone); stop-opacity: 0; }
+.sb .cv .cv-dot { fill: rgba(255, 255, 255, 0.06); }
+
+.sb .cv text { fill: var(--cv-ink); }
+.sb .cv .cv-mute { fill: var(--cv-muted); }
+.sb .cv .cv-faint { fill: var(--cv-faint); }
+.sb .cv .cv-mono { font-family: var(--sb-mono); }
+.sb .cv .cv-serif { font-family: var(--sb-serif); }
+.sb .cv .cv-caps { text-transform: uppercase; letter-spacing: 0.12em; }
+.sb .cv .cv-num { font-family: var(--sb-serif); font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: lining-nums; }
+.sb .cv .cv-c-add { fill: var(--cv-add); }
+.sb .cv .cv-c-del { fill: var(--cv-del); }
+.sb .cv .cv-c-mod { fill: var(--cv-mod); }
+.sb .cv .cv-c-warn { fill: var(--cv-warn); }
+
+/* Components, lanes and fills */
+.sb .cv .cv-box { fill: var(--cv-box); stroke: var(--cv-stroke); }
+.sb .cv .cv-box-head { fill: var(--cv-head); }
+.sb .cv .cv-box--mod { stroke: var(--cv-mod); fill: color-mix(in srgb, var(--cv-mod) 13%, var(--cv-box)); }
+.sb .cv .cv-box--warn { stroke: var(--cv-warn); fill: color-mix(in srgb, var(--cv-warn) 12%, var(--cv-box)); }
+.sb .cv .cv-sat { fill: var(--cv-box); stroke: var(--cv-stroke); }
+.sb .cv .cv-zone { fill: rgba(255, 255, 255, 0.02); stroke: rgba(203, 213, 225, 0.22); stroke-dasharray: 5 5; }
+.sb .cv .cv-hair { fill: none; stroke: rgba(203, 213, 225, 0.13); }
+.sb .cv .cv-doc-line { fill: rgba(203, 213, 225, 0.17); }
+.sb .cv .cv-track { fill: rgba(203, 213, 225, 0.09); }
+.sb .cv .cv-fill-mod { fill: var(--cv-mod); }
+.sb .cv .cv-fill-tone { fill: var(--cv-tone); }
+.sb .cv .cv-fill-add { fill: var(--cv-add); }
+.sb .cv .cv-fill-del { fill: var(--cv-del); }
+.sb .cv .cv-fill-slate { fill: var(--cv-slate); }
+.sb .cv .cv-gap { fill: color-mix(in srgb, var(--cv-del) 15%, transparent); stroke: var(--cv-del); stroke-dasharray: 3 3; }
+.sb .cv .cv-hl--mod { fill: color-mix(in srgb, var(--cv-mod) 16%, var(--cv-box)); stroke: color-mix(in srgb, var(--cv-mod) 55%, transparent); }
+.sb .cv .cv-hl--del { fill: color-mix(in srgb, var(--cv-del) 18%, var(--cv-box)); stroke: color-mix(in srgb, var(--cv-del) 70%, transparent); }
+.sb .cv .cv-pill--add { fill: color-mix(in srgb, var(--cv-add) 10%, var(--cv-box)); stroke: color-mix(in srgb, var(--cv-add) 55%, transparent); }
+.sb .cv .cv-pill--del { fill: color-mix(in srgb, var(--cv-del) 12%, var(--cv-box)); stroke: color-mix(in srgb, var(--cv-del) 65%, transparent); }
+.sb .cv .cv-tick { fill: none; stroke: var(--cv-bg); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sb .cv .cv-x-mark { fill: var(--cv-bg); stroke: var(--cv-del); stroke-width: 1.5; }
+.sb .cv .cv-x-stroke { fill: none; stroke: var(--cv-del); stroke-width: 1.8; stroke-linecap: round; }
+.sb .cv .cv-step--full { fill: color-mix(in srgb, var(--cv-mod) 24%, var(--cv-box)); stroke: var(--cv-mod); }
+.sb .cv .cv-step--half { fill: var(--cv-box); stroke: var(--cv-mod); }
+.sb .cv .cv-step-half { fill: color-mix(in srgb, var(--cv-mod) 34%, transparent); }
+.sb .cv .cv-step--none { fill: none; stroke: var(--cv-faint); stroke-dasharray: 3 3; }
+
+/* Dependencies */
+.sb .cv .cv-e { fill: none; stroke: var(--cv-edge); stroke-width: 1.5; stroke-linecap: round; }
+.sb .cv .cv-e--add { stroke: var(--cv-add); }
+.sb .cv .cv-e--del { stroke: var(--cv-del); }
+.sb .cv .cv-e--mod { stroke: var(--cv-mod); }
+.sb .cv .cv-e--warn { stroke: var(--cv-warn); }
+.sb .cv .cv-e--dashed { stroke-dasharray: 5 4; }
+.sb .cv .cv-e--breach { stroke: var(--cv-del); stroke-width: 2; }
+.sb .cv .cv-ah { fill: var(--cv-edge); }
+.sb .cv .cv-ah--add { fill: var(--cv-add); }
+.sb .cv .cv-ah--del { fill: var(--cv-del); }
+.sb .cv .cv-ah--mod { fill: var(--cv-mod); }
+.sb .cv .cv-ah--warn { fill: var(--cv-warn); }
+
+/* The receipt: paper, ink and a stamp */
+.sb .cv .cv-paper { fill: #f3f0e8; }
+.sb .cv .cv-paper-shadow { fill: #000000; opacity: 0.35; }
+.sb .cv .cv-r { fill: #1b2230; font-family: var(--sb-mono); }
+.sb .cv .cv-r-strong { font-weight: 700; }
+.sb .cv .cv-r-mute { fill: #737b8c; }
+.sb .cv .cv-r-ok { fill: #0f7a4e; font-weight: 600; }
+.sb .cv .cv-r-bad { fill: #c42636; font-weight: 600; }
+.sb .cv .cv-r-rule { fill: none; stroke: #bab5a9; stroke-dasharray: 3 3; }
+.sb .cv .cv-r-code { fill: #2a2f3a; }
+.sb .cv .cv-stamp-box { fill: rgba(196, 38, 54, 0.07); stroke: #c42636; stroke-width: 2.5; }
+.sb .cv .cv-stamp-t { fill: #c42636; font-family: var(--sb-sans); font-weight: 800; }
+.sb .cv .cv-slot { fill: #04070d; stroke: rgba(203, 213, 225, 0.2); }
+
+/* Live layers: invisible at rest, seen only while animating. */
+.sb .cv .cv-pulse {
+  fill: none;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 0.06 1.2;
+  stroke-dashoffset: 0.06;
+  opacity: 0;
+}
+.sb .cv .cv-pulse--add { stroke: #c4f7dd; }
+.sb .cv .cv-pulse--del { stroke: #ffd0d5; }
+.sb .cv .cv-pulse--mod { stroke: #d6e7ff; }
+.sb .cv .cv-pulse--warn { stroke: #ffe7b3; }
+.sb .cv .cv-glow-del { fill: none; stroke: var(--cv-del); stroke-width: 9; stroke-linecap: round; opacity: 0; }
+.sb .cv .cv-gap-glow { fill: var(--cv-del); opacity: 0; }
+
+/* Motion. Every start state is gated on .cv-motion, which BlogHead adds only when the reader has not
+   asked for reduced motion and IntersectionObserver exists; otherwise the final frame renders. The
+   observer adds .cv-play once a cover is in view, and a hover toggles .cv-again, which swaps each
+   live animation for an identical copy so it runs again. */
+@media (prefers-reduced-motion: no-preference) {
+  .cv-motion .sb .cv .cv-draw {
+    stroke-dasharray: 1 2;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 0.9s cubic-bezier(0.65, 0, 0.35, 1) var(--d, 0s);
+  }
+
+  .cv-motion .sb .cv .cv-fade {
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity 0.6s ease var(--d, 0s),
+      transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s);
+  }
+
+  .cv-motion .sb .cv :is(.cv-grow-x, .cv-grow-y, .cv-pop, .cv-stamp) { transform-box: fill-box; }
+
+  .cv-motion .sb .cv .cv-grow-x {
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s);
+  }
+
+  .cv-motion .sb .cv .cv-grow-y {
+    transform: scaleY(0);
+    transform-origin: 50% 100%;
+    transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s);
+  }
+
+  .cv-motion .sb .cv .cv-pop {
+    opacity: 0;
+    transform: scale(0.5);
+    transform-origin: 50% 50%;
+    transition:
+      opacity 0.25s ease var(--d, 0s),
+      transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) var(--d, 0s);
+  }
+
+  .cv-motion .sb .cv .cv-print {
+    transform: translateY(-312px);
+    transition: transform 1.5s cubic-bezier(0.5, 0, 0.2, 1) 0.15s;
+  }
+
+  .cv-motion .sb .cv .cv-stamp {
+    opacity: 0;
+    transform-origin: 50% 50%;
+  }
+
+  .cv-motion .sb .cv.cv-play .cv-draw { stroke-dashoffset: 0; }
+
+  .cv-motion .sb .cv.cv-play :is(.cv-fade, .cv-grow-x, .cv-grow-y, .cv-pop, .cv-print) {
+    opacity: 1;
+    transform: none;
+  }
+
+  .cv-motion .sb .cv.cv-play .cv-stamp { animation: cv-stamp-a 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) var(--d, 0s) both; }
+  .cv-motion .sb .cv.cv-play.cv-again .cv-stamp { animation-name: cv-stamp-b; animation-delay: 0.1s; }
+
+  .cv-motion .sb .cv.cv-play .cv-pulse { animation: cv-pulse-a 1.4s cubic-bezier(0.45, 0, 0.55, 1) var(--d, 0s) 2; }
+  .cv-motion .sb .cv.cv-play.cv-again .cv-pulse { animation-name: cv-pulse-b; animation-delay: calc(var(--d, 0s) * 0.3); }
+
+  .cv-motion .sb .cv.cv-play .cv-flash { animation: cv-flash-a 0.5s ease-in-out var(--d, 0s) 3; }
+  .cv-motion .sb .cv.cv-play.cv-again .cv-flash { animation-name: cv-flash-b; animation-delay: calc(var(--d, 0s) * 0.3); }
+
+  .cv-motion .sb .cv.cv-play .cv-blink { animation: cv-blink-a 0.5s ease-in-out var(--d, 0s) 3; }
+  .cv-motion .sb .cv.cv-play.cv-again .cv-blink { animation-name: cv-blink-b; animation-delay: calc(var(--d, 0s) * 0.3); }
+}
+
+@keyframes cv-pulse-a { from { stroke-dashoffset: 0.06; opacity: 1; } to { stroke-dashoffset: -1; opacity: 1; } }
+@keyframes cv-pulse-b { from { stroke-dashoffset: 0.06; opacity: 1; } to { stroke-dashoffset: -1; opacity: 1; } }
+@keyframes cv-flash-a { 0%, 100% { opacity: 0; } 50% { opacity: 0.4; } }
+@keyframes cv-flash-b { 0%, 100% { opacity: 0; } 50% { opacity: 0.4; } }
+@keyframes cv-blink-a { 50% { opacity: 0.15; } }
+@keyframes cv-blink-b { 50% { opacity: 0.15; } }
+@keyframes cv-stamp-a { from { opacity: 0; transform: scale(1.7); } to { opacity: 1; transform: none; } }
+@keyframes cv-stamp-b { from { opacity: 0; transform: scale(1.7); } to { opacity: 1; transform: none; } }
+
+/* The cover as an article's header art: wider than the text column, the plate running past the
+   drawing on both sides. */
+.sb .sb-hero-main > .sb-hero-art {
+  grid-column: wide;
+  position: relative;
+  margin-top: clamp(1.75rem, 4vw, 2.75rem);
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #0a0f1b;
+  box-shadow: var(--sb-shadow);
+}
+
+.sb .sb-hero-main > .sb-hero-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+}
+
+@media (min-width: 48rem) {
+  .sb .sb-hero-main > .sb-hero-art { aspect-ratio: 2.3 / 1; }
+}
 
 /* ---- Byline ---- */
 
@@ -453,16 +676,33 @@
 
 /* ---- The featured, most recent post ---- */
 
+.sb {
+  --sb-shadow-lift: 0 1px 2px rgba(11, 18, 32, 0.04), 0 26px 50px -28px rgba(11, 18, 32, 0.34);
+}
+
+@media (prefers-color-scheme: dark) {
+  .sb { --sb-shadow-lift: 0 0 0 1px rgba(255, 255, 255, 0.02), 0 30px 60px -30px rgba(0, 0, 0, 0.9); }
+}
+
 .sb .sb-feature {
   position: relative;
   display: grid;
-  gap: clamp(1.5rem, 3.5vw, 3.5rem);
-  align-items: center;
   margin-top: clamp(2rem, 5vw, 3.5rem);
+  padding: 0.5rem;
+  border: 1px solid var(--sb-line);
+  border-radius: 26px;
+  background: var(--sb-surface);
+  box-shadow: var(--sb-shadow);
+  transition: border-color 0.25s ease, box-shadow 0.4s ease;
+}
+
+.sb .sb-feature:hover {
+  border-color: var(--sb-line-2);
+  box-shadow: var(--sb-shadow-lift);
 }
 
 @media (min-width: 60rem) {
-  .sb .sb-feature { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+  .sb .sb-feature { grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr); }
 }
 
 .sb .sb-feature-cover,
@@ -470,51 +710,76 @@
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  box-shadow: var(--sb-shadow);
-}
-
-.sb .sb-feature-cover {
   aspect-ratio: 16 / 10;
-  border-radius: 20px;
+  background: #0a0f1b;
 }
 
-.sb .sb-card-cover {
-  aspect-ratio: 16 / 9;
-  border-radius: 14px;
-}
+.sb .sb-feature-cover { border-radius: 19px; }
+.sb .sb-card-cover { border-radius: 11px; }
 
-.sb .sb-feature .sb-cover,
-.sb .sb-card .sb-cover {
-  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.sb .sb-feature:hover .sb-cover,
-.sb .sb-card:hover .sb-cover {
-  transform: scale(1.035);
-}
-
-.sb .sb-feature-flag {
+/* A hairline just inside the plate's edge keeps it crisp against a dark page. */
+.sb .sb-feature-cover::after,
+.sb .sb-card-cover::after {
+  content: "";
   position: absolute;
-  top: 1rem;
-  left: 1rem;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+}
+
+/* On wide screens the plate fills the panel's height; the drawing stays centred on it. */
+@media (min-width: 60rem) {
+  .sb .sb-feature-cover {
+    aspect-ratio: auto;
+    min-height: 25rem;
+  }
+}
+
+.sb .sb-feature-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.75rem;
+}
+
+.sb .sb-latest {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.28rem 0.65rem 0.28rem 0.55rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  color: #ffffff;
-  font-size: 0.68rem;
+  background: var(--sb-ink);
+  color: var(--sb-bg);
+  font-size: 0.66rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  line-height: 1.2;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
+.sb .sb-latest::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3fd68f;
+  box-shadow: 0 0 0 3px rgba(63, 214, 143, 0.22);
+}
+
+.sb .sb-feature-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: clamp(1.25rem, 3vw, 2.5rem) clamp(0.85rem, 2.6vw, 2.5rem) clamp(1rem, 2.6vw, 2.25rem);
+}
+
 .sb .sb-feature-title {
-  margin-top: 0.9rem;
-  font-size: clamp(1.9rem, 1.2rem + 2.2vw, 3rem);
-  line-height: 1.07;
-  letter-spacing: -0.024em;
+  margin-top: 1.1rem;
+  font-size: clamp(1.85rem, 1.1rem + 2.1vw, 2.9rem);
+  line-height: 1.06;
+  letter-spacing: -0.026em;
   text-wrap: balance;
 }
 
@@ -549,8 +814,7 @@
   .sb .sb-feature:has(a:focus-visible),
   .sb .sb-card:has(a:focus-visible) {
     outline: 2px solid var(--sb-accent);
-    outline-offset: 8px;
-    border-radius: 14px;
+    outline-offset: 4px;
   }
 }
 
@@ -591,7 +855,18 @@
   transition: transform 0.2s ease;
 }
 
-.sb .sb-feature:hover .sb-readmore svg { transform: translateX(3px); }
+.sb .sb-feature .sb-readmore {
+  padding: 0.62rem 1rem;
+  border-radius: 999px;
+  background: var(--sb-ink);
+  color: var(--sb-bg);
+  transition: background-color 0.2s ease;
+}
+
+.sb .sb-feature:hover .sb-readmore { background: var(--sb-accent-strong); }
+
+.sb .sb-feature:hover .sb-readmore svg,
+.sb .sb-card:hover .sb-readmore svg { transform: translateX(3px); }
 
 /* ---- Lists of posts ---- */
 
@@ -619,7 +894,7 @@
 
 .sb .sb-grid {
   display: grid;
-  gap: clamp(2.5rem, 5vw, 3.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  gap: clamp(1.25rem, 2.5vw, 1.75rem);
 }
 
 @media (min-width: 44rem) {
@@ -634,13 +909,33 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  padding: 0.45rem;
+  border: 1px solid var(--sb-line);
+  border-radius: 16px;
+  background: var(--sb-surface);
+  box-shadow: 0 1px 2px rgba(11, 18, 32, 0.035);
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease,
+    box-shadow 0.4s ease;
 }
 
-.sb .sb-card-body { padding-top: 1.15rem; }
+.sb .sb-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--sb-line-2);
+  box-shadow: var(--sb-shadow-lift);
+}
+
+.sb .sb-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 1.1rem 0.8rem 0.85rem;
+}
 
 .sb .sb-card-title {
-  margin-top: 0.6rem;
-  font-size: clamp(1.3rem, 1.1rem + 0.6vw, 1.55rem);
+  margin-top: 0.85rem;
+  font-size: clamp(1.25rem, 1.08rem + 0.5vw, 1.5rem);
   line-height: 1.2;
   letter-spacing: -0.016em;
   text-wrap: balance;
@@ -648,14 +943,29 @@
 
 .sb .sb-card-dek {
   display: -webkit-box;
-  margin-top: 0.65rem;
+  margin-top: 0.6rem;
   overflow: hidden;
-  font-size: 0.94rem;
+  font-size: 0.93rem;
   line-height: 1.6;
   color: var(--sb-muted);
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
 }
+
+.sb .sb-card-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 1.1rem;
+}
+
+.sb .sb-card .sb-readmore {
+  font-size: 0.8rem;
+  color: var(--sb-muted);
+  transition: color 0.2s ease;
+}
+
+.sb .sb-card:hover .sb-readmore { color: var(--sb-ink); }
 
 .sb .sb-empty {
   margin-top: 3rem;
@@ -668,14 +978,15 @@
 
 .sb-post { padding-bottom: clamp(4.5rem, 9vw, 7.5rem); }
 
-/* Reading progress: a hairline over the header, driven by the scroll position with no script.
-   Browsers without scroll-driven animations simply never draw it. */
+/* Reading progress: a hairline along the sticky header's lower edge, driven by the scroll position.
+   Where scroll-driven animations exist it needs no script; elsewhere the post page's script sets
+   the same transform on scroll. It sits under the header, so the phone menu's sheet covers it. */
 .sb .sb-progress {
   position: fixed;
-  inset: 0 0 auto;
-  z-index: 60;
+  inset: var(--sh-h, 4rem) 0 auto;
+  z-index: 45;
   height: 2px;
-  background: linear-gradient(90deg, #6f9bff, #b3caff);
+  background: linear-gradient(90deg, #2451d6, #6aa8ff 55%, #3fd3b5);
   transform: scaleX(0);
   transform-origin: 0 50%;
   pointer-events: none;
@@ -2360,7 +2671,7 @@
 
   .sb .bp-node-pulse { animation: none !important; }
 
-  .sb .sb-cover,
+  .sb .sb-card,
   .sb .sb-readmore svg,
   .sb .sb-btn {
     transition: none !important;

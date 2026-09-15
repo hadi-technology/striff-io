@@ -3,6 +3,7 @@ title: "The architecture review checklist: catching structural risk in a pull re
 description: "A checklist for reviewing pull requests for architectural risk: what your own docs already decided, new dependency directions, reaches into module internals, blast radius and cycles. With an honest accounting of which steps a machine can take off you and which it cannot."
 date: 2026-08-12
 category: "Architecture"
+cover: "checklist"
 ---
 
 Most review checklists cover correctness, tests, and style. Almost none cover the thing that actually degrades a codebase over years: **structure.** Which new dependencies a change creates, what they point at, and whether the system still matches what its own documentation says about it.

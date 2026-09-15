@@ -3,6 +3,7 @@ title: "AI didn't make engineering discipline obsolete. It made it the whole job
 description: "Design doc, then plan, then the agent builds it piece by piece: the companies that make coding agents now tell you to work this way. We surveyed 335 open-source repositories: 63% already hand their agents docs to work from, and only 8% of those check that the code still matches."
 date: 2026-09-15
 category: "Data & research"
+cover: "survey"
 ---
 
 *First published in September 2025. Rewritten in September 2026 with our own data: a survey of 335 open-source repositories.*

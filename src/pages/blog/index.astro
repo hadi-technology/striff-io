@@ -36,6 +36,7 @@ const categories = Array.from(
   title={`${BLOG_NAME} · Blog`}
   description="Notes on documented architecture, structural review and keeping a codebase coherent while agents write most of it."
   canonical={`${SITE}/blog`}
+  scheme="auto"
 >
   <Fragment slot="head">
     <BlogHead />
@@ -75,17 +76,19 @@ const categories = Array.from(
       )}
 
       {featured && (
-        <article class="sb-feature" data-sb-item data-category={categorySlug(featured.data.category)}>
+        <article class="sb-feature" data-sb-item data-category={categorySlug(featured.data.category)} data-cv-host>
           <div class="sb-feature-cover">
-            <PostCover slug={featured.slug} category={featured.data.category} />
-            <span class="sb-feature-flag">Latest</span>
+            <PostCover slug={featured.slug} category={featured.data.category} cover={featured.data.cover} variant="feature" />
           </div>
           <div class="sb-feature-body">
-            <p class="sb-meta">
-              <span class={`sb-cat sb-tone-${categoryTone(featured.data.category)}`}>{featured.data.category}</span>
-              <time datetime={featured.data.date.toISOString()}>{formatDate(featured.data.date)}</time>
-              <span>{readingMinutes(featured)} min read</span>
-            </p>
+            <div class="sb-feature-meta">
+              <span class="sb-latest">Latest</span>
+              <p class="sb-meta">
+                <span class={`sb-cat sb-tone-${categoryTone(featured.data.category)}`}>{featured.data.category}</span>
+                <time datetime={featured.data.date.toISOString()}>{formatDate(featured.data.date)}</time>
+                <span>{readingMinutes(featured)} min read</span>
+              </p>
+            </div>
             <h2 class="sb-feature-title"><a href={`/blog/${featured.slug}`}>{featured.data.title}</a></h2>
             <p class="sb-feature-dek">{featured.data.description}</p>
             <div class="sb-feature-foot">

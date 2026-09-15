@@ -3,6 +3,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import BlogHead from "../../components/blog/BlogHead.astro";
 import Byline from "../../components/blog/Byline.astro";
 import PostCard from "../../components/blog/PostCard.astro";
+import PostCover from "../../components/blog/PostCover.astro";
 import { render } from "astro:content";
 import {
   BLOG_NAME,
@@ -26,7 +27,7 @@ export async function getStaticPaths() {
 
 const { post, related } = Astro.props;
 const { Content, headings } = await render(post);
-const { title, description, date, ogImage, author, authorRole, authorAvatar, category } = post.data;
+const { title, description, date, ogImage, author, authorRole, authorAvatar, category, cover } = post.data;
 
 const minutes = readingMinutes(post);
 const url = `${SITE}/blog/${post.slug}`;
@@ -74,7 +75,7 @@ const jsonLd = JSON.stringify({
 }).replace(/</g, "\\u003c");
 ---
 
-<BaseLayout title={`${title} · ${BLOG_NAME}`} description={description} canonical={url} ogImage={image} ogType="article">
+<BaseLayout title={`${title} · ${BLOG_NAME}`} description={description} canonical={url} ogImage={image} ogType="article" scheme="auto">
   <Fragment slot="head">
     <BlogHead />
     <meta name="author" content={author} />
@@ -109,6 +110,9 @@ const jsonLd = JSON.stringify({
                   <time datetime={published}>{formatDate(date)}</time>
                   <span>{minutes} min read</span>
                 </p>
+              </div>
+              <div class="sb-hero-art" data-cv-host>
+                <PostCover slug={post.slug} category={category} cover={cover} variant="hero" />
               </div>
             </div>
           </div>
@@ -223,6 +227,24 @@ const jsonLd = JSON.stringify({
 
   <script is:inline>
     (function () {
+      // Reading progress, for browsers without scroll-driven animations (the CSS covers the rest).
+      var bar = document.querySelector(".sb-progress");
+      if (bar && !(window.CSS && CSS.supports("animation-timeline: scroll()"))) {
+        var pending = false;
+        var draw = function () {
+          pending = false;
+          var root = document.documentElement;
+          var max = root.scrollHeight - root.clientHeight;
+          bar.style.transform = "scaleX(" + (max > 0 ? Math.min(1, root.scrollTop / max) : 0) + ")";
+        };
+        window.addEventListener("scroll", function () {
+          if (pending) return;
+          pending = true;
+          requestAnimationFrame(draw);
+        }, { passive: true });
+        draw();
+      }
+
       // Section anchors: a hover link on every heading, for copying a link to one section.
       var prose = document.querySelector("[data-sb-prose]");
       if (prose) {

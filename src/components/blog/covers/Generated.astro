@@ -1,0 +1,99 @@
+---
+/**
+ * Fallback cover for a post that names no drawing: a small component graph seeded by the slug, so
+ * the post keeps the same picture on every build. One node is the change (blue), its edges are
+ * additions (green) and one edge elsewhere is a removal (red), as on a Striff diagram.
+ */
+import { arrowHead, sCurve } from "./geom";
+
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+
+function hash(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+// mulberry32: a tiny seeded generator, so the same slug always draws the same graph.
+function seeded(seed: number): () => number {
+  let state = seed;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const rand = seeded(hash(slug));
+const COLS = 4;
+const ROWS = 3;
+const NODE_W = 92;
+const NODE_H = 46;
+
+const cells = Array.from({ length: COLS * ROWS }, (_, i) => i);
+for (let i = cells.length - 1; i > 0; i--) {
+  const j = Math.floor(rand() * (i + 1));
+  [cells[i], cells[j]] = [cells[j]!, cells[i]!];
+}
+
+const nodes = cells.slice(0, 7).map((cell) => {
+  const cx = 60 + (520 / COLS) * ((cell % COLS) + 0.5) + (rand() - 0.5) * 24;
+  const cy = 50 + (300 / ROWS) * (Math.floor(cell / COLS) + 0.5) + (rand() - 0.5) * 20;
+  return { cx, cy, x: Math.round(cx - NODE_W / 2), y: Math.round(cy - NODE_H / 2), bar: 30 + Math.round(rand() * 34) };
+});
+
+// Each node links to its nearest earlier node: always connected, never a hairball.
+type Edge = { from: number; to: number; kind: "base" | "add" | "del" };
+const edges: Edge[] = [];
+for (let i = 1; i < nodes.length; i++) {
+  let nearest = 0;
+  let best = Infinity;
+  for (let j = 0; j < i; j++) {
+    const d = Math.hypot(nodes[i]!.cx - nodes[j]!.cx, nodes[i]!.cy - nodes[j]!.cy);
+    if (d < best) {
+      best = d;
+      nearest = j;
+    }
+  }
+  edges.push({ from: nearest, to: i, kind: "base" });
+}
+const hot = Math.floor(rand() * nodes.length);
+for (const edge of edges) if (edge.from === hot || edge.to === hot) edge.kind = "add";
+const removable = edges.find((edge) => edge.kind === "base");
+if (removable) removable.kind = "del";
+
+const drawn = edges.map((edge) => {
+  const a = nodes[edge.from]!;
+  const b = nodes[edge.to]!;
+  const dir = b.cx >= a.cx ? 1 : -1;
+  const curve = sCurve(a.cx + (dir * NODE_W) / 2, a.cy, b.cx - (dir * NODE_W) / 2, b.cy);
+  return { ...edge, ...curve, tip: [b.cx - (dir * NODE_W) / 2, b.cy] as [number, number] };
+});
+const edgeClass = { base: "cv-e", add: "cv-e cv-e--add", del: "cv-e cv-e--del cv-e--dashed" };
+const headClass = { base: "cv-ah", add: "cv-ah cv-ah--add", del: "cv-ah cv-ah--del" };
+---
+
+{drawn.map((edge, i) => (
+  <g>
+    <path class={`${edgeClass[edge.kind]}${edge.kind === "del" ? " cv-fade" : " cv-draw"}`} style={`--d:${0.3 + i * 0.1}s`} pathLength="1" d={edge.d} />
+    <path class={`${headClass[edge.kind]} cv-fade`} style={`--d:${0.8 + i * 0.1}s`} d={arrowHead(edge.from[0], edge.from[1], edge.tip[0], edge.tip[1])} />
+    {edge.kind === "add" && <path class="cv-pulse cv-pulse--add" style={`--d:${1.2 + i * 0.15}s`} pathLength="1" d={edge.d} />}
+  </g>
+))}
+{nodes.map((node, i) => (
+  <g class="cv-fade" style={`--d:${0.1 + i * 0.06}s`}>
+    <rect class={i === hot ? "cv-box cv-box--mod" : "cv-box"} x={node.x} y={node.y} width={NODE_W} height={NODE_H} rx="7" />
+    <path class="cv-hair" d={`M${node.x} ${node.y + 15} H${node.x + NODE_W}`} />
+    <rect class={i === hot ? "cv-fill-mod" : "cv-doc-line"} x={node.x + 9} y={node.y + 5.5} width="36" height="4" rx="2" />
+    <rect class="cv-doc-line" x={node.x + 9} y={node.y + 24} width={node.bar} height="4" rx="2" />
+    <rect class="cv-doc-line" x={node.x + 9} y={node.y + 33} width={node.bar - 14} height="4" rx="2" />
+  </g>
+))}

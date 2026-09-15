@@ -18,6 +18,9 @@ const blog = defineCollection({
     category: z.string().default("Engineering"),
     // Minutes. Estimated from the body when absent; set it only to override the estimate.
     readingTime: z.number().int().positive().optional(),
+    // The drawn cover the post uses on the index, in lists and as its header art (see
+    // components/blog/covers). Without one the post gets a generated component graph.
+    cover: z.enum(["survey", "docs-to-checks", "receipt", "coupling", "checklist"]).optional(),
   }),
 });
 
