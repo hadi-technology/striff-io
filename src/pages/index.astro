@@ -61,10 +61,10 @@ const extensionHighlights = [
 // The languages the parser (Clarpse, via striff-lib) reads, shown under the hero card.
 // Monograms in each language's own colour rather than four mismatched logo styles.
 const heroLanguages = [
-  { name: "Java", mark: "J", color: "#e76f00" },
-  { name: "Python", mark: "Py", color: "#3776ab" },
-  { name: "C#", mark: "C#", color: "#7b3fbd" },
-  { name: "TypeScript", mark: "TS", color: "#3178c6" }
+  { name: "Java", mark: "J", color: "#e76f00", mature: true },
+  { name: "Python", mark: "Py", color: "#3776ab", mature: false },
+  { name: "C#", mark: "C#", color: "#7b3fbd", mature: true },
+  { name: "TypeScript", mark: "TS", color: "#3178c6", mature: false }
 ];
 
 
@@ -298,10 +298,13 @@ const plans = [
             {heroLanguages.map((lang) => (
               <span class="lang-chip" style={`--lang: ${lang.color}`}>
                 <span class="lang-chip-mark" aria-hidden="true">{lang.mark}</span>
-                {lang.name}
+                {lang.name}{!lang.mature && <sup>&dagger;</sup>}
               </span>
             ))}
           </div>
+          <p class="hero-langs-note">
+            <a href="#languages">&dagger; Documented-rule checking is production-ready on Java and C#; Python and TypeScript are further along on the diagram than on rules</a>
+          </p>
 
         </div>
       </div>
@@ -318,6 +321,9 @@ const plans = [
               <p class="section-subcopy mt-4">
                 Coding agents read your architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. Left unchecked, each merge drifts a little further from what your team agreed, until <strong>every change costs more than it should and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
               </p>
+              <p class="problem-stat">
+                In <a href="/blog/architecture-matters-more-not-less">our survey of 335 open-source repositories</a> that write their architecture down, <strong>63% already hand their coding agents docs to build from</strong>, and <strong>only 8% of those run anything that checks the code still matches.</strong>
+              </p>
               <BlogLink slug="architecture-matters-more-not-less" kicker="Why coding agents make architecture review matter more" class="mt-6" />
             </div>
 
@@ -327,6 +333,7 @@ const plans = [
               <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="gs-gemini" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f8df9" /><stop offset="55%" stop-color="#9b72cb" /><stop offset="100%" stop-color="#d96570" /></linearGradient></defs></svg>
               <div class="gs-head">
                 <span class="gs-live"><span class="gs-live-dot"></span><span class="gs-live-repo">5 agents</span> working on acme-corp</span>
+                <span class="hcc-chip hcc-chip-example">Illustrative</span>
                 <span class="gs-head-tag">last hour</span>
               </div>
               <div class="gs-body">
@@ -868,7 +875,7 @@ const plans = [
             <summary class="faq-q">How does Striff know what my architecture is supposed to look like?</summary>
             <p class="faq-a"><strong>You already wrote it down.</strong> Striff catalogues the documents in your repository that make claims about the code, turns those sentences into rules, and checks them against the code your pull request produces, quoting the sentence and linking the file it came from. <em>Nothing is configured and no rule format is invented:</em> your documentation is the rulebook. A rule can be as plain as where a class lives or as sharp as <em>&ldquo;the domain module must not depend on infrastructure&rdquo;</em>. Alongside the rules, every pull request gets a <strong>diagram of what changed</strong> and <strong>review notes</strong> on the components it touched. If your docs make no checkable claim about the code, Striff invents no rules of its own: you still get the diagram and the review notes.</p>
           </details>
-          <details class="faq-item">
+          <details class="faq-item" id="languages">
             <summary class="faq-q">What languages does Striff support?</summary>
             <p class="faq-a">The diagram runs on <strong>Java, TypeScript, Python and C#</strong>. Striff parses source into a full structural model with its own parser, not regex or text matching, so references, inheritance and dependencies resolve the way a compiler sees them. Documented rules are further along on some of those than others: <strong>Java and C# are production-ready</strong>, Python extracts rules from your docs but cannot yet answer all of them, and TypeScript is still being proven out. <em>We would rather say that here than have you install and find out.</em> Go is coming.</p>
           </details>
