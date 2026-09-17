@@ -129,7 +129,7 @@ The practice with no guardian is **architecture**: what your docs say the system
 
 A stale doc used to cost a confused new hire an afternoon. Now it costs every agent run that reads it, and agents do what the docs say. ETH Zurich's study of AGENTS.md files found that "instructions in the context files are well followed by coding agents." An engineer who documented a 108,000-line codebase for agents reported what happens when those instructions go stale:
 
-<div class="bp-callout bp-callout--amber">"Outdated context documents caused agents to generate code that conflicted with recent refactors." And: "Agents trust documentation, and out-of-date specs can mislead sessions and lead to silent failures." <br><em>— <a href="https://arxiv.org/abs/2602.20478" target="_blank" rel="noopener">Codified Context</a>, arXiv 2602.20478</em></div>
+<div class="bp-callout bp-callout--amber">"Outdated context documents caused agents to generate code that conflicted with recent refactors." And: "Agents trust documentation, and out-of-date specs can mislead sessions and lead to silent failures." <br><em>From <a href="https://arxiv.org/abs/2602.20478" target="_blank" rel="noopener">Codified Context</a>, arXiv 2602.20478</em></div>
 
 Böckeler saw it in her own tests: given notes describing classes that already existed, the agent "took them as a new specification and generated them all over again, creating duplicates." And keeping the instructions current measurably matters: in a study of AI IDE rule files, compliance rose "from 49.14% to 72.13%" after the rules were updated ([arXiv 2606.12231](https://arxiv.org/abs/2606.12231)). Meanwhile, in a sample of 100 context files, 24% had been generated once and never reviewed again ([arXiv 2606.15828](https://arxiv.org/abs/2606.15828)).
 
@@ -175,7 +175,7 @@ The mechanism is simple. A diff shows you lines. It does not show you that those
 <rect x="470" y="62" width="360" height="26" rx="6" fill="#f1f5f9"/>
 <text x="482" y="79" font-size="11.5" class="bp-mono" fill="#475569">core.impl/README.md · not in the diff</text>
 <text x="482" y="113" font-size="10" class="bp-mono" fill="#94a3b8">133</text>
-<text x="512" y="113" font-size="11" fill="#334155"><tspan font-weight="700" class="bp-mono">NodeWorker</tspan> — A continuously-running background thread…</text>
+<text x="512" y="113" font-size="11" fill="#334155"><tspan font-weight="700" class="bp-mono">NodeWorker</tspan>: A continuously-running background thread…</text>
 <text x="482" y="135" font-size="10" class="bp-mono" fill="#94a3b8">134</text>
 <text x="512" y="135" font-size="11" fill="#334155">- Discovers all replicated tables for its node</text>
 <text x="482" y="157" font-size="10" class="bp-mono" fill="#94a3b8">135</text>
