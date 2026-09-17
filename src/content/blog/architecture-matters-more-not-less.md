@@ -4,9 +4,9 @@ description: "Tests, small PRs, readable code, documentation: every engineering 
 date: 2025-09-02
 ---
 
-There's a story making the rounds in engineering circles, and I understand why it's comforting: *AI writes cleaner code than most humans, so the old disciplines matter less now.* Fewer reviews. Lighter process. Let the tools carry it.
+There's a story making the rounds in engineering circles, and it's easy to see why it's comforting: *AI writes cleaner code than most humans, so the old disciplines matter less now.* Fewer reviews, lighter process, let the tools carry it.
 
-I think that story has it exactly backwards, and I want to walk through why, starting not with architecture but with the humble stuff: tests, naming, small pull requests. The things every senior engineer preaches and every deadline erodes.
+We think that story has it exactly backwards, and this post walks through why, starting not with architecture but with the humble stuff: tests, naming, small pull requests: the things every senior engineer preaches and every deadline erodes.
 
 ## Best practices were never about writing code
 
@@ -42,7 +42,7 @@ The data backs this up, and it's not subtle:
 <p class="bp-figure-caption">Sources: <a href="https://www.gitclear.com/ai_assistant_code_quality_2025_research" target="_blank" rel="noopener">GitClear AI Code Quality research</a>, <a href="https://dora.dev/research/2024/dora-report/" target="_blank" rel="noopener">Google's 2024 DORA report</a>, and <a href="https://github.blog/news-insights/research/research-quantifying-github-copilots-impact-on-developer-productivity-and-happiness/" target="_blank" rel="noopener">GitHub Copilot research</a>. Every figure here is somebody else's; we have not run a study of our own on this and are not going to invent one.</p>
 </div>
 
-GitClear's number is the one I keep coming back to. Across 211 million changed lines, 2024 was the first year that **copy-pasted code exceeded refactored code**. Duplication rising in lockstep with AI assistance. That isn't a story about bad code. It's a story about *system-level* properties degrading while everyone's attention stays at the line level.
+GitClear's number is the one worth sitting with. Across 211 million changed lines, 2024 was the first year that **copy-pasted code exceeded refactored code**, with duplication rising in lockstep with AI assistance. The DORA figure is softer evidence: it's a correlation across self-reported adoption levels, not a controlled study, and we'd rather say that plainly than let the number do more work than it's earned. But together they point at the same thing: not a story about bad code, but about *system-level* properties degrading while everyone's attention stays at the line level.
 
 ## The practices that scale themselves, and the one that doesn't
 
@@ -86,7 +86,7 @@ Before AI tools, there was an accidental safety mechanism nobody designed: the s
 <div class="bp-bar-row"><span class="bp-bar-label">Architectural review capacity, before</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:22%"></div></div><span class="bp-bar-value">1x</span></div>
 <div class="bp-bar-row"><span class="bp-bar-label">Architectural review capacity, now</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:22%"></div></div><span class="bp-bar-value">1x</span></div>
 </div>
-<p class="bp-figure-caption">The bottleneck on writing disappeared. The bottleneck on <em>noticing what the writing did to the system</em> is still one human head, reading diffs.</p>
+<p class="bp-figure-caption">Illustrative, not measured: nobody tracks "architectural review capacity" as a number. The point it's making is directional and, we'd argue, uncontroversial: the bottleneck on writing disappeared, and the bottleneck on <em>noticing what the writing did to the system</em> is still one human head, reading diffs.</p>
 </div>
 
 That proxy is now broken, and here's the mechanism. A diff shows you lines. It does not show you that those lines made a sentence in your own README false, or created the first-ever edge from your core into a plugin, or closed a cycle across five packages. That information lives in the relationship between this change and everything around it: other files, other documents, every change before it. It is structurally absent from the thing your reviewers are reading. Here is a real one:
@@ -114,7 +114,7 @@ That proxy is now broken, and here's the mechanism. A diff shows you lines. It d
 <rect x="470" y="62" width="360" height="26" rx="6" fill="#f1f5f9"/>
 <text x="482" y="79" font-size="11.5" class="bp-mono" fill="#475569">core.impl/README.md · not in the diff</text>
 <text x="482" y="113" font-size="10" class="bp-mono" fill="#94a3b8">133</text>
-<text x="512" y="113" font-size="11" fill="#334155"><tspan font-weight="700" class="bp-mono">NodeWorker</tspan> — A continuously-running background thread…</text>
+<text x="512" y="113" font-size="11" fill="#334155"><tspan font-weight="700" class="bp-mono">NodeWorker</tspan>: A continuously-running background thread…</text>
 <text x="482" y="135" font-size="10" class="bp-mono" fill="#94a3b8">134</text>
 <text x="512" y="135" font-size="11" fill="#334155">- Discovers all replicated tables for its node</text>
 <text x="482" y="157" font-size="10" class="bp-mono" fill="#94a3b8">135</text>
@@ -142,6 +142,16 @@ The failure mode of high-volume AI development isn't dramatic. Nothing crashes. 
 
 <div class="bp-callout bp-callout--amber"><strong>Teams that ship 10x faster while their structural oversight stays flat aren't being efficient. They're borrowing.</strong> The loan comes due as a system that technically passes every check while becoming harder to change every week, and by the time it's obvious, the cheap moment to fix it is hundreds of merges in the past.</div>
 
+## "So what if a doc goes stale?"
+
+It's a fair question, and worth answering directly instead of assuming the reader already agrees. Docs have always drifted from code; teams have shipped for decades without anyone dying over a wrong sentence in a README. What's different now is who reads that sentence and what they do with it.
+
+A human who hits a stale doc usually notices something is off within a few minutes (the method it describes doesn't exist, the import doesn't resolve) and goes and reads the code instead. That's wasted time, but it's bounded. A coding agent handed the same doc as context doesn't have that instinct. It has no reason to doubt a sentence that reads as fact, so it acts on it: it writes code that assumes the stale description is still true, and when that assumption is wrong, the agent doesn't fail loudly, it produces something plausible-looking and wrong. [ecChronos's `NodeWorker` README](/blog/design-docs-are-enforceable-now) is the concrete version of this: an agent trusting that sentence has an obvious way to make it true again, which is to re-create the exact dependency a recent refactor removed. Nobody asked for that. The doc did.
+
+That failure is expensive in a way a broken build isn't, because nothing signals it happened. The agent's output compiles, passes its own tests, and reads as a reasonable diff. A reviewer approves it for the same reason the original ecChronos PR was approved: there was nothing in front of them to disagree with. The cost shows up later, distributed across everyone who touches that code afterward: the next agent session that burns its context window re-deriving what the class actually does because the doc lied to it, the engineer who spends an afternoon debugging behavior that only makes sense once they discover the doc was wrong, the reviewer who has to re-review a "fix" for a problem the doc caused in the first place. None of that shows up as an incident. It shows up as things quietly taking longer, which is exactly the failure mode this post opened with.
+
+There's a second cost that's easy to miss: once a team gets burned by a stale doc once, twice, engineers stop trusting the docs at all, agents keep trusting them by default because that's what they're built to do, and now you have the worst of both worlds: a document nobody reads for truth, still being fed to every agent as if it were.
+
 ## So what do you actually do?
 
 Keep every practice you already have. They matter more now, not less; that's the whole first half of this post. But be honest about the gap: nothing in your current setup is watching the graph.
@@ -152,4 +162,4 @@ That's what Striff is. It reads the architecture your docs already describe, tur
 
 The bar is deliberately high, and the consequence is that it is quiet. That is the same bargain your linter makes: you trust it because it does not shout. Your linter guards style, your CI guards correctness, and what you wrote down about the shape of the system finally gets a guardian of its own, at whatever speed your team ships.
 
-[Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open your next pull request.
+If your docs already say something checkable about your architecture, [the GitHub App](https://github.com/apps/striff-app/installations/new) starts reading them on your very next pull request. Nothing to configure, and [here's exactly what it checks and how](/blog/design-docs-are-enforceable-now).

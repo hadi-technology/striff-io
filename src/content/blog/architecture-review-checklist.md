@@ -59,7 +59,7 @@ The compressed version, for pinning next to your review queue:
 
 ## The honest math
 
-Now the part most checklist posts skip. Suppose a competent structural pass, done honestly, takes fifteen to thirty minutes on a non-trivial change. At twenty minutes average:
+This is the part most checklist posts skip, so it's worth doing the arithmetic rather than just asserting it. Suppose a competent structural pass, done honestly, takes fifteen to thirty minutes on a non-trivial change. At twenty minutes average:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Manual structural review, minutes per day</p>
@@ -71,11 +71,13 @@ Now the part most checklist posts skip. Suppose a competent structural pass, don
 <p class="bp-figure-caption">Arithmetic, not a study: count × twenty minutes, and the twenty is our estimate, not a measurement. Three hundred minutes is five senior-engineer hours a day, and it lands on your most senior people, because they are the only ones holding enough of the documents and the graph in their heads to do steps 2 and 5 to 7 at all.</p>
 </div>
 
-This is why "we will just review more carefully" fails as a strategy at [current shipping volume](/blog/architecture-matters-more-not-less). The checklist is sound; the budget does not exist. Teams do not skip structural review because they do not care. They skip it because it is the only review activity whose cost scales with the size of the *codebase* rather than the size of the *diff*.
+This is why "we will just review more carefully" fails as a strategy at [current shipping volume](/blog/architecture-matters-more-not-less). The checklist is sound, but the budget for it does not exist, and teams do not skip structural review because they do not care; they skip it because it is the only review activity whose cost scales with the size of the *codebase* rather than the size of the *diff*.
+
+And skipping step 2 specifically has a second cost that doesn't show up in this chart: it's not just that nobody caught the stale sentence, it's that everyone who reads it afterward, including [a coding agent using it as context](/blog/architecture-matters-more-not-less), now acts on wrong information, and someone pays for that a second time, later, in a form that's harder to trace back to the doc that caused it.
 
 ## Which steps a machine can take, and which it cannot
 
-Be suspicious of anyone who tells you all seven are automatable. Here is the honest split:
+Any tool that claims to automate all seven of these is either overstating what it does or has quietly redefined "the trend question" into something smaller. Here is the honest split, including the one row we don't try to automate:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Mechanical, and not</p>
