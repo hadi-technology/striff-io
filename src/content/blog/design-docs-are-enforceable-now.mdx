@@ -7,7 +7,6 @@ cover: "docs-to-checks"
 ---
 
 import RuleRows from "../../components/RuleRows.astro";
-import Formula from "../../components/Formula.astro";
 import { ecchronosRules, baseSha, headSha } from "../../data/ecchronosRules";
 
 For twenty years a design doc had one reader: *other engineers*. You wrote down how the system fits together (what lives where, what calls what, what must never depend on what) and hoped the next person read it before their first pull request.
@@ -57,17 +56,13 @@ A finding is only worth something if you can check it without trusting us. This 
 <p class="bp-figure-caption">The rule came out of the prose. Everything under it was computed from the parsed code at each revision, which is why the finding can name the line that moved and cannot invent one that did not.</p>
 </div>
 
-In logical terms, the rule is a formula about the code, and the code parsed at each revision is a model that either satisfies it or does not. The whole violation is two facts:
-
-<Formula display tex={String.raw`\begin{gathered} \varphi \coloneqq \htmlClass{lg-q}{\exists} k.\ \mathrm{refs}(\mathtt{NodeWorker},\ \mathtt{RepairScheduler},\ k) \\[8pt] \mathcal{M}_{\mathrm{base}} \htmlClass{sat}{\models} \varphi \qquad \mathcal{M}_{\mathrm{head}} \htmlClass{unsat}{\nvDash} \varphi \end{gathered}`} />
-
-The first line is what the model read out of the README. The second is what the program computed from the code, and it is the only thing a verdict is allowed to rest on.
+Underneath, the rule is a claim about the code that is either true or false at a given revision. Two lookups settle it: the claim held at the base commit, and it doesn't hold at the head commit. That's the entire violation, and nothing about it is a matter of opinion, which is also why it's checkable by anyone willing to open both commits.
 
 ## A one-line fix, while it is still one line
 
-The fix is one word in a README: `NodeWorker` becomes `SchemaRefresher`. In the pull request that caused it, that is a one-line follow-up commit, made while the author still remembers why the call moved.
+The fix is one word in a README: `NodeWorker` becomes `SchemaRefresher`. In the pull request that caused it, that's a one-line follow-up commit, made while the author still remembers why the call moved. Left alone, though, it doesn't just sit there being wrong: it costs someone real time.
 
-Left alone, it compounds. The next contributor looking for where repair configurations are scheduled is sent to `NodeWorker`, and so is every coding agent handed the README as context. An agent that trusts the sentence has an obvious way to make it true again: give `NodeWorker` a scheduler, and re-create the dependency the refactor had just removed. **A stale doc is not merely out of date. It is instructions for undoing your last refactor.**
+The next contributor looking for where repair configurations are scheduled is sent to `NodeWorker` by the README, spends time reading a class that no longer does that, and only finds `SchemaRefresher` by giving up on the doc and reading the diff history instead. A coding agent handed the same README as context does something worse: it has an obvious way to make the sentence true again, which is to give `NodeWorker` a scheduler and re-create the dependency the refactor had just removed. That's not a hypothetical failure mode; it's the path of least resistance for an agent that takes the doc at its word, and undoing it costs another round of review, another set of tokens, and another pull request to notice the regression a second time. **A stale doc isn't merely out of date. It's instructions for undoing your last refactor**, and every agent or engineer who follows it before someone fixes the sentence pays for that instruction in wasted work.
 
 ## The same change, on the diagram
 

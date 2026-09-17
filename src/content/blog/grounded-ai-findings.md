@@ -25,28 +25,6 @@ When you open a pull request in a repository with Striff installed, a check appe
 
 None of it needs configuring. The rules come from the READMEs, ADRs, `ARCHITECTURE.md` and agent instruction files already in the repository.
 
-## Checking one claim, start to finish
-
-Here is a real finding. Ericsson's ecChronos documents its `core.impl` module class by class, and pull request [#1786](https://github.com/Ericsson/ecchronos/pull/1786) made one of those sentences false. The check said:
-
-<div class="bp-annot"><mark><code>NodeWorker</code> no longer depends on <code>RepairScheduler</code></mark>, which <mark class="bp-m-danger"><code>core.impl/README.md</code> line 136 says it calls</mark>. It did at the base revision.</div>
-
-You do not have to trust that. It is made of four things you can look up:
-
-<div class="bp-figure" data-reveal>
-<p class="bp-figure-title">The receipt for one finding</p>
-<div class="bp-facts">
-<div class="bp-facts-line"><span class="bp-facts-key">doc   </span>core.impl/README.md:136</div>
-<div class="bp-facts-line"><span class="bp-facts-key">says  </span><span class="bp-facts-quote">"Calls RepairScheduler.putConfigurations() to keep jobs up to date"</span></div>
-<div class="bp-facts-line"><span class="bp-facts-key">rule  </span>NodeWorker depends on RepairScheduler</div>
-<div class="bp-facts-line"><span class="bp-facts-key">base  </span>d188eb1b33  holds   NodeWorker.java:209 calls putConfigurations(…)</div>
-<div class="bp-facts-line"><span class="bp-facts-key">head  </span>0288412016  <span class="bp-facts-neg">fails</span>   NodeWorker has no reference to RepairScheduler</div>
-</div>
-<p class="bp-figure-caption">Open the README at line 136 and the sentence is there. Open <code>NodeWorker.java</code> at the base commit and the call is on line 209. Open it at the head commit and it is gone. If any of those lookups disagreed with the check, the check would be wrong, and you would be able to prove it in a minute.</p>
-</div>
-
-The language model did exactly one thing in that finding: it read line 136 and proposed the rule "`NodeWorker` depends on `RepairScheduler`". Everything after that was computed. The model did not decide the rule was broken, and it could not have, because the verdict comes from parsing the code at both commits. [The full story of this pull request](/blog/design-docs-are-enforceable-now) is on the blog, including why a one-word README fix mattered.
-
 ## Who decides what
 
 A check is built in four steps. Two use a language model, and neither of those can put a finding in front of you:
@@ -68,6 +46,8 @@ A check is built in four steps. Two use a language model, and neither of those c
 </div>
 
 This also means that when Striff is wrong, it is wrong the way ordinary software is wrong. A bad verdict traces back to a sentence, a rule and two parsed facts, so it can be reproduced, fixed and tested. There is no equivalent for "the model felt confident".
+
+[Ericsson's ecChronos #1786](/blog/design-docs-are-enforceable-now) is the walkthrough of one such finding end to end: the doc sentence, the rule it became, and the two lookups in the public commit history that anyone can redo themselves in under a minute. This post is about the mechanism that makes that walkthrough trustworthy; that one is about the specific pull request.
 
 ## What it will not tell you
 
@@ -108,7 +88,7 @@ That makes Striff best-effort by design. It can miss a rule a compiler would hav
 
 ## What you get out of it
 
-Fewer comments, and every one of them checkable. [Across 1,394 rule checks on 74 public pull requests](/blog/design-docs-are-enforceable-now), Striff found exactly one violation, and it was real. When a check that quiet says something, it is worth reading, and you can verify it faster than you could argue with it.
+Fewer comments, and every one of them checkable. In [the largest public window we've measured so far](/blog/design-docs-are-enforceable-now), that quietness held up at scale rather than being an artifact of a small sample. When a check that quiet says something, it is worth reading, and you can verify it faster than you could argue with it.
 
 It also changes what your docs are for. A sentence in your README stops being a hope and becomes a rule, checked on every pull request, whether a person or a coding agent wrote the code. [Here is how to write docs Striff can check](/blog/design-docs-are-enforceable-now#writing-docs-that-can-be-checked), though it reads the docs you already have without any changes.
 

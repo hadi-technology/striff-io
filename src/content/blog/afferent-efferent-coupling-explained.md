@@ -1,5 +1,5 @@
 ---
-title: "Coupling metrics, explained — and why a coupling delta is not a finding"
+title: "Coupling metrics, explained, and why a coupling delta is not a finding"
 description: "What afferent and efferent coupling actually measure, how to read them together with complexity, inheritance depth and encapsulation, and the case for why none of these numbers should ever be reported to a reviewer as a finding on its own."
 date: 2026-08-18
 category: "Architecture"
@@ -12,7 +12,7 @@ They are also a trap. It is tempting to report *changes* in those numbers as fin
 
 ## The two directions
 
-Both metrics count dependencies on a single component — a class, or a package. The only difference is which way the arrows point.
+Both metrics count dependencies on a single component (a class, or a package). The only difference is which way the arrows point.
 
 **Afferent coupling (Ca)**: arrows *in*. How many components depend on **you**. This is your blast radius: if you change, this is how many places can break.
 
@@ -48,7 +48,7 @@ Both metrics count dependencies on a single component — a class, or a package.
 <text x="612" y="174" font-size="10.5" fill="#b45309" text-anchor="middle">high Ce</text>
 <text x="612" y="284" font-size="11" fill="#64748b" text-anchor="middle" font-style="italic">Every arrow is a reason this might be forced to change</text>
 </svg>
-<p class="bp-figure-caption">Illustrative components. The shapes are the point: a repository that half the system calls, and an orchestrator that calls half the system, are opposite risks that the same word — "coupling" — covers.</p>
+<p class="bp-figure-caption">Illustrative components. The shapes are the point: a repository that half the system calls, and an orchestrator that calls half the system, are opposite risks that the same word, "coupling," covers.</p>
 </div>
 
 The definitions come from Robert C. Martin's package-design metrics, which also give the derived number worth knowing: **instability**, *I = Ce / (Ce + Ca)*. High Ca and low Ce is *stable*: hard to justify changing, safe to depend on. High Ce and low Ca is *unstable*: free to change, dangerous to depend on. Neither is bad by itself. **Problems start when a component is high on both axes at once.**
@@ -96,7 +96,7 @@ Coupling is two gauges. On a diagram of a change, each component carries a few m
 <p class="bp-figure-caption">Read together the panel tells a story no single number can: rising WMC with rising EC and falling ENC is a class absorbing responsibilities, reaching for more collaborators, and opening its internals to do it. That is a god class three pull requests before anyone in review would name it one.</p>
 </div>
 
-## Now the uncomfortable part
+## Why a metric delta shouldn't interrupt you
 
 Everything above is true, and none of it should be a finding on a pull request.
 
@@ -105,7 +105,7 @@ It is easy to see why tools report them anyway. "Efferent coupling grew from 8 t
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Why a metric delta is not a finding</p>
 <div class="bp-flow" style="--bp-flow-cols: 4">
-<div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">1</span><p class="bp-flow-title">No action follows</p><p class="bp-flow-desc">"Coupling grew by 4" — and then what? Every action a reviewer might take next requires knowing <em>which</em> four and <em>toward what</em>. The number by itself terminates in a shrug.</p></div>
+<div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">1</span><p class="bp-flow-title">No action follows</p><p class="bp-flow-desc">"Coupling grew by 4." And then what? Every action a reviewer might take next requires knowing <em>which</em> four and <em>toward what</em>. The number by itself terminates in a shrug.</p></div>
 <div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">2</span><p class="bp-flow-title">A linter does it better</p><p class="bp-flow-desc">Thresholds on complexity and fan-out are a solved problem, per file, in your existing pipeline, with configuration you control. Reimplementing that in a review comment is worse at the same job.</p></div>
 <div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">3</span><p class="bp-flow-title">The number is already on the page</p><p class="bp-flow-desc">Every one of these values, with its delta, is printed on the component itself. A finding that restates a label six inches away is not information, it is repetition.</p></div>
 <div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">4</span><p class="bp-flow-title">It crowds out the rest</p><p class="bp-flow-desc">Two thirds of the output being restatement means the one row that needed a human is two thirds less likely to be read. Volume is not free; it is paid for out of the same attention budget.</p></div>
@@ -123,7 +123,7 @@ In [Activiti/activiti-cloud #2552](https://github.com/Activiti/activiti-cloud/pu
 
 <div class="bp-callout"><strong>The finding is not "afferent coupling is 12". The finding is "a public method was removed from a type twelve things depend on".</strong> The number is not the claim; it is the <em>magnitude</em> attached to a claim that stands on its own. Delete the number and there is still a finding: a public contract shrank. Delete the contract change and there is nothing: twelve dependents is just a fact about the code, and it was true yesterday too.</div>
 
-That is the whole distinction. A metric is a property of the code. A finding is an *event* — something this change did — with a property of the code attached to say how much it matters. Reporting the property without the event is how a tool ends up with a lot to say and nothing worth reading.
+That is the whole distinction. A metric is a property of the code. A finding is an *event*, something this change did, with a property of the code attached to say how much it matters. Reporting the property without the event is how a tool ends up with a lot to say and nothing worth reading.
 
 ## How to actually use these numbers
 
