@@ -2,6 +2,8 @@
 title: "Coupling metrics, explained, and why a coupling delta is not a finding"
 description: "What afferent and efferent coupling actually measure, how to read them together with complexity, inheritance depth and encapsulation, and the case for why none of these numbers should ever be reported to a reviewer as a finding on its own."
 date: 2026-08-18
+category: "Architecture"
+cover: "coupling"
 ---
 
 Every architecture tool eventually shows you two numbers: **afferent coupling** and **efferent coupling**. Most engineers nod, half-recall that the definitions point in opposite directions, and move on. That is a shame, because read together they are the closest thing software has to a blood-pressure reading for a component.

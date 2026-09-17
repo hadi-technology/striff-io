@@ -2,6 +2,7 @@
 title: "Thirty open-source pull requests, forty-nine rule verdicts, thirteen findings, and a lot of silence"
 description: "A reviewer that flags every pull request is a reviewer nobody reads. The complete output of a quiet one across thirty real pull requests in eleven public repositories: all forty-nine verdicts on rules the repositories' own docs state, all thirteen structural findings, the two we grade as weak, and the six questions it declined to answer."
 date: 2026-08-26
+category: "Data & research"
 # Hidden while it is rewritten (see src/content.config.ts).
 draft: true
 ---

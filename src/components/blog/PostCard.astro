@@ -1,0 +1,47 @@
+---
+/**
+ * A post in a list: its cover, category chip, date, reading time, title and summary. The title link
+ * stretches over the whole card, so the card is one link and one tab stop, and hovering it replays
+ * the cover's animation.
+ */
+import PostCover from "./PostCover.astro";
+import { categorySlug, categoryTone, formatDate, readingMinutes, type Post } from "../../lib/blog";
+
+interface Props {
+  post: Post;
+  headingLevel?: 2 | 3;
+  /** Marks the card for the index page's category filter. */
+  filterable?: boolean;
+}
+
+const { post, headingLevel = 3, filterable = false } = Astro.props;
+const { title, description, date, category, cover } = post.data;
+const Heading = headingLevel === 2 ? "h2" : "h3";
+---
+
+<article
+  class="sb-card"
+  data-category={categorySlug(category)}
+  data-sb-item={filterable ? "" : undefined}
+  data-sb-rest={filterable ? "" : undefined}
+  data-cv-host
+>
+  <div class="sb-card-cover">
+    <PostCover slug={post.slug} category={category} cover={cover} />
+  </div>
+  <div class="sb-card-body">
+    <p class="sb-meta">
+      <span class={`sb-cat sb-tone-${categoryTone(category)}`}>{category}</span>
+      <time datetime={date.toISOString()}>{formatDate(date, "short")}</time>
+      <span>{readingMinutes(post)} min read</span>
+    </p>
+    <Heading class="sb-card-title"><a href={`/blog/${post.slug}`}>{title}</a></Heading>
+    <p class="sb-card-dek">{description}</p>
+    <p class="sb-card-foot" aria-hidden="true">
+      <span class="sb-readmore">
+        Read article
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+      </span>
+    </p>
+  </div>
+</article>

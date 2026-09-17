@@ -1,0 +1,72 @@
+---
+/**
+ * Cover for the coupling post: the post's own pair of figures. Arrows in to OrderRepository
+ * (afferent, who depends on you) and arrows out of CheckoutService (efferent, what you depend on),
+ * with Martin's instability ratio underneath. The pulses travel the way the dependencies point.
+ */
+import { arrowHead } from "./geom";
+
+type Edge = { x1: number; y1: number; x2: number; y2: number };
+const inbound: Edge[] = [
+  { x1: 66, y1: 120, x2: 118, y2: 164 },
+  { x1: 56, y1: 186, x2: 104, y2: 186 },
+  { x1: 66, y1: 252, x2: 118, y2: 208 },
+  { x1: 170, y1: 110, x2: 170, y2: 162 },
+  { x1: 170, y1: 262, x2: 170, y2: 210 },
+];
+const outbound: Edge[] = [
+  { x1: 530, y1: 164, x2: 578, y2: 122 },
+  { x1: 542, y1: 186, x2: 590, y2: 186 },
+  { x1: 530, y1: 208, x2: 578, y2: 250 },
+  { x1: 470, y1: 164, x2: 470, y2: 112 },
+  { x1: 470, y1: 208, x2: 470, y2: 260 },
+  { x1: 410, y1: 164, x2: 364, y2: 122 },
+  { x1: 398, y1: 186, x2: 354, y2: 186 },
+];
+const leftSats = [[52, 112], [36, 186], [52, 260], [170, 100], [170, 272]];
+const rightSats = [[594, 112], [610, 186], [594, 260], [470, 100], [470, 272], [346, 112], [332, 186]];
+const line = (e: Edge) => `M${e.x1} ${e.y1} L${e.x2} ${e.y2}`;
+---
+
+<g class="cv-fade">
+  <text class="cv-c-mod" x="170" y="48" font-size="11.5" font-weight="600" letter-spacing="1.2" text-anchor="middle">AFFERENT · Ca = 5</text>
+  <text class="cv-mute" x="170" y="66" font-size="12" text-anchor="middle">who depends on you</text>
+  <text class="cv-c-warn" x="470" y="48" font-size="11.5" font-weight="600" letter-spacing="1.2" text-anchor="middle">EFFERENT · Ce = 7</text>
+  <text class="cv-mute" x="470" y="66" font-size="12" text-anchor="middle">what you depend on</text>
+</g>
+
+{leftSats.map(([x, y], i) => (
+  <rect class="cv-sat cv-fade" style={`--d:${0.15 + i * 0.06}s`} x={x - 20} y={y - 10} width="40" height="20" rx="5" />
+))}
+{rightSats.map(([x, y], i) => (
+  <rect class="cv-sat cv-fade" style={`--d:${0.2 + i * 0.05}s`} x={x - 20} y={y - 10} width="40" height="20" rx="5" />
+))}
+
+{inbound.map((e, i) => (
+  <g>
+    <path class="cv-e cv-e--mod cv-draw" style={`--d:${0.45 + i * 0.08}s`} pathLength="1" d={line(e)} />
+    <path class="cv-ah cv-ah--mod cv-fade" style={`--d:${0.85 + i * 0.08}s`} d={arrowHead(e.x1, e.y1, e.x2, e.y2)} />
+    <path class="cv-pulse cv-pulse--mod" style={`--d:${1.1 + i * 0.22}s`} pathLength="1" d={line(e)} />
+  </g>
+))}
+{outbound.map((e, i) => (
+  <g>
+    <path class="cv-e cv-e--warn cv-draw" style={`--d:${0.55 + i * 0.07}s`} pathLength="1" d={line(e)} />
+    <path class="cv-ah cv-ah--warn cv-fade" style={`--d:${0.95 + i * 0.07}s`} d={arrowHead(e.x1, e.y1, e.x2, e.y2)} />
+    <path class="cv-pulse cv-pulse--warn" style={`--d:${1.2 + i * 0.18}s`} pathLength="1" d={line(e)} />
+  </g>
+))}
+
+<g class="cv-fade" style="--d:0.3s">
+  <rect class="cv-box cv-box--mod" x="106" y="164" width="128" height="44" rx="9" />
+  <text class="cv-mono" x="170" y="190" font-size="11.5" text-anchor="middle">OrderRepository</text>
+</g>
+<g class="cv-fade" style="--d:0.35s">
+  <rect class="cv-box cv-box--warn" x="398" y="164" width="144" height="44" rx="9" />
+  <text class="cv-mono" x="470" y="190" font-size="11.5" text-anchor="middle">CheckoutService</text>
+</g>
+
+<g class="cv-fade" style="--d:1.3s">
+  <text class="cv-mono cv-caps cv-faint" x="320" y="322" font-size="10.5" text-anchor="middle">Instability</text>
+  <text class="cv-serif" x="320" y="356" font-size="26" font-style="italic" text-anchor="middle">I = <tspan class="cv-c-warn">Ce</tspan> / (<tspan class="cv-c-warn">Ce</tspan> + <tspan class="cv-c-mod">Ca</tspan>)</text>
+</g>

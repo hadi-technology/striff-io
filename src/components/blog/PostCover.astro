@@ -1,0 +1,73 @@
+---
+/**
+ * A post's cover: a drawing of the post's own idea, in the visual language of Striff's product
+ * diagrams (component boxes, dependency arrows, green added, red removed or violated, blue
+ * modified) on a dark plate that reads the same in light and dark mode. A post picks its drawing
+ * with the `cover` frontmatter key; one without gets a component graph seeded by its slug.
+ *
+ * The drawing is laid out on a 640 x 400 board and the plate runs past it on every side, so the
+ * same cover fills a 16:10 card and a wide article header without cropping. It is decorative and
+ * hidden from assistive technology: the card or header beside it says everything it shows.
+ *
+ * Motion is CSS only. The observer in BlogHead adds `cv-play` when the cover scrolls into view and
+ * toggles `cv-again` on hover to replay the pulses. Under prefers-reduced-motion the observer never
+ * arms and the final frame is what renders.
+ */
+import { categoryTone } from "../../lib/blog";
+import Survey from "./covers/Survey.astro";
+import DocsToChecks from "./covers/DocsToChecks.astro";
+import Receipt from "./covers/Receipt.astro";
+import Coupling from "./covers/Coupling.astro";
+import Checklist from "./covers/Checklist.astro";
+import Generated from "./covers/Generated.astro";
+
+interface Props {
+  slug: string;
+  category: string;
+  cover?: string;
+  variant?: "card" | "feature" | "hero";
+  class?: string;
+}
+
+const { slug, category, cover, variant = "card", class: extra = "" } = Astro.props;
+const tone = categoryTone(category);
+const uid = `cv-${variant}-${slug}`;
+
+// Where each drawing's light falls: behind its subject.
+const GLOW: Record<string, [number, number]> = {
+  survey: [460, 220],
+  "docs-to-checks": [340, 220],
+  receipt: [320, 170],
+  coupling: [320, 190],
+  checklist: [320, 180],
+};
+const [gx, gy] = GLOW[cover ?? ""] ?? [420, 140];
+---
+
+<svg
+  class={`cv cv--${tone} cv--${variant} ${extra}`.trim()}
+  viewBox="0 0 640 400"
+  preserveAspectRatio="xMidYMid meet"
+  aria-hidden="true"
+  focusable="false"
+  data-cv
+>
+  <defs>
+    <radialGradient id={`${uid}-glow`} gradientUnits="userSpaceOnUse" cx={gx} cy={gy} r="380">
+      <stop offset="0" class="cv-g1" />
+      <stop offset="1" class="cv-g2" />
+    </radialGradient>
+    <pattern id={`${uid}-dots`} width="16" height="16" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="0.9" class="cv-dot" />
+    </pattern>
+  </defs>
+  <rect class="cv-plate" x="-1000" y="-600" width="2640" height="1600" />
+  <rect x="-1000" y="-600" width="2640" height="1600" fill={`url(#${uid}-glow)`} />
+  <rect x="-1000" y="-600" width="2640" height="1600" fill={`url(#${uid}-dots)`} />
+  {cover === "survey" && <Survey />}
+  {cover === "docs-to-checks" && <DocsToChecks />}
+  {cover === "receipt" && <Receipt uid={uid} />}
+  {cover === "coupling" && <Coupling />}
+  {cover === "checklist" && <Checklist />}
+  {!(cover && cover in GLOW) && <Generated slug={slug} />}
+</svg>

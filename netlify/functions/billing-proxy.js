@@ -15,11 +15,17 @@ async function readBody(res) {
   }
 }
 
+// A billing token is valid for 30 days from issue: v1.<expiresAtEpochSec>.<hex HMAC of
+// "v1:<installation id>:<expiry>">. striff-api answers an expired one with 401 token_expired.
+const BILLING_TOKEN_LIFETIME_SEC = 30 * 24 * 60 * 60;
+
 function generateToken(installationId) {
-  return crypto
+  const expiresAt = Math.floor(Date.now() / 1000) + BILLING_TOKEN_LIFETIME_SEC;
+  const signature = crypto
     .createHmac("sha256", STRIFF_BILLING_AUTH_SECRET)
-    .update(String(installationId))
+    .update(`v1:${installationId}:${expiresAt}`)
     .digest("hex");
+  return `v1.${expiresAt}.${signature}`;
 }
 
 function parseCookie(header) {
@@ -88,6 +94,9 @@ export const handler = async (event) => {
 
     const hmacToken = generateToken(installationId);
     const apiHeaders = { "X-Server-Key": STRIFF_SERVER_KEY || "" };
+    // Checkout and the portal change billing, which only an admin of the installation's account may
+    // do. striff-api checks that with GitHub using the signed-in user's own token.
+    const manageHeaders = { ...apiHeaders, "X-GitHub-User-Token": token };
 
     switch (action) {
       case "checkout": {
@@ -96,7 +105,7 @@ export const handler = async (event) => {
         }
         const res = await fetch(
           `${STRIFF_API_BASE}/api/v1/billing/checkout?installation_id=${installationId}&plan=${plan}&token=${hmacToken}`,
-          { method: "POST", headers: apiHeaders }
+          { method: "POST", headers: manageHeaders }
         );
         const data = await readBody(res);
         if (!res.ok) {
@@ -112,7 +121,7 @@ export const handler = async (event) => {
       case "portal": {
         const res = await fetch(
           `${STRIFF_API_BASE}/api/v1/billing/portal?installation_id=${installationId}&token=${hmacToken}`,
-          { method: "POST", headers: apiHeaders }
+          { method: "POST", headers: manageHeaders }
         );
         const data = await readBody(res);
         if (!res.ok) {
@@ -121,6 +130,7 @@ export const handler = async (event) => {
         return {
           statusCode: 200,
           headers: { "Content-Type": "application/json" },
+          // CustomerPortalSessionResponse's field is portalUrl (checkout's is checkoutUrl).
           body: JSON.stringify({ portalUrl: data.portalUrl }),
         };
       }
@@ -160,6 +170,10 @@ export const handler = async (event) => {
             periodEndMs: data.periodEndMs,
             repoLimit: data.repoLimit,
             monthlyPriceUsd: data.monthlyPriceUsd,
+            // What the subscription actually bills each period (null when there is no paid
+            // subscription or its price is not known yet); a subscriber on the $0 price gets 0.
+            monthlyPriceCents: data.monthlyPriceCents,
+            priceCurrency: data.priceCurrency,
           }),
         };
       }

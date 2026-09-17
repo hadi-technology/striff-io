@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import "../styles/site-chrome.css";
 import PostHog from "../components/posthog.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -10,11 +11,14 @@ const {
   canonical = "https://striff.io/",
   ogImage = "https://striff.io/og-image.png",
   ogType = "website",
-  robots = "index,follow"
+  robots = "index,follow",
+  // "auto" lets the page follow the reader's colour scheme, header included; the blog opts in.
+  // Everything else is designed light-only and keeps the light header.
+  scheme = "light"
 } = Astro.props;
 ---
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-scheme={scheme}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -42,6 +46,8 @@ const {
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="manifest" href="/manifest.json" />
+    <!-- Page-specific head tags: feeds, preloads, article metadata. -->
+    <slot name="head" />
     <PostHog />
   </head>
   <body>

@@ -1,0 +1,68 @@
+---
+/**
+ * Cover for the survey post: its headline numbers drawn to scale. Share of merged pull requests
+ * with an agent involved, share of repositories that hand agents docs, and the 8% of those that
+ * check any architecture rule, beside the 38% / 18% split between repos with and without an
+ * agent instruction file. Every number is the post's own.
+ */
+const TRACK_X = 124;
+const TRACK_W = 256;
+const rows = [
+  { y: 96, value: "30%", share: 0.3, label: "of merged PRs involve an AI agent", fill: "cv-fill-mod" },
+  { y: 176, value: "63%", share: 0.63, label: "give agents docs to work from", fill: "cv-fill-tone" },
+];
+const checked = TRACK_W * 0.08;
+
+// The right panel: agent-involved PR share, 4 units of height per percentage point.
+const BASE = 300;
+const UNIT = 3.6;
+const pair = [
+  { x: 438, value: 38, lines: ["with AGENTS.md", "or CLAUDE.md"], fill: "cv-fill-tone", mono: true },
+  { x: 524, value: 18, lines: ["without"], fill: "cv-fill-slate", mono: false },
+];
+---
+
+<g class="cv-fade">
+  <text class="cv-mono cv-caps cv-faint" x="40" y="50" font-size="11">Our survey · 335 repositories</text>
+  <text class="cv-mono cv-caps cv-faint" x="600" y="50" font-size="11" text-anchor="end">Sep 2026</text>
+</g>
+
+{rows.map((row, i) => (
+  <g>
+    <g class="cv-fade" style={`--d:${0.1 + i * 0.18}s`}>
+      <text class="cv-num" x="40" y={row.y + 32} font-size="38">{row.value}</text>
+      <text class="cv-mute" x={TRACK_X} y={row.y + 14} font-size="13">{row.label}</text>
+    </g>
+    <rect class="cv-track" x={TRACK_X} y={row.y + 24} width={TRACK_W} height="8" rx="4" />
+    <rect class={`${row.fill} cv-grow-x`} style={`--d:${0.3 + i * 0.18}s`} x={TRACK_X} y={row.y + 24} width={(TRACK_W * row.share).toFixed(1)} height="8" rx="4" />
+  </g>
+))}
+
+<g>
+  <g class="cv-fade" style="--d:0.46s">
+    <text class="cv-num" x="40" y="288" font-size="38">8%</text>
+    <text class="cv-mute" x={TRACK_X} y="270" font-size="13">of those run an architecture check</text>
+  </g>
+  <rect class="cv-gap cv-fade" style="--d:1.05s" x={TRACK_X + checked + 3} y="280" width={(TRACK_W - checked - 3).toFixed(1)} height="8" rx="4" />
+  <rect class="cv-gap-glow cv-flash" style="--d:1.35s" x={TRACK_X + checked + 3} y="277" width={(TRACK_W - checked - 3).toFixed(1)} height="14" rx="7" />
+  <rect class="cv-fill-add cv-grow-x" style="--d:0.66s" x={TRACK_X} y="280" width={checked.toFixed(1)} height="8" rx="4" />
+  <text class="cv-mono cv-c-del cv-fade" style="--d:1.2s" x={TRACK_X + TRACK_W} y="310" font-size="11" text-anchor="end">92% run nothing that checks</text>
+</g>
+
+<text class="cv-mono cv-caps cv-faint cv-fade" style="--d:0.9s" x="40" y="356" font-size="10.5">7,609 merged PRs · Java, Python, C#, TypeScript</text>
+
+<path class="cv-hair" d="M404 84 V336" />
+
+<g>
+  <text class="cv-mute cv-fade" style="--d:0.3s" x="424" y="110" font-size="13">PRs with an agent involved</text>
+  <path class="cv-hair" d={`M424 ${BASE} H600`} />
+  {pair.map((bar, i) => (
+    <g>
+      <rect class={`${bar.fill} cv-grow-y`} style={`--d:${0.55 + i * 0.2}s`} x={bar.x} y={BASE - bar.value * UNIT} width="56" height={bar.value * UNIT} rx="5" />
+      <text class="cv-num cv-fade" style={`--d:${0.95 + i * 0.2}s`} x={bar.x + 28} y={BASE - bar.value * UNIT - 12} font-size="26" text-anchor="middle">{bar.value}%</text>
+      {bar.lines.map((line, j) => (
+        <text class={`${bar.mono ? "cv-mono " : ""}cv-mute cv-fade`} style={`--d:${0.7 + i * 0.2}s`} x={bar.x + 28} y={BASE + 20 + j * 14} font-size="10.5" text-anchor="middle">{line}</text>
+      ))}
+    </g>
+  ))}
+</g>

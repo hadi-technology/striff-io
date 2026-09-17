@@ -37,6 +37,9 @@ interface BillingInfo {
   periodStartMs?: number;
   periodEndMs?: number;
   repoLimit?: number;
+  // What the subscription actually bills each period; null when unknown or unsubscribed.
+  monthlyPriceCents?: number | null;
+  priceCurrency?: string | null;
 }
 
 const PLANS = [
@@ -48,6 +51,40 @@ const PLANS = [
 function formatPeriodEnd(periodEndMs?: number): string | null {
   if (!periodEndMs) return null;
   return new Date(periodEndMs).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+// en-US to match the plan cards' "$29/mo"; the browser's locale would render USD as "US$29" or "29 $".
+function formatPrice(cents: number, currency?: string | null): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: (currency || "usd").toUpperCase(),
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+  }).format(cents / 100);
+}
+
+// A 401 from the billing or metrics proxy means the GitHub session or the billing token has
+// expired; signing in again issues a fresh one. A 401 again soon after a fresh sign-in means signing
+// in does not fix it, and redirecting again would loop through GitHub, so onBlocked shows an error.
+const REAUTH_STORAGE_KEY = "striff_reauth_at";
+const REAUTH_WINDOW_MS = 2 * 60 * 1000;
+
+function signInAgain(onBlocked: () => void) {
+  let lastReauthAt = 0;
+  try {
+    lastReauthAt = Number(sessionStorage.getItem(REAUTH_STORAGE_KEY)) || 0;
+  } catch {
+    // Storage unavailable: fall through and redirect.
+  }
+  if (Date.now() - lastReauthAt < REAUTH_WINDOW_MS) {
+    onBlocked();
+    return;
+  }
+  try {
+    sessionStorage.setItem(REAUTH_STORAGE_KEY, String(Date.now()));
+  } catch {
+    // Storage unavailable: redirect anyway.
+  }
+  window.location.href = getOAuthUrl();
 }
 
 export default function Dashboard() {
@@ -281,6 +318,10 @@ function InstallationCard({
         `/.netlify/functions/metrics-proxy?installation_id=${installation.id}&months=6`
       );
       const data = await res.json();
+      if (res.status === 401) {
+        signInAgain(() => setMetricsError(data.error || "Failed to load metrics"));
+        return;
+      }
       if (!res.ok) {
         setMetricsError(data.error || "Failed to load metrics");
         return;
@@ -305,6 +346,10 @@ function InstallationCard({
         }),
       });
       const data = await res.json();
+      if (res.status === 401) {
+        signInAgain(() => setBillingError(true));
+        return;
+      }
       // An error payload must not land in billingInfo: hasSubscription would read as false and
       // show a subscribed customer the plan picker during an API hiccup.
       if (!res.ok) {
@@ -341,10 +386,18 @@ function InstallationCard({
         }),
       });
       const data = await res.json();
-      setBillingInfo(data);
+      if (res.status === 401) {
+        signInAgain(() => {
+          onError(data.error || "Failed to open billing");
+          setBillingState("idle");
+        });
+        return;
+      }
       if (data.portalUrl) {
         window.location.href = data.portalUrl;
       } else {
+        // e.g. 403: only an admin of the account may manage its billing.
+        onError(data.error || "Failed to open billing");
         setBillingState("idle");
       }
     } catch {
@@ -368,6 +421,8 @@ function InstallationCard({
       const data = await res.json();
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
+      } else if (res.status === 401) {
+        signInAgain(() => onError(data.error || "Failed to create checkout session"));
       } else if (res.status === 409) {
         // Already subscribed: our cached billing state is stale. Refetch so the tab swaps the
         // plan picker for the usage panel and Manage billing button instead of dead-ending.
@@ -646,6 +701,14 @@ function UsagePanel({
           <p className="dashboard-usage-stat-label">Billed as</p>
           <p className="dashboard-usage-stat-value">{capitalizeTier(billingInfo.billedTier)}</p>
         </div>
+        {billingInfo.monthlyPriceCents != null && (
+          <div>
+            <p className="dashboard-usage-stat-label">You pay</p>
+            <p className="dashboard-usage-stat-value">
+              {formatPrice(billingInfo.monthlyPriceCents, billingInfo.priceCurrency)}/mo
+            </p>
+          </div>
+        )}
       </div>
       <p className="mt-3 text-sm text-slate-500">
         Only repos that generate a diagram count toward your bill.

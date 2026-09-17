@@ -5,6 +5,7 @@
  * link behind.
  */
 import { getEntry } from "astro:content";
+import { readingMinutes } from "../lib/blog";
 
 interface Props {
   slug: string;
@@ -19,13 +20,8 @@ const post = await getEntry("blog", slug);
 if (!post || post.data.draft) {
   throw new Error(`BlogLink: no published blog post "${slug}"`);
 }
-const words = (post.body ?? "")
-  .replace(/^import .*$/gm, " ")
-  .replace(/\$\$[\s\S]*?\$\$/g, " ")
-  .replace(/<[^>]*>/g, " ")
-  .split(/\s+/)
-  .filter(Boolean).length;
-const minutes = Math.max(1, Math.round(words / 230));
+// The same reading time the blog itself shows for this post.
+const minutes = readingMinutes(post);
 const title = label ?? post.data.title;
 ---
 

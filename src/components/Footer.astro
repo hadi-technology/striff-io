@@ -1,28 +1,123 @@
 ---
-const cwsUrl = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
+/**
+ * The site footer: the logo and the one-line pitch with the two ways in (the GitHub App and the
+ * blog's feed), the site map in three columns, and the legal line. Dark on every page.
+ */
+const installUrl = "https://github.com/apps/striff-app/installations/new";
+const githubUrl = "https://github.com/hadi-technology/striff-lib";
+const year = new Date().getFullYear();
+
+type FooterLink = { label: string; href: string; external?: boolean; ariaLabel?: string };
+const columns: { title: string; links: FooterLink[] }[] = [
+  {
+    title: "Product",
+    links: [
+      { label: "For teams", href: "/#how" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "Chrome extension", href: "/#extension" },
+      { label: "GitHub App", href: installUrl, external: true },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { label: "Blog", href: "/blog" },
+      { label: "RSS feed", href: "/blog/rss.xml" },
+      { label: "GitHub", href: githubUrl, ariaLabel: "Striff GitHub" },
+      { label: "Contact", href: "/contact" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
+      { label: "Cookies", href: "/cookies" },
+    ],
+  },
+];
 ---
 
-<footer class="site-footer border-t border-white/10 bg-[linear-gradient(180deg,rgba(8,15,30,0.96),rgba(12,22,40,0.98))] py-14 backdrop-blur-xl">
-  <div class="mx-auto grid max-w-[90rem] gap-10 px-6 footer-grid md:grid-cols-[1.1fr_1.4fr_auto] md:items-start">
-    <div class="max-w-xs footer-brand">
-      <div class="font-semibold footer-title">Striff</div>
+<footer class="site-footer">
+  <svg class="sf-art" viewBox="0 0 520 300" aria-hidden="true" focusable="false">
+    <g fill="none" stroke-width="1.2" stroke-linecap="round">
+      <path d="M96 222 C170 222 170 118 244 118" stroke="rgba(148,163,184,0.35)" />
+      <path d="M244 118 C318 118 318 64 392 64" stroke="rgba(63,214,143,0.55)" />
+      <path d="M244 118 C318 118 318 196 392 196" stroke="rgba(106,168,255,0.5)" />
+      <path d="M392 196 C440 196 440 250 488 250" stroke="rgba(255,107,122,0.45)" stroke-dasharray="4 4" />
+      <path d="M96 222 C150 222 150 270 204 270" stroke="rgba(148,163,184,0.25)" />
+    </g>
+    <g stroke="rgba(203,213,225,0.18)">
+      <rect x="40" y="206" width="112" height="34" rx="7" fill="#0d1322" />
+      <rect x="200" y="100" width="88" height="34" rx="7" fill="#0d1322" stroke="rgba(106,168,255,0.6)" />
+      <rect x="352" y="48" width="88" height="34" rx="7" fill="#0d1322" stroke="rgba(63,214,143,0.55)" />
+      <rect x="352" y="180" width="88" height="34" rx="7" fill="#0d1322" />
+      <rect x="160" y="254" width="88" height="34" rx="7" fill="#0d1322" />
+    </g>
+  </svg>
+
+  <div class="sf-inner">
+    <div class="sf-top">
+      <div class="sf-brand">
+        <a class="sf-logo" href="/">
+          <span class="sf-tile"><img src="/icon.svg" alt="" width="24" height="24" loading="lazy" decoding="async" /></span>
+          <span>Striff</span>
+        </a>
+        <p class="sf-tag">Your documented architecture, checked on every pull request.</p>
+        <div class="sf-brand-actions">
+          <a class="sf-cta" href={installUrl} target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+            </svg>
+            Install the GitHub App
+            <span class="sr-only"> (opens in a new tab)</span>
+          </a>
+          <a class="sf-rss" href="/blog/rss.xml">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9" /><path d="M4 4a16 16 0 0 1 16 16" /><circle cx="5" cy="19" r="1" /></svg>
+            Follow the blog
+          </a>
+        </div>
+      </div>
+
+      <nav class="sf-cols" aria-label="Footer">
+        {columns.map((column) => (
+          <div class="sf-col">
+            <p class="sf-head">{column.title}</p>
+            <ul>
+              {column.links.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    aria-label={link.ariaLabel}
+                    target={link.external ? "_blank" : undefined}
+                    rel={link.external ? "noopener noreferrer" : undefined}
+                  >
+                    {link.label}
+                    {link.external && (
+                      <>
+                        <svg class="sf-ext" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 10.5 10.5 5.5M6 5.5h4.5V10" /></svg>
+                        <span class="sr-only"> (opens in a new tab)</span>
+                      </>
+                    )}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </nav>
     </div>
-    <div class="flex flex-wrap gap-x-7 gap-y-3 footer-links">
-      <a class="flex items-center gap-2 transition-colors duration-200" href="https://github.com/hadi-technology/striff-lib" aria-label="Striff GitHub">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" />
-        </svg>
-        GitHub
-      </a>
-      <a class="transition-colors duration-200" href="/#extension">Extension</a>
-      <a class="transition-colors duration-200" href="/pricing">Pricing</a>
-      <a class="transition-colors duration-200" href="/contact">Contact</a>
-      <a class="transition-colors duration-200" href="/privacy">Privacy</a>
-      <a class="transition-colors duration-200" href="/terms">Terms</a>
-      <a class="transition-colors duration-200" href="/cookies">Cookies</a>
-    </div>
-    <div class="text-sm footer-legal md:text-right">
-      Striff is a trademark of HADI Technology.
+
+    <div class="sf-bottom">
+      <p>© {year} HADI Technology. Striff is a trademark of HADI Technology.</p>
+      <div class="sf-social">
+        <a href={githubUrl} aria-label="Striff on GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.08 1.54 1.08.9 1.58 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.56-1.15-4.56-5.11 0-1.13.39-2.05 1.03-2.78-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.06.8-.23 1.66-.34 2.52-.35.86.01 1.72.12 2.52.35 1.9-1.34 2.74-1.06 2.74-1.06.55 1.41.2 2.45.1 2.71.64.73 1.03 1.65 1.03 2.78 0 3.97-2.34 4.85-4.57 5.1.36.32.68.96.68 1.94 0 1.4-.01 2.53-.01 2.88 0 .27.18.59.69.48A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" /></svg>
+        </a>
+        <a href="/blog/rss.xml" aria-label="Blog RSS feed">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9" /><path d="M4 4a16 16 0 0 1 16 16" /><circle cx="5" cy="19" r="1" /></svg>
+        </a>
+      </div>
     </div>
   </div>
 </footer>
