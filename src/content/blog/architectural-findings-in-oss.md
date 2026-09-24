@@ -89,29 +89,6 @@ Not the violations. The 1,487 rules the system declined to answer.
 
 A source parser sees less than a compiler: no annotations, no generated members, no string literals, no class literals. When a rule cannot be decided, the only honest output is *could not check* — and the failure we care most about is that quietly becoming *checked, found nothing.* Those are different claims, and a tool that conflates them is lying.
 
-That principle costs findings, and we would rather it did. During this work the checker reported two providers in a Python project as missing; both are registered at runtime, declared by no `class` statement the parser could see. The names were undeclared, not absent, and the verdict should have been *unanswerable*. That is filed as a defect against ourselves, not written off as an edge case.
-
-## What it got wrong
-
-Roughly a fifth of the effort went into failures, and they are more instructive than the hits.
-
-<div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Seven false accusations, three underlying defects</p>
-<div class="bp-facts">
-<div class="bp-facts-line"><span class="bp-facts-key">bound  </span>a doc said <span class="bp-facts-quote">io.smallrye.config.Expressions</span>, an upstream dependency; the bare word was bound to an unrelated local class</div>
-<div class="bp-facts-line"><span class="bp-facts-key">widened</span><span class="bp-facts-quote">"model and logic must not know JabRefPreferences"</span> became "anything outside gui", convicting a third package named in neither</div>
-<div class="bp-facts-line"><span class="bp-facts-key">inverted</span>a table headed <span class="bp-facts-quote">v1 (WRONG) / v2 (CORRECT)</span> — the ban was taken from column one, the exemption list in column two dropped</div>
-<div class="bp-facts-line"><span class="bp-facts-key">reversed</span>a <span class="bp-facts-quote">"Do NOT use:"</span> lead-in two lines above a list; the names in it were read as recommendations</div>
-<div class="bp-facts-line"><span class="bp-facts-key">tense  </span>an <span class="bp-facts-quote">Implementation Plan</span> whose unchecked <span class="bp-facts-quote">- [ ]</span> step justified a proposed edit; we read the justification as an invariant and reported it already broken</div>
-<div class="bp-facts-line"><span class="bp-facts-key">scope  </span>a file headed <span class="bp-facts-quote">Code Review Guidelines &middot; Always check</span>, governing new UI mid-migration beside a note that the old package is <span class="bp-facts-quote">legacy, being phased out</span>; we reported the legacy it exists to retire</div>
-<div class="bp-facts-line"><span class="bp-facts-key">predicate</span><span class="bp-facts-quote">Single implementation (MUST): prefix with `Default`</span> is a naming convention; we read it as a cardinality constraint, <span class="bp-facts-quote">exactly 1 type implements Solver</span>, and convicted on it</div>
-<div class="bp-facts-flag">four scope, two tense, one predicate</div>
-</div>
-<p class="bp-figure-caption">The first four are one error in different clothing: a rule extracted wider than the sentence that licensed it. The last two are a different mistake, and a growing one &mdash; repositories increasingly commit forward-looking plans (<code>plans/</code>, Spec Kit, OpenSpec) that read exactly like architecture documentation because they are written in the same declarative register. Both were caught while fact-checking this post, and both had been slated as flagship examples. A document that governs what you may write next is not a description of what you have already written.</p>
-</div>
-
-Worth stating plainly: none of these were caught by the test set. They were caught by widening the sample. An acceptance set built on READMEs scored five out of five and had nothing to say about release notes, upgrade guides, changelogs, archived proposals or directory manifests, because a README contains none of those.
-
 ## Why this is getting worse
 
 We went looking for AI writing bad documentation and mostly did not find it. What is there is older and more mundane, and we think more serious: documents going stale is a solved-in-theory problem nobody has ever actually solved, and the stale documents have now been promoted into the build.
