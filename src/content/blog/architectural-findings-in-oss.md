@@ -1,6 +1,6 @@
 ---
 title: "The rules repositories write for their AI agents, and the code that already breaks them"
-description: "A new genre of file tells coding agents what they MUST NOT do. We turned those sentences into checkable rules and evaluated 7,161 of them across 609 public pull requests. Seventy-seven percent held, one in five could not be answered, and about two percent accused — including a Copilot instruction file naming a class that has never existed."
+description: "A new genre of file tells coding agents what they MUST NOT do. We turned those sentences into checkable rules and evaluated 7,161 of them across 609 public pull requests. Seventy-seven percent held, one in five could not be answered, and about two percent accused — including an agent instruction file that has told every agent reading it to call a deleted API for ten months."
 date: 2026-09-24
 category: "Data & research"
 cover: "hard-rules"
@@ -76,9 +76,15 @@ using GitUI;
 
 > Use `McpServerFactory` to create server instances with configured options
 
-Search the repository for `McpServerFactory`. One hit: that sentence. There is no such type, and there never was. The commit that added the line is `c40effeb`, authored by **Copilot**, titled *"✨ Set up Copilot instructions for repository"*.
+Search the repository for `McpServerFactory`. One hit: that sentence.
 
-An agent wrote the instruction file. The instruction file tells the next agent to use a class that does not exist. Nothing in the merge path could have caught it, because the claim is prose.
+The obvious reading is that an agent invented the class. It didn't, and the truth is more useful. `McpServerFactory` was real — a public factory with its own interface and its own tests, touched by 32 commits. The sequence is:
+
+- **13 October 2025** — a commit titled *"✨ Set up Copilot instructions for repository"*, authored by **Copilot**, adds the instruction file. The line is correct when written.
+- **2 December 2025** — a commit titled *"Remove obsolete APIs from codebase"* deletes `src/ModelContextProtocol.Core/Server/McpServerFactory.cs`.
+- Nobody touches the instruction file.
+
+The second commit is the one worth sitting with. Its stated purpose was removing obsolete APIs. Whoever did it deleted the type, its interface and its tests, and walked past a file in `.github/` instructing an agent to use it — because nothing connects those two things. The API is code, the instruction is prose, and no tool in that pipeline has an opinion about whether they agree.
 
 ### And a small one, for honesty's sake
 
@@ -114,8 +120,10 @@ Worth stating plainly: none of these were caught by the test set. They were caug
 
 ## Why this is getting worse
 
-Instruction files are consumed differently from READMEs. A README is read by a person who can tell when it has gone stale. An `AGENTS.md` is consumed literally, at volume, by something that cannot. When `copilot-instructions.md` says to use `McpServerFactory`, an agent does not squint at it — it writes the call.
+We went looking for AI writing bad documentation and mostly did not find it. What is there is older and more mundane, and we think more serious: documents going stale is a solved-in-theory problem nobody has ever actually solved, and the stale documents have now been promoted into the build.
 
-And these files are increasingly written by agents. The loop closes: agents write the docs, agents read the docs, and the only thing ever checking either was a human now reviewing far more code than two years ago.
+That is the shift. A wrong sentence in a design doc used to be a small tax on one confused human, paid occasionally, and the human usually noticed. The same sentence is now loaded automatically and read literally by something with no capacity to be suspicious of it. The defect rate did not change; the blast radius did. When `copilot-instructions.md` says to use `McpServerFactory`, an agent does not squint at it — it writes the call.
+
+And these files are increasingly written by agents, which closes the loop: agents write the docs, agents read the docs, and the humans who used to be the error-correction step are reviewing more code than ever and reading the markdown less than ever.
 
 Tests are run. Types are checked. Coverage is measured, dependencies audited, licences verified. The file that says how the system is arranged — the one your agent reads before every task — is checked by nobody.
