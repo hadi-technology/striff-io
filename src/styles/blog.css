@@ -1226,10 +1226,23 @@ html[data-scheme="auto"] body { background: #fbfbfa; }
 
 .sb .sb-prose {
   counter-reset: sb-fig;
-  font-size: 1.0625rem;
-  line-height: 1.72;
+  /* Long-form prose is set in the serif, not the interface sans: Newsreader carries an optical
+     size axis, so it holds its colour at reading sizes where a UI face goes flat. The sans stays
+     for apparatus -- figures, labels, captions -- which is what the contrast is for. */
+  font-family: var(--sb-serif);
+  font-size: 1.1875rem;
+  line-height: 1.68;
+  letter-spacing: 0.004em;
   color: var(--sb-text);
   font-kerning: normal;
+}
+
+/* The apparatus keeps the sans, so a figure still reads as an instrument beside the prose. */
+.sb .sb-prose .bp-figure,
+.sb .sb-prose .bp-figure-caption,
+.sb .sb-prose table,
+.sb .sb-prose .sb-label {
+  font-family: var(--sb-sans);
 }
 
 @media (min-width: 48rem) {
