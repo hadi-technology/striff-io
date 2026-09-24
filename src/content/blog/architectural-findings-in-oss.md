@@ -58,14 +58,6 @@ using GitUI;
 
 `java.util.Optional` is imported in 58 files, among them `ai.timefold.solver.core.config.util.ConfigUtils` and `DefaultConstructionHeuristicPhaseFactory`. The same file states a single-implementation rule — `interface Solver` → `class DefaultSolver` — which the codebase also does not satisfy.
 
-### Comp AI: a design-system ban, 325 files deep
-
-`REVIEW.md`:
-
-> Icons must come from `@trycompai/design-system/icons` (Carbon icons), not `lucide-react`
-
-`lucide-react` is imported in 325 files.
-
 ### The MCP C# SDK: an instruction file that outlived the API it names
 
 `modelcontextprotocol/csharp-sdk`, `.github/copilot-instructions.md:258`:
@@ -101,16 +93,17 @@ That principle costs findings. During this work the checker reported two provide
 Roughly a fifth of the effort went into failures, and they are more instructive than the hits.
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Five false accusations, two underlying defects</p>
+<p class="bp-figure-title">Six false accusations, two underlying defects</p>
 <div class="bp-facts">
 <div class="bp-facts-line"><span class="bp-facts-key">bound  </span>a doc said <span class="bp-facts-quote">io.smallrye.config.Expressions</span>, an upstream dependency; the bare word was bound to an unrelated local class</div>
 <div class="bp-facts-line"><span class="bp-facts-key">widened</span><span class="bp-facts-quote">"model and logic must not know JabRefPreferences"</span> became "anything outside gui", convicting a third package named in neither</div>
 <div class="bp-facts-line"><span class="bp-facts-key">inverted</span>a table headed <span class="bp-facts-quote">v1 (WRONG) / v2 (CORRECT)</span> — the ban was taken from column one, the exemption list in column two dropped</div>
 <div class="bp-facts-line"><span class="bp-facts-key">reversed</span>a <span class="bp-facts-quote">"Do NOT use:"</span> lead-in two lines above a list; the names in it were read as recommendations</div>
 <div class="bp-facts-line"><span class="bp-facts-key">tense  </span>an <span class="bp-facts-quote">Implementation Plan</span> whose unchecked <span class="bp-facts-quote">- [ ]</span> step justified a proposed edit; we read the justification as an invariant and reported it already broken</div>
-<div class="bp-facts-flag">four are one fix; the fifth is its mirror image</div>
+<div class="bp-facts-line"><span class="bp-facts-key">scope  </span>a file headed <span class="bp-facts-quote">Code Review Guidelines &middot; Always check</span>, governing new UI mid-migration beside a note that the old package is <span class="bp-facts-quote">legacy, being phased out</span>; we reported the legacy it exists to retire</div>
+<div class="bp-facts-flag">four are one fix; the last two are the same mistake about tense</div>
 </div>
-<p class="bp-figure-caption">The first four are one error in different clothing: a rule extracted wider than the sentence that licensed it. The fifth is a different mistake and a growing one &mdash; repositories increasingly commit forward-looking plans (<code>plans/</code>, Spec Kit, OpenSpec) that read exactly like architecture documentation because they are written in the same declarative register. That one was caught while fact-checking this post; it had been slated as a flagship example.</p>
+<p class="bp-figure-caption">The first four are one error in different clothing: a rule extracted wider than the sentence that licensed it. The last two are a different mistake, and a growing one &mdash; repositories increasingly commit forward-looking plans (<code>plans/</code>, Spec Kit, OpenSpec) that read exactly like architecture documentation because they are written in the same declarative register. Both were caught while fact-checking this post, and both had been slated as flagship examples. A document that governs what you may write next is not a description of what you have already written.</p>
 </div>
 
 Worth stating plainly: none of these were caught by the test set. They were caught by widening the sample. An acceptance set built on READMEs scored five out of five and had nothing to say about release notes, upgrade guides, changelogs, archived proposals or directory manifests, because a README contains none of those.
