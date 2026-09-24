@@ -5569,3 +5569,17 @@
   .rules-panel { border-radius: 0.6rem; }
   .rules-table .docs-rule-statement { font-size: 0.92rem; }
 }
+
+/* The dashboard's own footer: the links the marketing one carried, and nothing else. */
+.dash-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: #8a95a1;
+  font-size: 0.8rem;
+}
+.dash-foot a { color: #57606a; }
+.dash-foot a:hover { color: #24292f; }

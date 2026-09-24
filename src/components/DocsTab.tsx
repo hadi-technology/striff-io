@@ -419,27 +419,28 @@ export default function DocsTab({
   /**
    * Opens the palette, and indexes the rules the first time.
    *
-   * The catalogue answers with documents; a document's rules come with the document. So the first
-   * search asks for the read ones, and after that the answers are already here.
+   * One reading of the whole repository, not one per document: this used to ask for the first
+   * twenty-five read documents in turn, which was twenty-five round trips and searched none of the
+   * rest. What the repository-wide read leaves out, it says, and the rules page shows the same list
+   * in full.
    */
   async function openPalette() {
     setPaletteOpen(true);
     setQuery("");
     if (ruleIndex.length > 0 || indexing || !catalog) return;
-    const withRules = catalog.documents.filter((doc) => doc.ruleCount > 0).slice(0, 25);
-    if (withRules.length === 0) return;
+    if (!catalog.documents.some((doc) => doc.ruleCount > 0)) return;
     setIndexing(true);
     try {
-      const found: (Rule & { path: string })[] = [];
-      for (const doc of withRules) {
-        const res = await fetch(
-          `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}&path=${encodeURIComponent(doc.path)}`
-        );
-        if (!res.ok) continue;
-        const body: Detail = await res.json();
-        body.rules.forEach((rule) => found.push({ ...rule, path: doc.path }));
-      }
-      setRuleIndex(found);
+      const res = await fetch(
+        `/.netlify/functions/doc-catalog-proxy?view=rules&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
+      );
+      if (!res.ok) return;
+      const body: { documents: { document: Doc; rules: Rule[] }[] } = await res.json();
+      setRuleIndex(
+        (body.documents || []).flatMap((group) =>
+          group.rules.map((rule) => ({ ...rule, path: group.document.path }))
+        )
+      );
     } finally {
       setIndexing(false);
     }

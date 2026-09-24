@@ -213,7 +213,21 @@ export default function Dashboard() {
         onAccount={setAccountId}
         onSignOut={signOut}
       />
-      <div className="dash-page">{children}</div>
+      <div className="dash-page">
+        {children}
+        {/* The marketing footer is off on this page, and these still have to be reachable. */}
+        <footer className="dash-foot">
+          <a href="/privacy">Privacy</a>
+          <span aria-hidden="true">·</span>
+          <a href="/terms">Terms</a>
+          <span aria-hidden="true">·</span>
+          <a href="/cookies">Cookies</a>
+          <span aria-hidden="true">·</span>
+          <a href="/contact">Contact</a>
+          <span aria-hidden="true">·</span>
+          <a href="/">striff.io</a>
+        </footer>
+      </div>
     </>
   );
 
@@ -438,7 +452,6 @@ function DashBar({
                   <a className="bar-menu-item" href="https://github.com/apps/striff-app/installations/new" target="_blank" rel="noopener noreferrer" role="menuitem">
                     Add an account
                   </a>
-                  <a className="bar-menu-item" href="/privacy" role="menuitem">Privacy</a>
                   <button type="button" className="bar-menu-item" onClick={onSignOut} role="menuitem">
                     Sign out
                   </button>
