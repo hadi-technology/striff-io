@@ -94,7 +94,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [autoCheckout, setAutoCheckout] = useState<{ installationId: number; plan: string } | null>(null);
-  const [section, setSection] = useState<"repos" | "docs" | "metrics" | "billing">("repos");
+  const [section, setSection] = useState<"repos" | "docs" | "metrics" | "billing">("docs");
   // Which repository the documents view is showing; set by opening one from Repositories.
   const [openRepo, setOpenRepo] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
@@ -160,6 +160,38 @@ export default function Dashboard() {
     }
   }
 
+  const current =
+    installations.find((inst) => inst.id === accountId) || installations[0] || null;
+
+  // Opening on the documents view means opening on a repository: the one last looked at for this
+  // account, and otherwise its first. Remembered per account, so switching accounts does not
+  // carry a repository that does not belong to it.
+  useEffect(() => {
+    if (!current) return;
+    const repos = current.repositories || [];
+    if (repos.length === 0) return;
+    const remembered = (() => {
+      try {
+        return window.localStorage.getItem(`striff.lastRepo.${current.id}`);
+      } catch {
+        return null;
+      }
+    })();
+    const wanted = repos.find((repo) => repo.full_name === remembered) || repos[0];
+    if (!openRepo || !repos.some((repo) => repo.full_name === openRepo)) {
+      setOpenRepo(wanted.full_name);
+    }
+  }, [current?.id, current?.repositories?.length]);
+
+  useEffect(() => {
+    if (!current || !openRepo) return;
+    try {
+      window.localStorage.setItem(`striff.lastRepo.${current.id}`, openRepo);
+    } catch {
+      // A browser that will not remember is no reason to fail: the first repository is the default.
+    }
+  }, [current?.id, openRepo]);
+
   function signOut() {
     window.location.href = "/.netlify/functions/auth-logout";
   }
@@ -196,9 +228,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  const current =
-    installations.find((inst) => inst.id === accountId) || installations[0] || null;
 
   return (
     <div className="dashboard-shell">
@@ -239,7 +268,7 @@ export default function Dashboard() {
             )}
             <nav className="dash-nav">
               {([
-                ["metrics", "Overview", "overview", ""],
+                ["metrics", "Metrics", "overview", ""],
                 ["repos", "Repositories", "repos", String((current.repositories || []).length)],
                 ["billing", "Billing", "billing", ""],
               ] as const).map(([key, label, icon, count]) => (

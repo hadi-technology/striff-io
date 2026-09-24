@@ -312,7 +312,14 @@ export default function DocsTab({
         return;
       }
       setCatalog(data);
-      setExpanded(allFolders(buildTree(data.documents || [])));
+      const docs: Doc[] = data.documents || [];
+      setExpanded(allFolders(buildTree(docs)));
+      // Landing on an empty pane wastes the arrival: open what a reader would have opened first,
+      // which is a document something is broken in, and otherwise one that has been read.
+      const first =
+        docs.find((doc) => doc.brokenRules > 0) ||
+        docs.find((doc) => doc.state === "READ" && doc.ruleCount > 0);
+      if (first) openDoc(first.path);
     } catch {
       setError("Couldn't load this repository's documents");
     } finally {
