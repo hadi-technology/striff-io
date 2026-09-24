@@ -255,22 +255,31 @@ const DotsIcon = () =>
 export default function DocsTab({
   installationId,
   repos,
+  openRepo,
 }: {
   installationId: number;
   repos: { full_name: string }[];
+  /** The repository a reader opened from the repositories list, if they came that way. */
+  openRepo?: string | null;
 }) {
-  const [repo, setRepo] = useState<string>(repos[0]?.full_name || "");
+  const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "broken" | "outdated" | "notRead" | "other">("all");
+  const [pane, setPane] = useState<"rules" | "history">("rules");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const [owner, name] = repo.split("/");
+
+  useEffect(() => {
+    if (openRepo && openRepo !== repo) setRepo(openRepo);
+  }, [openRepo]);
 
   useEffect(() => {
     if (!owner || !name) return;
@@ -358,7 +367,10 @@ export default function DocsTab({
   }
 
   const documents = useMemo(() => {
-    const all = catalog?.documents || [];
+    const term = query.trim().toLowerCase();
+    const all = (catalog?.documents || []).filter(
+      (doc) => term === "" || doc.path.toLowerCase().includes(term)
+    );
     switch (filter) {
       case "broken":
         return all.filter((doc) => doc.brokenRules > 0);
@@ -599,21 +611,41 @@ export default function DocsTab({
       {catalog && catalog.documents.length > 0 && (
         <div className="docs-split">
           <div className="docs-list">
+            <label className="tree-search">
+              <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+                <circle cx="7" cy="7" r="4.25" />
+                <path d="m10.25 10.25 3.5 3.5" />
+              </svg>
+              <input
+                className="tree-search-input"
+                type="search"
+                value={query}
+                placeholder="Search documents"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </label>
             <div className="docs-filters">
               {([
-                ["all", `All ${catalog.summary.documents}`],
-                ["broken", `Broken ${catalog.summary.brokenRules}`],
-                ["outdated", `Edited since ${catalog.summary.outdated}`],
-                ["notRead", `Not read ${catalog.summary.notRead}`],
-                ["other", `Other ${catalog.summary.screenedOut + catalog.summary.retired + catalog.summary.unreadable + catalog.summary.excluded}`],
-              ] as const).map(([key, label]) => (
+                ["all", "All", catalog.summary.documents, ""],
+                ["broken", "Broken", catalog.summary.brokenRules, "broken"],
+                ["outdated", "Edited since", catalog.summary.outdated, "outdated"],
+                ["notRead", "Not read", catalog.summary.notRead, "unread"],
+                [
+                  "other",
+                  "Other",
+                  catalog.summary.screenedOut + catalog.summary.retired +
+                    catalog.summary.unreadable + catalog.summary.excluded,
+                  "other",
+                ],
+              ] as const).map(([key, label, count, dot]) => (
                 <button
                   key={key}
                   type="button"
                   className={`docs-filter${filter === key ? " is-on" : ""}`}
                   onClick={() => setFilter(key)}
                 >
-                  {label}
+                  {dot && <span className={`docs-fdot is-${dot}`} />}
+                  {label} <b>{count}</b>
                 </button>
               ))}
             </div>
@@ -644,10 +676,34 @@ export default function DocsTab({
                   <span className="docs-pane-actions">{rowMenu(selected, detail.document, false, "pane")}</span>
                 </div>
                 <p className={`docs-state-line is-${detail.document.state.toLowerCase()}`}>
-                  {withCode(stateLine(detail.document))}
+                  <span
+                    className={`docs-sdot is-${
+                      detail.document.outdated && detail.document.state === "READ"
+                        ? "outdated"
+                        : detail.document.state.toLowerCase()
+                    }`}
+                  />
+                  <span>{withCode(stateLine(detail.document))}</span>
                 </p>
 
-                {detail.rules.length > 0 && (
+                <div className="docs-pane-seg">
+                  <button
+                    type="button"
+                    className={pane === "rules" ? "is-on" : ""}
+                    onClick={() => setPane("rules")}
+                  >
+                    Rules {detail.rules.length > 0 ? detail.rules.length : ""}
+                  </button>
+                  <button
+                    type="button"
+                    className={pane === "history" ? "is-on" : ""}
+                    onClick={() => setPane("history")}
+                  >
+                    History {detail.history.length > 0 ? detail.history.length : ""}
+                  </button>
+                </div>
+
+                {pane === "rules" && detail.rules.length > 0 && (
                   <table className="docs-rules">
                     <thead>
                       <tr>
@@ -659,7 +715,16 @@ export default function DocsTab({
                     </thead>
                     <tbody>
                       {detail.rules.map((rule) => (
-                        <tr key={rule.factId}>
+                        <tr
+                          key={rule.factId}
+                          className={
+                            rule.status === "VIOLATED"
+                              ? "is-violated"
+                              : rule.status === "PRE_EXISTING"
+                              ? "is-prior"
+                              : ""
+                          }
+                        >
                           <td className="docs-rule-line">{rule.sourceLine ? `:${rule.sourceLine}` : ""}</td>
                           <td className="docs-rule-quote">{withCode(rule.quote)}</td>
                           <td className="docs-rule-statement">{withCode(rule.statement)}</td>
@@ -684,7 +749,7 @@ export default function DocsTab({
                   </table>
                 )}
 
-                {detail.history.length > 0 && (
+                {pane === "history" && detail.history.length > 0 && (
                   <div className="docs-history">
                     <p className="dashboard-kicker">Every pull request that used this doc</p>
                     <ul>

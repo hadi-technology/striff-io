@@ -5183,3 +5183,90 @@
   .docs-history li { gap: 0.35rem; }
   .docs-history-reason { min-width: 0; }
 }
+
+/* ---- The dashboard's own chrome, as the design draws it ----
+   A white panel of sections down the left with the accent on the one you are in, and the work
+   beside it. Values are the design's: nav rows, the search box, the segmented control. */
+.dash-side {
+  gap: 2px;
+  padding: 16px 12px;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+}
+.dash-side .nav-label {
+  padding: 6px 10px 8px;
+  color: #57606a;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.dash-nav { display: flex; flex-direction: column; gap: 2px; margin-top: 0.5rem; }
+.nav-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  border-radius: 0.5rem;
+  padding: 9px 10px;
+  color: #57606a;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+}
+.nav-item svg { color: #8a95a1; flex: 0 0 auto; }
+.nav-item:hover { background: #f6f8fa; color: #24292f; text-decoration: none; }
+.nav-item.active { background: #f1f5f9; color: #1f2328; }
+/* The accent marks where you are, and nowhere else in this panel. */
+.nav-item.active svg { color: #2563eb; }
+.nav-item .nav-count { margin-left: auto; color: #8a95a1; font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; }
+
+.tree-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid rgba(31, 35, 40, 0.14);
+  border-radius: 0.5rem;
+  background: #f6f8fa;
+  color: #6b7684;
+}
+.tree-search:focus-within { border-color: #93b4f5; background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+.tree-search svg { color: #8a95a1; }
+.tree-search-input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 0.85rem; color: #24292f; outline: none; }
+
+.docs-pane-seg { display: inline-flex; margin-top: 0.75rem; padding: 2px; border: 1px solid rgba(31, 35, 40, 0.14); border-radius: 0.5rem; background: #f6f8fa; }
+.docs-pane-seg button { border-radius: 0.38rem; padding: 0.28rem 0.7rem; color: #57606a; font-size: 0.78rem; font-weight: 600; }
+.docs-pane-seg button.is-on { background: #fff; color: #0f172a; box-shadow: var(--shadow-sm); }
+
+/* A repository opens its own documents; GitHub stays one click away. */
+.dashboard-repo-open { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1d4ed8; font-weight: 600; text-align: left; }
+.dashboard-repo-open:hover { text-decoration: underline; }
+.dashboard-repo-github { margin-left: 0.5rem; color: #57606a; font-size: 0.75rem; font-weight: 600; }
+.dashboard-repo-github:hover { color: #1d4ed8; }
+
+/* The state's dot, the filters' dots, and the edge a broken rule's row carries. */
+.docs-state-line { display: flex; align-items: flex-start; gap: 0.55rem; }
+.docs-sdot { flex: 0 0 auto; width: 0.55rem; height: 0.55rem; margin-top: 0.42rem; border-radius: 999px; }
+.docs-sdot.is-read { background: #17794a; box-shadow: 0 0 0 4px rgba(23, 121, 74, 0.12); }
+.docs-sdot.is-outdated { background: #d97706; box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.14); }
+.docs-sdot.is-not_read { background: #94a3b8; box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.16); }
+.docs-sdot.is-retired,
+.docs-sdot.is-screened_out,
+.docs-sdot.is-excluded { background: #cbd5e1; box-shadow: 0 0 0 4px rgba(203, 213, 225, 0.3); }
+.docs-sdot.is-unreadable { background: #d33a4b; box-shadow: 0 0 0 4px rgba(211, 58, 75, 0.12); }
+
+.docs-filter { display: inline-flex; align-items: center; gap: 6px; }
+.docs-filter b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.docs-filter.is-on b { color: #fff; }
+.docs-fdot { width: 7px; height: 7px; border-radius: 999px; background: #94a3b8; }
+.docs-fdot.is-broken { background: #d33a4b; }
+.docs-fdot.is-outdated { background: #d97706; }
+.docs-fdot.is-unread { background: #fff; box-shadow: inset 0 0 0 1.5px #94a3b8; }
+.docs-fdot.is-other { background: #cbd5e1; }
+
+.docs-rules tr.is-violated td:first-child { box-shadow: inset 2px 0 0 #d33a4b; }
+.docs-rules tr.is-prior td:first-child { box-shadow: inset 2px 0 0 #e0a13a; }

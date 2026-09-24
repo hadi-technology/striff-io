@@ -94,7 +94,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [autoCheckout, setAutoCheckout] = useState<{ installationId: number; plan: string } | null>(null);
-  const [section, setSection] = useState<"repos" | "docs" | "metrics" | "billing">("docs");
+  const [section, setSection] = useState<"repos" | "docs" | "metrics" | "billing">("repos");
+  // Which repository the documents view is showing; set by opening one from Repositories.
+  const [openRepo, setOpenRepo] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -200,36 +202,6 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-shell">
-      {/* Header */}
-      <div className="dashboard-account-bar">
-        <div className="flex items-center gap-4">
-          {user && (
-            <img src={user.avatar_url} alt={user.login} className="h-11 w-11 rounded-lg border border-slate-200" />
-          )}
-          <div>
-            <p className="dashboard-kicker">Striff account</p>
-            <h1 className="text-2xl font-bold text-slate-950">{user?.name || user?.login}</h1>
-            <p className="text-sm text-slate-500">@{user?.login}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <a
-            href="https://github.com/apps/striff-app/installations/new"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="dashboard-button dashboard-button-secondary"
-          >
-            Add installation
-          </a>
-          <button
-            onClick={signOut}
-            className="dashboard-button dashboard-button-secondary"
-          >
-            Sign out
-          </button>
-        </div>
-      </div>
-
       {/* Installations */}
       {installations.length === 0 ? (
         <div className="dashboard-empty">
@@ -249,38 +221,38 @@ export default function Dashboard() {
       ) : (
         <div className="dash-shell">
           <aside className="dash-side">
-            <div className="dash-side-account">
-              <p className="dashboard-kicker">Account</p>
-              {installations.length > 1 ? (
-                <select
-                  className="dash-account-select"
-                  value={String(current.id)}
-                  onChange={(event) => setAccountId(Number(event.target.value))}
-                >
-                  {installations.map((inst) => (
-                    <option key={inst.id} value={String(inst.id)}>
-                      {inst.account.login}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p className="dash-account-name">{current.account.login}</p>
-              )}
-            </div>
+            <p className="nav-label">Account</p>
+            {installations.length > 1 ? (
+              <select
+                className="dash-account-select"
+                value={String(current.id)}
+                onChange={(event) => setAccountId(Number(event.target.value))}
+              >
+                {installations.map((inst) => (
+                  <option key={inst.id} value={String(inst.id)}>
+                    {inst.account.login}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="dash-account-name">{current.account.login}</p>
+            )}
             <nav className="dash-nav">
               {([
-                ["metrics", "Overview"],
-                ["repos", "Repositories"],
-                ["docs", "Docs & rules"],
-                ["billing", "Billing"],
-              ] as const).map(([key, label]) => (
+                ["metrics", "Overview", "overview", ""],
+                ["repos", "Repositories", "repos", String((current.repositories || []).length)],
+                ["docs", "Docs & rules", "docs", ""],
+                ["billing", "Billing", "billing", ""],
+              ] as const).map(([key, label, icon, count]) => (
                 <button
                   key={key}
                   type="button"
-                  className={`dash-nav-item${section === key ? " is-on" : ""}`}
+                  className={`nav-item${section === key ? " active" : ""}`}
                   onClick={() => setSection(key)}
                 >
-                  {label}
+                  <NavIcon name={icon} />
+                  <span>{label}</span>
+                  {count && <span className="nav-count">{count}</span>}
                 </button>
               ))}
             </nav>
@@ -289,10 +261,15 @@ export default function Dashboard() {
                 href="https://github.com/apps/striff-app/installations/new"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="dash-nav-item"
+                className="nav-item"
               >
-                Add an account
+                <NavIcon name="repos" />
+                <span>Add an account</span>
               </a>
+              <button type="button" className="nav-item" onClick={signOut}>
+                <NavIcon name="billing" />
+                <span>Sign out</span>
+              </button>
             </div>
           </aside>
           <div className="dash-main">
@@ -304,6 +281,11 @@ export default function Dashboard() {
               onAutoPlanConsumed={() => setAutoCheckout(null)}
               section={section}
               onSection={setSection}
+              openRepo={openRepo}
+              onOpenRepo={(fullName) => {
+                setOpenRepo(fullName);
+                setSection("docs");
+              }}
             />
           </div>
         </div>
@@ -311,11 +293,26 @@ export default function Dashboard() {
 
       {error && <p className="dashboard-inline-error">{error}</p>}
 
-      {/* FAQ */}
-      <FaqSection />
+      {/* FAQ: asked when someone is looking at what they pay, not at their documents. */}
+      {(installations.length === 0 || section === "billing") && <FaqSection />}
     </div>
   );
 }
+
+
+const NavIcon = ({ name }: { name: string }) => {
+  const paths: Record<string, any> = {
+    overview: ["M2 2h5v5H2z", "M9 2h5v5H9z", "M2 9h5v5H2z", "M9 9h5v5H9z"],
+    repos: ["M3 12.75V2.75A1.25 1.25 0 0 1 4.25 1.5H13v10H4.25A1.25 1.25 0 0 0 3 12.75Z", "M3 12.75A1.25 1.25 0 0 0 4.25 14H13v-2.5"],
+    docs: ["M3.5 1.75h5.5l3.5 3.5v9h-9Z", "m5.75 9.5 1.5 1.5 3-3"],
+    billing: ["M1.5 3.5h13v9h-13z", "M1.5 6.5h13"],
+  };
+  return createElement(
+    "svg",
+    { viewBox: "0 0 16 16", width: 16, height: 16, fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
+    ...(paths[name] || []).map((d: string, i: number) => createElement("path", { key: i, d }))
+  );
+};
 
 /* ─── Installation Card ─────────────────────────────────────────── */
 
@@ -326,6 +323,8 @@ function InstallationCard({
   onAutoPlanConsumed,
   section,
   onSection,
+  openRepo,
+  onOpenRepo,
 }: {
   installation: Installation;
   onError: (msg: string) => void;
@@ -333,6 +332,8 @@ function InstallationCard({
   onAutoPlanConsumed: () => void;
   section?: "repos" | "docs" | "metrics" | "billing";
   onSection?: (section: "repos" | "docs" | "metrics" | "billing") => void;
+  openRepo?: string | null;
+  onOpenRepo?: (fullName: string) => void;
 }) {
   const repos = installation.repositories || [];
   const privateRepos = repos.filter((r) => r.private);
@@ -627,23 +628,34 @@ function InstallationCard({
                       (r) => r.repoOwner === repoOwner && r.repoName === repoName && r.active
                     );
                     return (
-                      <a
-                        key={repo.full_name}
-                        href={repo.html_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`dashboard-repo-link ${
-                          repo.private ? "dashboard-repo-private" : "dashboard-repo-public"
-                        }`}
-                      >
+                      <div key={repo.full_name} className={`dashboard-repo-link ${repo.private ? "dashboard-repo-private" : "dashboard-repo-public"}`}>
                         <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${repo.private ? "bg-amber-500" : "bg-emerald-600"}`} />
-                        <span className="truncate text-slate-700">{repo.full_name}</span>
+                        {onOpenRepo ? (
+                          <button
+                            type="button"
+                            className="dashboard-repo-open"
+                            onClick={() => onOpenRepo(repo.full_name)}
+                          >
+                            {repo.full_name}
+                          </button>
+                        ) : (
+                          <span className="truncate text-slate-700">{repo.full_name}</span>
+                        )}
                         {isActive && (
                           <span className="dashboard-plan-badge ml-auto shrink-0" title="Actively analyzed by Striff">
                             {"\u2713"} Active
                           </span>
                         )}
-                      </a>
+                        <a
+                          href={repo.html_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="dashboard-repo-github"
+                          aria-label={`${repo.full_name} on GitHub`}
+                        >
+                          GitHub
+                        </a>
+                      </div>
                     );
                   })}
                 </div>
@@ -663,7 +675,7 @@ function InstallationCard({
             </div>
           ) : installTab === "docs" ? (
             <div className="mt-3 dashboard-metric-fade-in">
-              <DocsTab installationId={installation.id} repos={repos} />
+              <DocsTab installationId={installation.id} repos={repos} openRepo={openRepo} />
             </div>
           ) : installTab === "metrics" ? (
             <div className="mt-3 dashboard-metric-fade-in">
