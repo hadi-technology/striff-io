@@ -14,7 +14,7 @@ That number is easy to hide and easy to fake, so here it is measured across 609 
 
 Something changed in repositories over the last two years. Alongside the README, a different genre appeared: `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, `.agents/rules/`, `CONSTITUTION.md`.
 
-A README explains. These *instruct*. They are written in the imperative, addressed to a coding agent, and full of hard constraints in capital letters — **MUST NOT**, **NEVER**, *Enforcement: code reviews MUST reject*. They are also, increasingly, written by agents.
+A README explains. These *instruct*. They are written in the imperative, addressed to a coding agent, and full of hard constraints in capital letters — **MUST NOT**, **NEVER**, *code reviews MUST reject*. They are also, increasingly, written by agents.
 
 Which raises a question nobody seems to be asking: does the code obey them?
 
@@ -53,10 +53,13 @@ using GitUI;
 
 `CONSTITUTION.md` in `TimefoldAI/timefold-solver`:
 
-> `Optional` MUST NOT be used
-> **Enforcement**: code reviews MUST reject
+> `Optional` MUST NOT be used; use `@Nullable` (JSpecify) instead
 
-`java.util.Optional` is imported in 58 files, among them `ai.timefold.solver.core.config.util.ConfigUtils` and `DefaultConstructionHeuristicPhaseFactory`. The same file states a single-implementation rule — `interface Solver` → `class DefaultSolver` — which the codebase also does not satisfy.
+and, further down, states how it is meant to be held:
+
+> **Enforcement**: Build targets JDK 21; CI verifies compilation and tests on JDK 21; code reviews MUST reject `Optional` and null escaping APIs.
+
+`java.util.Optional` is imported in 58 files. We checked where they live rather than assume, because the number would be a cheap shot if they were tests: the sampled files are all `src/main`, including `core/.../DeepCloningUtils.java`. The document defines its keywords against RFC 2119 — **MUST NOT** as an absolute prohibition — which is more care than most architecture documents take.
 
 ### The MCP C# SDK: an instruction file that outlived the API it names
 
@@ -86,14 +89,14 @@ Not the violations. The 1,487 rules the system declined to answer.
 
 A source parser sees less than a compiler: no annotations, no generated members, no string literals, no class literals. When a rule cannot be decided, the only honest output is *could not check* — and the failure we care most about is that quietly becoming *checked, found nothing.* Those are different claims, and a tool that conflates them is lying.
 
-That principle costs findings. During this work the checker reported two providers in a Python project as missing; both are registered at runtime, declared by no `class` statement the parser could see. The names were undeclared, not absent, and the verdict should have been *unanswerable*. That was a bug in our favour, and it was fixed as one.
+That principle costs findings, and we would rather it did. During this work the checker reported two providers in a Python project as missing; both are registered at runtime, declared by no `class` statement the parser could see. The names were undeclared, not absent, and the verdict should have been *unanswerable*. That is filed as a defect against ourselves, not written off as an edge case.
 
 ## What it got wrong
 
 Roughly a fifth of the effort went into failures, and they are more instructive than the hits.
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Six false accusations, two underlying defects</p>
+<p class="bp-figure-title">Seven false accusations, three underlying defects</p>
 <div class="bp-facts">
 <div class="bp-facts-line"><span class="bp-facts-key">bound  </span>a doc said <span class="bp-facts-quote">io.smallrye.config.Expressions</span>, an upstream dependency; the bare word was bound to an unrelated local class</div>
 <div class="bp-facts-line"><span class="bp-facts-key">widened</span><span class="bp-facts-quote">"model and logic must not know JabRefPreferences"</span> became "anything outside gui", convicting a third package named in neither</div>
@@ -101,7 +104,8 @@ Roughly a fifth of the effort went into failures, and they are more instructive 
 <div class="bp-facts-line"><span class="bp-facts-key">reversed</span>a <span class="bp-facts-quote">"Do NOT use:"</span> lead-in two lines above a list; the names in it were read as recommendations</div>
 <div class="bp-facts-line"><span class="bp-facts-key">tense  </span>an <span class="bp-facts-quote">Implementation Plan</span> whose unchecked <span class="bp-facts-quote">- [ ]</span> step justified a proposed edit; we read the justification as an invariant and reported it already broken</div>
 <div class="bp-facts-line"><span class="bp-facts-key">scope  </span>a file headed <span class="bp-facts-quote">Code Review Guidelines &middot; Always check</span>, governing new UI mid-migration beside a note that the old package is <span class="bp-facts-quote">legacy, being phased out</span>; we reported the legacy it exists to retire</div>
-<div class="bp-facts-flag">four are one fix; the last two are the same mistake about tense</div>
+<div class="bp-facts-line"><span class="bp-facts-key">predicate</span><span class="bp-facts-quote">Single implementation (MUST): prefix with `Default`</span> is a naming convention; we read it as a cardinality constraint, <span class="bp-facts-quote">exactly 1 type implements Solver</span>, and convicted on it</div>
+<div class="bp-facts-flag">four scope, two tense, one predicate</div>
 </div>
 <p class="bp-figure-caption">The first four are one error in different clothing: a rule extracted wider than the sentence that licensed it. The last two are a different mistake, and a growing one &mdash; repositories increasingly commit forward-looking plans (<code>plans/</code>, Spec Kit, OpenSpec) that read exactly like architecture documentation because they are written in the same declarative register. Both were caught while fact-checking this post, and both had been slated as flagship examples. A document that governs what you may write next is not a description of what you have already written.</p>
 </div>
