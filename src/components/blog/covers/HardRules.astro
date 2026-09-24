@@ -1,0 +1,62 @@
+---
+/**
+ * Cover for the agent-instructions post: the finding it opens with, drawn. A repository states the
+ * permitted direction of a dependency in the instruction file its coding agent reads, and one
+ * import in the named project points the other way. The documented edge is drawn first and the
+ * breach answers it, because that is the order the check reads them in.
+ */
+import { arrowHead } from "./geom";
+
+// The two projects, as the document names them.
+const UI = { x: 74, y: 188, w: 172, h: 62 };
+const CMD = { x: 394, y: 188, w: 172, h: 62 };
+
+// Documented: the UI may depend on the commands. Breach: the commands reference the UI back.
+const allowed = { x1: UI.x + UI.w, y1: 208, x2: CMD.x - 8, y2: 208 };
+const breach = { x1: CMD.x, y1: 234, x2: UI.x + UI.w + 8, y2: 234 };
+const line = (e: typeof allowed) => `M${e.x1} ${e.y1} L${e.x2} ${e.y2}`;
+---
+
+<g class="cv-fade">
+  <text class="cv-mono cv-caps cv-faint" x="40" y="48" font-size="11">.github/copilot-docs · Hard rules</text>
+  <text class="cv-mono cv-caps cv-faint" x="600" y="48" font-size="11" text-anchor="end">written for the agent</text>
+</g>
+
+<g class="cv-fade" style="--d:0.12s">
+  <rect class="cv-doc-line" x="40" y="70" width="560" height="44" rx="8" />
+  <text class="cv-serif" x="60" y="92" font-size="14.5">
+    <tspan class="cv-c-del" font-weight="700">NEVER</tspan>
+    <tspan class="cv-mute"> add a dependency that reverses the arrow direction</tspan>
+  </text>
+  <text class="cv-mono cv-faint" x="60" y="106" font-size="11">GitCommands must not reference GitUI</text>
+</g>
+
+<g class="cv-fade" style="--d:0.3s">
+  <rect class="cv-box" x={UI.x} y={UI.y} width={UI.w} height={UI.h} rx="10" />
+  <text class="cv-box-head" x={UI.x + UI.w / 2} y={UI.y + 38} font-size="17" text-anchor="middle">GitUI</text>
+</g>
+<g class="cv-fade" style="--d:0.38s">
+  <rect class="cv-box cv-box--warn" x={CMD.x} y={CMD.y} width={CMD.w} height={CMD.h} rx="10" />
+  <text class="cv-box-head" x={CMD.x + CMD.w / 2} y={CMD.y + 38} font-size="17" text-anchor="middle">GitCommands</text>
+</g>
+
+<g>
+  <path class="cv-e cv-draw" style="--d:0.55s" pathLength="1" d={line(allowed)} />
+  <path class="cv-ah cv-fade" style="--d:0.95s" d={arrowHead(allowed.x1, allowed.y1, allowed.x2, allowed.y2)} />
+  <text class="cv-mono cv-faint cv-fade" style="--d:1s" x="320" y="198" font-size="10.5" text-anchor="middle">documented</text>
+</g>
+
+<g>
+  <path class="cv-e cv-e--breach cv-draw" style="--d:1.15s" pathLength="1" d={line(breach)} />
+  <path class="cv-ah cv-ah--del cv-fade" style="--d:1.5s" d={arrowHead(breach.x1, breach.y1, breach.x2, breach.y2)} />
+  <path class="cv-pulse cv-pulse--del" style="--d:1.75s" pathLength="1" d={line(breach)} />
+  <rect class="cv-glow-del cv-flash" style="--d:1.6s" x="228" y="222" width="184" height="24" rx="12" />
+  <text class="cv-mono cv-c-del cv-fade" style="--d:1.55s" x="320" y="239" font-size="11.5" text-anchor="middle">using GitUI;</text>
+</g>
+
+<g class="cv-fade" style="--d:1.9s">
+  <text class="cv-mono cv-faint" x="320" y="296" font-size="11" text-anchor="middle">src/app/GitCommands/AsyncLoader.cs</text>
+  <text class="cv-num cv-c-del" x="320" y="330" font-size="30" text-anchor="middle">line 1</text>
+</g>
+
+<text class="cv-mono cv-caps cv-faint cv-fade" style="--d:2.1s" x="320" y="366" font-size="10.5" text-anchor="middle">7,161 documented rules · 609 pull requests</text>
