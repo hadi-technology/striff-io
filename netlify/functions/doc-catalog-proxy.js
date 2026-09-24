@@ -126,6 +126,9 @@ export const handler = async (event) => {
         },
         body: event.body || "{}",
       };
+    } else if (params.view === "rules") {
+      url = `${base}/rules?token=${token}`;
+      init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
     } else if (params.path) {
       url = `${base}/doc?path=${encodeURIComponent(params.path)}&token=${token}`;
       init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };

@@ -5408,3 +5408,164 @@
   .bar-right { gap: 0.6rem; }
   .dash-page { padding: 1.25rem 1rem 2.5rem; }
 }
+
+/* ---- The rules of a repository, in one list ----
+   The dashboard opens here: every rule Striff has read, what it came from, and how it last stood.
+   Wider than the documents view's pane because this is the page someone reads, searches and
+   prints. */
+.rules-panel {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+  overflow: hidden;
+}
+.rules-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: #fbfcfd;
+}
+.rules-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 16rem;
+  min-width: 12rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: #fff;
+  padding: 0.45rem 0.7rem;
+  color: #8a95a1;
+}
+.rules-search input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: #1f2328;
+  font-size: 0.88rem;
+  outline: none;
+}
+.rules-search input::-webkit-search-cancel-button { cursor: pointer; }
+.rules-toolbar .docs-filters { margin: 0; }
+.rules-export { position: relative; margin-left: auto; }
+.rules-export-button {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: #fff;
+  padding: 0.45rem 0.7rem;
+  color: #24292f;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.rules-export-button:hover { background: #f6f8fa; }
+.rules-export-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 30;
+  min-width: 12rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background: #fff;
+  padding: 0.3rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+}
+.rules-export-menu button {
+  display: block;
+  width: 100%;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.6rem;
+  color: #24292f;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+}
+.rules-export-menu button:hover { background: #f6f8fa; }
+.rules-table { margin: 0; }
+.rules-table th, .rules-table td { padding: 0.7rem 1rem; vertical-align: top; }
+.rules-table td:first-child { width: 46%; }
+.rules-quote {
+  display: block;
+  margin-top: 0.3rem;
+  color: #57606a;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 0.88rem;
+}
+.rules-source { white-space: normal; }
+.rules-source-link {
+  display: inline;
+  color: #2563eb;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+  word-break: break-all;
+}
+.rules-source-link:hover { text-decoration: underline; }
+.rules-source-link i { color: #8a95a1; font-style: normal; }
+.rules-source-when {
+  display: block;
+  margin-top: 0.25rem;
+  color: #8a95a1;
+  font-size: 0.75rem;
+}
+/* Only on paper. */
+.rules-print-head { display: none; }
+
+@media (max-width: 860px) {
+  .rules-toolbar { flex-direction: column; align-items: stretch; }
+  /* Stacked, the search box would grow to fill the column: it is one line tall, not a panel. */
+  .rules-search { flex: 0 0 auto; }
+  .rules-export { margin-left: 0; }
+  .rules-export-menu { right: auto; left: 0; }
+  .rules-table td:first-child { width: auto; }
+}
+
+/* What a printed page carries: the rules, and nothing that only works with a pointer. */
+@media print {
+  /* The printed page carries its own heading, so the screen's goes; the rest is chrome. */
+  .dash-bar,
+  .dash-side,
+  .rules-toolbar,
+  .docs-head,
+  .site-footer,
+  .scroll-top { display: none !important; }
+  .dash-page { max-width: none; padding: 0; }
+  .dash-shell { display: block; margin: 0; }
+  .rules-panel { border: 0; border-radius: 0; }
+  .rules-print-head { display: block; margin-bottom: 0.75rem; }
+  .rules-print-head h1 { font-size: 1.15rem; font-weight: 700; }
+  .rules-print-head p { color: #57606a; font-size: 0.8rem; }
+  .rules-table { font-size: 0.78rem; }
+  .rules-table th, .rules-table td { padding: 0.4rem 0.5rem; }
+  .rules-table tr { break-inside: avoid; }
+  .docs-outcome { border: 1px solid #d0d7de; }
+  /* On paper nothing is clickable: a blue name is just harder to read. */
+  .rules-source-link { color: #1f2328; text-decoration: none; }
+  a[href]::after { content: ""; }
+}
+
+/* The rules list stacks on a phone like the documents view's table, but it has three columns, not
+   four: the outcome is the last cell here, and it reads as one line. */
+@media (max-width: 640px) {
+  .rules-table td:nth-child(3) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.5rem;
+  }
+  .rules-table td { padding: 0.15rem 0; }
+  .rules-table tr { padding: 0.8rem 0; }
+  /* Stacked, the accent rule down the side of a broken row would otherwise touch the words. */
+  .rules-table tr.is-violated,
+  .rules-table tr.is-prior { padding-left: 0.6rem; }
+  .rules-panel { border-radius: 0.6rem; }
+  .rules-table .docs-rule-statement { font-size: 0.92rem; }
+}

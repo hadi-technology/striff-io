@@ -256,11 +256,14 @@ export default function DocsTab({
   installationId,
   repos,
   openRepo,
+  focusDoc,
 }: {
   installationId: number;
   repos: { full_name: string }[];
   /** The repository a reader opened from the repositories list, if they came that way. */
   openRepo?: string | null;
+  /** The document to open on, where a reader followed a rule to where it was read from. */
+  focusDoc?: string | null;
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
@@ -288,6 +291,12 @@ export default function DocsTab({
     loadCatalog();
   }, [repo]);
 
+  // Following another rule here while this view is already open: the catalogue is loaded, so only
+  // the pane changes.
+  useEffect(() => {
+    if (focusDoc && catalog && focusDoc !== selected) openDoc(focusDoc);
+  }, [focusDoc]);
+
   useEffect(() => {
     if (menuFor === null) return;
     const close = () => setMenuFor(null);
@@ -314,8 +323,10 @@ export default function DocsTab({
       const docs: Doc[] = data.documents || [];
       setExpanded(allFolders(buildTree(docs)));
       // Landing on an empty pane wastes the arrival: open what a reader would have opened first,
-      // which is a document something is broken in, and otherwise one that has been read.
+      // which is the document they followed a rule to, then a document something is broken in,
+      // and otherwise one that has been read.
       const first =
+        (focusDoc && docs.find((doc) => doc.path === focusDoc)) ||
         docs.find((doc) => doc.brokenRules > 0) ||
         docs.find((doc) => doc.state === "READ" && doc.ruleCount > 0);
       if (first) openDoc(first.path);
@@ -697,7 +708,7 @@ export default function DocsTab({
       )}
       <div className="docs-head">
         <div className="docs-head-copy">
-          <p className="dashboard-kicker">Docs &amp; rules</p>
+          <p className="dashboard-kicker">Documents</p>
           <div className="docs-title">
             <select
               className="docs-title-select"
