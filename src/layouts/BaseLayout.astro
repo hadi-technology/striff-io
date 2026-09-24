@@ -14,7 +14,10 @@ const {
   robots = "index,follow",
   // "auto" lets the page follow the reader's colour scheme, header included; the blog opts in.
   // Everything else is designed light-only and keeps the light header.
-  scheme = "light"
+  scheme = "light",
+  // The marketing header and footer. The dashboard is an application, not a page of the site:
+  // it wears its own bar and its sections are the navigation, so it turns this off.
+  chrome = true
 } = Astro.props;
 ---
 <!DOCTYPE html>
@@ -51,11 +54,11 @@ const {
     <PostHog />
   </head>
   <body>
-    <Header />
+    {chrome && <Header />}
     <div id="main-content" tabindex="-1">
       <slot />
     </div>
-    <Footer />
+    {chrome && <Footer />}
 
     <button class="scroll-top" type="button" data-scroll-top aria-label="Scroll back to top">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

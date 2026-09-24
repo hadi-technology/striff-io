@@ -97,7 +97,7 @@ Any tool that claims to automate all seven of these is either overstating what i
 </tbody>
 </table>
 </div>
-<p class="bp-figure-caption">The split is not about difficulty. Steps 1 and 3 to 6 have a right answer a program can compute. Step 2 has one for every sentence that is actually about structure, and that is most of them: in a scan of 74 public pull requests, 1,394 of the 1,912 rules read out of their docs could be answered from the parsed code. Step 7 does not have a right answer.</p>
+<p class="bp-figure-caption">The split is not about difficulty. Steps 1 and 3 to 6 have a right answer a program can compute. Step 2 has one for every sentence that is actually about structure, and that is most of them: in a scan of 609 public pull requests, 5,674 of the 7,161 rules read out of their docs could be answered from the parsed code. Step 7 does not have a right answer.</p>
 </div>
 
 <div class="bp-callout bp-callout--mint"><strong>Use the checklist either way.</strong> If it gets your team to do even steps 1 to 3 on risky changes, this post did its job. But notice which parts are mechanical: building the graph, counting dependents, tracing paths, re-reading the doc nobody re-reads. Mechanical work is what computers are for; the judgment about whether the answer is acceptable stays where it belongs.</div>

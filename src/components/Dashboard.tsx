@@ -196,8 +196,23 @@ export default function Dashboard() {
     window.location.href = "/.netlify/functions/auth-logout";
   }
 
+  // Every state of this page wears the bar: signing out and switching account must not depend on
+  // the dashboard below having loaded.
+  const framed = (children: any) => (
+    <>
+      <DashBar
+        user={user}
+        installations={installations}
+        current={current}
+        onAccount={setAccountId}
+        onSignOut={signOut}
+      />
+      <div className="dash-page">{children}</div>
+    </>
+  );
+
   if (loading) {
-    return (
+    return framed(
       <div className="dashboard-loading">
         <div className="dashboard-spinner" aria-hidden="true" />
         <div className="text-slate-500">Loading dashboard...</div>
@@ -206,7 +221,7 @@ export default function Dashboard() {
   }
 
   if (error && !user) {
-    return (
+    return framed(
       <div className="dashboard-error-state">
         <h1 className="dashboard-error-title">We can't load your dashboard right now</h1>
         <p className="dashboard-error-body">{error}</p>
@@ -229,7 +244,7 @@ export default function Dashboard() {
     );
   }
 
-  return (
+  return framed(
     <div className="dashboard-shell">
       {/* Installations */}
       {installations.length === 0 ? (
@@ -251,21 +266,8 @@ export default function Dashboard() {
         <div className="dash-shell">
           <aside className="dash-side">
             <p className="nav-label">Account</p>
-            {installations.length > 1 ? (
-              <select
-                className="dash-account-select"
-                value={String(current.id)}
-                onChange={(event) => setAccountId(Number(event.target.value))}
-              >
-                {installations.map((inst) => (
-                  <option key={inst.id} value={String(inst.id)}>
-                    {inst.account.login}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <p className="dash-account-name">{current.account.login}</p>
-            )}
+            {/* Switching account is the bar's job; here the name only says which one this is. */}
+            <p className="dash-account-name">{current.account.login}</p>
             <nav className="dash-nav">
               {([
                 ["metrics", "Metrics", "overview", ""],
@@ -302,21 +304,6 @@ export default function Dashboard() {
                 </nav>
               </div>
             )}
-            <div className="dash-side-foot">
-              <a
-                href="https://github.com/apps/striff-app/installations/new"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="nav-item"
-              >
-                <NavIcon name="repos" />
-                <span>Add an account</span>
-              </a>
-              <button type="button" className="nav-item" onClick={signOut}>
-                <NavIcon name="billing" />
-                <span>Sign out</span>
-              </button>
-            </div>
           </aside>
           <div className="dash-main">
             <InstallationCard
@@ -344,6 +331,109 @@ export default function Dashboard() {
     </div>
   );
 }
+
+
+/**
+ * The application's own bar: who you are signed in as, which account you are looking at, and the
+ * way out. The marketing header is turned off on this page, so this is the only chrome above the
+ * work, and switching account happens here rather than inside the sections it changes.
+ */
+function DashBar({
+  user,
+  installations,
+  current,
+  onAccount,
+  onSignOut,
+}: {
+  user: User | null;
+  installations: Installation[];
+  current: Installation | null;
+  onAccount: (id: number) => void;
+  onSignOut: () => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function close(event: MouseEvent) {
+      if (!(event.target as HTMLElement).closest(".bar-user")) setMenuOpen(false);
+    }
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [menuOpen]);
+
+  return (
+    <header className="dash-bar">
+      <div className="dash-bar-inner">
+        <a className="bar-logo" href="/">
+          <span className="bar-tile"><img src="/icon.svg" alt="" width="20" height="20" /></span>
+          <span className="bar-word">Striff</span>
+        </a>
+        {current && (
+          <div className="bar-account">
+            {current.account.avatar_url && (
+              <img className="bar-account-avatar" src={current.account.avatar_url} alt="" />
+            )}
+            {installations.length > 1 ? (
+              <>
+                <select
+                  className="bar-account-select"
+                  aria-label="Account"
+                  value={String(current.id)}
+                  onChange={(event) => onAccount(Number(event.target.value))}
+                >
+                  {installations.map((inst) => (
+                    <option key={inst.id} value={String(inst.id)}>
+                      {inst.account.login}
+                    </option>
+                  ))}
+                </select>
+                <Chevron />
+              </>
+            ) : (
+              <span className="bar-account-name">{current.account.login}</span>
+            )}
+          </div>
+        )}
+        <div className="bar-right">
+          <a className="bar-link" href="/contact">Help</a>
+          {user && (
+            <div className="bar-user">
+              <button
+                type="button"
+                className="bar-user-button"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((open) => !open)}
+              >
+                <img src={user.avatar_url} alt={user.login} />
+                <Chevron />
+              </button>
+              {menuOpen && (
+                <div className="bar-menu" role="menu">
+                  <p className="bar-menu-who">{user.login}</p>
+                  <a className="bar-menu-item" href="https://github.com/apps/striff-app/installations/new" target="_blank" rel="noopener noreferrer" role="menuitem">
+                    Add an account
+                  </a>
+                  <a className="bar-menu-item" href="/privacy" role="menuitem">Privacy</a>
+                  <button type="button" className="bar-menu-item" onClick={onSignOut} role="menuitem">
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+const Chevron = () => (
+  <svg className="bar-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 6.5 8 10.5 12 6.5" />
+  </svg>
+);
 
 
 const NavIcon = ({ name }: { name: string }) => {

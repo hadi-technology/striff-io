@@ -5297,3 +5297,114 @@
 .docs-palette-main { color: #24292f; font-size: 0.875rem; }
 .docs-palette-main mark { background: #fde68a; color: inherit; border-radius: 2px; padding: 0 1px; }
 .docs-palette-sub { color: #64748b; font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; }
+
+/* ---- The application bar ----
+   The dashboard turns the marketing header off, so this is the only chrome above the work: the
+   mark, the account being looked at, help, and the way out. Dark, as the design draws it, so the
+   pale panels below read as the page. */
+.dash-bar {
+  background: linear-gradient(180deg, #111c31 0%, #0f172a 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.dash-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  min-height: 3.5rem;
+}
+.bar-logo { display: flex; align-items: center; gap: 0.6rem; color: #fff; font-weight: 800; letter-spacing: -0.01em; }
+.bar-logo:hover { text-decoration: none; }
+.bar-tile {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+.bar-word { font-size: 1.02rem; }
+.bar-account {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 0.3rem 0.6rem;
+  color: #e6edf6;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.bar-account:hover { background: rgba(255, 255, 255, 0.12); }
+.bar-account-avatar { width: 1.15rem; height: 1.15rem; border-radius: 0.35rem; }
+.bar-account-name { color: #fff; }
+.bar-account-select {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  padding-right: 0.25rem;
+  cursor: pointer;
+}
+.bar-account-select option { color: #0f172a; }
+.bar-chevron { width: 0.85rem; height: 0.85rem; color: rgba(255, 255, 255, 0.6); flex: 0 0 auto; }
+.bar-right { display: flex; align-items: center; gap: 0.9rem; margin-left: auto; }
+.bar-link { color: #c7d2e1; font-size: 0.86rem; font-weight: 600; }
+.bar-link:hover { color: #fff; text-decoration: none; }
+.bar-user { position: relative; }
+.bar-user-button {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 0.2rem 0.45rem 0.2rem 0.2rem;
+}
+.bar-user-button:hover { background: rgba(255, 255, 255, 0.14); }
+.bar-user-button img { width: 1.6rem; height: 1.6rem; border-radius: 999px; }
+.bar-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.45rem);
+  z-index: 40;
+  min-width: 11rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  background: #fff;
+  padding: 0.3rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+}
+.bar-menu-who {
+  padding: 0.4rem 0.6rem 0.45rem;
+  color: #8a95a1;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  border-bottom: 1px solid #edf1f5;
+  margin-bottom: 0.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bar-menu-item {
+  display: block;
+  width: 100%;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.6rem;
+  color: #24292f;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+}
+.bar-menu-item:hover { background: #f6f8fa; text-decoration: none; }
+.dash-page { max-width: 90rem; margin: 0 auto; padding: 1.75rem 1.5rem 3rem; }
+@media (max-width: 640px) {
+  .dash-bar-inner { padding: 0 1rem; gap: 0.6rem; }
+  .bar-word { display: none; }
+  .bar-right { gap: 0.6rem; }
+  .dash-page { padding: 1.25rem 1rem 2.5rem; }
+}

@@ -1,6 +1,6 @@
 ---
 title: "Your architecture docs matter more than ever. Now every pull request is checked against them."
-description: "Coding agents read your docs as context, and nothing checks that the code still agrees with them. How Striff turns the sentences already in your repository into rules computed at both revisions of every pull request, and the one real violation it found in 1,394 checks."
+description: "Coding agents read your docs as context, and nothing checks that the code still agrees with them. How Striff turns the sentences already in your repository into rules computed at both revisions of every pull request, and what it found across 7,161 of them in 609 public pull requests."
 date: 2026-09-10
 category: "Product"
 cover: "docs-to-checks"
@@ -98,19 +98,21 @@ Every rule Striff reports gets one of four outcomes: **held** (this change keeps
 
 ## How often this fires
 
-Rarely, and that is the point. Across a scan of 74 public pull requests in 74 different repositories, run between 5 and 9 September, Striff checked 1,394 documented rules:
+Rarely, and that is the point. Across 609 public pull requests in 542 different repositories, Striff evaluated 7,161 rules read out of those repositories' own documentation:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">1,394 documented-rule checks, 74 pull requests</p>
+<p class="bp-figure-title">7,161 documented-rule verdicts, 609 pull requests</p>
 <div class="bp-bars">
-<div class="bp-bar-row"><span class="bp-bar-label">Held</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:100%"></div></div><span class="bp-bar-value">1,344</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Already broken</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:3.6%"></div></div><span class="bp-bar-value">49</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Violated by the change</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:0.8%"></div></div><span class="bp-bar-value">1</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Held</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:100%"></div></div><span class="bp-bar-value">5,519</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Couldn&rsquo;t check</span><div class="bp-bar-track"><div class="bp-bar" style="width:27%"></div></div><span class="bp-bar-value">1,487</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Violated by the change</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:1.8%"></div></div><span class="bp-bar-value">97</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Already broken</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:1%"></div></div><span class="bp-bar-value">53</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Restored</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:0.1%"></div></div><span class="bp-bar-value">5</span></div>
 </div>
-<p class="bp-figure-caption">The repositories were chosen because their docs said something checkable, so this is the rate on documented codebases, not on every codebase. The one violation is the ecChronos rule above. One in 1,394 is what a check you can afford to read looks like: when it fires, it is an event.</p>
+<p class="bp-figure-caption">Roughly two percent accuse: 97 rules broken by the change under review, 53 already broken before it. Seventy-seven percent simply held, which is what a correct document looks like. The third row down is the one we would defend hardest: 1,487 rules the system declined to answer, and said so. A parser sees less than a compiler, and &ldquo;could not check&rdquo; turning into &ldquo;checked, found nothing&rdquo; is the failure this design exists to prevent. Accusations also concentrate: a single repository accounts for half of them, so the per-repository rate is far lower than the per-verdict rate suggests.</p>
 </div>
 
-The 49 already-broken rows are the other quiet result: rules a repository's own documentation states that were already broken in the code Striff checked, not by the pull request. They are never blamed on the pull request in front of you, and they are never shown as a pass either. Whether the fix belongs in the code or in the sentence is the maintainer's call. The difference is that somebody now knows.
+The 53 already-broken rows are the other quiet result: rules a repository's own documentation states that were already broken in the code Striff checked, not by the pull request. They are never blamed on the pull request in front of you, and they are never shown as a pass either. Whether the fix belongs in the code or in the sentence is the maintainer's call. The difference is that somebody now knows.
 
 ## Writing docs that can be checked
 
