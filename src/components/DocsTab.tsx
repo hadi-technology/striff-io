@@ -266,7 +266,7 @@ export default function DocsTab({
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "broken" | "outdated" | "notRead" | "other">("all");
+  const [filter, setFilter] = useState<"all" | "broken" | "notRead" | "skipped" | "excluded">("all");
   const [pane, setPane] = useState<"rules" | "history">("rules");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -381,18 +381,28 @@ export default function DocsTab({
     switch (filter) {
       case "broken":
         return all.filter((doc) => doc.brokenRules > 0);
-      case "outdated":
-        return all.filter((doc) => doc.outdated);
       case "notRead":
         return all.filter((doc) => doc.state === "NOT_READ");
-      case "other":
-        return all.filter((doc) =>
-          ["SCREENED_OUT", "RETIRED", "UNREADABLE", "EXCLUDED"].includes(doc.state)
-        );
+      case "skipped":
+        return all.filter((doc) => doc.state === "SCREENED_OUT");
+      case "excluded":
+        return all.filter((doc) => doc.state === "EXCLUDED");
       default:
         return all;
     }
   }, [catalog, filter]);
+
+  /** What each filter would show, counted in documents, since documents are what it filters. */
+  const filterCounts = useMemo(() => {
+    const all = catalog?.documents || [];
+    return {
+      all: all.length,
+      broken: all.filter((doc) => doc.brokenRules > 0).length,
+      notRead: all.filter((doc) => doc.state === "NOT_READ").length,
+      skipped: all.filter((doc) => doc.state === "SCREENED_OUT").length,
+      excluded: all.filter((doc) => doc.state === "EXCLUDED").length,
+    };
+  }, [catalog]);
 
   const tree = useMemo(() => buildTree(documents), [documents]);
 
@@ -711,6 +721,15 @@ export default function DocsTab({
         </div>
         {summary && (
           <div className="docs-tally">
+            <span
+              className="docs-tally-item"
+              title="Documents Striff can extract rules from: everything it holds, less the ones that say they are no longer current, the ones a screen kept out, and the ones you excluded."
+            >
+              <b>
+                {summary.documents - summary.retired - summary.screenedOut - summary.excluded}
+              </b>
+              <i>docs to read</i>
+            </span>
             <span className="docs-tally-item is-violated">
               <b>{summary.brokenRules}</b>
               <i>broken</i>
@@ -756,17 +775,11 @@ export default function DocsTab({
             </button>
             <div className="docs-filters">
               {([
-                ["all", "All", catalog.summary.documents, ""],
-                ["broken", "Broken", catalog.summary.brokenRules, "broken"],
-                ["outdated", "Edited since", catalog.summary.outdated, "outdated"],
-                ["notRead", "Not read", catalog.summary.notRead, "unread"],
-                [
-                  "other",
-                  "Other",
-                  catalog.summary.screenedOut + catalog.summary.retired +
-                    catalog.summary.unreadable + catalog.summary.excluded,
-                  "other",
-                ],
+                ["all", "All", filterCounts.all, ""],
+                ["broken", "Broken", filterCounts.broken, "broken"],
+                ["notRead", "Not read", filterCounts.notRead, "unread"],
+                ["skipped", "Skipped", filterCounts.skipped, "other"],
+                ["excluded", "Excluded", filterCounts.excluded, "other"],
               ] as const).map(([key, label, count, dot]) => (
                 <button
                   key={key}
