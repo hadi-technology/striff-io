@@ -1,6 +1,6 @@
 ---
-title: "58 popular repositories are telling their AI agents to use code that isn't there"
-description: "Arthas, Redisson, Jedis, Spring AI and 54 others carry documented rules their own code no longer satisfies. We checked 7,161 rules across 609 public pull requests — because the industry now calls specs executable, and nothing executes them."
+title: "Copilot wrote the instructions. Copilot deleted the class they name."
+description: "In the official C# SDK for the Model Context Protocol, the same agent account wrote an instruction naming a class and then deleted the class. It has been wrong for ten months. We checked 7,161 documented rules across 609 public pull requests to find out how common this is."
 date: 2026-09-24
 category: "Data & research"
 cover: "hard-rules"
@@ -48,6 +48,20 @@ Line 258 is still there.
 An AI wrote the instructions. An AI deleted the thing the instructions describe. Nothing connected the two, because nothing in that repository — or almost any repository — relates a sentence to a symbol. Search for `McpServerFactory` today and you get exactly one result, and it is line 258.
 
 Ten months later it is still telling every agent that opens the repository to call an API that is not there.
+
+Once you know to look for it, it is not a one-off.
+
+In April 2026, a bot called **Architecture Bot** added a section to the README of `yegor256/cactoos`. The commit is titled "Add Architecture section to README." The new section tells you: *"Explicit caching requires opting in with `Sticky` or `StickyList`."*
+
+`StickyList` was deleted on 20 December 2018, in a commit titled "Don't use compound names for decorators."
+
+<div class="bp-keystat bp-keystat--amber">
+<span class="bp-keystat-value">7y 4m</span>
+<span class="bp-keystat-body">between the class being deleted and a bot writing a fresh <b>architecture section</b> instructing readers to use it.
+<span class="bp-keystat-src">yegor256/cactoos &middot; README.md:404 &middot; written 2026-04-30</span></span>
+</div>
+
+This one is not documentation going stale. The section was new. A bot was asked to describe the architecture, and it described an architecture that had not existed for seven years — confidently, in the imperative, in the file everyone reads first.
 
 We went looking for how often this has already happened.
 
