@@ -1,5 +1,6 @@
 import { createElement, useState, useEffect } from "react";
 import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
+import DocsTab from "./DocsTab";
 
 const OAUTH_CLIENT_ID =
   typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_GITHUB_OAUTH_CLIENT_ID
@@ -285,7 +286,7 @@ function InstallationCard({
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
   const [billingError, setBillingError] = useState(false);
-  const [installTab, setInstallTab] = useState<"repos" | "metrics" | "billing">("repos");
+  const [installTab, setInstallTab] = useState<"repos" | "docs" | "metrics" | "billing">("repos");
   const [metrics, setMetrics] = useState<OrgMetricsData | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [metricsError, setMetricsError] = useState("");
@@ -497,6 +498,12 @@ function InstallationCard({
               Repositories
             </button>
             <button
+              onClick={() => setInstallTab("docs")}
+              className={`dashboard-tab ${installTab === "docs" ? "dashboard-tab-active" : ""}`}
+            >
+              Docs &amp; rules
+            </button>
+            <button
               onClick={() => setInstallTab("metrics")}
               className={`dashboard-tab ${installTab === "metrics" ? "dashboard-tab-active" : ""}`}
             >
@@ -587,6 +594,10 @@ function InstallationCard({
                   )}
                 </p>
               )}
+            </div>
+          ) : installTab === "docs" ? (
+            <div className="mt-3 dashboard-metric-fade-in">
+              <DocsTab installationId={installation.id} repos={repos} />
             </div>
           ) : installTab === "metrics" ? (
             <div className="mt-3 dashboard-metric-fade-in">

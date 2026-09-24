@@ -4861,3 +4861,122 @@
   font-weight: 700;
   letter-spacing: -0.02em;
 }
+
+/* ---- Dashboard: documents and the rules read from them ----
+   Every eligible document is listed, including ones nothing has read yet, so the list is a picture
+   of the repository rather than of what happened to be extracted. The states carry the colour:
+   broken red, edited-since amber, everything a person has not been given a reason to act on grey. */
+.docs-tab { margin-top: 0.85rem; }
+
+.docs-tab-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.docs-repo-label { color: #57606a; font-size: 0.78rem; font-weight: 600; }
+.docs-repo-select {
+  border: 1px solid rgba(31, 35, 40, 0.14);
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  color: #24292f;
+}
+.docs-scanned { margin-left: auto; color: #57606a; font-size: 0.78rem; }
+
+.docs-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  margin-top: 0.75rem;
+  color: #57606a;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.docs-summary b { color: #16202b; font-weight: 700; }
+.docs-summary-broken b { color: #c9313f; }
+.docs-summary-prior b { color: #a8660b; }
+
+.docs-split { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: 1rem; margin-top: 0.85rem; }
+@media (max-width: 900px) { .docs-split { grid-template-columns: minmax(0, 1fr); } }
+
+.docs-list { border: 1px solid rgba(31, 35, 40, 0.12); border-radius: 0.75rem; background: #fff; overflow: hidden; }
+.docs-filters { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.6rem; border-bottom: 1px solid #edf1f5; }
+.docs-filter {
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.18rem 0.55rem;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+.docs-filter.is-on { background: #0f172a; border-color: #0f172a; color: #f8fafc; }
+
+.docs-files { max-height: 26rem; overflow-y: auto; }
+.docs-file {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid #f1f4f7;
+  background: #fff;
+  text-align: left;
+}
+.docs-file:hover { background: #f8fafc; }
+.docs-file.is-open { background: #eef4fe; }
+.docs-file-path { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.82rem; color: #24292f; }
+.docs-file-meta { display: flex; align-items: center; gap: 0.35rem; }
+.docs-count { color: #64748b; font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; }
+
+.docs-badge { border: 1px solid; border-radius: 0.3rem; padding: 0.05rem 0.35rem; font-size: 0.65rem; font-weight: 700; white-space: nowrap; }
+.docs-badge.is-broken { background: #fdeaec; border-color: #f2c1c7; color: #b4233c; }
+.docs-badge.is-outdated { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+.docs-badge.is-not_read { background: #fff; border-color: #cbd5e1; border-style: dashed; color: #64748b; }
+.docs-badge.is-screened_out,
+.docs-badge.is-retired,
+.docs-badge.is-excluded { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
+.docs-badge.is-unreadable { background: #fff; border-color: #f2c1c7; color: #b4233c; }
+
+.docs-pane { border: 1px solid rgba(31, 35, 40, 0.12); border-radius: 0.75rem; background: #fff; padding: 0.9rem 1rem; min-width: 0; }
+.docs-pane-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.docs-pane-path { font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; color: #0f172a; font-weight: 600; }
+.docs-pane-actions { margin-left: auto; }
+
+.docs-state-line { margin: 0.6rem 0 0; font-size: 0.85rem; line-height: 1.55; color: #334155; }
+.docs-state-line.is-read { color: #334155; }
+.docs-state-line.is-excluded, .docs-state-line.is-screened_out, .docs-state-line.is-retired { color: #57606a; }
+.docs-state-line.is-unreadable { color: #9f1f33; }
+
+.docs-rules { width: 100%; margin-top: 0.85rem; border-collapse: collapse; table-layout: fixed; }
+.docs-rules th {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-align: left;
+  text-transform: uppercase;
+}
+.docs-rules td { padding: 0.6rem 0.5rem; border-bottom: 1px solid #edf1f5; vertical-align: top; font-size: 0.82rem; }
+.docs-rules tr:last-child td { border-bottom: 0; }
+.docs-rule-line { width: 3.4rem; color: #1d4ed8; font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; font-weight: 600; }
+.docs-rule-quote { font-family: "Source Serif 4", ui-serif, Georgia, serif; font-size: 0.9rem; line-height: 1.5; color: #0f172a; }
+.docs-rule-statement { color: #1e293b; line-height: 1.5; }
+
+.docs-outcome { display: inline-flex; border: 1px solid; border-radius: 999px; padding: 0.1rem 0.45rem; font-size: 0.72rem; font-weight: 650; white-space: nowrap; }
+.docs-outcome.is-maintained, .docs-outcome.is-restored { background: #eaf8f0; border-color: #bfe6cf; color: #17794a; }
+.docs-outcome.is-violated { background: #fdeaec; border-color: #f2c1c7; color: #b4233c; }
+.docs-outcome.is-pre_existing { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+.docs-outcome.is-unclear, .docs-outcome.is-none { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
+.docs-outcome-when, .docs-outcome-branch { display: block; margin-top: 0.25rem; color: #64748b; font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; }
+.docs-outcome-branch { font-family: "Inter", system-ui, sans-serif; font-size: 0.72rem; }
+
+.docs-history { margin-top: 1rem; border-top: 1px solid #edf1f5; padding-top: 0.75rem; }
+.docs-history ul { margin-top: 0.4rem; display: grid; gap: 0.3rem; }
+.docs-history li { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; font-size: 0.78rem; color: #475569; }
+.docs-history-when { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; color: #64748b; min-width: 4rem; }
+.docs-history-kind { border-radius: 0.3rem; padding: 0.02rem 0.35rem; font-size: 0.7rem; font-weight: 700; background: #f1f5f9; color: #475569; }
+.docs-history-kind.is-extracted { background: #eef4fe; color: #1d4ed8; }
+.docs-history-kind.is-unreadable { background: #fdeaec; color: #b4233c; }
+.docs-history-pr { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; color: #334155; }
+.docs-history-reason { flex: 1; min-width: 12rem; color: #57606a; }
