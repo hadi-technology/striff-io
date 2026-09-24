@@ -274,6 +274,9 @@ export default function DocsTab({
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [ruleIndex, setRuleIndex] = useState<(Rule & { path: string })[]>([]);
+  const [indexing, setIndexing] = useState(false);
 
   const [owner, name] = repo.split("/");
 
@@ -367,10 +370,7 @@ export default function DocsTab({
   }
 
   const documents = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    const all = (catalog?.documents || []).filter(
-      (doc) => term === "" || doc.path.toLowerCase().includes(term)
-    );
+    const all = catalog?.documents || [];
     switch (filter) {
       case "broken":
         return all.filter((doc) => doc.brokenRules > 0);
@@ -388,6 +388,73 @@ export default function DocsTab({
   }, [catalog, filter]);
 
   const tree = useMemo(() => buildTree(documents), [documents]);
+
+  /**
+   * Opens the palette, and indexes the rules the first time.
+   *
+   * The catalogue answers with documents; a document's rules come with the document. So the first
+   * search asks for the read ones, and after that the answers are already here.
+   */
+  async function openPalette() {
+    setPaletteOpen(true);
+    setQuery("");
+    if (ruleIndex.length > 0 || indexing || !catalog) return;
+    const withRules = catalog.documents.filter((doc) => doc.ruleCount > 0).slice(0, 25);
+    if (withRules.length === 0) return;
+    setIndexing(true);
+    try {
+      const found: (Rule & { path: string })[] = [];
+      for (const doc of withRules) {
+        const res = await fetch(
+          `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}&path=${encodeURIComponent(doc.path)}`
+        );
+        if (!res.ok) continue;
+        const body: Detail = await res.json();
+        body.rules.forEach((rule) => found.push({ ...rule, path: doc.path }));
+      }
+      setRuleIndex(found);
+    } finally {
+      setIndexing(false);
+    }
+  }
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        openPalette();
+      }
+      if (event.key === "Escape") setPaletteOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [catalog, ruleIndex.length, indexing]);
+
+  const term = query.trim().toLowerCase();
+  const docHits = (catalog?.documents || [])
+    .filter((doc) => term !== "" && doc.path.toLowerCase().includes(term))
+    .slice(0, 6);
+  const ruleHits = ruleIndex
+    .filter(
+      (rule) =>
+        term !== "" &&
+        ((rule.statement || "").replace(/`/g, "").toLowerCase().includes(term) ||
+          (rule.quote || "").toLowerCase().includes(term))
+    )
+    .slice(0, 8);
+
+  /** The matched run of a result, marked, so a reader sees why it matched. */
+  function marked(text: string) {
+    const at = text.toLowerCase().indexOf(term);
+    if (term === "" || at < 0) return text;
+    return (
+      <>
+        {text.slice(0, at)}
+        <mark>{text.slice(at, at + term.length)}</mark>
+        {text.slice(at + term.length)}
+      </>
+    );
+  }
 
   function toggleFolder(path: string) {
     setExpanded((open) => {
@@ -532,6 +599,86 @@ export default function DocsTab({
 
   return (
     <div className="docs-tab">
+      {paletteOpen && (
+        <div className="docs-palette-scrim" onClick={() => setPaletteOpen(false)}>
+          <div className="docs-palette" role="dialog" aria-label="Search docs and rules" onClick={(event) => event.stopPropagation()}>
+            <div className="docs-palette-input">
+              <svg viewBox="0 0 16 16" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+                <circle cx="7" cy="7" r="4.25" />
+                <path d="m10.25 10.25 3.5 3.5" />
+              </svg>
+              <input
+                autoFocus
+                type="search"
+                value={query}
+                placeholder="Search documents and the rules read from them"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              <kbd>Esc</kbd>
+            </div>
+            <div className="docs-palette-body">
+              {term === "" && (
+                <p className="docs-palette-hint">
+                  Type to search this repository's documents and every rule read from them.
+                  {indexing && " Reading the rules…"}
+                </p>
+              )}
+              {term !== "" && docHits.length === 0 && ruleHits.length === 0 && (
+                <p className="docs-palette-hint">
+                  Nothing matches “{query}”.{indexing && " Still reading the rules…"}
+                </p>
+              )}
+              {docHits.length > 0 && (
+                <div className="docs-palette-group">
+                  <p className="dashboard-kicker">Documents</p>
+                  {docHits.map((doc) => (
+                    <button
+                      key={doc.path}
+                      type="button"
+                      className="docs-palette-item"
+                      onClick={() => {
+                        setPaletteOpen(false);
+                        openDoc(doc.path);
+                      }}
+                    >
+                      <span className="docs-palette-main">{marked(doc.path)}</span>
+                      <span className="docs-palette-sub">
+                        {doc.ruleCount > 0 ? `${doc.ruleCount} rules` : STATE_LABEL[doc.state]}
+                        {doc.brokenRules > 0 ? ` · ${doc.brokenRules} broken` : ""}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {ruleHits.length > 0 && (
+                <div className="docs-palette-group">
+                  <p className="dashboard-kicker">Rules</p>
+                  {ruleHits.map((rule) => (
+                    <button
+                      key={rule.factId}
+                      type="button"
+                      className="docs-palette-item"
+                      onClick={() => {
+                        setPaletteOpen(false);
+                        openDoc(rule.path);
+                      }}
+                    >
+                      <span className="docs-palette-main">
+                        {marked((rule.statement || "").replace(/`/g, ""))}
+                      </span>
+                      <span className="docs-palette-sub">
+                        {rule.path}
+                        {rule.sourceLine ? `:${rule.sourceLine}` : ""}
+                        {rule.status ? ` · ${OUTCOME_LABEL[rule.status] || rule.status}` : " · not checked yet"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="docs-head">
         <div className="docs-head-copy">
           <p className="dashboard-kicker">Docs &amp; rules</p>
@@ -580,25 +727,6 @@ export default function DocsTab({
       {loading && <p className="dashboard-metric-caption">Loading documents...</p>}
       {error && <p className="dashboard-inline-error">{error}</p>}
 
-      {summary && (
-        <div className="docs-summary">
-          <span><b>{summary.documents}</b> docs</span>
-          <span><b>{summary.read}</b> read</span>
-          {summary.outdated > 0 && <span><b>{summary.outdated}</b> edited since</span>}
-          <span><b>{summary.notRead}</b> not read yet</span>
-          <span className="docs-summary-rules"><b>{summary.rules}</b> rules</span>
-          {summary.brokenRules > 0 && (
-            <span className="docs-summary-broken"><b>{summary.brokenRules}</b> broken</span>
-          )}
-          {summary.alreadyBrokenRules > 0 && (
-            <span className="docs-summary-prior"><b>{summary.alreadyBrokenRules}</b> already broken</span>
-          )}
-          {summary.neverChecked > 0 && (
-            <span><b>{summary.neverChecked}</b> not checked yet</span>
-          )}
-        </div>
-      )}
-
       {catalog && catalog.documents.length === 0 && !loading && (
         <div className="dashboard-empty">
           <p className="text-slate-600">
@@ -611,19 +739,14 @@ export default function DocsTab({
       {catalog && catalog.documents.length > 0 && (
         <div className="docs-split">
           <div className="docs-list">
-            <label className="tree-search">
+            <button type="button" className="tree-search" onClick={openPalette}>
               <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
                 <circle cx="7" cy="7" r="4.25" />
                 <path d="m10.25 10.25 3.5 3.5" />
               </svg>
-              <input
-                className="tree-search-input"
-                type="search"
-                value={query}
-                placeholder="Search documents"
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </label>
+              <span>Search docs and rules</span>
+              <kbd>⌘K</kbd>
+            </button>
             <div className="docs-filters">
               {([
                 ["all", "All", catalog.summary.documents, ""],

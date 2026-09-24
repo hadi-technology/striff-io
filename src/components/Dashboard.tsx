@@ -241,7 +241,6 @@ export default function Dashboard() {
               {([
                 ["metrics", "Overview", "overview", ""],
                 ["repos", "Repositories", "repos", String((current.repositories || []).length)],
-                ["docs", "Docs & rules", "docs", ""],
                 ["billing", "Billing", "billing", ""],
               ] as const).map(([key, label, icon, count]) => (
                 <button
@@ -256,6 +255,24 @@ export default function Dashboard() {
                 </button>
               ))}
             </nav>
+            {openRepo && (
+              <div className="dash-repo-group">
+                <p className="nav-label">Repository</p>
+                <p className="dash-repo-name" title={openRepo}>
+                  {openRepo.split("/")[1] || openRepo}
+                </p>
+                <nav className="dash-nav">
+                  <button
+                    type="button"
+                    className={`nav-item${section === "docs" ? " active" : ""}`}
+                    onClick={() => setSection("docs")}
+                  >
+                    <NavIcon name="docs" />
+                    <span>Docs &amp; rules</span>
+                  </button>
+                </nav>
+              </div>
+            )}
             <div className="dash-side-foot">
               <a
                 href="https://github.com/apps/striff-app/installations/new"
