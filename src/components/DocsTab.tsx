@@ -155,6 +155,103 @@ function stateLine(doc: Doc): string {
   }
 }
 
+
+/** One node of the document tree: a folder holding more, or a document. */
+interface TreeNode {
+  name: string;
+  path: string;
+  doc?: Doc;
+  children: TreeNode[];
+  rules: number;
+  broken: number;
+}
+
+/** Folders first, then documents, each alphabetically -- a file explorer's order. */
+function sortNodes(nodes: TreeNode[]): TreeNode[] {
+  return nodes.sort((a, b) => {
+    const aFolder = a.children.length > 0;
+    const bFolder = b.children.length > 0;
+    if (aFolder !== bFolder) return aFolder ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+/** The documents as a tree of folders, with each folder carrying what is beneath it. */
+function buildTree(documents: Doc[]): TreeNode[] {
+  const root: TreeNode = { name: "", path: "", children: [], rules: 0, broken: 0 };
+  for (const doc of documents) {
+    const segments = doc.path.split("/");
+    let node = root;
+    segments.forEach((segment, index) => {
+      const isLeaf = index === segments.length - 1;
+      const path = segments.slice(0, index + 1).join("/");
+      let next = node.children.find((child) => child.name === segment);
+      if (!next) {
+        next = { name: segment, path, children: [], rules: 0, broken: 0 };
+        node.children.push(next);
+      }
+      if (isLeaf) next.doc = doc;
+      node = next;
+    });
+  }
+  const total = (node: TreeNode): TreeNode => {
+    node.children = sortNodes(node.children.map(total));
+    node.rules = (node.doc?.ruleCount || 0) + node.children.reduce((sum, c) => sum + c.rules, 0);
+    node.broken = (node.doc?.brokenRules || 0) + node.children.reduce((sum, c) => sum + c.broken, 0);
+    return node;
+  };
+  return sortNodes(root.children.map(total));
+}
+
+/** Every folder that holds a document, so the tree opens showing what is in it. */
+function allFolders(nodes: TreeNode[], into: Set<string> = new Set()): Set<string> {
+  for (const node of nodes) {
+    if (node.children.length > 0) {
+      into.add(node.path);
+      allFolders(node.children, into);
+    }
+  }
+  return into;
+}
+
+const ChevronDown = () =>
+  createElement(
+    "svg",
+    { viewBox: "0 0 16 16", width: 12, height: 12, fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
+    createElement("path", { d: "m4 6 4 4 4-4" })
+  );
+
+const ChevronRight = () =>
+  createElement(
+    "svg",
+    { viewBox: "0 0 16 16", width: 12, height: 12, fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
+    createElement("path", { d: "m6 4 4 4-4 4" })
+  );
+
+const FolderIcon = () =>
+  createElement(
+    "svg",
+    { viewBox: "0 0 16 16", width: 15, height: 15, fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
+    createElement("path", { d: "M1.75 3.5h4l1.5 1.75h7v7.25a1 1 0 0 1-1 1H2.75a1 1 0 0 1-1-1Z" })
+  );
+
+const FileIcon = () =>
+  createElement(
+    "svg",
+    { viewBox: "0 0 16 16", width: 15, height: 15, fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
+    createElement("path", { d: "M3.5 1.75h5.5l3.5 3.5v9h-9Z" }),
+    createElement("path", { d: "M9 1.75v3.5h3.5" })
+  );
+
+const DotsIcon = () =>
+  createElement(
+    "svg",
+    { viewBox: "0 0 16 16", width: 15, height: 15, fill: "currentColor", "aria-hidden": true },
+    createElement("circle", { cx: 3.2, cy: 8, r: 1.3 }),
+    createElement("circle", { cx: 8, cy: 8, r: 1.3 }),
+    createElement("circle", { cx: 12.8, cy: 8, r: 1.3 })
+  );
+
 export default function DocsTab({
   installationId,
   repos,
@@ -170,6 +267,8 @@ export default function DocsTab({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [menuFor, setMenuFor] = useState<string | null>(null);
 
   const [owner, name] = repo.split("/");
 
@@ -177,6 +276,13 @@ export default function DocsTab({
     if (!owner || !name) return;
     loadCatalog();
   }, [repo]);
+
+  useEffect(() => {
+    if (menuFor === null) return;
+    const close = () => setMenuFor(null);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [menuFor]);
 
   async function loadCatalog() {
     setLoading(true);
@@ -194,6 +300,7 @@ export default function DocsTab({
         return;
       }
       setCatalog(data);
+      setExpanded(allFolders(buildTree(data.documents || [])));
     } catch {
       setError("Couldn't load this repository's documents");
     } finally {
@@ -233,6 +340,23 @@ export default function DocsTab({
     }
   }
 
+  async function setFolderExcluded(folder: string, excluded: boolean) {
+    setBusy(true);
+    try {
+      await fetch(
+        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paths: [], folders: [folder], excluded }),
+        }
+      );
+      await loadCatalog();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const documents = useMemo(() => {
     const all = catalog?.documents || [];
     switch (filter) {
@@ -251,6 +375,143 @@ export default function DocsTab({
     }
   }, [catalog, filter]);
 
+  const tree = useMemo(() => buildTree(documents), [documents]);
+
+  function toggleFolder(path: string) {
+    setExpanded((open) => {
+      const next = new Set(open);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  }
+
+  /** The ⋯ menu a document or folder carries, in the tree and in the open document's header. */
+  function rowMenu(path: string, doc?: Doc, folder?: boolean, where: string = "tree") {
+    // The same document has a menu in the tree and another in its open header; they are told
+    // apart by where they are, so opening one does not open the other.
+    const id = `${where}:${path}`;
+    const open = menuFor === id;
+    return (
+      <span className="docs-menu-wrap">
+        <button
+          type="button"
+          className="docs-menu-button"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`Actions for ${path}`}
+          disabled={busy}
+          onClick={(event) => {
+            event.stopPropagation();
+            setMenuFor(open ? null : id);
+          }}
+        >
+          <DotsIcon />
+        </button>
+        {open && (
+          <span className="docs-menu" role="menu">
+            {folder ? (
+              <>
+                <button type="button" role="menuitem" onClick={() => setFolderExcluded(path, true)}>
+                  Exclude this folder from reading
+                </button>
+                <button type="button" role="menuitem" onClick={() => setFolderExcluded(path, false)}>
+                  Include this folder again
+                </button>
+              </>
+            ) : doc?.state === "EXCLUDED" ? (
+              <button type="button" role="menuitem" onClick={() => setExcluded(path, false)}>
+                Include again
+              </button>
+            ) : (
+              <button type="button" role="menuitem" onClick={() => setExcluded(path, true)}>
+                Exclude from reading
+              </button>
+            )}
+            <a
+              role="menuitem"
+              href={`https://github.com/${owner}/${name}/blob/HEAD/${path}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open on GitHub
+            </a>
+          </span>
+        )}
+      </span>
+    );
+  }
+
+  /** The badges a document's state earns, in the tree. */
+  function rowBadges(doc: Doc) {
+    return (
+      <>
+        {doc.brokenRules > 0 && <span className="docs-badge is-broken">{doc.brokenRules} broken</span>}
+        {doc.outdated && doc.state === "READ" && (
+          <span className="docs-badge is-outdated">Edited since</span>
+        )}
+        {doc.state !== "READ" && (
+          <span className={`docs-badge is-${doc.state.toLowerCase()}`}>{STATE_LABEL[doc.state]}</span>
+        )}
+      </>
+    );
+  }
+
+  /** The tree itself: folders that open and close, documents that open in the pane. */
+  function renderNodes(nodes: TreeNode[], depth: number): any[] {
+    return nodes.flatMap((node) => {
+      const indent = { paddingLeft: 8 + depth * 14 };
+      if (node.children.length > 0) {
+        const open = expanded.has(node.path);
+        const rows: any[] = [
+          <div key={node.path} className="docs-row is-folder" style={indent}>
+            <button
+              type="button"
+              className="docs-row-main"
+              aria-expanded={open}
+              onClick={() => toggleFolder(node.path)}
+            >
+              <span className="docs-chev">{open ? <ChevronDown /> : <ChevronRight />}</span>
+              <FolderIcon />
+              <span className="docs-row-name">{node.name}</span>
+            </button>
+            <span className="docs-row-meta">
+              {node.broken > 0 && <span className="docs-dot" title={`${node.broken} broken`} />}
+              {node.rules > 0 && <span className="docs-count">{node.rules}</span>}
+              {rowMenu(node.path, undefined, true)}
+            </span>
+          </div>,
+        ];
+        if (open) rows.push(...renderNodes(node.children, depth + 1));
+        return rows;
+      }
+      const doc = node.doc as Doc;
+      return [
+        <div
+          key={node.path}
+          className={`docs-row${selected === doc.path ? " is-open" : ""}${
+            ["RETIRED", "SCREENED_OUT", "EXCLUDED"].includes(doc.state) ? " is-dim" : ""
+          }`}
+          style={indent}
+        >
+          <button type="button" className="docs-row-main" onClick={() => openDoc(doc.path)}>
+            <span className="docs-chev" />
+            <FileIcon />
+            <span className="docs-row-name">{node.name}</span>
+          </button>
+          <span className="docs-row-meta">
+            {rowBadges(doc)}
+            {doc.ruleCount > 0 && <span className="docs-count">{doc.ruleCount}</span>}
+            {rowMenu(doc.path, doc)}
+          </span>
+        </div>,
+      ];
+    });
+  }
+
   if (repos.length === 0) {
     return <p className="dashboard-metric-caption">No repositories are connected yet.</p>;
   }
@@ -259,24 +520,48 @@ export default function DocsTab({
 
   return (
     <div className="docs-tab">
-      <div className="docs-tab-head">
-        <label className="docs-repo-label" htmlFor={`docs-repo-${installationId}`}>
-          Repository
-        </label>
-        <select
-          id={`docs-repo-${installationId}`}
-          className="docs-repo-select"
-          value={repo}
-          onChange={(event) => setRepo(event.target.value)}
-        >
-          {repos.map((r) => (
-            <option key={r.full_name} value={r.full_name}>
-              {r.full_name}
-            </option>
-          ))}
-        </select>
-        {catalog?.lastScanMs && (
-          <span className="docs-scanned">Documents listed {when(catalog.lastScanMs)}</span>
+      <div className="docs-head">
+        <div className="docs-head-copy">
+          <p className="dashboard-kicker">Docs &amp; rules</p>
+          <div className="docs-title">
+            <select
+              className="docs-title-select"
+              aria-label="Repository"
+              value={repo}
+              onChange={(event) => setRepo(event.target.value)}
+            >
+              {repos.map((r) => (
+                <option key={r.full_name} value={r.full_name}>
+                  {r.full_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="docs-lede">
+            Every doc Striff can read in this repository, and the rules it found in them. Striff
+            reads a doc when a pull request changes code the doc talks about, so some docs are still
+            waiting for that.
+          </p>
+        </div>
+        {summary && (
+          <div className="docs-tally">
+            <span className="docs-tally-item is-violated">
+              <b>{summary.brokenRules}</b>
+              <i>broken</i>
+            </span>
+            <span className="docs-tally-item is-prior">
+              <b>{summary.alreadyBrokenRules}</b>
+              <i>already broken</i>
+            </span>
+            <span className="docs-tally-item is-held">
+              <b>{summary.holdsOnDefaultBranch}</b>
+              <i>hold on main</i>
+            </span>
+            <span className="docs-tally-item">
+              <b>{summary.rules}</b>
+              <i>rules</i>
+            </span>
+          </div>
         )}
       </div>
 
@@ -332,35 +617,13 @@ export default function DocsTab({
                 </button>
               ))}
             </div>
-            <ul className="docs-files">
-              {documents.map((doc) => (
-                <li key={doc.path}>
-                  <button
-                    type="button"
-                    className={`docs-file${selected === doc.path ? " is-open" : ""}`}
-                    onClick={() => openDoc(doc.path)}
-                  >
-                    <span className="docs-file-path">{doc.path}</span>
-                    <span className="docs-file-meta">
-                      {doc.brokenRules > 0 && (
-                        <span className="docs-badge is-broken">{doc.brokenRules} broken</span>
-                      )}
-                      {doc.outdated && doc.state === "READ" && (
-                        <span className="docs-badge is-outdated">Edited since</span>
-                      )}
-                      {doc.state !== "READ" && (
-                        <span className={`docs-badge is-${doc.state.toLowerCase()}`}>
-                          {STATE_LABEL[doc.state]}
-                        </span>
-                      )}
-                      {doc.ruleCount > 0 && <span className="docs-count">{doc.ruleCount}</span>}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div className="docs-tree" role="tree">
+              {renderNodes(tree, 0)}
+            </div>
+            <div className="docs-tree-foot">
+              {catalog.summary.documents} docs{catalog.lastScanMs ? `, listed ${when(catalog.lastScanMs)}` : ""}
+            </div>
           </div>
-
           <div className="docs-pane">
             {!selected && (
               <p className="dashboard-metric-caption">
@@ -370,28 +633,15 @@ export default function DocsTab({
             {selected && detail && (
               <>
                 <div className="docs-pane-head">
-                  <span className="docs-pane-path">{selected}</span>
-                  <span className="docs-pane-actions">
-                    {detail.document.state === "EXCLUDED" ? (
-                      <button
-                        type="button"
-                        className="dashboard-button dashboard-button-secondary"
-                        disabled={busy}
-                        onClick={() => setExcluded(selected, false)}
-                      >
-                        Include again
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="dashboard-button dashboard-button-secondary"
-                        disabled={busy}
-                        onClick={() => setExcluded(selected, true)}
-                      >
-                        Exclude from reading
-                      </button>
-                    )}
+                  <span className="docs-pane-path">
+                    {selected.split("/").map((part, index, all) => (
+                      <span key={index}>
+                        {index > 0 && <i className="docs-crumb-sep">/</i>}
+                        {index === all.length - 1 ? <b>{part}</b> : part}
+                      </span>
+                    ))}
                   </span>
+                  <span className="docs-pane-actions">{rowMenu(selected, detail.document, false, "pane")}</span>
                 </div>
                 <p className={`docs-state-line is-${detail.document.state.toLowerCase()}`}>
                   {withCode(stateLine(detail.document))}

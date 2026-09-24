@@ -94,6 +94,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [autoCheckout, setAutoCheckout] = useState<{ installationId: number; plan: string } | null>(null);
+  const [section, setSection] = useState<"repos" | "docs" | "metrics" | "billing">("docs");
+  const [accountId, setAccountId] = useState<number | null>(null);
 
   useEffect(() => {
     init();
@@ -193,6 +195,9 @@ export default function Dashboard() {
     );
   }
 
+  const current =
+    installations.find((inst) => inst.id === accountId) || installations[0] || null;
+
   return (
     <div className="dashboard-shell">
       {/* Header */}
@@ -242,16 +247,65 @@ export default function Dashboard() {
           </a>
         </div>
       ) : (
-        <div className="mt-8 space-y-5">
-          {installations.map((inst) => (
+        <div className="dash-shell">
+          <aside className="dash-side">
+            <div className="dash-side-account">
+              <p className="dashboard-kicker">Account</p>
+              {installations.length > 1 ? (
+                <select
+                  className="dash-account-select"
+                  value={String(current.id)}
+                  onChange={(event) => setAccountId(Number(event.target.value))}
+                >
+                  {installations.map((inst) => (
+                    <option key={inst.id} value={String(inst.id)}>
+                      {inst.account.login}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="dash-account-name">{current.account.login}</p>
+              )}
+            </div>
+            <nav className="dash-nav">
+              {([
+                ["metrics", "Overview"],
+                ["repos", "Repositories"],
+                ["docs", "Docs & rules"],
+                ["billing", "Billing"],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`dash-nav-item${section === key ? " is-on" : ""}`}
+                  onClick={() => setSection(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+            <div className="dash-side-foot">
+              <a
+                href="https://github.com/apps/striff-app/installations/new"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="dash-nav-item"
+              >
+                Add an account
+              </a>
+            </div>
+          </aside>
+          <div className="dash-main">
             <InstallationCard
-              key={inst.id}
-              installation={inst}
+              key={current.id}
+              installation={current}
               onError={setError}
-              autoPlan={autoCheckout?.installationId === inst.id ? autoCheckout.plan : null}
+              autoPlan={autoCheckout?.installationId === current.id ? autoCheckout.plan : null}
               onAutoPlanConsumed={() => setAutoCheckout(null)}
+              section={section}
+              onSection={setSection}
             />
-          ))}
+          </div>
         </div>
       )}
 
@@ -270,11 +324,15 @@ function InstallationCard({
   onError,
   autoPlan,
   onAutoPlanConsumed,
+  section,
+  onSection,
 }: {
   installation: Installation;
   onError: (msg: string) => void;
   autoPlan: string | null;
   onAutoPlanConsumed: () => void;
+  section?: "repos" | "docs" | "metrics" | "billing";
+  onSection?: (section: "repos" | "docs" | "metrics" | "billing") => void;
 }) {
   const repos = installation.repositories || [];
   const privateRepos = repos.filter((r) => r.private);
@@ -286,7 +344,10 @@ function InstallationCard({
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
   const [billingError, setBillingError] = useState(false);
-  const [installTab, setInstallTab] = useState<"repos" | "docs" | "metrics" | "billing">("repos");
+  const [ownTab, setOwnTab] = useState<"repos" | "docs" | "metrics" | "billing">("repos");
+  // The sidebar owns the section when the shell passes one; the card keeps its own otherwise.
+  const installTab = section ?? ownTab;
+  const setInstallTab = onSection ?? setOwnTab;
   const [metrics, setMetrics] = useState<OrgMetricsData | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [metricsError, setMetricsError] = useState("");
@@ -448,8 +509,10 @@ function InstallationCard({
   const displayedRepos = repoTab === "private" ? privateRepos : publicRepos;
 
   return (
-    <div className="dashboard-installation-card">
-      {/* Header row */}
+    <div className={section === undefined ? "dashboard-installation-card" : "dashboard-section"}>
+      {/* Header row: rendered only when this card stands alone; the shell's sidebar names the
+          account otherwise, and a hidden attribute would lose to the flex display. */}
+      {section === undefined && (
       <div className="dashboard-installation-head">
         <div className="flex items-center gap-3">
           <img src={installation.account.avatar_url} alt={installation.account.login} className="h-9 w-9 rounded-lg border border-slate-200" />
@@ -466,6 +529,7 @@ function InstallationCard({
           </span>
         )}
       </div>
+      )}
 
       {/* No-plan prompt for private repos */}
       {hasNoPlan && installTab !== "billing" && (
@@ -488,8 +552,9 @@ function InstallationCard({
         </div>
       )}
 
-      {/* Repositories / Metrics / Billing tabs */}
-      <div className="mt-5">
+      {/* Repositories / Metrics / Billing tabs, when the sidebar is not driving them */}
+      <div className={section === undefined ? "mt-5" : ""}>
+          {section === undefined && (
           <div className="dashboard-tabs">
             <button
               onClick={() => setInstallTab("repos")}
@@ -516,6 +581,7 @@ function InstallationCard({
               Billing
             </button>
           </div>
+          )}
 
           {installTab === "repos" ? (
             <div className="dashboard-metric-fade-in">

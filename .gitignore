@@ -18,3 +18,4 @@ pnpm-debug.log*
 
 # local-only preview of the documents view
 src/pages/docs-preview.astro
+src/pages/dash-preview.astro
