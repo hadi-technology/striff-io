@@ -1659,6 +1659,91 @@ html[data-scheme="auto"] body { background: #fbfbfa; }
   background: color-mix(in srgb, var(--sb-danger) 11%, transparent);
 }
 
+/* ---- GitHub-shaped cards: a file at a line, and a commit that touched it ----
+   Used where the point is that two artefacts in one repository disagree, and the fastest way to
+   show it is to put them side by side in the chrome the reader already knows. Not a screenshot:
+   real text, so it stays legible, selectable and correct in both themes. */
+
+.sb .bp-gh {
+  border: 1px solid var(--sb-line);
+  border-radius: 10px;
+  background: var(--sb-surface);
+  overflow: hidden;
+  font-family: var(--sb-mono);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.sb .bp-gh + .bp-gh { margin-top: 0.9rem; }
+
+.sb .bp-gh-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--sb-line);
+  background: var(--sb-bg-2);
+  color: var(--sb-muted);
+  font-size: 0.74rem;
+}
+
+.sb .bp-gh-head b { color: var(--sb-ink); font-weight: 600; }
+.sb .bp-gh-head .bp-gh-sha { margin-left: auto; opacity: 0.75; }
+
+.sb .bp-gh-body { padding: 0.35rem 0; }
+
+.sb .bp-gh-line {
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.08rem 0.8rem 0.08rem 0;
+  color: var(--sb-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sb .bp-gh-line > span:first-child {
+  text-align: right;
+  color: var(--sb-muted);
+  opacity: 0.6;
+  user-select: none;
+}
+
+.sb .bp-gh-line--hl { background: color-mix(in srgb, var(--sb-amber) 13%, transparent); }
+.sb .bp-gh-line--hl > span:last-child { color: var(--sb-ink); font-weight: 600; }
+
+.sb .bp-gh-line--del { background: color-mix(in srgb, var(--sb-danger) 11%, transparent); }
+.sb .bp-gh-line--del > span:last-child { color: var(--sb-danger); }
+
+.sb .bp-gh-note {
+  padding: 0.5rem 0.8rem;
+  border-top: 1px solid var(--sb-line);
+  background: var(--sb-bg-2);
+  font-family: var(--sb-sans);
+  font-size: 0.78rem;
+  color: var(--sb-muted);
+}
+
+/* The join between two cards that should have seen each other and did not. */
+.sb .bp-gh-join {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.9rem 0;
+  font-family: var(--sb-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--sb-danger);
+}
+
+.sb .bp-gh-join::before,
+.sb .bp-gh-join::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--sb-danger) 35%, transparent);
+}
+
 /* ---- Callouts: asides set like pull quotes ---- */
 
 .sb .bp-callout {

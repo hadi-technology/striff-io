@@ -3,7 +3,8 @@
  * The documented-rule rows: the sentence from the docs with its file and line; the rule it
  * became, in plain English and as the formula that is evaluated (typeset by KaTeX at build
  * time); and the verdict on this pull request with the two satisfaction facts it rests on,
- * M_before and M_after. An optional witness line names what the change did. With
+ * M_before and M_after, either of which may fail: a rule already broken at the base revision
+ * shows M_before failing too, which is what separates a regression from a standing violation. An optional witness line names what the change did. With
  * `logicNote`, a small expandable note says why the verdicts are rigorous. The homepage hero
  * uses an illustrative example with the note; the flagship blog post shows the real
  * ecChronos run.
@@ -21,7 +22,10 @@ interface Props {
 
 const { rows, baseSha, headSha, logicNote = false } = Astro.props;
 const phiLabel = (i: number) => tex(String.raw`\varphi_{${i + 1}} \coloneqq`);
-const satBefore = (i: number) => tex(String.raw`\mathcal{M}_{\mathrm{before}} \htmlClass{sat}{\models} \varphi_{${i + 1}}`);
+const satBefore = (i: number, holds = true) =>
+  tex(holds
+    ? String.raw`\mathcal{M}_{\mathrm{before}} \htmlClass{sat}{\models} \varphi_{${i + 1}}`
+    : String.raw`\mathcal{M}_{\mathrm{before}} \htmlClass{unsat}{\nvDash} \varphi_{${i + 1}}`);
 const satAfter = (i: number, holds: boolean) =>
   tex(holds
     ? String.raw`\mathcal{M}_{\mathrm{after}} \htmlClass{sat}{\models} \varphi_{${i + 1}}`
@@ -80,10 +84,12 @@ const brokeFacts = tex(String.raw`\mathcal{M}_{\mathrm{before}} \htmlClass{sat}{
             {row.verdictLabel}
           </span>
           <span class="hcc-status-sat" aria-hidden="true">
-            <span title={baseSha ? `base ${baseSha}` : undefined} set:html={satBefore(i)} />
+            <span title={baseSha ? `base ${baseSha}` : undefined} set:html={satBefore(i, row.base !== false)} />
             <span title={headSha ? `head ${headSha}` : undefined} set:html={satAfter(i, row.head)} />
           </span>
-          <span class="sr-only">{row.head ? "The rule held before this pull request and still holds after it." : "The rule held before this pull request and is broken after it."}</span>
+          <span class="sr-only">{row.base === false
+            ? (row.head ? "The rule was broken before this pull request and holds after it." : "The rule was already broken before this pull request and is still broken after it.")
+            : (row.head ? "The rule held before this pull request and still holds after it." : "The rule held before this pull request and is broken after it.")}</span>
         </span>
       </span>
     </div>

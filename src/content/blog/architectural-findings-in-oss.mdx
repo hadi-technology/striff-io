@@ -1,0 +1,214 @@
+---
+title: "58 popular repositories are telling their AI agents to use code that isn't there"
+description: "Arthas, Redisson, Jedis, Spring AI and 54 others carry documented rules their own code no longer satisfies. We checked 7,161 rules across 609 public pull requests — because the industry now calls specs executable, and nothing executes them."
+date: 2026-09-24
+category: "Data & research"
+cover: "hard-rules"
+---
+
+import RuleRows from "../../components/RuleRows.astro";
+import { gitextensionsRules, baseSha, headSha } from "../../data/gitextensionsRules";
+
+
+This file is in the official C# SDK for the Model Context Protocol. It exists to be read by a coding agent, before the agent writes anything.
+
+<div class="bp-figure" data-reveal>
+<p class="bp-figure-title">Two things in one repository that have never met</p>
+
+<div class="bp-gh">
+<div class="bp-gh-head">modelcontextprotocol/csharp-sdk &middot; <b>.github/copilot-instructions.md</b><span class="bp-gh-sha">on main</span></div>
+<div class="bp-gh-body">
+<div class="bp-gh-line"><span>256</span><span>- Server primitives (tools, prompts, resources) are discovered via reflection</span></div>
+<div class="bp-gh-line"><span>257</span><span>- Support both attribute-based registration and instance-based</span></div>
+<div class="bp-gh-line bp-gh-line--hl"><span>258</span><span>- Use `McpServerFactory` to create server instances with configured options</span></div>
+</div>
+</div>
+
+<p class="bp-gh-join">nothing connects these</p>
+
+<div class="bp-gh">
+<div class="bp-gh-head">commit &middot; <b>Remove obsolete APIs from codebase</b><span class="bp-gh-sha">136755f &middot; 2 Dec 2025</span></div>
+<div class="bp-gh-body">
+<div class="bp-gh-line bp-gh-line--del"><span>&minus;</span><span>src/ModelContextProtocol.Core/Server/McpServerFactory.cs</span></div>
+<div class="bp-gh-line bp-gh-line--del"><span>&minus;</span><span>src/ModelContextProtocol.Core/Client/McpClientFactory.cs</span></div>
+</div>
+<div class="bp-gh-note">The instruction was added on 13 October 2025, by Copilot, and was correct that day. The class was deleted seven weeks later. The instruction is still there.</div>
+</div>
+
+<p class="bp-figure-caption">Ten months on, every coding agent that opens this repository is told to call an API that is not there. Nobody was careless: the second commit was <em>specifically</em> the tidying-up job, and it walked past the first file because nothing in that repository has ever related a sentence to a symbol.</p>
+</div>
+
+Search the repository for `McpServerFactory` today and you get one result. It is line 258.
+
+We went looking for how often this has already happened, across 609 public pull requests in 542 repositories. It is not rare, and it is not confined to small projects.
+
+<div class="bp-figure" data-reveal>
+<p class="bp-figure-title">Three of them, and what each one costs</p>
+<div class="bp-facts">
+<div class="bp-facts-line"><span class="bp-facts-key">repo  </span><b>redis/jedis</b> &middot; 12.4k &#9733; &middot; the official Redis client for Java</div>
+<div class="bp-facts-line"><span class="bp-facts-key">says  </span><span class="bp-facts-quote">documents <code>ShardedJedis</code> and <code>ShardedJedisPool</code></span></div>
+<div class="bp-facts-line"><span class="bp-facts-key">code  </span>deleted <b>2021-12-08</b> in &ldquo;Jedis 4 changes&rdquo; &mdash; <span class="bp-facts-neg">wrong for 4 years, 9 months</span></div>
+<div class="bp-facts-line"><span class="bp-facts-key">costs </span>sharding was removed on purpose. Copying the documented example does not compile; an agent asked to fix it writes its own sharding instead.</div>
+</div>
+<div class="bp-facts">
+<div class="bp-facts-line"><span class="bp-facts-key">repo  </span><b>apache/dolphinscheduler</b> &middot; 14.5k &#9733; &middot; contributor onboarding guide, EN and ZH</div>
+<div class="bp-facts-line"><span class="bp-facts-key">says  </span><span class="bp-facts-quote">&ldquo;you only need to implement <code>&hellip;registry.api.RegistryFactory</code>&rdquo;</span></div>
+<div class="bp-facts-line"><span class="bp-facts-key">code  </span>deleted <b>2021-12-10</b> in a package refactor &mdash; <span class="bp-facts-neg">wrong for 4 years, 9 months</span></div>
+<div class="bp-facts-line"><span class="bp-facts-key">costs </span>this is the page a first-time contributor is sent to. They implement an interface that is not there, and their first pull request is dead on arrival.</div>
+</div>
+<div class="bp-facts">
+<div class="bp-facts-line"><span class="bp-facts-key">repo  </span><b>modelcontextprotocol/csharp-sdk</b> &middot; official C# SDK &middot; <code>.github/copilot-instructions.md</code></div>
+<div class="bp-facts-line"><span class="bp-facts-key">says  </span><span class="bp-facts-quote">&ldquo;use <code>McpServerFactory</code> to create server instances&rdquo;</span></div>
+<div class="bp-facts-line"><span class="bp-facts-key">code  </span>deleted <b>2025-12-02</b> by a commit titled &ldquo;Remove obsolete APIs&rdquo; &mdash; <span class="bp-facts-neg">wrong for 10 months</span></div>
+<div class="bp-facts-line"><span class="bp-facts-key">costs </span>the file exists to be read by a coding agent. It is instruction, not reference, and it is followed.</div>
+<div class="bp-facts-flag">all three verified against the repository&rsquo;s own history</div>
+</div>
+<p class="bp-figure-caption">Three of the 58, chosen because they fail differently: a removed capability, an onboarding page, and a file written for a machine. Across all 58: <strong>470,086 stars</strong>, fourteen projects above 10k, four Apache top-level projects. Every rule was written by the project itself.</p>
+</div>
+
+Arthas documents a `DefaultSessionManager`, Redisson a set of clustered-collection types, Spring AI an `OpenAiAudioApi`, BenchmarkDotNet an `ISummaryStyle` whose property table is still there. None of these are obscure corners of those projects. They are the pages a new contributor reads first, and now the pages an agent reads before every task.
+
+<div class="bp-callout">
+Every one of these rules was written by the project itself. We are not telling anyone their architecture is wrong &mdash; only asking whether their code still does what they already said it does.
+</div>
+
+## Does this actually cost anything?
+
+It is worth being careful here, because the tempting claim is stronger than the evidence.
+
+What is measured: these files change how agents behave. Their presence is [associated with lower agent runtime and reduced token consumption](https://arxiv.org/html/2606.09090v1) — the agent spends less effort working out what your codebase is. Compliance with rule files is real but imperfect, and degrades as a session runs long, at roughly 5.6% lower odds per generation step.
+
+What is also measured, by people who are not us: staleness is common. A 2026 study of AI configuration artifacts found **230 stale code references across 23.0% of the repositories it analysed**, and hand-validated 64% of a sample as genuine referential rot. That is an independent result, arrived at by a different method, in the same range as ours.
+
+What nobody has measured — and this is the honest gap — is how much a stale instruction degrades the output. The same paper lists it as an open research question. It observes only that "when stale, such descriptions can degrade AI assistance without any visible error."
+
+<div class="bp-callout bp-callout--amber">
+Without any visible error. That is the entire problem in five words, and it is also why nobody can tell you the cost.
+</div>
+
+Think about what a stale sentence does at each level. A wrong API name is the benign case: the agent tries it, nothing binds, and it recovers — burning context and turns to rediscover something the document could have told it correctly. Annoying, and it shows up on your bill rather than in your codebase.
+
+The architectural rules are the ones to worry about. *Contracts belong in the model namespace. This layer must not depend on that one.* An agent cannot check those against anything. There is no symbol to fail to resolve, no import to go red. It follows the convention it was given, the code compiles, the tests pass, and the review looks at the diff rather than the document. If the convention changed two years ago, nothing anywhere in that loop will say so.
+
+That is the case for caring about this, and it is narrower than the usual pitch: not that your agent will write broken code, but that when it writes *structurally wrong* code on the authority of your own documentation, there is currently no point at which anyone finds out.
+
+And there is a reason to think structure is exactly where the damage is landing. [GitClear and GitKraken read 623 million code changes](https://www.gitclear.com/the_ai_code_quality_maintainability_gap) from 2023 to 2026, a period over which roughly a quarter of commits came to show AI assistance. Eight maintainability signals moved the wrong way at once.
+
+<div class="bp-figure" data-reveal>
+<p class="bp-figure-title">623 million code changes, 2023&ndash;2026 &middot; GitClear / GitKraken</p>
+<div class="bp-bars">
+<div class="bp-bar-row"><span class="bp-bar-label">Duplicated blocks</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:81%"></div></div><span class="bp-bar-value">+81%</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Copy/pasted lines</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:41%"></div></div><span class="bp-bar-value">+41%</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Error-masking catch blocks</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:47%"></div></div><span class="bp-bar-value">+47%</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Refactoring (moved code)</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:70%"></div></div><span class="bp-bar-value">&minus;70%</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Cross-file reuse</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:35%"></div></div><span class="bp-bar-value">&minus;35%</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Legacy maintenance</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:74%"></div></div><span class="bp-bar-value">&minus;74%</span></div>
+</div>
+<p class="bp-figure-caption">Not our data. Every one of these is a <em>system-level</em> property &mdash; whether code is reused across files, whether structure gets tidied, whether old code is still tended. None of them is visible in a single diff, which is where all the review attention goes.</p>
+</div>
+
+Read that list again and notice what it is not. It is not a list of bugs. Every signal there is architectural: reuse across files, refactoring, the tending of code nobody wrote this quarter. These are the properties that a design document exists to protect, they are declining fast, and they are precisely the properties no check in your pipeline has an opinion about.
+
+<div class="bp-callout">
+Refactoring down 70%. Cross-file reuse down 35%. These are the things architecture documents talk about, measured falling, in the same window that we handed the documents to machines and stopped checking them.
+</div>
+
+## The document quietly changed jobs
+
+Writing the design doc first is not new and it is not a fad. Teams at Google [generally require one](https://abseil.io/resources/swe-book/html/ch10.html) before any significant change to a product or service. Amazon threw out the slide deck for the six-pager and the PR/FAQ, densely argued prose that goes through months of review before a concept reaches a developer. The logic never needed defending: thinking is cheaper than building.
+
+For all of that history the document had exactly one consumer. A person read it, argued with it, and went off to write the code. It shaped the result the way a conversation does — loosely, and through a human being who would notice when something in it had stopped being true.
+
+That is no longer what happens. The design doc is now the thing code is generated *from*. The practice has a name, spec-driven development, and a toolchain: GitHub shipped Spec Kit, AWS built Kiro, and there are half a dozen more.
+
+The language around it is what caught our attention, because it is not modest. The specification, as one widely shared description has it, "has ceased to be a boring static PDF document or a forgotten page on Confluence"; it is now "an executable operational contract" that "does not merely describe the system passively; it actively governs it."
+
+Executable. That word is doing an enormous amount of work.
+
+A thing that is executable has something that executes it. Source code has a compiler that refuses it. A test has a runner that goes red. A type has a checker, a schema has a validator, a manifest has a resolver. In every case some unsentimental mechanical process reads the artefact, compares it against reality, and complains when the two have drifted apart.
+
+<div class="bp-callout bp-callout--amber">
+We took a document that was only ever validated by a human paying attention, removed the human from the loop, handed it to a machine that writes code from it, and started calling it <em>executable</em>.
+</div>
+
+Thoughtworks, who did as much as anyone to popularise the practice, say the quiet part out loud in the same article: "Spec drift and hallucination are inherently difficult to avoid. We still need highly deterministic CI/CD practices to ensure software quality and safeguard our architectures."
+
+That deterministic check is the thing nobody had built, so we built one. It reads the documents already in a repository, turns the sentences that make checkable claims about the code into rules, and evaluates them against the parsed code at both revisions of a pull request.
+
+## "NEVER", in capitals, under "Hard rules"
+
+The MCP case is a document that went stale. This one never had that excuse.
+
+GitExtensions keeps its architecture documentation in `.github/copilot-docs/` — which is to say, where its coding agent will find it. One section is headed **Hard rules**, and its first bullet reads:
+
+> **NEVER** add a dependency that reverses the arrow direction (e.g. `GitCommands` must not reference `GitUI`).
+
+The first line of `src/app/GitCommands/AsyncLoader.cs` is `using GitUI;`.
+
+Not line 400, buried in a method added at 11pm against a deadline, where you could at least construct a story about how it slipped through. The first line of the file, in the import block, in plain view of anyone who opened it. `GitConfigSettingsBase.cs` does the same six lines in.
+
+This is obviously not a team that doesn't care. Somebody cared enough to write a document for their agent, give it a section called *Hard rules*, and put NEVER in bold capitals. And the rule is broken on the first line of a file in the very project the sentence names.
+
+Here is what the check actually did with that repository's documentation on pull request [#13277](https://github.com/gitextensions/gitextensions/pull/13277). Thirty rules were read out of its own files and evaluated at both revisions; these are three of them.
+
+<div class="bp-figure" data-reveal>
+<p class="bp-figure-title">gitextensions #13277 &middot; from the sentence to the verdict</p>
+<div class="bp-rules">
+<RuleRows rows={gitextensionsRules} baseSha={baseSha} headSha={headSha} logicNote={true} />
+</div>
+<p class="bp-figure-caption">On the left, the sentence as the maintainers wrote it, with its file and line. In the middle, the rule it became &mdash; in plain English, and as the formula that is actually evaluated. On the right, the verdict, stated as what it is: whether the model of the code satisfies the formula before the change and after it. The first row fails at <em>both</em> revisions, which is what separates a standing violation from a regression. The second shows one terse sentence becoming two independent rules. The third was read out of an agent skill file rather than prose.</p>
+</div>
+
+A language model reads the sentence and proposes the rule. It does not decide the verdict. The rule is compiled to a formula, the code at each revision is parsed into a model of its types and references, and a program checks whether one satisfies the other. That division matters: the part that is good at English does the English, and the part that cannot be talked out of an answer does the answering.
+
+## Why nothing you already run catches this
+
+Every check in your pipeline compares code to code. Tests execute code, types constrain code, the linter parses code, the dependency audit reads a manifest, the secret scanner greps the diff.
+
+A documented constraint is in none of those places. It is a sentence in a markdown file that was not part of the pull request, so nobody reviewing the change had a reason to open it, and the person who wrote the sentence is not in the room.
+
+<div class="bp-callout">
+The sentence and the violation are both perfectly visible. They are just never visible to the same reader at the same moment.
+</div>
+
+Nor is this hard in the technical sense, which is the frustrating part. "`GitCommands` must not reference `GitUI`" is a one-line question about a dependency graph, and your compiler answers harder questions on every build. The gap is not that the rule is difficult to check. It is that nothing turns the sentence into a question.
+
+## The number that should actually worry you
+
+Across those 609 pull requests we evaluated 7,161 rules taken from the repositories' own documentation.
+
+<div class="bp-figure" data-reveal>
+<p class="bp-figure-title">7,161 documented-rule verdicts</p>
+<div class="bp-bars">
+<div class="bp-bar-row"><span class="bp-bar-label">Held</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:100%"></div></div><span class="bp-bar-value">5,519</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Couldn&rsquo;t check</span><div class="bp-bar-track"><div class="bp-bar" style="width:27%"></div></div><span class="bp-bar-value">1,487</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Violated by the change</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:1.8%"></div></div><span class="bp-bar-value">97</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Already broken</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:1%"></div></div><span class="bp-bar-value">53</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Restored</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:0.1%"></div></div><span class="bp-bar-value">5</span></div>
+</div>
+<p class="bp-figure-caption">Seventy-seven percent of documented rules simply held. About two percent accuse.</p>
+</div>
+
+Seventy-seven percent held. That is the number that should bother you, not the two percent.
+
+<div class="bp-callout bp-callout--amber">
+Documentation being right almost all of the time is precisely what makes the exceptions dangerous.
+</div>
+
+A document that was frequently wrong would be treated with suspicion, and people would check it. One that is right ninety-eight times out of a hundred gets trusted, and an agent reading it has every reason to act on the sentence that happens to fall in the other two percent. The `McpServerFactory` line survived ten months not because anyone was negligent, but because the rest of that file was fine.
+
+Two percent is also the only rate at which a check like this is worth having. A reviewer that flags every pull request gets muted inside a week. The useful property is not the hit rate; it is that these cases surface on a specific line, in the pull request, while somebody is already looking at the code.
+
+One more row deserves a mention: the 1,487 rules the system declined to answer. A source parser sees considerably less than a compiler — no annotations, no generated members, no string literals — and when a rule cannot be decided, the only honest output is that it could not be checked. The failure we care about most is that answer quietly becoming "checked, found nothing." Those are different claims, and a tool that blurs them is misleading you in a way you would never catch.
+
+## What to do about it
+
+None of this argues against writing design docs, and it certainly doesn't argue against spec-driven development. Write more of them. A constraint nobody wrote down does not exist for the agent writing your code, and the teams doing this well are ahead of the teams that aren't.
+
+But if the specification is really going to be the thing your system gets generated from, then *executable* has to start meaning something. It has to acquire the property every other executable artefact in your repository already has: a machine reads it, compares it against reality, and complains when they disagree — in the pull request, beside the tests and the types, where all your other checks already run.
+
+That is what [Striff](https://striff.io) does. It reads the documents already in your repository, turns the sentences that make checkable claims into rules, and evaluates them at both revisions of every pull request. There is no new file to maintain and no rule language to learn, because the rules are the ones your team already wrote.
+
+<div class="bp-callout">
+Tests are run. Types are checked. Coverage is measured, dependencies audited, licences verified. The document your agent reads before every task is checked by nobody — and it is now the only unchecked input to your build.
+</div>
