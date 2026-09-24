@@ -42,6 +42,12 @@ Search the repository for `McpServerFactory` today and you get one result. It is
 
 We went looking for how often this has already happened, across 609 public pull requests in 542 repositories. It is not rare, and it is not confined to small projects.
 
+<div class="bp-keystat bp-keystat--danger">
+<span class="bp-keystat-value">58</span>
+<span class="bp-keystat-body">repositories carry a documented rule their own code no longer satisfies &mdash; <b>470,086 stars</b> between them, fourteen of them above 10k.
+<span class="bp-keystat-src">our scan &middot; 609 pull requests &middot; 542 repositories</span></span>
+</div>
+
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Three of them, and what each one costs</p>
 <div class="bp-facts">
@@ -80,6 +86,12 @@ What is measured: these files change how agents behave. Their presence is [assoc
 
 What is also measured, by people who are not us: staleness is common. A 2026 study of AI configuration artifacts found **230 stale code references across 23.0% of the repositories it analysed**, and hand-validated 64% of a sample as genuine referential rot. That is an independent result, arrived at by a different method, in the same range as ours.
 
+<div class="bp-keystat bp-keystat--amber">
+<span class="bp-keystat-value">23%</span>
+<span class="bp-keystat-body">of repositories analysed carried <b>stale code references</b> in their AI configuration files &mdash; 230 of them, with 64% of a sampled subset hand-validated as genuine rot.
+<span class="bp-keystat-src">arXiv 2606.09090 &middot; 2026 &middot; not our data</span></span>
+</div>
+
 What nobody has measured — and this is the honest gap — is how much a stale instruction degrades the output. The same paper lists it as an open research question. It observes only that "when stale, such descriptions can degrade AI assistance without any visible error."
 
 <div class="bp-callout bp-callout--amber">
@@ -105,6 +117,12 @@ And there is a reason to think structure is exactly where the damage is landing.
 <div class="bp-bar-row"><span class="bp-bar-label">Legacy maintenance</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:74%"></div></div><span class="bp-bar-value">&minus;74%</span></div>
 </div>
 <p class="bp-figure-caption">Not our data. Every one of these is a <em>system-level</em> property &mdash; whether code is reused across files, whether structure gets tidied, whether old code is still tended. None of them is visible in a single diff, which is where all the review attention goes.</p>
+</div>
+
+<div class="bp-keystat">
+<span class="bp-keystat-value">&minus;70%</span>
+<span class="bp-keystat-body">refactoring, measured as moved code, across <b>623 million changes</b> from 2023 to 2026 &mdash; while duplicated blocks rose 81%.
+<span class="bp-keystat-src">GitClear &amp; GitKraken &middot; The Maintainability Gap, 2026</span></span>
 </div>
 
 Read that list again and notice what it is not. It is not a list of bugs. Every signal there is architectural: reuse across files, refactoring, the tending of code nobody wrote this quarter. These are the properties that a design document exists to protect, they are declining fast, and they are precisely the properties no check in your pipeline has an opinion about.
@@ -190,6 +208,12 @@ Across those 609 pull requests we evaluated 7,161 rules taken from the repositor
 </div>
 
 Seventy-seven percent held. That is the number that should bother you, not the two percent.
+
+<div class="bp-keystat bp-keystat--mint">
+<span class="bp-keystat-value">77%</span>
+<span class="bp-keystat-body">of documented rules simply <b>held</b>. Roughly two percent accuse. Documentation is right almost all of the time, which is exactly why the exceptions are trusted.
+<span class="bp-keystat-src">7,161 rule verdicts</span></span>
+</div>
 
 <div class="bp-callout bp-callout--amber">
 Documentation being right almost all of the time is precisely what makes the exceptions dangerous.

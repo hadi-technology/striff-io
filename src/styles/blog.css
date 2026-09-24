@@ -1659,6 +1659,62 @@ html[data-scheme="auto"] body { background: #fbfbfa; }
   background: color-mix(in srgb, var(--sb-danger) 11%, transparent);
 }
 
+/* ---- Key stat: a single number lifted out of the prose ----
+   Deliberately unlike bp-callout. A callout is a sentence in the serif with a rule down its left
+   edge; this is a numeral in the display face on a tinted band, so a reader skimming for figures
+   and a reader skimming for claims are served by different shapes. */
+
+.sb .bp-keystat {
+  --tone: var(--sb-accent);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0 1.25rem;
+  padding: 1.15rem 1.5rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--tone) 9%, var(--sb-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 26%, transparent);
+}
+
+.sb .bp-keystat-value {
+  font-family: var(--sb-serif);
+  font-size: clamp(2.2rem, 6vw, 3rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: color-mix(in srgb, var(--tone) 78%, var(--sb-ink));
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.sb .bp-keystat-body {
+  font-family: var(--sb-sans);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--sb-text);
+}
+
+.sb .bp-keystat-body b { color: var(--sb-ink); font-weight: 600; }
+
+.sb .bp-keystat-src {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: var(--sb-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--sb-muted);
+}
+
+.sb .bp-keystat--amber { --tone: var(--sb-amber); }
+.sb .bp-keystat--danger { --tone: var(--sb-danger); }
+.sb .bp-keystat--mint { --tone: var(--sb-mint); }
+
+.sb .sb-prose > .bp-keystat,
+.sb .sb-prose > .bp-keystat + * { margin-top: 2rem; }
+
+@media (max-width: 34rem) {
+  .sb .bp-keystat { grid-template-columns: minmax(0, 1fr); gap: 0.5rem; }
+}
+
 /* ---- GitHub-shaped cards: a file at a line, and a commit that touched it ----
    Used where the point is that two artefacts in one repository disagree, and the fastest way to
    show it is to put them side by side in the chrome the reader already knows. Not a screenshot:
