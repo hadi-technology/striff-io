@@ -31,6 +31,8 @@ interface Doc {
   alreadyBrokenRules: number;
   excludedBy: string | null;
   excludedReason: string | null;
+  forcedBy: string | null;
+  forcedReason: string | null;
 }
 
 interface Summary {
@@ -139,6 +141,9 @@ function stateLine(doc: Doc): string {
     case "NOT_READ":
       return "Striff hasn't read this doc yet. It reads a doc the first time a pull request changes code the doc talks about.";
     case "SCREENED_OUT":
+      if (doc.forcedBy) {
+        return `A screen judged this doc holds no rule to check${doc.screenReason ? ` (${doc.screenReason})` : ""}. You asked Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
+      }
       return doc.screenReason
         ? `Nothing here to check against code: ${doc.screenReason}`
         : "A screen judged this doc holds no rule that could be checked against code.";
@@ -369,6 +374,25 @@ export default function DocsTab({
     }
   }
 
+  /** Asks for a document a screen skipped to be read anyway, or leaves it to the screens again. */
+  async function setForced(path: string, forced: boolean) {
+    setBusy(true);
+    try {
+      await fetch(
+        `/.netlify/functions/doc-catalog-proxy?view=force-read&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paths: [path], forced }),
+        }
+      );
+      await loadCatalog();
+      await openDoc(path);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function setFolderExcluded(folder: string, excluded: boolean) {
     setBusy(true);
     try {
@@ -534,9 +558,22 @@ export default function DocsTab({
                 Include again
               </button>
             ) : (
-              <button type="button" role="menuitem" onClick={() => setExcluded(path, true)}>
-                Exclude from reading
-              </button>
+              <>
+                {/* The screens are predictions; whoever wrote the doc may know better. */}
+                {doc?.state === "SCREENED_OUT" &&
+                  (doc.forcedBy ? (
+                    <button type="button" role="menuitem" onClick={() => setForced(path, false)}>
+                      Go back to skipping it
+                    </button>
+                  ) : (
+                    <button type="button" role="menuitem" onClick={() => setForced(path, true)}>
+                      Read it anyway
+                    </button>
+                  ))}
+                <button type="button" role="menuitem" onClick={() => setExcluded(path, true)}>
+                  Exclude from reading
+                </button>
+              </>
             )}
             <a
               role="menuitem"
@@ -562,6 +599,9 @@ export default function DocsTab({
         )}
         {doc.state !== "READ" && (
           <span className={`docs-badge is-${doc.state.toLowerCase()}`}>{STATE_LABEL[doc.state]}</span>
+        )}
+        {doc.forcedBy && doc.state !== "READ" && (
+          <span className="docs-badge is-forced">Read anyway</span>
         )}
       </>
     );

@@ -5583,3 +5583,10 @@
 }
 .dash-foot a { color: #57606a; }
 .dash-foot a:hover { color: #24292f; }
+
+/* A document a screen skipped that this repository asked for anyway. */
+.docs-badge.is-forced {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}

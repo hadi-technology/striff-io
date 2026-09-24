@@ -117,7 +117,8 @@ export const handler = async (event) => {
     let url;
     let init;
     if (method === "PATCH") {
-      url = `${base}/exclusions?token=${token}`;
+      // Two lists, opposite jobs: one says never read this, the other says never skip it.
+      url = `${base}/${params.view === "force-read" ? "force-read" : "exclusions"}?token=${token}`;
       init = {
         method: "PATCH",
         headers: {
