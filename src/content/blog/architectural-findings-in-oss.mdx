@@ -10,89 +10,86 @@ import RuleRows from "../../components/RuleRows.astro";
 import { gitextensionsRules, baseSha, headSha } from "../../data/gitextensionsRules";
 
 
-This file is in the official C# SDK for the Model Context Protocol. It exists to be read by a coding agent, before the agent writes anything.
+The Model Context Protocol is the standard for giving AI models context about the world. Its official C# SDK keeps a file at `.github/copilot-instructions.md`, which exists for one purpose: to give a coding agent context about the codebase before it writes anything.
+
+On 13 October 2025, **Copilot wrote that file**. Line 258 tells the next agent to use a class called `McpServerFactory`. It was true that day.
+
+On 2 December 2025, **Copilot deleted that class** — in a commit titled "Remove obsolete APIs from codebase."
+
+Line 258 is still there.
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Two things in one repository that have never met</p>
+<p class="bp-figure-title">The same agent, the same repository, seven weeks apart</p>
 
 <div class="bp-gh">
-<div class="bp-gh-head">modelcontextprotocol/csharp-sdk &middot; <b>.github/copilot-instructions.md</b><span class="bp-gh-sha">on main</span></div>
+<div class="bp-gh-head">✨ Set up Copilot instructions for repository <b>#858</b><span class="bp-gh-sha">Copilot &middot; 13 Oct 2025</span></div>
 <div class="bp-gh-body">
-<div class="bp-gh-line"><span>256</span><span>- Server primitives (tools, prompts, resources) are discovered via reflection</span></div>
-<div class="bp-gh-line"><span>257</span><span>- Support both attribute-based registration and instance-based</span></div>
+<div class="bp-gh-line"><span>256</span><span>- Server primitives are discovered via reflection using attributes</span></div>
+<div class="bp-gh-line"><span>257</span><span>- Support both attribute-based and instance-based registration</span></div>
 <div class="bp-gh-line bp-gh-line--hl"><span>258</span><span>- Use `McpServerFactory` to create server instances with configured options</span></div>
 </div>
+<div class="bp-gh-note">An agent writing the instructions the next agent will be given. Correct on the day it was written.</div>
 </div>
 
-<p class="bp-gh-join">nothing connects these</p>
+<p class="bp-gh-join">seven weeks</p>
 
 <div class="bp-gh">
-<div class="bp-gh-head">commit &middot; <b>Remove obsolete APIs from codebase</b><span class="bp-gh-sha">136755f &middot; 2 Dec 2025</span></div>
+<div class="bp-gh-head">Remove obsolete APIs from codebase <b>#985</b><span class="bp-gh-sha">Copilot &middot; 2 Dec 2025</span></div>
 <div class="bp-gh-body">
 <div class="bp-gh-line bp-gh-line--del"><span>&minus;</span><span>src/ModelContextProtocol.Core/Server/McpServerFactory.cs</span></div>
 <div class="bp-gh-line bp-gh-line--del"><span>&minus;</span><span>src/ModelContextProtocol.Core/Client/McpClientFactory.cs</span></div>
 </div>
-<div class="bp-gh-note">The instruction was added on 13 October 2025, by Copilot, and was correct that day. The class was deleted seven weeks later. The instruction is still there.</div>
+<div class="bp-gh-note">The same agent account, deleting the class its own instructions name. The instruction file was not in this diff, so nothing about it came up.</div>
 </div>
 
-<p class="bp-figure-caption">Ten months on, every coding agent that opens this repository is told to call an API that is not there. Nobody was careless: the second commit was <em>specifically</em> the tidying-up job, and it walked past the first file because nothing in that repository has ever related a sentence to a symbol.</p>
+<p class="bp-figure-caption"><a href="https://github.com/modelcontextprotocol/csharp-sdk/blob/main/.github/copilot-instructions.md#L258">the instruction, still on <code>main</code></a> &middot; <a href="https://github.com/modelcontextprotocol/csharp-sdk/commit/c40effebc4a4a245a09bed1ac0c7ec596c6cc4da">the commit that wrote it</a> &middot; <a href="https://github.com/modelcontextprotocol/csharp-sdk/commit/136755f2be0c78193a0b0e82298e9eaa9f424794">the commit that deleted the class</a>. Both commits are authored by <code>Copilot</code>.</p>
 </div>
 
-Search the repository for `McpServerFactory` today and you get one result. It is line 258.
+An AI wrote the instructions. An AI deleted the thing the instructions describe. Nothing connected the two, because nothing in that repository — or almost any repository — relates a sentence to a symbol. Search for `McpServerFactory` today and you get exactly one result, and it is line 258.
 
-We went looking for how often this has already happened, across 609 public pull requests in 542 repositories. It is not rare, and it is not confined to small projects.
+Ten months later it is still telling every agent that opens the repository to call an API that is not there.
+
+We went looking for how often this has already happened.
 
 <div class="bp-keystat bp-keystat--danger">
 <span class="bp-keystat-value">58</span>
-<span class="bp-keystat-body">repositories carry a documented rule their own code no longer satisfies &mdash; <b>470,086 stars</b> between them, fourteen of them above 10k.
-<span class="bp-keystat-src">our scan &middot; 609 pull requests &middot; 542 repositories</span></span>
+<span class="bp-keystat-body">of the <b>542 repositories</b> we analysed carry a documented rule their own code no longer satisfies &mdash; <b>470,086 stars</b> between them, fourteen above 10k.
+<span class="bp-keystat-src">609 pull requests &middot; 542 repositories &middot; Java, C#, TypeScript, Python</span></span>
 </div>
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Three of them, and what each one costs</p>
-<div class="bp-facts">
-<div class="bp-facts-line"><span class="bp-facts-key">repo  </span><b>redis/jedis</b> &middot; 12.4k &#9733; &middot; the official Redis client for Java</div>
-<div class="bp-facts-line"><span class="bp-facts-key">says  </span><span class="bp-facts-quote">documents <code>ShardedJedis</code> and <code>ShardedJedisPool</code></span></div>
-<div class="bp-facts-line"><span class="bp-facts-key">code  </span>deleted <b>2021-12-08</b> in &ldquo;Jedis 4 changes&rdquo; &mdash; <span class="bp-facts-neg">wrong for 4 years, 9 months</span></div>
-<div class="bp-facts-line"><span class="bp-facts-key">costs </span>sharding was removed on purpose. Copying the documented example does not compile; an agent asked to fix it writes its own sharding instead.</div>
+<p class="bp-figure-title">Documented today, deleted years ago</p>
+<div class="bp-drift">
+<div class="bp-drift-row"><span class="bp-drift-repo">redis/jedis <span>12.4k &#9733;</span></span><span class="bp-drift-name">ShardedJedis, ShardedJedisPool</span><span class="bp-drift-gone">gone <b>4y 9m</b></span></div>
+<div class="bp-drift-row"><span class="bp-drift-repo">apache/dolphinscheduler <span>14.5k &#9733;</span></span><span class="bp-drift-name">RegistryFactory</span><span class="bp-drift-gone">gone <b>4y 9m</b></span></div>
+<div class="bp-drift-row"><span class="bp-drift-repo">aspnetboilerplate <span>12.0k &#9733;</span></span><span class="bp-drift-name">IAbpModuleConfigurations</span><span class="bp-drift-gone">gone <b>since 2014</b></span></div>
+<div class="bp-drift-row"><span class="bp-drift-repo">dotnet/BenchmarkDotNet <span>11.5k &#9733;</span></span><span class="bp-drift-name">ISummaryStyle</span><span class="bp-drift-gone">gone <b>7 years</b></span></div>
+<div class="bp-drift-row"><span class="bp-drift-repo">alibaba/arthas <span>37.6k &#9733;</span></span><span class="bp-drift-name">DefaultSessionManager</span><span class="bp-drift-gone">gone</span></div>
+<div class="bp-drift-row"><span class="bp-drift-repo">redisson/redisson <span>24.4k &#9733;</span></span><span class="bp-drift-name">RClusteredMap, +5 more</span><span class="bp-drift-gone">gone</span></div>
+<div class="bp-drift-row"><span class="bp-drift-repo">spring-projects/spring-ai <span>9.5k &#9733;</span></span><span class="bp-drift-name">OpenAiAudioApi</span><span class="bp-drift-gone">gone</span></div>
 </div>
-<div class="bp-facts">
-<div class="bp-facts-line"><span class="bp-facts-key">repo  </span><b>apache/dolphinscheduler</b> &middot; 14.5k &#9733; &middot; contributor onboarding guide, EN and ZH</div>
-<div class="bp-facts-line"><span class="bp-facts-key">says  </span><span class="bp-facts-quote">&ldquo;you only need to implement <code>&hellip;registry.api.RegistryFactory</code>&rdquo;</span></div>
-<div class="bp-facts-line"><span class="bp-facts-key">code  </span>deleted <b>2021-12-10</b> in a package refactor &mdash; <span class="bp-facts-neg">wrong for 4 years, 9 months</span></div>
-<div class="bp-facts-line"><span class="bp-facts-key">costs </span>this is the page a first-time contributor is sent to. They implement an interface that is not there, and their first pull request is dead on arrival.</div>
-</div>
-<div class="bp-facts">
-<div class="bp-facts-line"><span class="bp-facts-key">repo  </span><b>modelcontextprotocol/csharp-sdk</b> &middot; official C# SDK &middot; <code>.github/copilot-instructions.md</code></div>
-<div class="bp-facts-line"><span class="bp-facts-key">says  </span><span class="bp-facts-quote">&ldquo;use <code>McpServerFactory</code> to create server instances&rdquo;</span></div>
-<div class="bp-facts-line"><span class="bp-facts-key">code  </span>deleted <b>2025-12-02</b> by a commit titled &ldquo;Remove obsolete APIs&rdquo; &mdash; <span class="bp-facts-neg">wrong for 10 months</span></div>
-<div class="bp-facts-line"><span class="bp-facts-key">costs </span>the file exists to be read by a coding agent. It is instruction, not reference, and it is followed.</div>
-<div class="bp-facts-flag">all three verified against the repository&rsquo;s own history</div>
-</div>
-<p class="bp-figure-caption">Three of the 58, chosen because they fail differently: a removed capability, an onboarding page, and a file written for a machine. Across all 58: <strong>470,086 stars</strong>, fourteen projects above 10k, four Apache top-level projects. Every rule was written by the project itself.</p>
+<p class="bp-figure-caption">Seven of the 58. Each name appears in that project&rsquo;s current documentation and in none of its current code.</p>
 </div>
 
-Arthas documents a `DefaultSessionManager`, Redisson a set of clustered-collection types, Spring AI an `OpenAiAudioApi`, BenchmarkDotNet an `ISummaryStyle` whose property table is still there. None of these are obscure corners of those projects. They are the pages a new contributor reads first, and now the pages an agent reads before every task.
+Two of these deserve a second look.
 
-<div class="bp-callout">
-Every one of these rules was written by the project itself. We are not telling anyone their architecture is wrong &mdash; only asking whether their code still does what they already said it does.
-</div>
+Jedis is the official Redis client for Java, and `ShardedJedis` went in [Jedis 4](https://github.com/redis/jedis) — sharding was removed deliberately. The documentation still walks you through it. Follow that page and you are not writing outdated code; you are rebuilding a feature the maintainers took out on purpose.
 
-## Does this actually cost anything?
+DolphinScheduler's is worse, because of which page it is on. The contributor guide — in English and Chinese — tells you that to add a registry plugin "you only need to implement `…registry.api.RegistryFactory`". That interface was deleted in a package refactor in December 2021. It is the page a first-time contributor is pointed at, and it has been sending them to implement something that is not there for four years and nine months.
 
-It is worth being careful here, because the tempting claim is stronger than the evidence.
+## Where the damage lands
 
-What is measured: these files change how agents behave. Their presence is [associated with lower agent runtime and reduced token consumption](https://arxiv.org/html/2606.09090v1) — the agent spends less effort working out what your codebase is. Compliance with rule files is real but imperfect, and degrades as a session runs long, at roughly 5.6% lower odds per generation step.
+These files change how agents behave. Their presence is [associated with lower agent runtime and reduced token consumption](https://arxiv.org/html/2606.09090v1) — the agent spends less effort working out what your codebase is. Compliance with rule files is real but imperfect, and degrades as a session runs long, at roughly 5.6% lower odds per generation step.
 
-What is also measured, by people who are not us: staleness is common. A 2026 study of AI configuration artifacts found **230 stale code references across 23.0% of the repositories it analysed**, and hand-validated 64% of a sample as genuine referential rot. That is an independent result, arrived at by a different method, in the same range as ours.
+Staleness is common, and it is not only us finding it. A 2026 study of AI configuration artifacts found **230 stale code references across 23.0% of the repositories it analysed**, hand-validating 64% of a sample as genuine referential rot.
 
 <div class="bp-keystat bp-keystat--amber">
 <span class="bp-keystat-value">23%</span>
 <span class="bp-keystat-body">of repositories analysed carried <b>stale code references</b> in their AI configuration files &mdash; 230 of them, with 64% of a sampled subset hand-validated as genuine rot.
-<span class="bp-keystat-src">arXiv 2606.09090 &middot; 2026 &middot; not our data</span></span>
+<span class="bp-keystat-src">arXiv 2606.09090 &middot; 2026</span></span>
 </div>
 
-What nobody has measured — and this is the honest gap — is how much a stale instruction degrades the output. The same paper lists it as an open research question. It observes only that "when stale, such descriptions can degrade AI assistance without any visible error."
+What nobody has measured is how much a stale instruction degrades the output. The same paper files that as an open research question, observing only that "when stale, such descriptions can degrade AI assistance without any visible error."
 
 <div class="bp-callout bp-callout--amber">
 Without any visible error. That is the entire problem in five words, and it is also why nobody can tell you the cost.
@@ -116,7 +113,7 @@ And there is a reason to think structure is exactly where the damage is landing.
 <div class="bp-bar-row"><span class="bp-bar-label">Cross-file reuse</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:35%"></div></div><span class="bp-bar-value">&minus;35%</span></div>
 <div class="bp-bar-row"><span class="bp-bar-label">Legacy maintenance</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:74%"></div></div><span class="bp-bar-value">&minus;74%</span></div>
 </div>
-<p class="bp-figure-caption">Not our data. Every one of these is a <em>system-level</em> property &mdash; whether code is reused across files, whether structure gets tidied, whether old code is still tended. None of them is visible in a single diff, which is where all the review attention goes.</p>
+<p class="bp-figure-caption">Every one of these is a <em>system-level</em> property &mdash; whether code is reused across files, whether structure gets tidied, whether old code is still tended. None of them is visible in a single diff, which is where all the review attention goes.</p>
 </div>
 
 <div class="bp-keystat">
@@ -189,7 +186,7 @@ A documented constraint is in none of those places. It is a sentence in a markdo
 The sentence and the violation are both perfectly visible. They are just never visible to the same reader at the same moment.
 </div>
 
-Nor is this hard in the technical sense, which is the frustrating part. "`GitCommands` must not reference `GitUI`" is a one-line question about a dependency graph, and your compiler answers harder questions on every build. The gap is not that the rule is difficult to check. It is that nothing turns the sentence into a question.
+And none of this is technically hard. "`GitCommands` must not reference `GitUI`" is a one-line question about a dependency graph, and your compiler answers harder questions on every build. The rule is not difficult to check. Nothing turns the sentence into a question.
 
 ## The number that should actually worry you
 
@@ -227,7 +224,7 @@ One more row deserves a mention: the 1,487 rules the system declined to answer. 
 
 ## What to do about it
 
-None of this argues against writing design docs, and it certainly doesn't argue against spec-driven development. Write more of them. A constraint nobody wrote down does not exist for the agent writing your code, and the teams doing this well are ahead of the teams that aren't.
+Keep writing the docs, and write more of them. A constraint nobody wrote down does not exist for the agent writing your code, and the teams doing this properly are ahead of the teams that aren't.
 
 But if the specification is really going to be the thing your system gets generated from, then *executable* has to start meaning something. It has to acquire the property every other executable artefact in your repository already has: a machine reads it, compares it against reality, and complains when they disagree — in the pull request, beside the tests and the types, where all your other checks already run.
 

@@ -1659,6 +1659,33 @@ html[data-scheme="auto"] body { background: #fbfbfa; }
   background: color-mix(in srgb, var(--sb-danger) 11%, transparent);
 }
 
+/* ---- Drift rows: a documented name, and when the code stopped agreeing ----
+   Three short columns, because the point is scanned rather than read. Anything that needs a
+   sentence belongs in the prose around the figure, not in the cells. */
+
+.sb .bp-drift { display: grid; gap: 0.55rem; }
+
+.sb .bp-drift-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.2rem 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--sb-line);
+  border-radius: 10px;
+  background: var(--sb-surface);
+}
+
+.sb .bp-drift-repo { font-family: var(--sb-sans); font-weight: 600; color: var(--sb-ink); font-size: 0.95rem; }
+.sb .bp-drift-repo span { font-weight: 400; color: var(--sb-muted); font-size: 0.82rem; }
+.sb .bp-drift-name { font-family: var(--sb-mono); font-size: 0.84rem; color: var(--sb-danger); }
+.sb .bp-drift-gone { font-family: var(--sb-sans); font-size: 0.82rem; color: var(--sb-muted); }
+.sb .bp-drift-gone b { color: var(--sb-ink); font-weight: 600; }
+
+@container sb-fig (min-width: 34rem) {
+  .sb .bp-drift-row { grid-template-columns: 14.5rem minmax(0, 1fr) 9rem; align-items: baseline; }
+  .sb .bp-drift-gone { text-align: right; }
+}
+
 /* ---- Key stat: a single number lifted out of the prose ----
    Deliberately unlike bp-callout. A callout is a sentence in the serif with a rule down its left
    edge; this is a numeral in the display face on a tinted band, so a reader skimming for figures
