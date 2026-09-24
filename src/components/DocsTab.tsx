@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useState } from "react";
 
 /**
  * The documents Striff can read in one repository, and the rules it found in them.
@@ -106,6 +106,22 @@ const ON_BRANCH_LABEL: Record<string, string> = {
   BROKEN: "Broken on the default branch",
   UNCLEAR: "Couldn't check on the default branch",
 };
+
+/**
+ * A sentence or a rule as the API sends it, with backticked names as code.
+ *
+ * The API writes a name the way the document did, in backticks; rendering them literally leaves
+ * the marks on screen. Split rather than set HTML: the text is a customer's own document, and it
+ * is never trusted as markup.
+ */
+function withCode(text: string | null | undefined) {
+  if (!text) return null;
+  return text.split(/`([^`]+)`/g).map((part, index) =>
+    index % 2 === 1
+      ? createElement("code", { key: index, className: "github-inline-code" }, part)
+      : part
+  );
+}
 
 function when(ms: number | null | undefined): string {
   if (!ms) return "";
@@ -378,7 +394,7 @@ export default function DocsTab({
                   </span>
                 </div>
                 <p className={`docs-state-line is-${detail.document.state.toLowerCase()}`}>
-                  {stateLine(detail.document)}
+                  {withCode(stateLine(detail.document))}
                 </p>
 
                 {detail.rules.length > 0 && (
@@ -395,8 +411,8 @@ export default function DocsTab({
                       {detail.rules.map((rule) => (
                         <tr key={rule.factId}>
                           <td className="docs-rule-line">{rule.sourceLine ? `:${rule.sourceLine}` : ""}</td>
-                          <td className="docs-rule-quote">{rule.quote}</td>
-                          <td className="docs-rule-statement">{rule.statement}</td>
+                          <td className="docs-rule-quote">{withCode(rule.quote)}</td>
+                          <td className="docs-rule-statement">{withCode(rule.statement)}</td>
                           <td>
                             <span className={`docs-outcome is-${(rule.status || "none").toLowerCase()}`}>
                               {rule.status ? OUTCOME_LABEL[rule.status] || rule.status : "Not checked yet"}

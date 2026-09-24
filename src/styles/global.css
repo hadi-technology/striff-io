@@ -4980,3 +4980,16 @@
 .docs-history-kind.is-unreadable { background: #fdeaec; color: #b4233c; }
 .docs-history-pr { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; color: #334155; }
 .docs-history-reason { flex: 1; min-width: 12rem; color: #57606a; }
+
+/* A name the document wrote in backticks, inside a rule or a sentence in the documents view. */
+.docs-rule-quote .github-inline-code,
+.docs-rule-statement .github-inline-code {
+  border: 0;
+  background: #eff3f8;
+  color: #16202b;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86em;
+  padding: 0.04em 0.28em;
+  border-radius: 0.28rem;
+}
+.docs-rule-quote .github-inline-code { background: #e8edf4; font-size: 0.82em; }
