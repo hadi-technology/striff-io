@@ -267,7 +267,6 @@ export default function DocsTab({
   const [detail, setDetail] = useState<Detail | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "broken" | "notRead" | "skipped" | "excluded">("all");
-  const [pane, setPane] = useState<"rules" | "history">("rules");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -829,24 +828,7 @@ export default function DocsTab({
                   <span>{withCode(stateLine(detail.document))}</span>
                 </p>
 
-                <div className="docs-pane-seg">
-                  <button
-                    type="button"
-                    className={pane === "rules" ? "is-on" : ""}
-                    onClick={() => setPane("rules")}
-                  >
-                    Rules {detail.rules.length > 0 ? detail.rules.length : ""}
-                  </button>
-                  <button
-                    type="button"
-                    className={pane === "history" ? "is-on" : ""}
-                    onClick={() => setPane("history")}
-                  >
-                    History {detail.history.length > 0 ? detail.history.length : ""}
-                  </button>
-                </div>
-
-                {pane === "rules" && detail.rules.length > 0 && (
+                {detail.rules.length > 0 && (
                   <table className="docs-rules">
                     <thead>
                       <tr>
@@ -892,21 +874,6 @@ export default function DocsTab({
                   </table>
                 )}
 
-                {pane === "history" && detail.history.length > 0 && (
-                  <div className="docs-history">
-                    <p className="dashboard-kicker">Every pull request that used this doc</p>
-                    <ul>
-                      {detail.history.map((entry, index) => (
-                        <li key={`${entry.atMs}-${index}`}>
-                          <span className="docs-history-when">{when(entry.atMs)}</span>
-                          <span className={`docs-history-kind is-${entry.kind}`}>{entry.kind.replace("_", " ")}</span>
-                          {entry.pullNo && <span className="docs-history-pr">PR #{entry.pullNo}</span>}
-                          {entry.reason && <span className="docs-history-reason">{entry.reason}</span>}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
               </>
             )}
           </div>

@@ -4971,15 +4971,6 @@
 .docs-outcome-when, .docs-outcome-branch { display: block; margin-top: 0.25rem; color: #64748b; font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; }
 .docs-outcome-branch { font-family: "Inter", system-ui, sans-serif; font-size: 0.72rem; }
 
-.docs-history { margin-top: 1rem; border-top: 1px solid #edf1f5; padding-top: 0.75rem; }
-.docs-history ul { margin-top: 0.4rem; display: grid; gap: 0.3rem; }
-.docs-history li { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; font-size: 0.78rem; color: #475569; }
-.docs-history-when { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; color: #64748b; min-width: 4rem; }
-.docs-history-kind { border-radius: 0.3rem; padding: 0.02rem 0.35rem; font-size: 0.7rem; font-weight: 700; background: #f1f5f9; color: #475569; }
-.docs-history-kind.is-extracted { background: #eef4fe; color: #1d4ed8; }
-.docs-history-kind.is-unreadable { background: #fdeaec; color: #b4233c; }
-.docs-history-pr { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; color: #334155; }
-.docs-history-reason { flex: 1; min-width: 12rem; color: #57606a; }
 
 /* A name the document wrote in backticks, inside a rule or a sentence in the documents view. */
 .docs-rule-quote .github-inline-code,
@@ -5180,9 +5171,7 @@
   .docs-rules td:nth-child(4) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.5rem; }
   .docs-outcome-when, .docs-outcome-branch { display: inline-block; margin: 0; }
 
-  .docs-history li { gap: 0.35rem; }
-  .docs-history-reason { min-width: 0; }
-}
+    }
 
 /* ---- The dashboard's own chrome, as the design draws it ----
    A white panel of sections down the left with the accent on the one you are in, and the work
@@ -5238,9 +5227,6 @@
 .tree-search svg { color: #8a95a1; }
 .tree-search-input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 0.85rem; color: #24292f; outline: none; }
 
-.docs-pane-seg { display: inline-flex; margin-top: 0.75rem; padding: 2px; border: 1px solid rgba(31, 35, 40, 0.14); border-radius: 0.5rem; background: #f6f8fa; }
-.docs-pane-seg button { border-radius: 0.38rem; padding: 0.28rem 0.7rem; color: #57606a; font-size: 0.78rem; font-weight: 600; }
-.docs-pane-seg button.is-on { background: #fff; color: #0f172a; box-shadow: var(--shadow-sm); }
 
 /* A repository opens its own documents; GitHub stays one click away. */
 .dashboard-repo-open { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1d4ed8; font-weight: 600; text-align: left; }
