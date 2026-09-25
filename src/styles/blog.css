@@ -1681,9 +1681,140 @@ html[data-scheme="auto"] body { background: #fbfbfa; }
 .sb .bp-drift-gone { font-family: var(--sb-sans); font-size: 0.82rem; color: var(--sb-muted); }
 .sb .bp-drift-gone b { color: var(--sb-ink); font-weight: 600; }
 
+.sb .bp-drift-repo a {
+  display: block;
+  margin-top: 0.1rem;
+  font-family: var(--sb-mono);
+  font-size: 0.74rem;
+  font-weight: 400;
+  color: var(--sb-muted);
+  overflow-wrap: anywhere;
+}
+.sb .bp-drift-gone a { color: inherit; }
+.sb .bp-drift-repo a:hover,
+.sb .bp-drift-gone a:hover { color: var(--sb-accent); }
+
 @container sb-fig (min-width: 34rem) {
-  .sb .bp-drift-row { grid-template-columns: 14.5rem minmax(0, 1fr) 9rem; align-items: baseline; }
+  .sb .bp-drift-row { grid-template-columns: 17rem minmax(0, 1fr) 9rem; align-items: baseline; }
   .sb .bp-drift-gone { text-align: right; }
+}
+
+/* ---- Timeline: dated steps down a rail ----
+   One commit or event per step. `is-del` marks the step that removed something, `is-now` the
+   present, so the eye finds where the story turns without reading every date. */
+
+.sb .bp-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+}
+
+.sb .bp-timeline li {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.15rem 1.25rem;
+  padding: 0 0 1.1rem 1.4rem;
+  font-family: var(--sb-sans);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--sb-text);
+}
+
+.sb .bp-timeline li::before {
+  content: "";
+  position: absolute;
+  left: 0.3rem;
+  top: 0.55rem;
+  bottom: -0.45rem;
+  width: 1px;
+  background: var(--sb-line-2);
+}
+
+.sb .bp-timeline li:last-child { padding-bottom: 0; }
+.sb .bp-timeline li:last-child::before { display: none; }
+
+.sb .bp-timeline li::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.4rem;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--sb-surface);
+  box-shadow: inset 0 0 0 2px var(--sb-line-2);
+}
+
+.sb .bp-timeline li.is-del::after { background: var(--sb-danger); box-shadow: none; }
+.sb .bp-timeline li.is-now::after { background: var(--sb-amber); box-shadow: none; }
+
+.sb .bp-tl-date {
+  font-family: var(--sb-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  color: var(--sb-muted);
+  padding-top: 0.12rem;
+}
+
+.sb .bp-timeline li.is-del .bp-tl-date { color: var(--sb-danger); }
+.sb .bp-timeline li.is-now .bp-tl-date,
+.sb .bp-timeline li.is-now .bp-tl-body { color: var(--sb-amber); font-weight: 600; }
+.sb .bp-tl-body code { font-size: 0.85em; }
+
+@container sb-fig (min-width: 34rem) {
+  .sb .bp-timeline li { grid-template-columns: 7.5rem minmax(0, 1fr); }
+}
+
+/* ---- Audit rows: what a check reported beside what was true ----
+   The finding on the left in the check's own terms, the correction on the right in plain prose. */
+
+.sb .bp-audit { display: grid; gap: 0.55rem; }
+
+.sb .bp-audit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.25rem 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--sb-line);
+  border-radius: 10px;
+  background: var(--sb-surface);
+  font-family: var(--sb-sans);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.sb .bp-audit-repo { font-weight: 600; color: var(--sb-ink); font-size: 0.92rem; }
+.sb .bp-audit-saw { color: var(--sb-muted); }
+.sb .bp-audit-saw code { font-size: 0.92em; }
+.sb .bp-audit-true { color: var(--sb-text); }
+
+@container sb-fig (min-width: 34rem) {
+  .sb .bp-audit-row { grid-template-columns: 9.5rem minmax(0, 0.9fr) minmax(0, 1.3fr); align-items: baseline; }
+}
+
+/* ---- Method note: the small print, set as small print ---- */
+
+.sb .bp-note {
+  margin-top: 2.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--sb-line-2);
+  font-family: var(--sb-sans);
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--sb-muted);
+}
+
+.sb .bp-note p { margin: 0; }
+.sb .bp-note .bp-note-title {
+  margin-bottom: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sb-ink);
 }
 
 /* ---- Key stat: a single number lifted out of the prose ----

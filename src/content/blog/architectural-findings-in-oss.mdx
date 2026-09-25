@@ -1,249 +1,143 @@
 ---
-title: "Copilot wrote the instructions. Copilot deleted the class they name."
-description: "In the official C# SDK for the Model Context Protocol, the same agent account wrote an instruction naming a class and then deleted the class. It has been wrong for ten months. We checked 7,161 documented rules across 609 public pull requests to find out how common this is."
+title: "The MCP C# SDK tells its coding agent to use a class it deleted"
+description: "Line 258 of the official Model Context Protocol C# SDK's Copilot instructions names a class that was removed ten months ago. How that happens without anyone doing anything wrong, what we found when we went looking for more, and what our own checker got wrong along the way."
 date: 2026-09-24
 category: "Data & research"
-cover: "hard-rules"
+cover: "stale-line"
 ---
 
-import RuleRows from "../../components/RuleRows.astro";
-import { gitextensionsRules, baseSha, headSha } from "../../data/gitextensionsRules";
-
-
-The Model Context Protocol is the standard for giving AI models context about the world. Its official C# SDK keeps a file at `.github/copilot-instructions.md`, which exists for one purpose: to give a coding agent context about the codebase before it writes anything.
-
-On 13 October 2025, **Copilot wrote that file**. Line 258 tells the next agent to use a class called `McpServerFactory`. It was true that day.
-
-On 2 December 2025, **Copilot deleted that class** — in a commit titled "Remove obsolete APIs from codebase."
-
-Line 258 is still there.
+Line 258 of `.github/copilot-instructions.md` in the [official C# SDK for the Model Context Protocol](https://github.com/modelcontextprotocol/csharp-sdk) reads:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">The same agent, the same repository, seven weeks apart</p>
-
 <div class="bp-gh">
-<div class="bp-gh-head">✨ Set up Copilot instructions for repository <b>#858</b><span class="bp-gh-sha">Copilot &middot; 13 Oct 2025</span></div>
+<div class="bp-gh-head">.github/copilot-instructions.md<span class="bp-gh-sha">main &middot; Sep 2026</span></div>
 <div class="bp-gh-body">
-<div class="bp-gh-line"><span>256</span><span>- Server primitives are discovered via reflection using attributes</span></div>
-<div class="bp-gh-line"><span>257</span><span>- Support both attribute-based and instance-based registration</span></div>
-<div class="bp-gh-line bp-gh-line--hl"><span>258</span><span>- Use `McpServerFactory` to create server instances with configured options</span></div>
+<div class="bp-gh-line"><span>256</span><span>- Server primitives (tools, prompts, resources) are discovered via reflection using attributes</span></div>
+<div class="bp-gh-line"><span>257</span><span>- Support both attribute-based registration (&#96;WithTools&lt;T&gt;()&#96;) and instance-based (&#96;WithTools(target)&#96;)</span></div>
+<div class="bp-gh-line bp-gh-line--hl"><span>258</span><span>- Use &#96;McpServerFactory&#96; to create server instances with configured options</span></div>
 </div>
-<div class="bp-gh-note">An agent writing the instructions the next agent will be given. Correct on the day it was written.</div>
 </div>
-
-<p class="bp-gh-join">seven weeks</p>
-
-<div class="bp-gh">
-<div class="bp-gh-head">Remove obsolete APIs from codebase <b>#985</b><span class="bp-gh-sha">Copilot &middot; 2 Dec 2025</span></div>
-<div class="bp-gh-body">
-<div class="bp-gh-line bp-gh-line--del"><span>&minus;</span><span>src/ModelContextProtocol.Core/Server/McpServerFactory.cs</span></div>
-<div class="bp-gh-line bp-gh-line--del"><span>&minus;</span><span>src/ModelContextProtocol.Core/Client/McpClientFactory.cs</span></div>
-</div>
-<div class="bp-gh-note">The same agent account, deleting the class its own instructions name. The instruction file was not in this diff, so nothing about it came up.</div>
+<p class="bp-figure-caption"><a href="https://github.com/modelcontextprotocol/csharp-sdk/blob/main/.github/copilot-instructions.md#L258">The line on <code>main</code></a>. The file exists to brief a coding agent on the codebase before it writes anything.</p>
 </div>
 
-<p class="bp-figure-caption"><a href="https://github.com/modelcontextprotocol/csharp-sdk/blob/main/.github/copilot-instructions.md#L258">the instruction, still on <code>main</code></a> &middot; <a href="https://github.com/modelcontextprotocol/csharp-sdk/commit/c40effebc4a4a245a09bed1ac0c7ec596c6cc4da">the commit that wrote it</a> &middot; <a href="https://github.com/modelcontextprotocol/csharp-sdk/commit/136755f2be0c78193a0b0e82298e9eaa9f424794">the commit that deleted the class</a>. Both commits are authored by <code>Copilot</code>.</p>
-</div>
+`McpServerFactory` was deleted on 2 December 2025. Search the repository for the name today and line 258 is the only result.
 
-An AI wrote the instructions. An AI deleted the thing the instructions describe. Nothing connected the two, because nothing in that repository — or almost any repository — relates a sentence to a symbol. Search for `McpServerFactory` today and you get exactly one result, and it is line 258.
+We build [Striff](https://striff.io), which checks pull requests against what a repository's own documentation says about its code. This post is about lines like 258: how one gets written, how many we found in public repositories, and what makes them harder to find than they look. Several of our first findings turned out to be wrong, and we have included those too.
 
-Ten months later it is still telling every agent that opens the repository to call an API that is not there.
-
-Once you know to look for it, it is not a one-off.
-
-In April 2026, a bot called **Architecture Bot** added a section to the README of `yegor256/cactoos`. The commit is titled "Add Architecture section to README." The new section tells you: *"Explicit caching requires opting in with `Sticky` or `StickyList`."*
-
-`StickyList` was deleted on 20 December 2018, in a commit titled "Don't use compound names for decorators."
-
-<div class="bp-keystat bp-keystat--amber">
-<span class="bp-keystat-value">7y 4m</span>
-<span class="bp-keystat-body">between the class being deleted and a bot writing a fresh <b>architecture section</b> instructing readers to use it.
-<span class="bp-keystat-src">yegor256/cactoos &middot; README.md:404 &middot; written 2026-04-30</span></span>
-</div>
-
-This one is not documentation going stale. The section was new. A bot was asked to describe the architecture, and it described an architecture that had not existed for seven years — confidently, in the imperative, in the file everyone reads first.
-
-We went looking for how often this has already happened.
-
-<div class="bp-keystat bp-keystat--danger">
-<span class="bp-keystat-value">58</span>
-<span class="bp-keystat-body">of the <b>542 repositories</b> we analysed carry a documented rule their own code no longer satisfies &mdash; <b>470,086 stars</b> between them, fourteen above 10k.
-<span class="bp-keystat-src">609 pull requests &middot; 542 repositories &middot; Java, C#, TypeScript, Python</span></span>
-</div>
+## How line 258 happened
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Documented today, deleted years ago</p>
+<p class="bp-figure-title">One line, five commits</p>
+<ol class="bp-timeline">
+<li><span class="bp-tl-date">16 Sep 2025</span><span class="bp-tl-body"><code>McpServerFactory</code> is marked <code>[Obsolete]</code>: <em>&ldquo;Use McpServer.Create instead. This member will be removed in a subsequent release.&rdquo;</em> <a href="https://github.com/modelcontextprotocol/csharp-sdk/commit/38b4a269">38b4a26</a></span></li>
+<li><span class="bp-tl-date">13 Oct 2025</span><span class="bp-tl-body">Copilot opens <a href="https://github.com/modelcontextprotocol/csharp-sdk/pull/858">#858</a>, &ldquo;Set up Copilot instructions for repository&rdquo;. A maintainer reviews it, co-authors changes, and merges it. The instruction to use <code>McpServerFactory</code> is line 222.</span></li>
+<li class="is-del"><span class="bp-tl-date">2 Dec 2025</span><span class="bp-tl-body"><a href="https://github.com/modelcontextprotocol/csharp-sdk/pull/985">#985</a>, &ldquo;Remove obsolete APIs from codebase&rdquo;, deletes <code>McpServerFactory.cs</code>. It is authored by Copilot and co-authored by three of the project&rsquo;s developers. The instructions file is not in the diff.</span></li>
+<li><span class="bp-tl-date">Apr&ndash;Aug 2026</span><span class="bp-tl-body">Four more commits edit the instructions file: testing guidelines, AI-disclosure guidance, a release-manager agent. None of them touches the line, which drifts down to 258.</span></li>
+<li class="is-now"><span class="bp-tl-date">Today</span><span class="bp-tl-body">Line 258 is still there.</span></li>
+</ol>
+</div>
+
+Nobody in that history did anything careless. Copilot described a class that existed and compiled. The attribute announcing its removal was in a different file from the one being written. The reviewer read a long document that was almost entirely accurate. The removal PR did exactly what its title said, and the instructions file was not part of it, so nobody reviewing it had a reason to open that file. The four later edits each had a job to do, and none of them needed line 258.
+
+Every step was reasonable, and the result is a sentence that has been telling agents to use an API that does not exist for ten months. No file in the repository links a sentence in a markdown file to the symbol it names, so nothing could have failed when the symbol went away.
+
+This particular failure is cheap. An agent that follows line 258 writes code that does not compile, reads the error, and goes looking for the replacement. That costs turns and tokens, not correctness. The expensive cases are the ones that compile, and we come back to those below.
+
+## Stale docs get copied into new docs
+
+In April 2026 a commit authored as "Architecture Bot" [added an Architecture section](https://github.com/yegor256/cactoos/commit/18a0c8ad8d8b64d6bbb62fa36e668f967afda2ac) to the README of [`yegor256/cactoos`](https://github.com/yegor256/cactoos). The commit message links a Claude Code session, and the pull request was opened and merged by people. The new section says:
+
+> Explicit caching requires opting in with `Sticky` or `StickyList`.
+
+`StickyList` was [renamed in December 2018](https://github.com/yegor256/cactoos/commit/be02845a55f191007cd60770a455b59d7320446d), and the list decorator it became was [removed in February 2020](https://github.com/yegor256/cactoos/commit/eed03c1fc05217eeda0564999cae2c87709b1e13). But 53 lines above the new section, the README's comparison table has listed `StickyList` since 2017.
+
+We can't see the session, but the likely sequence is plain: an agent asked to describe the architecture read the README, and the README said `StickyList`. Agents don't only read stale sentences. They also write new documents from them, and those documents look fresh.
+
+## Looking for more
+
+We ran Striff over 609 recent pull requests in 542 public Java, C#, TypeScript and Python repositories. One of the things it looks for is a type name that a repository's documentation mentions and its code does not declare, and it checks the repository's history to tell a type that moved from one that is gone.
+
+These are the cases we checked by hand and could confirm. Each name is in the project's current documentation and absent from its current code on an exact-token search, and each was deleted in the commit linked.
+
+<div class="bp-figure" data-reveal>
+<p class="bp-figure-title">Documented today, deleted from the code</p>
 <div class="bp-drift">
-<div class="bp-drift-row"><span class="bp-drift-repo">redis/jedis <span>12.4k &#9733;</span></span><span class="bp-drift-name">ShardedJedis, ShardedJedisPool</span><span class="bp-drift-gone">gone <b>4y 9m</b></span></div>
-<div class="bp-drift-row"><span class="bp-drift-repo">apache/dolphinscheduler <span>14.5k &#9733;</span></span><span class="bp-drift-name">RegistryFactory</span><span class="bp-drift-gone">gone <b>4y 9m</b></span></div>
-<div class="bp-drift-row"><span class="bp-drift-repo">aspnetboilerplate <span>12.0k &#9733;</span></span><span class="bp-drift-name">IAbpModuleConfigurations</span><span class="bp-drift-gone">gone <b>since 2014</b></span></div>
-<div class="bp-drift-row"><span class="bp-drift-repo">dotnet/BenchmarkDotNet <span>11.5k &#9733;</span></span><span class="bp-drift-name">ISummaryStyle</span><span class="bp-drift-gone">gone <b>7 years</b></span></div>
-<div class="bp-drift-row"><span class="bp-drift-repo">alibaba/arthas <span>37.6k &#9733;</span></span><span class="bp-drift-name">DefaultSessionManager</span><span class="bp-drift-gone">gone</span></div>
-<div class="bp-drift-row"><span class="bp-drift-repo">redisson/redisson <span>24.4k &#9733;</span></span><span class="bp-drift-name">RClusteredMap, +5 more</span><span class="bp-drift-gone">gone</span></div>
-<div class="bp-drift-row"><span class="bp-drift-repo">spring-projects/spring-ai <span>9.5k &#9733;</span></span><span class="bp-drift-name">OpenAiAudioApi</span><span class="bp-drift-gone">gone</span></div>
+<div class="bp-drift-row"><span class="bp-drift-repo">aspnetboilerplate<a href="https://github.com/aspnetboilerplate/aspnetboilerplate/blob/dev/doc/WebSite/Startup-Configuration.md?plain=1#L62">Startup-Configuration.md:62</a></span><span class="bp-drift-name">IAbpModuleConfigurations</span><span class="bp-drift-gone"><a href="https://github.com/aspnetboilerplate/aspnetboilerplate/commit/d46b89df692fdb5e6caa7b06785fb6d49dea5978">deleted Oct 2014</a></span></div>
+<div class="bp-drift-row"><span class="bp-drift-repo">dotnet/BenchmarkDotNet<a href="https://github.com/dotnet/BenchmarkDotNet/blob/master/docs/articles/configs/exporters.md?plain=1#L101">configs/exporters.md:101</a></span><span class="bp-drift-name">ISummaryStyle</span><span class="bp-drift-gone"><a href="https://github.com/dotnet/BenchmarkDotNet/commit/f10752ace1bf4c5e4316c6f9b7b34ca25ac46c19">deleted Feb 2019</a></span></div>
+<div class="bp-drift-row"><span class="bp-drift-repo">yegor256/cactoos<a href="https://github.com/yegor256/cactoos/blob/master/README.md?plain=1#L404">README.md:404</a></span><span class="bp-drift-name">StickyList</span><span class="bp-drift-gone"><a href="https://github.com/yegor256/cactoos/commit/eed03c1fc05217eeda0564999cae2c87709b1e13">removed Feb 2020</a></span></div>
+<div class="bp-drift-row"><span class="bp-drift-repo">apache/dolphinscheduler<a href="https://github.com/apache/dolphinscheduler/blob/dev/docs/docs/en/contribute/backend/spi/registry.md?plain=1#L20">spi/registry.md:20</a></span><span class="bp-drift-name">RegistryFactory</span><span class="bp-drift-gone"><a href="https://github.com/apache/dolphinscheduler/commit/67cc260d52c1f2e5aa7db76aa8621cdd0f8c4ee0">deleted Dec 2021</a></span></div>
+<div class="bp-drift-row"><span class="bp-drift-repo">modelcontextprotocol/csharp-sdk<a href="https://github.com/modelcontextprotocol/csharp-sdk/blob/main/.github/copilot-instructions.md?plain=1#L258">copilot-instructions.md:258</a></span><span class="bp-drift-name">McpServerFactory</span><span class="bp-drift-gone"><a href="https://github.com/modelcontextprotocol/csharp-sdk/commit/136755f2be0c78193a0b0e82298e9eaa9f424794">deleted Dec 2025</a></span></div>
+<div class="bp-drift-row"><span class="bp-drift-repo">spring-projects/spring-ai<a href="https://github.com/spring-projects/spring-ai/blob/main/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/audio/speech/openai-speech.adoc">openai-speech.adoc</a></span><span class="bp-drift-name">OpenAiAudioApi</span><span class="bp-drift-gone"><a href="https://github.com/spring-projects/spring-ai/commit/75fa844869786f80113bef7a4a557e9600452ba6">deleted Apr 2026</a></span></div>
 </div>
-<p class="bp-figure-caption">Seven of the 58. Each name appears in that project&rsquo;s current documentation and in none of its current code.</p>
-</div>
-
-Two of these deserve a second look.
-
-Jedis is the official Redis client for Java, and `ShardedJedis` went in [Jedis 4](https://github.com/redis/jedis) — sharding was removed deliberately. The documentation still walks you through it. Follow that page and you are not writing outdated code; you are rebuilding a feature the maintainers took out on purpose.
-
-DolphinScheduler's is worse, because of which page it is on. The contributor guide — in English and Chinese — tells you that to add a registry plugin "you only need to implement `…registry.api.RegistryFactory`". That interface was deleted in a package refactor in December 2021. It is the page a first-time contributor is pointed at, and it has been sending them to implement something that is not there for four years and nine months.
-
-## Where the damage lands
-
-These files change how agents behave. Their presence is [associated with lower agent runtime and reduced token consumption](https://arxiv.org/html/2606.09090v1) — the agent spends less effort working out what your codebase is. Compliance with rule files is real but imperfect, and degrades as a session runs long, at roughly 5.6% lower odds per generation step.
-
-Staleness is common, and it is not only us finding it. A 2026 study of AI configuration artifacts found **230 stale code references across 23.0% of the repositories it analysed**, hand-validating 64% of a sample as genuine referential rot.
-
-<div class="bp-keystat bp-keystat--amber">
-<span class="bp-keystat-value">23%</span>
-<span class="bp-keystat-body">of repositories analysed carried <b>stale code references</b> in their AI configuration files &mdash; 230 of them, with 64% of a sampled subset hand-validated as genuine rot.
-<span class="bp-keystat-src">arXiv 2606.09090 &middot; 2026</span></span>
+<p class="bp-figure-caption">Each row links the documentation line and the commit that removed the type. Checked by hand against each default branch in September 2026.</p>
 </div>
 
-What nobody has measured is how much a stale instruction degrades the output. The same paper files that as an open research question, observing only that "when stale, such descriptions can degrade AI assistance without any visible error."
+The DolphinScheduler one is on the page new contributors are sent to. Its English and Chinese contributor guides both say that to add a registry plugin "you only need to implement `org.apache.dolphinscheduler.registry.api.RegistryFactory`". That interface went away in a package split in December 2021. Spring AI's is the newest: its speech documentation still walks through `OpenAiAudioApi` about twenty times, five months after the project moved to the official OpenAI Java SDK.
 
-<div class="bp-callout bp-callout--amber">
-Without any visible error. That is the entire problem in five words, and it is also why nobody can tell you the cost.
-</div>
+## What our checker got wrong
 
-Think about what a stale sentence does at each level. A wrong API name is the benign case: the agent tries it, nothing binds, and it recovers — burning context and turns to rediscover something the document could have told it correctly. Annoying, and it shows up on your bill rather than in your codebase.
-
-The architectural rules are the ones to worry about. *Contracts belong in the model namespace. This layer must not depend on that one.* An agent cannot check those against anything. There is no symbol to fail to resolve, no import to go red. It follows the convention it was given, the code compiles, the tests pass, and the review looks at the diff rather than the document. If the convention changed two years ago, nothing anywhere in that loop will say so.
-
-That is the case for caring about this, and it is narrower than the usual pitch: not that your agent will write broken code, but that when it writes *structurally wrong* code on the authority of your own documentation, there is currently no point at which anyone finds out.
-
-And there is a reason to think structure is exactly where the damage is landing. [GitClear and GitKraken read 623 million code changes](https://www.gitclear.com/the_ai_code_quality_maintainability_gap) from 2023 to 2026, a period over which roughly a quarter of commits came to show AI assistance. Eight maintainability signals moved the wrong way at once.
+"Named in the docs, missing from the code" sounds mechanical. It isn't, and the first draft of this post showed it. Of the repositories we first shortlisted to name here, about half did not survive a closer look. Two were plain bugs in the check: a casing mismatch, and a type it failed to find in eight files. The other three are more interesting, because the check was right that the name is absent:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">623 million code changes, 2023&ndash;2026 &middot; GitClear / GitKraken</p>
-<div class="bp-bars">
-<div class="bp-bar-row"><span class="bp-bar-label">Duplicated blocks</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:81%"></div></div><span class="bp-bar-value">+81%</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Copy/pasted lines</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:41%"></div></div><span class="bp-bar-value">+41%</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Error-masking catch blocks</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:47%"></div></div><span class="bp-bar-value">+47%</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Refactoring (moved code)</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:70%"></div></div><span class="bp-bar-value">&minus;70%</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Cross-file reuse</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:35%"></div></div><span class="bp-bar-value">&minus;35%</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Legacy maintenance</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:74%"></div></div><span class="bp-bar-value">&minus;74%</span></div>
+<p class="bp-figure-title">Missing from the code, and the docs were fine</p>
+<div class="bp-audit">
+<div class="bp-audit-row"><span class="bp-audit-repo">redis/jedis</span><span class="bp-audit-saw"><code>ShardedJedis</code> is not in the code</span><span class="bp-audit-true">The only mention is the v3&rarr;v4 migration guide, which says the class was removed. The doc is correct.</span></div>
+<div class="bp-audit-row"><span class="bp-audit-repo">redisson/redisson</span><span class="bp-audit-saw"><code>RClusteredMap</code> and five more are not in the code</span><span class="bp-audit-true">They belong to Redisson PRO, the closed-source edition, and the docs say so.</span></div>
+<div class="bp-audit-row"><span class="bp-audit-repo">alibaba/arthas</span><span class="bp-audit-saw"><code>DefaultSessionManager</code> is not in the code</span><span class="bp-audit-true">It appears in a stack trace pasted as sample output. It was never part of the project.</span></div>
 </div>
-<p class="bp-figure-caption">Every one of these is a <em>system-level</em> property &mdash; whether code is reused across files, whether structure gets tidied, whether old code is still tended. None of them is visible in a single diff, which is where all the review attention goes.</p>
+<p class="bp-figure-caption">Left, what the check reported. Right, what was actually true when we opened the repository.</p>
 </div>
 
-<div class="bp-keystat">
-<span class="bp-keystat-value">&minus;70%</span>
-<span class="bp-keystat-body">refactoring, measured as moved code, across <b>623 million changes</b> from 2023 to 2026 &mdash; while duplicated blocks rose 81%.
-<span class="bp-keystat-src">GitClear &amp; GitKraken &middot; The Maintainability Gap, 2026</span></span>
-</div>
+A documentation page can mention a type the code doesn't have for good reasons: a migration guide or changelog describing a removal, a commercial edition, sample output, an external library. Deciding whether a mention is a claim about this codebase takes reading the sentence around it. The absence is easy to detect. Deciding whether the doc is wrong is the hard part.
 
-Read that list again and notice what it is not. It is not a list of bugs. Every signal there is architectural: reuse across files, refactoring, the tending of code nobody wrote this quarter. These are the properties that a design document exists to protect, they are declining fast, and they are precisely the properties no check in your pipeline has an opinion about.
+If you want the easy half for your own repository, this prints every `CapitalisedName` in backticks in your docs that no non-doc file mentions:
 
-<div class="bp-callout">
-Refactoring down 70%. Cross-file reuse down 35%. These are the things architecture documents talk about, measured falling, in the same window that we handed the documents to machines and stopped checking them.
-</div>
+```bash
+git ls-files '*.md' '*.mdx' '*.adoc' \
+  | xargs grep -ohE '`([A-Za-z0-9_]+\.)*[A-Z][A-Za-z0-9]+`' \
+  | tr -d '`' | sed 's/.*\.//' | sort -u \
+  | while read -r name; do
+      git grep -qw -- "$name" -- ':!*.md' ':!*.mdx' ':!*.adoc' || echo "$name"
+    done
+```
 
-## The document quietly changed jobs
+On the MCP SDK it prints 19 names, including `McpServerFactory`. On cactoos it prints one, `StickyList`. On Redisson it prints 156, including every PRO class. Reading that list is the real work.
 
-Writing the design doc first is not new and it is not a fad. Teams at Google [generally require one](https://abseil.io/resources/swe-book/html/ch10.html) before any significant change to a product or service. Amazon threw out the slide deck for the six-pager and the PR/FAQ, densely argued prose that goes through months of review before a concept reaches a developer. The logic never needed defending: thinking is cheaper than building.
+## The rules that compile
 
-For all of that history the document had exactly one consumer. A person read it, argued with it, and went off to write the code. It shaped the result the way a conversation does — loosely, and through a human being who would notice when something in it had stopped being true.
+A stale class name fails loudly the first time anyone uses it. The expensive sentences are architectural: *controllers go through the service layer*, *this module must not depend on that one*. An agent that follows an outdated one, or breaks a current one, produces code that compiles, passes its tests, and gets reviewed as a diff. The review doesn't include the document that stated the rule.
 
-That is no longer what happens. The design doc is now the thing code is generated *from*. The practice has a name, spec-driven development, and a toolchain: GitHub shipped Spec Kit, AWS built Kiro, and there are half a dozen more.
+Striff's other check is aimed at those sentences. A language model reads each sentence in a repository's documentation and proposes the rule it states, as a formula over types and their references. A program then evaluates the formula against the parsed code before and after the pull request. The model proposes the rules; it does not decide the verdicts. Across the 609 pull requests it extracted 7,161 rules.
 
-The language around it is what caught our attention, because it is not modest. The specification, as one widely shared description has it, "has ceased to be a boring static PDF document or a forgotten page on Confluence"; it is now "an executable operational contract" that "does not merely describe the system passively; it actively governs it."
-
-Executable. That word is doing an enormous amount of work.
-
-A thing that is executable has something that executes it. Source code has a compiler that refuses it. A test has a runner that goes red. A type has a checker, a schema has a validator, a manifest has a resolver. In every case some unsentimental mechanical process reads the artefact, compares it against reality, and complains when the two have drifted apart.
-
-<div class="bp-callout bp-callout--amber">
-We took a document that was only ever validated by a human paying attention, removed the human from the loop, handed it to a machine that writes code from it, and started calling it <em>executable</em>.
-</div>
-
-Thoughtworks, who did as much as anyone to popularise the practice, say the quiet part out loud in the same article: "Spec drift and hallucination are inherently difficult to avoid. We still need highly deterministic CI/CD practices to ensure software quality and safeguard our architectures."
-
-That deterministic check is the thing nobody had built, so we built one. It reads the documents already in a repository, turns the sentences that make checkable claims about the code into rules, and evaluates them against the parsed code at both revisions of a pull request.
-
-## "NEVER", in capitals, under "Hard rules"
-
-The MCP case is a document that went stale. This one never had that excuse.
-
-GitExtensions keeps its architecture documentation in `.github/copilot-docs/` — which is to say, where its coding agent will find it. One section is headed **Hard rules**, and its first bullet reads:
+That split does not make it right, and GitExtensions shows why. Its agent documentation has a section headed *Hard rules*:
 
 > **NEVER** add a dependency that reverses the arrow direction (e.g. `GitCommands` must not reference `GitUI`).
 
-The first line of `src/app/GitCommands/AsyncLoader.cs` is `using GitUI;`.
+Our checker reported that rule as already broken, citing line 1 of `src/app/GitCommands/AsyncLoader.cs`:
 
-Not line 400, buried in a method added at 11pm against a deadline, where you could at least construct a story about how it slipped through. The first line of the file, in the import block, in plain view of anyone who opened it. `GitConfigSettingsBase.cs` does the same six lines in.
+```csharp
+using GitUI;
+```
 
-This is obviously not a team that doesn't care. Somebody cared enough to write a document for their agent, give it a section called *Hard rules*, and put NEVER in bold capitals. And the rule is broken on the first line of a file in the very project the sentence names.
+The rule holds. `GitUI` there is a namespace, and the types that file uses from it (`ThreadHelper`, `CancellationTokenSequence`) live in a different project, `GitExtUtils`, which `GitCommands` is allowed to reference. The `GitCommands` project has no reference to the `GitUI` project, and it couldn't, because `GitUI` references `GitCommands` and .NET does not allow cycles. The document means projects. The checker read namespaces. The formula was evaluated correctly, but it was the wrong formula.
 
-Here is what the check actually did with that repository's documentation on pull request [#13277](https://github.com/gitextensions/gitextensions/pull/13277). Thirty rules were read out of its own files and evaluated at both revisions; these are three of them.
+We haven't audited the rule verdicts from this run as thoroughly as the names above. After GitExtensions, we're not going to publish a violation count until we have.
 
-<div class="bp-figure" data-reveal>
-<p class="bp-figure-title">gitextensions #13277 &middot; from the sentence to the verdict</p>
-<div class="bp-rules">
-<RuleRows rows={gitextensionsRules} baseSha={baseSha} headSha={headSha} logicNote={true} />
-</div>
-<p class="bp-figure-caption">On the left, the sentence as the maintainers wrote it, with its file and line. In the middle, the rule it became &mdash; in plain English, and as the formula that is actually evaluated. On the right, the verdict, stated as what it is: whether the model of the code satisfies the formula before the change and after it. The first row fails at <em>both</em> revisions, which is what separates a standing violation from a regression. The second shows one terse sentence becoming two independent rules. The third was read out of an agent skill file rather than prose.</p>
-</div>
+## What other people have measured
 
-A language model reads the sentence and proposes the rule. It does not decide the verdict. The rule is compiled to a formula, the code at each revision is parsed into a model of its types and references, and a program checks whether one satisfies the other. That division matters: the part that is good at English does the English, and the part that cannot be talked out of an answer does the answering.
+Treude and Baltes [looked at agent configuration files in 356 repositories](https://arxiv.org/html/2606.09090v1) and found 230 stale references to code elements in 82 of them (23% of repositories, though only about 1.3% of the references they checked). How much a stale instruction degrades an agent's output is, in their words, an open question: "When stale, such descriptions can degrade AI assistance without any visible error."
 
-## Why nothing you already run catches this
-
-Every check in your pipeline compares code to code. Tests execute code, types constrain code, the linter parses code, the dependency audit reads a manifest, the secret scanner greps the diff.
-
-A documented constraint is in none of those places. It is a sentence in a markdown file that was not part of the pull request, so nobody reviewing the change had a reason to open it, and the person who wrote the sentence is not in the room.
-
-<div class="bp-callout">
-The sentence and the violation are both perfectly visible. They are just never visible to the same reader at the same moment.
-</div>
-
-And none of this is technically hard. "`GitCommands` must not reference `GitUI`" is a one-line question about a dependency graph, and your compiler answers harder questions on every build. The rule is not difficult to check. Nothing turns the sentence into a question.
-
-## The number that should actually worry you
-
-Across those 609 pull requests we evaluated 7,161 rules taken from the repositories' own documentation.
-
-<div class="bp-figure" data-reveal>
-<p class="bp-figure-title">7,161 documented-rule verdicts</p>
-<div class="bp-bars">
-<div class="bp-bar-row"><span class="bp-bar-label">Held</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:100%"></div></div><span class="bp-bar-value">5,519</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Couldn&rsquo;t check</span><div class="bp-bar-track"><div class="bp-bar" style="width:27%"></div></div><span class="bp-bar-value">1,487</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Violated by the change</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:1.8%"></div></div><span class="bp-bar-value">97</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Already broken</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:1%"></div></div><span class="bp-bar-value">53</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Restored</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:0.1%"></div></div><span class="bp-bar-value">5</span></div>
-</div>
-<p class="bp-figure-caption">Seventy-seven percent of documented rules simply held. About two percent accuse.</p>
-</div>
-
-Seventy-seven percent held. That is the number that should bother you, not the two percent.
-
-<div class="bp-keystat bp-keystat--mint">
-<span class="bp-keystat-value">77%</span>
-<span class="bp-keystat-body">of documented rules simply <b>held</b>. Roughly two percent accuse. Documentation is right almost all of the time, which is exactly why the exceptions are trusted.
-<span class="bp-keystat-src">7,161 rule verdicts</span></span>
-</div>
-
-<div class="bp-callout bp-callout--amber">
-Documentation being right almost all of the time is precisely what makes the exceptions dangerous.
-</div>
-
-A document that was frequently wrong would be treated with suspicion, and people would check it. One that is right ninety-eight times out of a hundred gets trusted, and an agent reading it has every reason to act on the sentence that happens to fall in the other two percent. The `McpServerFactory` line survived ten months not because anyone was negligent, but because the rest of that file was fine.
-
-Two percent is also the only rate at which a check like this is worth having. A reviewer that flags every pull request gets muted inside a week. The useful property is not the hit rate; it is that these cases surface on a specific line, in the pull request, while somebody is already looking at the code.
-
-One more row deserves a mention: the 1,487 rules the system declined to answer. A source parser sees considerably less than a compiler — no annotations, no generated members, no string literals — and when a rule cannot be decided, the only honest output is that it could not be checked. The failure we care about most is that answer quietly becoming "checked, found nothing." Those are different claims, and a tool that blurs them is misleading you in a way you would never catch.
+There is also a case for writing less. Gloaguen et al. [evaluated AGENTS.md-style files](https://arxiv.org/abs/2602.11988) and found they do not generally improve task success while raising inference cost by over 20%. Every name in one of these files is a claim that can go stale, so a short file is also cheaper to keep true.
 
 ## What to do about it
 
-Keep writing the docs, and write more of them. A constraint nobody wrote down does not exist for the agent writing your code, and the teams doing this properly are ahead of the teams that aren't.
+- **Search the docs when you delete or rename a type.** `git grep -w OldName -- '*.md'` takes a second, and IDE rename refactorings often skip markdown.
+- **Keep agent instruction files short**, and prefer describing structure to naming classes.
+- **Run the script above** occasionally, or in CI as a warning if its noise is tolerable for your repository.
 
-But if the specification is really going to be the thing your system gets generated from, then *executable* has to start meaning something. It has to acquire the property every other executable artefact in your repository already has: a machine reads it, compares it against reality, and complains when they disagree — in the pull request, beside the tests and the types, where all your other checks already run.
+Striff runs both checks on every pull request as a [GitHub App](https://striff.io): the names a change leaves stranded in your docs, and the architectural rules your docs state. It uses the documents already in the repository, so there's no rule file to maintain. It is also wrong sometimes, in the ways described above, and we would rather tell you that here than have you find out from a false alarm.
 
-That is what [Striff](https://striff.io) does. It reads the documents already in your repository, turns the sentences that make checkable claims into rules, and evaluates them at both revisions of every pull request. There is no new file to maintain and no rule language to learn, because the rules are the ones your team already wrote.
-
-<div class="bp-callout">
-Tests are run. Types are checked. Coverage is measured, dependencies audited, licences verified. The document your agent reads before every task is checked by nobody — and it is now the only unchecked input to your build.
+<div class="bp-note">
+<p class="bp-note-title">Method notes</p>
+<p>609 pull requests in 542 public repositories (Java, C#, TypeScript, Python). Code is parsed from source without compiling it, so the model has no generated members and no resolved annotations; where that leaves a question unanswerable, the check reports nothing rather than a pass or a failure. A name counts as absent only on an exact-token match against the whole revision, and the repository's history is checked to tell a moved type from a removed one. Every repository named above was checked by hand against its default branch in September 2026. Repository and commit links point at the evidence; the line numbers are for the default branch at the time of writing.</p>
 </div>

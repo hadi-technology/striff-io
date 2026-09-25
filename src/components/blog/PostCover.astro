@@ -19,7 +19,7 @@ import DocsToChecks from "./covers/DocsToChecks.astro";
 import Receipt from "./covers/Receipt.astro";
 import Coupling from "./covers/Coupling.astro";
 import Checklist from "./covers/Checklist.astro";
-import HardRules from "./covers/HardRules.astro";
+import StaleLine from "./covers/StaleLine.astro";
 import Generated from "./covers/Generated.astro";
 
 interface Props {
@@ -41,7 +41,7 @@ const GLOW: Record<string, [number, number]> = {
   receipt: [320, 170],
   coupling: [320, 190],
   checklist: [320, 180],
-  "hard-rules": [320, 215],
+  "stale-line": [320, 200],
 };
 const [gx, gy] = GLOW[cover ?? ""] ?? [420, 140];
 ---
@@ -71,6 +71,6 @@ const [gx, gy] = GLOW[cover ?? ""] ?? [420, 140];
   {cover === "receipt" && <Receipt uid={uid} />}
   {cover === "coupling" && <Coupling />}
   {cover === "checklist" && <Checklist />}
-  {cover === "hard-rules" && <HardRules />}
+  {cover === "stale-line" && <StaleLine />}
   {!(cover && cover in GLOW) && <Generated slug={slug} />}
 </svg>
