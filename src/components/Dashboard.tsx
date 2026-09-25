@@ -364,7 +364,6 @@ export default function Dashboard() {
                 setFocusDoc(null);
               }}
               focusDoc={focusDoc}
-              viewer={user?.login || null}
               rulesFilter={rulesFilter}
               onOpenRules={(value) => {
                 setRulesFilter({ value, at: Date.now() });
@@ -517,7 +516,6 @@ function InstallationCard({
   openRepo,
   onOpenRepo,
   focusDoc,
-  viewer,
   rulesFilter,
   onOpenRules,
   onOpenDoc,
@@ -533,8 +531,6 @@ function InstallationCard({
   onOpenRepo?: (fullName: string) => void;
   /** The document the documents view should open on, where a reader followed a rule to its source. */
   focusDoc?: string | null;
-  /** The signed-in login, recorded against an exclusion or an override as who asked for it. */
-  viewer?: string | null;
   /** Which rules to show, where a reader followed a count to them. */
   rulesFilter?: { value: string; at: number } | null;
   /** Follows a count of rules to the rules themselves. */
@@ -901,7 +897,6 @@ function InstallationCard({
                 openRepo={openRepo}
                 focusDoc={focusDoc}
                 onRepoChange={onRepoChange}
-                actor={viewer}
                 onOpenRules={onOpenRules}
               />
             </div>

@@ -1,6 +1,7 @@
 import { createElement, useEffect, useMemo, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
+import { OUTCOME_LABEL, OUTCOME_HELP, ON_BRANCH_LABEL, withCode, when } from "./docRules";
 
 /**
  * Every rule Striff has read from one repository's documents, in one list.
@@ -65,37 +66,6 @@ interface RepoRules {
 /** One rule with the document it came from, which is how this view reads them. */
 type Row = Rule & { doc: Doc };
 
-/**
- * What the last pull request to judge a rule said about it.
- *
- * "Broken" and "already broken" answer different questions and were told apart by nothing but the
- * word "already": one is a rule this change broke, the other a rule the code was not keeping before
- * this change either. Saying "newly broken" puts the difference in the label rather than in a
- * footnote, and every pill and chip carries the longer sentence as its title.
- */
-const OUTCOME_LABEL: Record<string, string> = {
-  MAINTAINED: "Held",
-  VIOLATED: "Newly broken",
-  PRE_EXISTING: "Already broken",
-  RESTORED: "Restored",
-  UNCLEAR: "Couldn't check",
-};
-
-const OUTCOME_HELP: Record<string, string> = {
-  MAINTAINED: "The code kept this rule when the pull request last checked it.",
-  VIOLATED: "The pull request broke this rule: the code kept it before that change and not after.",
-  PRE_EXISTING:
-    "The code was already not keeping this rule before that pull request, so the change is not what broke it.",
-  RESTORED: "The pull request fixed this rule: the code was not keeping it before, and does now.",
-  UNCLEAR: "Striff could not tell, and says so rather than guessing either way.",
-};
-
-const ON_BRANCH_LABEL: Record<string, string> = {
-  HOLDS: "Holds on the default branch",
-  BROKEN: "Broken on the default branch",
-  UNCLEAR: "Couldn't check on the default branch",
-};
-
 type Filter = "all" | "broken" | "prior" | "held" | "unchecked" | "onMain";
 
 /** Which column the list is ordered by. */
@@ -117,24 +87,6 @@ const SEVERITY: Record<string, number> = {
 const NEVER_CHECKED = 5;
 
 /**
- * A sentence or a rule as the API sends it, with backticked names as code. Split rather than set
- * HTML: the text is a customer's own document, and it is never trusted as markup.
- */
-function withCode(text: string | null | undefined) {
-  if (!text) return null;
-  return text.split(/`([^`]+)`/g).map((part, index) =>
-    index % 2 === 1
-      ? createElement("code", { key: index, className: "github-inline-code" }, part)
-      : part
-  );
-}
-
-function when(ms: number | null | undefined): string {
-  if (!ms) return "";
-  return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
-/**
  * Plain text, for a file someone opens in a spreadsheet: no backticks, no newlines, quotes doubled.
  *
  * A cell that begins with =, +, -, @ or a control character is a formula to Excel and Sheets, not
@@ -143,7 +95,9 @@ function when(ms: number | null | undefined): string {
  */
 function csvCell(value: string | number | null | undefined): string {
   const text = String(value ?? "").replace(/`/g, "").replace(/\s+/g, " ").trim();
-  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  // Tabs and returns cannot lead here -- the line above collapsed them -- so the guard names only
+  // what can: a cell starting =, + or - is arithmetic to a spreadsheet, and @ is a function call.
+  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
   return `"${safe.replace(/"/g, '""')}"`;
 }
 

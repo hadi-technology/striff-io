@@ -49,32 +49,80 @@ async function readBody(res) {
 // Whether the caller's own token can see this repository under this installation. Paged, because
 // an installation covering more than 100 repositories would otherwise look like one that does not
 // cover the repository at all.
+// Three answers, not two: "yes", "no", and "GitHub would not say". A rate limit, a 5xx or an
+// installation larger than this pages through is not evidence that the caller cannot see the
+// repository, and answering 403 to it tells someone they lack access they actually have.
+const SEES = "yes";
+const SEES_NOT = "no";
+const CANNOT_TELL = "unknown";
+
 async function callerSeesRepository(ghToken, installationId, owner, repo) {
   const wanted = `${owner}/${repo}`.toLowerCase();
   for (let page = 1; page <= 10; page += 1) {
-    const res = await fetch(
-      `https://api.github.com/user/installations/${installationId}/repositories?per_page=100&page=${page}`,
-      {
-        headers: {
-          Authorization: `Bearer ${ghToken}`,
-          Accept: "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
-      }
-    );
+    let res;
+    try {
+      res = await fetch(
+        `https://api.github.com/user/installations/${installationId}/repositories?per_page=100&page=${page}`,
+        {
+          headers: {
+            Authorization: `Bearer ${ghToken}`,
+            Accept: "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+          },
+        }
+      );
+    } catch (e) {
+      return CANNOT_TELL;
+    }
+    // 401 and 403 are about the caller's own token and are answers; the rest is GitHub having a
+    // moment, and a moment is not a denial.
+    if (res.status === 401 || res.status === 403) {
+      return SEES_NOT;
+    }
     if (!res.ok) {
-      return false;
+      return CANNOT_TELL;
     }
     const data = await res.json();
     const repositories = data.repositories || [];
     if (repositories.some((r) => (r.full_name || "").toLowerCase() === wanted)) {
-      return true;
+      return SEES;
     }
     if (repositories.length < 100) {
-      return false;
+      return SEES_NOT;
     }
   }
-  return false;
+  // Ten pages of a hundred and still looking: an installation this large is one this check cannot
+  // finish, which is not the same as one that does not cover the repository.
+  return CANNOT_TELL;
+}
+
+/**
+ * Who is asking, as GitHub knows them.
+ *
+ * The caller says who they are in the request body, and a caller can say anything. An exclusion
+ * carries a name into the catalogue as the record of who asked for it, so the name has to come
+ * from the token, not from the body.
+ *
+ * @return the login, or null where GitHub would not say — recorded as nobody rather than as
+ *     whoever the request claimed
+ */
+async function callerLogin(ghToken) {
+  try {
+    const res = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: `Bearer ${ghToken}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+    if (!res.ok) {
+      return null;
+    }
+    const user = await res.json();
+    return typeof user.login === "string" ? user.login : null;
+  } catch {
+    return null;
+  }
 }
 
 export const handler = async (event) => {
@@ -110,11 +158,23 @@ export const handler = async (event) => {
   }
 
   try {
-    const allowed = await callerSeesRepository(ghToken, installationId, owner, repo);
-    if (!allowed) {
+    const sees = await callerSeesRepository(ghToken, installationId, owner, repo);
+    if (sees === SEES_NOT) {
       // Deliberately the same answer whether the repository is invisible or absent: which private
       // repositories an installation covers is itself something not to hand out.
       return { statusCode: 403, body: JSON.stringify({ error: "Not authorized for this repository" }) };
+    }
+    if (sees !== SEES) {
+      // Retryable, and said so: the caller may well have access, and a 403 would tell them they do
+      // not.
+      return {
+        statusCode: 503,
+        headers: { "Content-Type": "application/json", "Retry-After": "5" },
+        body: JSON.stringify({
+          error: "verification_unavailable",
+          message: "GitHub didn't answer whether you can see this repository. Try again shortly.",
+        }),
+      };
     }
 
     const token = generateRepoToken(installationId, owner, repo);
@@ -126,13 +186,21 @@ export const handler = async (event) => {
     if (method === "PATCH") {
       // Two lists, opposite jobs: one says never read this, the other says never skip it.
       url = `${base}/${params.view === "force-read" ? "force-read" : "exclusions"}?token=${token}`;
+      let asked;
+      try {
+        asked = JSON.parse(event.body || "{}");
+      } catch {
+        return { statusCode: 400, body: JSON.stringify({ error: "Malformed request" }) };
+      }
+      // Whoever the body claims, the record says who the token is.
+      asked.actor = await callerLogin(ghToken);
       init = {
         method: "PATCH",
         headers: {
           "X-Server-Key": STRIFF_SERVER_KEY,
           "Content-Type": "application/json",
         },
-        body: event.body || "{}",
+        body: JSON.stringify(asked),
       };
     } else if (params.view === "rules") {
       url = `${base}/rules?token=${token}`;

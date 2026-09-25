@@ -1,6 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
+import { OUTCOME_LABEL, OUTCOME_HELP, ON_BRANCH_LABEL, withCode, when } from "./docRules";
 
 /**
  * The documents Striff can read in one repository, and the rules it found in them.
@@ -107,18 +108,9 @@ interface Rule {
   onDefaultBranch: string | null;
 }
 
-interface DocEvent {
-  kind: string;
-  atMs: number;
-  pullNo: string | null;
-  ruleCount: number;
-  reason: string | null;
-}
-
 interface Detail {
   document: Doc;
   rules: Rule[];
-  history: DocEvent[];
   /** Every version of this document Striff holds an extraction for, newest reading first. */
   versions: Version[];
   /** The version the rules above were read from. */
@@ -146,58 +138,6 @@ const STATE_LABEL: Record<DocState, string> = {
   UNREADABLE: "Couldn't read",
   EXCLUDED: "Excluded",
 };
-
-/**
- * What the last pull request to judge a rule said about it.
- *
- * "Broken" and "already broken" answer different questions and were told apart by nothing but the
- * word "already": one is a rule this change broke, the other a rule the code was not keeping before
- * this change either. Saying "newly broken" puts the difference in the label rather than in a
- * footnote, and every pill and chip carries the longer sentence as its title.
- */
-const OUTCOME_LABEL: Record<string, string> = {
-  MAINTAINED: "Held",
-  VIOLATED: "Newly broken",
-  PRE_EXISTING: "Already broken",
-  RESTORED: "Restored",
-  UNCLEAR: "Couldn't check",
-};
-
-const OUTCOME_HELP: Record<string, string> = {
-  MAINTAINED: "The code kept this rule when the pull request last checked it.",
-  VIOLATED: "The pull request broke this rule: the code kept it before that change and not after.",
-  PRE_EXISTING:
-    "The code was already not keeping this rule before that pull request, so the change is not what broke it.",
-  RESTORED: "The pull request fixed this rule: the code was not keeping it before, and does now.",
-  UNCLEAR: "Striff could not tell, and says so rather than guessing either way.",
-};
-
-const ON_BRANCH_LABEL: Record<string, string> = {
-  HOLDS: "Holds on the default branch",
-  BROKEN: "Broken on the default branch",
-  UNCLEAR: "Couldn't check on the default branch",
-};
-
-/**
- * A sentence or a rule as the API sends it, with backticked names as code.
- *
- * The API writes a name the way the document did, in backticks; rendering them literally leaves
- * the marks on screen. Split rather than set HTML: the text is a customer's own document, and it
- * is never trusted as markup.
- */
-function withCode(text: string | null | undefined) {
-  if (!text) return null;
-  return text.split(/`([^`]+)`/g).map((part, index) =>
-    index % 2 === 1
-      ? createElement("code", { key: index, className: "github-inline-code" }, part)
-      : part
-  );
-}
-
-function when(ms: number | null | undefined): string {
-  if (!ms) return "";
-  return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
 
 /**
  * The line a document's state deserves, in the words the pipeline used.
@@ -341,7 +281,6 @@ export default function DocsTab({
   repos,
   openRepo,
   focusDoc,
-  actor,
   onRepoChange,
   onOpenRules,
 }: {
@@ -351,8 +290,6 @@ export default function DocsTab({
   openRepo?: string | null;
   /** The document to open on, where a reader followed a rule to where it was read from. */
   focusDoc?: string | null;
-  /** The signed-in login, recorded against an exclusion or an override as who asked for it. */
-  actor?: string | null;
   /** Reports a repository picked here, so the shell and the other tab follow it. */
   onRepoChange?: (fullName: string) => void;
   /** Opens the rules on the rules this count counted. */
@@ -376,6 +313,8 @@ export default function DocsTab({
   const [actionError, setActionError] = useState("");
   /** Which document was asked for last; an older answer never paints over a newer one. */
   const openedAt = useRef(0);
+  /** The same for the catalogue: switching repository twice must not land on the first one. */
+  const loadedAt = useRef(0);
 
   const [owner, name] = repo.split("/");
 
@@ -402,6 +341,7 @@ export default function DocsTab({
   }, [menuFor]);
 
   async function loadCatalog() {
+    const wanted = ++loadedAt.current;
     setLoading(true);
     setError("");
     setDetail(null);
@@ -415,6 +355,8 @@ export default function DocsTab({
         `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
       );
       const data = await res.json();
+      // A repository switched away from still answers; it just no longer has a view to paint.
+      if (wanted !== loadedAt.current) return;
       if (!res.ok) {
         setError(data.error || "Couldn't load this repository's documents");
         setCatalog(null);
@@ -432,9 +374,9 @@ export default function DocsTab({
         docs.find((doc) => doc.state === "READ" && doc.ruleCount > 0);
       if (first) openDoc(first.path);
     } catch {
-      setError("Couldn't load this repository's documents");
+      if (wanted === loadedAt.current) setError("Couldn't load this repository's documents");
     } finally {
-      setLoading(false);
+      if (wanted === loadedAt.current) setLoading(false);
     }
   }
 
@@ -492,7 +434,7 @@ export default function DocsTab({
   }
 
   async function setExcluded(path: string, excluded: boolean) {
-    const ok = await write({ paths: [path], folders: [], excluded, actor },
+    const ok = await write({ paths: [path], folders: [], excluded },
       "", `Couldn't ${excluded ? "exclude" : "include"} ${path}.`);
     if (!ok) return;
     await loadCatalog();
@@ -501,7 +443,7 @@ export default function DocsTab({
 
   /** Asks for a document a screen skipped to be read anyway, or leaves it to the screens again. */
   async function setForced(path: string, forced: boolean) {
-    const ok = await write({ paths: [path], forced, actor }, "force-read",
+    const ok = await write({ paths: [path], forced }, "force-read",
       `Couldn't ${forced ? "ask for" : "stop"} reading ${path}.`);
     if (!ok) return;
     await loadCatalog();
@@ -509,10 +451,14 @@ export default function DocsTab({
   }
 
   async function setFolderExcluded(folder: string, excluded: boolean) {
-    const ok = await write({ paths: [], folders: [folder], excluded, actor },
+    const ok = await write({ paths: [], folders: [folder] , excluded },
       "", `Couldn't ${excluded ? "exclude" : "include"} ${folder}/.`);
     if (!ok) return;
+    // The button is usually in the open document's own menu, and reloading the catalogue opens
+    // whichever document the heuristic picks. Come back to the one being read.
+    const reading = selected;
     await loadCatalog();
+    if (reading) await openDoc(reading);
   }
 
   const documents = useMemo(() => {
