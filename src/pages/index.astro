@@ -182,18 +182,39 @@ const mgrPrs = [
   { num: 418, title: "Refactor NodeWorker lifecycle", who: "coding-agent[bot]", when: "yesterday", review: "Review required", label: "agent", verdict: "violated" }
 ];
 
+/**
+ * For-teams proof band: four numbers a team lead can check, each from a published post
+ * on this site or a paper it cites. The first two are from our sweep of 609 public pull
+ * requests; the third is Treude and Baltes, 2026; the fourth is our verdict tally.
+ */
+const teamProof = [
+  { value: "12 years", tone: "danger", label: "the oldest documented type we found still cited in a project's docs after it was deleted from the code", href: "/blog/architectural-findings-in-oss", cite: "aspnetboilerplate, 12k stars" },
+  { value: "1 result", tone: "amber", label: "for a class name across the MCP C# SDK: the line in the agent instructions telling agents to use it, ten months after it was removed", href: "/blog/architectural-findings-in-oss", cite: "modelcontextprotocol/csharp-sdk" },
+  { value: "23%", tone: "amber", label: "of repositories with agent instruction files carry references to code elements that no longer exist", href: "https://arxiv.org/html/2606.09090v1", cite: "Treude & Baltes, 2026" },
+  { value: "2%", tone: "brand", label: "of the 7,161 documented rules we checked across 609 pull requests accused the change. The rest held, silently", href: "/blog/design-docs-are-enforceable-now", cite: "our sweep, 609 PRs" }
+];
+/**
+ * The same four moments in a team's week, with and without the check. Left is what
+ * happens today; right is what the check changes, and only that.
+ */
+const teamCompare = [
+  { moment: "An agent-written PR routes around the service layer", without: "Compiles, passes tests, gets approved as a diff. The rule it broke is in ARCHITECTURE.md, which was not in the diff.", with: "Rule broken by this PR, quoting the sentence and the line, before the merge." },
+  { moment: "A class is renamed; the README still names the old one", without: "Nobody opens the README. The next agent reads it and builds on a class that does not exist.", with: "The README line and the commit that removed the type, on the PR that did it." },
+  { moment: "Your senior engineer is out for two weeks", without: "Architecture review waits, or it doesn't happen.", with: "Every PR is still checked against what they wrote down. They are pulled in only when a rule breaks." },
+  { moment: "A director asks where the code is drifting", without: "Someone's best guess.", with: "Rules held, broken and already broken, by repository, month over month." }
+];
 const mgrSlides = [
   {
     title: "Your senior engineers stop being the bottleneck.",
-    body: "Architecture review usually waits on the few people who know the system, and agent-written pull requests have made that queue longer. Striff checks every pull request against what those people already wrote down, so they are pulled in when a rule breaks, not to re-check the ones that held."
+    body: "Architecture review waits on the few people who know the system, and agent-written pull requests have made that queue longer. Striff checks every pull request against what those people already wrote down. They are pulled in when a rule breaks, not to re-check the ninety-eight percent that held."
   },
   {
     title: "Your documentation stops rotting.",
-    body: "A document nobody checks drifts until nobody trusts it, and then nobody writes the next one. Once every pull request is checked against it, a stale sentence gets caught: a README describing a call the code has just dropped shows up on the pull request that dropped it."
+    body: "A document nobody checks drifts until nobody trusts it, and then nobody writes the next one. Checked on every pull request, a stale sentence is caught on the change that made it stale: a README that still credits a call the code just dropped shows up on that pull request, while the fix is one line."
   },
   {
     title: "See which repositories are drifting from their docs.",
-    body: "The dashboard shows, month over month, which repositories and pull requests break your documented rules: rules held, broken and already broken, the share of pull requests that broke none, and the repositories flagged most. You know where to spend fix-up time."
+    body: "The dashboard shows, month over month, which repositories and pull requests break your documented rules: held, broken and already broken, the share of pull requests that broke none, and the repositories flagged most. You know where to spend fix-up time before it becomes a rewrite."
   }
 ]
 
@@ -591,11 +612,22 @@ const plans = [
     <section id="how" class="scroll-mt-24 bg-slate-100/60 pb-20 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="max-w-3xl" data-reveal>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For engineering managers</p>
-          <h2 class="mt-3 text-balance">What your senior engineers decided, checked on every pull request.</h2>
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For teams</p>
+          <h2 class="mt-3 text-balance">Every pull request checked against what your team decided. Including the ones your seniors never see.</h2>
           <p class="section-subcopy mt-4">
-            Keeping a system coherent while people and agents change it every day is the part nobody owns. <strong>Striff makes it part of every pull request: reviews that do not wait on your seniors, documents that stay true, and a view of where the code is drifting from them.</strong>
+            Your team already wrote the rules down: in <code class="github-inline-code">AGENTS.md</code>, the ADRs, the README that says what calls what. Then people and agents opened a hundred pull requests, and nobody re-read those documents on any of them. <strong>Striff reads them on every pull request, says so when a change contradicts them, and quotes the line. Your seniors are pulled in when a rule breaks, not to re-check the ones that held.</strong>
           </p>
+        </div>
+
+        <!-- Four numbers a team lead can check. Each links to the post or paper it comes from. -->
+        <div class="team-proof mt-10" data-reveal>
+          {teamProof.map((s) => (
+            <a class={`team-stat team-stat-${s.tone}`} href={s.href} target={s.href.startsWith("http") ? "_blank" : undefined} rel={s.href.startsWith("http") ? "noopener" : undefined}>
+              <span class="team-stat-value">{s.value}</span>
+              <span class="team-stat-label">{s.label}</span>
+              <span class="team-stat-cite">{s.cite} &rarr;</span>
+            </a>
+          ))}
         </div>
 
         <div class="mgr-split mgr-carousel mt-10" data-mgr-carousel aria-roledescription="carousel" aria-label="What changes for your team" data-reveal>
@@ -631,6 +663,7 @@ const plans = [
                         <span class="ghl-open"><svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg>4 Open</span>
                         <span class="ghl-closed"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>212 Closed</span>
                         <span class="ghl-filters" aria-hidden="true"><span>Author</span><span>Label</span><span>Reviews</span></span>
+                        <span class="hcc-chip hcc-chip-example ghl-example">Illustrative</span>
                       </div>
                       {mgrPrs.map((pr) => (
                         <div class={`ghl-row${pr.verdict === "violated" ? " is-flag" : ""}`}>
@@ -721,8 +754,27 @@ const plans = [
             </div>
           </div>
         </div>
+        <!-- The same week, twice. -->
+        <div class="team-compare-wrap mt-14" data-reveal>
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">The same week, with and without the check</p>
+          <div class="team-compare" role="table" aria-label="Four moments in a team's week, with and without Striff">
+            <div class="team-compare-head" role="row">
+              <span role="columnheader">The moment</span>
+              <span role="columnheader">Today</span>
+              <span role="columnheader" class="is-with"><img src="/icon.svg" alt="" width="14" height="14" /> With Striff</span>
+            </div>
+            {teamCompare.map((r) => (
+              <div class="team-compare-row" role="row">
+                <span class="team-compare-moment" role="cell">{r.moment}</span>
+                <span class="team-compare-without" role="cell">{r.without}</span>
+                <span class="team-compare-with" role="cell">{r.with}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div class="section-invite">
-          <BlogLink slug="architecture-review-checklist" kicker="What your seniors check by hand, step by step" />
+          <BlogLink slug="architectural-findings-in-oss" kicker="Six documented types, deleted years ago, still in the docs" />
         </div>
       </div>
     </section>
