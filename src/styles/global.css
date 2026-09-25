@@ -3007,7 +3007,7 @@
 }
 
 .hcc-quote-src svg { flex: 0 0 auto; color: #aab4c0; }
-.hcc-quote-src b { margin-left: -0.35rem; font-weight: 600; color: #0f62d0; }
+.hcc-quote-src b { flex: 0 0 auto; margin-left: -0.35rem; font-weight: 600; color: #0f62d0; white-space: nowrap; word-break: normal; }
 .hcc-quote-src:hover, .hcc-quote-src:focus-visible { color: #0f62d0; }
 .hcc-quote-src:hover svg { color: #0f62d0; }
 
@@ -4570,6 +4570,14 @@
   --st-bottom: #fdeaec;
   --st-fg: #b4233c;
   --st-glow: rgba(211, 58, 75, 0.4);
+}
+
+.hcc-status.is-prior {
+  --st-bd: #f1d6a8;
+  --st-top: #fffaf1;
+  --st-bottom: #fdf1dc;
+  --st-fg: #9b5a07;
+  --st-glow: rgba(224, 161, 58, 0.32);
 }
 
 .hcc-status-head {

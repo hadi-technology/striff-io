@@ -8,6 +8,7 @@ cover: "docs-to-checks"
 
 import RuleRows from "../../components/RuleRows.astro";
 import { ecchronosRules, baseSha, headSha } from "../../data/ecchronosRules";
+import { ruleShapes } from "../../data/ruleShapes";
 
 For twenty years a design doc had one reader: *other engineers*. You wrote down how the system fits together (what lives where, what calls what, what must never depend on what) and hoped the next person read it before their first pull request.
 
@@ -17,7 +18,7 @@ That changed in **both directions at once**.
 
 **And docs got easier to break.** A sentence that describes the code stops being true the moment the code changes and the sentence does not. At agent volume that happens constantly, and nothing in the merge path compares the two: the diff shows the code, and the sentence is in a different file.
 
-## A real one: ecChronos #1786
+## A real example
 
 Ericsson's [ecChronos](https://github.com/Ericsson/ecchronos) schedules repairs for Apache Cassandra, and its `core.impl` module has the kind of README most teams only intend to write. It goes through the module class by class and says what each one does. Of `NodeWorker`, the background thread that runs for each Cassandra node, line 136 says:
 
@@ -77,6 +78,22 @@ The documented rules are the headline; the diagram is the context for them. Ever
 <p class="bp-figure-caption">The real render for #1786, cropped to <code>NodeWorker</code>. The members it lost are marked, the <code>RepairScheduler</code> field among them, next to the <code>SchemaRefresher</code> it gained. The diagram shows what moved; the rule on the README says which of those moves your docs now disagree with.</p>
 </div>
 
+## More than one class calling another
+
+`NodeWorker` calling `RepairScheduler` is the simplest thing a document can say: one class, one reference. Documents also make claims about whole modules, about a word that stands for several packages at once, and about every class of a kind. The rule language has the quantifiers for those, and the same program answers them. Three more rules Striff read out of public repositories' own documents:
+
+<div class="bp-figure" data-reveal>
+<p class="bp-figure-title">Three shapes of rule, three repositories</p>
+<div class="bp-rules">
+<RuleRows rows={ruleShapes} />
+</div>
+<p class="bp-figure-caption">Each row is Striff&rsquo;s own output on a public pull request, with the witness it cited. The first names the only modules a module may use; the second binds a word in the document, &ldquo;GUI&rdquo;, to the two namespaces it means, and shows the binding so a maintainer can correct it; the third quantifies over every class whose name ends in <code>Helper</code>.</p>
+</div>
+
+Apache Pinot's design note for its SQL DDL module says the module "depends only on" three things. Two of them are modules of the same repository and the third, `calcite-babel`, is an external library, so the rule is about which of Pinot's own modules it may use. Since the materialized-view work, the module's build has also pulled in `pinot-query-planner`, and `MaterializedViewSchemaInferer` imports from it. The sentence has been wrong ever since, and it still is. Striff reports it as already broken, and never blames it on the pull request in front of it.
+
+SubtitleEdit's command-line reference says the `seconv` tool uses "no Avalonia / GUI runtime". There is no namespace called GUI. The rule works because the word is bound to the two namespaces that are the GUI, and it held: `seconv` references neither. MonoGame-Extended's coding guidelines ask for static helper classes; six of its seven are, and `PrimitivesHelper` is not.
+
 ## How a sentence becomes a check
 
 Nobody at Ericsson wrote a rule for Striff. There is no rule file and no configuration. The rules come out of the prose already in the repository, in five steps, and only two of them use a language model:
@@ -104,12 +121,11 @@ Rarely, and that is the point. Across 609 public pull requests in 542 different 
 <p class="bp-figure-title">7,161 documented-rule verdicts, 609 pull requests</p>
 <div class="bp-bars">
 <div class="bp-bar-row"><span class="bp-bar-label">Held</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:100%"></div></div><span class="bp-bar-value">5,519</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Couldn&rsquo;t check</span><div class="bp-bar-track"><div class="bp-bar" style="width:27%"></div></div><span class="bp-bar-value">1,487</span></div>
 <div class="bp-bar-row"><span class="bp-bar-label">Violated by the change</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:1.8%"></div></div><span class="bp-bar-value">97</span></div>
 <div class="bp-bar-row"><span class="bp-bar-label">Already broken</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:1%"></div></div><span class="bp-bar-value">53</span></div>
 <div class="bp-bar-row"><span class="bp-bar-label">Restored</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:0.1%"></div></div><span class="bp-bar-value">5</span></div>
 </div>
-<p class="bp-figure-caption">Roughly two percent accuse: 97 rules broken by the change under review, 53 already broken before it. Seventy-seven percent simply held, which is what a correct document looks like. The third row down is the one we would defend hardest: 1,487 rules the system declined to answer, and said so. A parser sees less than a compiler, and &ldquo;could not check&rdquo; turning into &ldquo;checked, found nothing&rdquo; is the failure this design exists to prevent. Accusations also concentrate: a single repository accounts for half of them, so the per-repository rate is far lower than the per-verdict rate suggests.</p>
+<p class="bp-figure-caption">Roughly two percent accuse: 97 rules broken by the change under review, 53 already broken before it. Everything else held, which is what a correct document looks like. Accusations also concentrate: a single repository accounts for half of them, so the per-repository rate is far lower than the per-verdict rate suggests.</p>
 </div>
 
 The 53 already-broken rows are the other quiet result: rules a repository's own documentation states that were already broken in the code Striff checked, not by the pull request. They are never blamed on the pull request in front of you, and they are never shown as a pass either. Whether the fix belongs in the code or in the sentence is the maintainer's call. The difference is that somebody now knows.
