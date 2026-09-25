@@ -5632,3 +5632,24 @@
   color: #8a1f1f;
   font-size: 0.8rem;
 }
+
+/* A column heading that orders the list. The caret only shows the column in use; the others keep
+   their arrow faint, so the heading still reads as a heading. */
+.rules-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+.rules-sort svg { color: #c3cbd5; flex: 0 0 auto; }
+.rules-sort:hover { color: #24292f; }
+.rules-sort:hover svg { color: #8a95a1; }
+.rules-sort.is-on { color: #1f2328; }
+.rules-sort.is-on svg { color: #2563eb; }
+@media print {
+  /* On paper the order is fixed, so the carets are noise. */
+  .rules-sort svg { display: none; }
+}

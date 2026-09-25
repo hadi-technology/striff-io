@@ -75,6 +75,24 @@ const ON_BRANCH_LABEL: Record<string, string> = {
 
 type Filter = "all" | "broken" | "prior" | "held" | "unchecked";
 
+/** Which column the list is ordered by. */
+type SortKey = "rule" | "source" | "outcome";
+
+/**
+ * Outcomes in the order someone reads them: what a change broke, what was already broken, what
+ * could not be judged, what was restored, what holds, and last what nothing has looked at. An
+ * alphabetical sort of these words would put "Already broken" above "Broken" and "Held" above both,
+ * which is no order at all.
+ */
+const SEVERITY: Record<string, number> = {
+  VIOLATED: 0,
+  PRE_EXISTING: 1,
+  UNCLEAR: 2,
+  RESTORED: 3,
+  MAINTAINED: 4,
+};
+const NEVER_CHECKED = 5;
+
 /**
  * A sentence or a rule as the API sends it, with backticked names as code. Split rather than set
  * HTML: the text is a customer's own document, and it is never trusted as markup.
@@ -122,6 +140,9 @@ export default function RulesTab({
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
+  // Document order to begin with: a repository's rules read as its documents do until someone
+  // asks for something else.
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "source", dir: 1 });
 
   const [owner, name] = repo.split("/");
 
@@ -207,8 +228,52 @@ export default function RulesTab({
       (row.statement || "").replace(/`/g, "").toLowerCase().includes(term) ||
       (row.quote || "").toLowerCase().includes(term) ||
       row.doc.path.toLowerCase().includes(term);
-    return rows.filter((row) => matchesFilter(row) && matchesTerm(row));
-  }, [rows, filter, term]);
+    const byDocument = (a: Row, b: Row) =>
+      a.doc.path === b.doc.path
+        ? (a.sourceLine || 0) - (b.sourceLine || 0)
+        : a.doc.path.localeCompare(b.doc.path);
+    const compare = (a: Row, b: Row) => {
+      if (sort.key === "rule") {
+        const plain = (row: Row) => (row.statement || "").replace(/`/g, "").toLowerCase();
+        return plain(a).localeCompare(plain(b)) || byDocument(a, b);
+      }
+      if (sort.key === "outcome") {
+        const rank = (row: Row) =>
+          row.status ? SEVERITY[row.status] ?? NEVER_CHECKED : NEVER_CHECKED;
+        // Judged most recently first within a standing, so "what happened lately" is one click
+        // away from "what is broken".
+        return rank(a) - rank(b) || (b.judgedAtMs || 0) - (a.judgedAtMs || 0) || byDocument(a, b);
+      }
+      return byDocument(a, b);
+    };
+    return rows
+      .filter((row) => matchesFilter(row) && matchesTerm(row))
+      .sort((a, b) => sort.dir * compare(a, b));
+  }, [rows, filter, term, sort]);
+
+  /** The same click on a column twice turns it round; a different column starts at the top. */
+  function orderBy(key: SortKey) {
+    setSort((was) => (was.key === key ? { key, dir: was.dir === 1 ? -1 : 1 } : { key, dir: 1 }));
+  }
+
+  /** A column heading that orders the list, and says which way it is ordered. */
+  function heading(key: SortKey, label: string) {
+    const on = sort.key === key;
+    return (
+      <th aria-sort={on ? (sort.dir === 1 ? "ascending" : "descending") : "none"}>
+        <button
+          type="button"
+          className={`rules-sort${on ? " is-on" : ""}`}
+          onClick={() => orderBy(key)}
+        >
+          {label}
+          <svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            {on && sort.dir === -1 ? <path d="M3 5l3 3 3-3" /> : <path d="M3 7l3-3 3 3" />}
+          </svg>
+        </button>
+      </th>
+    );
+  }
 
   /** The list as it stands on screen, as a file: what is filtered out is not in it. */
   function downloadCsv() {
@@ -409,9 +474,9 @@ export default function RulesTab({
           <table className="docs-rules rules-table">
             <thead>
               <tr>
-                <th>The rule</th>
-                <th>Where it came from</th>
-                <th>Latest outcome</th>
+                {heading("rule", "The rule")}
+                {heading("source", "Where it came from")}
+                {heading("outcome", "Latest outcome")}
               </tr>
             </thead>
             <tbody>
