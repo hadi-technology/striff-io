@@ -1,6 +1,6 @@
 ---
 title: "The MCP C# SDK tells its coding agent to use a class it deleted"
-description: "Line 258 of the official Model Context Protocol C# SDK's Copilot instructions names a class that was removed ten months ago. How that happens without anyone doing anything wrong, what we found when we went looking for more, and what our own checker got wrong along the way."
+description: "Line 258 of the official Model Context Protocol C# SDK's Copilot instructions names a class that was removed ten months ago. How that happens without anyone doing anything wrong, what we found when we went looking for more, and why finding them takes more than a grep."
 date: 2026-09-24
 category: "Data & research"
 cover: "stale-line"
@@ -22,7 +22,7 @@ Line 258 of `.github/copilot-instructions.md` in the [official C# SDK for the Mo
 
 `McpServerFactory` was deleted on 2 December 2025. Search the repository for the name today and line 258 is the only result.
 
-We build [Striff](https://striff.io), which checks pull requests against what a repository's own documentation says about its code. This post is about lines like 258: how one gets written, how many we found in public repositories, and what makes them harder to find than they look. Several of our first findings turned out to be wrong, and we have included those too.
+We build [Striff](https://striff.io), which checks pull requests against what a repository's own documentation says about its code. This post is about lines like 258: how one gets written, what we found when we looked for more in public repositories, and what makes them harder to find than they look.
 
 ## How line 258 happened
 
@@ -74,23 +74,9 @@ These are the cases we checked by hand and could confirm. Each name is in the pr
 
 The DolphinScheduler one is on the page new contributors are sent to. Its English and Chinese contributor guides both say that to add a registry plugin "you only need to implement `org.apache.dolphinscheduler.registry.api.RegistryFactory`". That interface went away in a package split in December 2021. Spring AI's is the newest: its speech documentation still walks through `OpenAiAudioApi` about twenty times, five months after the project moved to the official OpenAI Java SDK.
 
-## What our checker got wrong
+## Why a grep isn't enough
 
-"Named in the docs, missing from the code" sounds mechanical. It isn't, and the first draft of this post showed it. Of the repositories we first shortlisted to name here, about half did not survive a closer look. Two were plain bugs in the check: a casing mismatch, and a type it failed to find in eight files. The other three are more interesting, because the check was right that the name is absent:
-
-<div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Missing from the code, and the docs were fine</p>
-<div class="bp-audit">
-<div class="bp-audit-row"><span class="bp-audit-repo">redis/jedis</span><span class="bp-audit-saw"><code>ShardedJedis</code> is not in the code</span><span class="bp-audit-true">The only mention is the v3&rarr;v4 migration guide, which says the class was removed. The doc is correct.</span></div>
-<div class="bp-audit-row"><span class="bp-audit-repo">redisson/redisson</span><span class="bp-audit-saw"><code>RClusteredMap</code> and five more are not in the code</span><span class="bp-audit-true">They belong to Redisson PRO, the closed-source edition, and the docs say so.</span></div>
-<div class="bp-audit-row"><span class="bp-audit-repo">alibaba/arthas</span><span class="bp-audit-saw"><code>DefaultSessionManager</code> is not in the code</span><span class="bp-audit-true">It appears in a stack trace pasted as sample output. It was never part of the project.</span></div>
-</div>
-<p class="bp-figure-caption">Left, what the check reported. Right, what was actually true when we opened the repository.</p>
-</div>
-
-A documentation page can mention a type the code doesn't have for good reasons: a migration guide or changelog describing a removal, a commercial edition, sample output, an external library. Deciding whether a mention is a claim about this codebase takes reading the sentence around it. The absence is easy to detect. Deciding whether the doc is wrong is the hard part.
-
-If you want the easy half for your own repository, this prints every `CapitalisedName` in backticks in your docs that no non-doc file mentions:
+The obvious first attempt is a script. This one prints every `CapitalisedName` in backticks in a repository's docs that no non-doc file mentions:
 
 ```bash
 git ls-files '*.md' '*.mdx' '*.adoc' \
@@ -101,27 +87,24 @@ git ls-files '*.md' '*.mdx' '*.adoc' \
     done
 ```
 
-On the MCP SDK it prints 19 names, including `McpServerFactory`. On cactoos it prints one, `StickyList`. On Redisson it prints 156, including every PRO class. Reading that list is the real work.
+On the MCP SDK it prints 19 names, including `McpServerFactory`. On cactoos it prints exactly one, `StickyList`. It is worth running on your own repository. But on Redis's Java client it prints 61, and on Redisson 156, and many of those are not mistakes:
+
+<div class="bp-figure" data-reveal>
+<p class="bp-figure-title">Missing from the code, and the docs are right</p>
+<div class="bp-audit">
+<div class="bp-audit-row"><span class="bp-audit-repo">redis/jedis</span><span class="bp-audit-saw"><code>ShardedJedis</code> is not in the code</span><span class="bp-audit-true">The only mention is the v3&rarr;v4 migration guide, which says the class was removed.</span></div>
+<div class="bp-audit-row"><span class="bp-audit-repo">redisson/redisson</span><span class="bp-audit-saw"><code>RClusteredMap</code> and five more are not in the code</span><span class="bp-audit-true">They belong to Redisson PRO, the closed-source edition, and the docs say so.</span></div>
+</div>
+<p class="bp-figure-caption">Left, what the script reports. Right, what the documentation actually says.</p>
+</div>
+
+A documentation page has plenty of good reasons to mention a type the code doesn't have: a migration guide or changelog describing a removal, a commercial edition, sample output, an external library, a type that moved to another module. Whether a mention is a claim about this codebase depends on the sentence around it. Detecting the absence is easy. Deciding whether the document is wrong means reading the sentence, and checking the repository's history to see whether the name was ever there and where it went. Every row in the first table passed both.
 
 ## The rules that compile
 
 A stale class name fails loudly the first time anyone uses it. The expensive sentences are architectural: *controllers go through the service layer*, *this module must not depend on that one*. An agent that follows an outdated one, or breaks a current one, produces code that compiles, passes its tests, and gets reviewed as a diff. The review doesn't include the document that stated the rule.
 
-Striff's other check is aimed at those sentences. A language model reads each sentence in a repository's documentation and proposes the rule it states, as a formula over types and their references. A program then evaluates the formula against the parsed code before and after the pull request. The model proposes the rules; it does not decide the verdicts. Across the 609 pull requests it extracted 7,161 rules.
-
-That split does not make it right, and GitExtensions shows why. Its agent documentation has a section headed *Hard rules*:
-
-> **NEVER** add a dependency that reverses the arrow direction (e.g. `GitCommands` must not reference `GitUI`).
-
-Our checker reported that rule as already broken, citing line 1 of `src/app/GitCommands/AsyncLoader.cs`:
-
-```csharp
-using GitUI;
-```
-
-The rule holds. `GitUI` there is a namespace, and the types that file uses from it (`ThreadHelper`, `CancellationTokenSequence`) live in a different project, `GitExtUtils`, which `GitCommands` is allowed to reference. The `GitCommands` project has no reference to the `GitUI` project, and it couldn't, because `GitUI` references `GitCommands` and .NET does not allow cycles. The document means projects. The checker read namespaces. The formula was evaluated correctly, but it was the wrong formula.
-
-We haven't audited the rule verdicts from this run as thoroughly as the names above. After GitExtensions, we're not going to publish a violation count until we have.
+Striff's other check is aimed at those sentences. A language model reads each sentence in a repository's documentation and proposes the rule it states, as a formula over types and their references. A program then evaluates the formula against the parsed code before and after the pull request, so the model proposes rules but never decides verdicts. Across the 609 pull requests it extracted 7,161 rules from the repositories' own documentation. [How a sentence becomes a check](/blog/design-docs-are-enforceable-now) walks through one end to end.
 
 ## What other people have measured
 
@@ -133,9 +116,9 @@ There is also a case for writing less. Gloaguen et al. [evaluated AGENTS.md-styl
 
 - **Search the docs when you delete or rename a type.** `git grep -w OldName -- '*.md'` takes a second, and IDE rename refactorings often skip markdown.
 - **Keep agent instruction files short**, and prefer describing structure to naming classes.
-- **Run the script above** occasionally, or in CI as a warning if its noise is tolerable for your repository.
+- **Run the script above** occasionally, and read its output rather than failing a build on it.
 
-Striff runs both checks on every pull request as a [GitHub App](https://striff.io): the names a change leaves stranded in your docs, and the architectural rules your docs state. It uses the documents already in the repository, so there's no rule file to maintain. It is also wrong sometimes, in the ways described above, and we would rather tell you that here than have you find out from a false alarm.
+Striff runs both checks on every pull request as a [GitHub App](https://striff.io): the names a change leaves stranded in your docs, and the architectural rules your docs state. It uses the documents already in the repository, so there's no rule file to maintain.
 
 <div class="bp-note">
 <p class="bp-note-title">Method notes</p>
