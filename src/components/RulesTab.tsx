@@ -104,6 +104,7 @@ export default function RulesTab({
   repos,
   openRepo,
   onOpenDoc,
+  onRepoChange,
 }: {
   installationId: number;
   repos: { full_name: string }[];
@@ -111,6 +112,8 @@ export default function RulesTab({
   openRepo?: string | null;
   /** Opens the documents view on one document, which is where a rule's source leads. */
   onOpenDoc?: (path: string) => void;
+  /** Reports a repository picked here, so the shell and the documents view follow it. */
+  onRepoChange?: (fullName: string) => void;
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [data, setData] = useState<RepoRules | null>(null);
@@ -230,11 +233,34 @@ export default function RulesTab({
     const link = document.createElement("a");
     link.href = url;
     link.download = `${owner}-${name}-rules.csv`;
+    // In the document, and revoked a tick later: a detached anchor does not download everywhere,
+    // and revoking in the same tick races the browser's own fetch of the blob.
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
   const summary = data?.summary;
+
+  if (repos.length === 0) {
+    return (
+      <div className="dashboard-empty">
+        <p className="text-slate-600">
+          This account has no repository Striff can see yet. Add one to the installation on GitHub,
+          and its docs are listed as soon as Striff has read the repository.
+        </p>
+        <a
+          href="https://github.com/apps/striff-app/installations/new"
+          className="dashboard-button dashboard-button-primary mt-4 inline-block"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Manage repositories on GitHub
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="rules-view">
@@ -246,7 +272,10 @@ export default function RulesTab({
               className="docs-title-select"
               aria-label="Repository"
               value={repo}
-              onChange={(event) => setRepo(event.target.value)}
+              onChange={(event) => {
+                setRepo(event.target.value);
+                onRepoChange?.(event.target.value);
+              }}
             >
               {repos.map((r) => (
                 <option key={r.full_name} value={r.full_name}>
@@ -289,7 +318,16 @@ export default function RulesTab({
       {loading && <p className="dashboard-metric-caption">Loading rules...</p>}
       {error && <p className="dashboard-inline-error">{error}</p>}
 
-      {data && rows.length === 0 && !loading && (
+      {data && rows.length === 0 && !loading && data.truncated && (
+        <div className="dashboard-empty">
+          <p className="text-slate-600">
+            This repository holds more rules than one list can carry, and the first document alone
+            fills it. Striff has them; this page cannot show them all yet.
+          </p>
+        </div>
+      )}
+
+      {data && rows.length === 0 && !loading && !data.truncated && (
         <div className="dashboard-empty">
           <p className="text-slate-600">
             Striff hasn't read a rule out of this repository yet. It reads a doc when a pull request

@@ -98,6 +98,13 @@ export const handler = async (event) => {
       body: JSON.stringify({ error: "Missing installation_id, owner or repo" }),
     };
   }
+  // The id goes into a GitHub API path, and a value like "../../user/repos#" normalises to one
+  // that lists every repository the caller can see -- which would answer "yes, they see it" for a
+  // repository this installation does not cover. The API rejects a non-numeric id too; this does
+  // not rely on that.
+  if (!/^\d+$/.test(String(installationId))) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Bad installation_id" }) };
+  }
   if (!STRIFF_BILLING_AUTH_SECRET || !STRIFF_SERVER_KEY) {
     return { statusCode: 500, body: JSON.stringify({ error: "Server not configured" }) };
   }

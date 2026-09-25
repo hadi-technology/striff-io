@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * The documents Striff can read in one repository, and the rules it found in them.
@@ -31,6 +31,8 @@ interface Doc {
   alreadyBrokenRules: number;
   excludedBy: string | null;
   excludedReason: string | null;
+  /** Whether this repository asked for it to be read whatever a screen says. */
+  forced: boolean;
   forcedBy: string | null;
   forcedReason: string | null;
 }
@@ -58,6 +60,29 @@ interface Catalog {
   lastScanMs: number | null;
   summary: Summary;
   documents: Doc[];
+  exclusions: Exclusion[];
+}
+
+/** One thing this repository has asked Striff not to read: a document, or a folder of them. */
+interface Exclusion {
+  path: string;
+  folder: boolean;
+  excludedBy: string | null;
+  reason: string | null;
+  atMs: number;
+}
+
+/**
+ * The folder rule that covers this path, if one does. A folder rule covers the folder itself and
+ * everything under it, which is what someone who excluded a directory meant, so a document inside
+ * it cannot be included on its own -- the rule to take back is the folder's.
+ */
+function coveringFolder(path: string, exclusions: Exclusion[] | undefined): Exclusion | null {
+  for (const rule of exclusions || []) {
+    if (!rule.folder) continue;
+    if (path === rule.path || path.startsWith(`${rule.path}/`)) return rule;
+  }
+  return null;
 }
 
 interface Rule {
@@ -130,8 +155,15 @@ function when(ms: number | null | undefined): string {
   return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-/** The line a document's state deserves, in the words the pipeline used. */
-function stateLine(doc: Doc): string {
+/**
+ * The line a document's state deserves, in the words the pipeline used.
+ *
+ * @param doc the document
+ * @param covering the folder rule that excludes it, where a folder rather than the document itself
+ *     is what was excluded; naming it is the difference between a reader finding the rule and
+ *     hunting for one that is not on this document at all
+ */
+function stateLine(doc: Doc, covering?: Exclusion | null): string {
   switch (doc.state) {
     case "READ":
       if (doc.outdated) {
@@ -141,8 +173,8 @@ function stateLine(doc: Doc): string {
     case "NOT_READ":
       return "Striff hasn't read this doc yet. It reads a doc the first time a pull request changes code the doc talks about.";
     case "SCREENED_OUT":
-      if (doc.forcedBy) {
-        return `A screen judged this doc holds no rule to check${doc.screenReason ? ` (${doc.screenReason})` : ""}. You asked Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
+      if (doc.forced) {
+        return `A screen judged this doc holds no rule to check${doc.screenReason ? ` (${doc.screenReason})` : ""}. ${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
       }
       return doc.screenReason
         ? `Nothing here to check against code: ${doc.screenReason}`
@@ -154,6 +186,9 @@ function stateLine(doc: Doc): string {
     case "UNREADABLE":
       return "Striff couldn't finish reading this doc. That isn't counted as “no rules”; it tries again on the next pull request that touches the code it names.";
     case "EXCLUDED":
+      if (covering && covering.path !== doc.path) {
+        return `This doc is inside ${covering.path}/, a folder you excluded${covering.excludedBy ? `, ${covering.excludedBy}` : ""}${covering.reason ? `: “${covering.reason}”` : ""}. Striff doesn't read anything under it, so it costs nothing, and these rules aren't checked. Including the folder again brings every doc under it back.`;
+      }
       return `You excluded this doc${doc.excludedBy ? `, ${doc.excludedBy}` : ""}${doc.excludedReason ? `: “${doc.excludedReason}”` : ""}. Striff doesn't read it, so it costs nothing, and its rules aren't checked.`;
     default:
       return "";
@@ -262,6 +297,8 @@ export default function DocsTab({
   repos,
   openRepo,
   focusDoc,
+  actor,
+  onRepoChange,
 }: {
   installationId: number;
   repos: { full_name: string }[];
@@ -269,6 +306,10 @@ export default function DocsTab({
   openRepo?: string | null;
   /** The document to open on, where a reader followed a rule to where it was read from. */
   focusDoc?: string | null;
+  /** The signed-in login, recorded against an exclusion or an override as who asked for it. */
+  actor?: string | null;
+  /** Reports a repository picked here, so the shell and the other tab follow it. */
+  onRepoChange?: (fullName: string) => void;
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
@@ -284,6 +325,10 @@ export default function DocsTab({
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [ruleIndex, setRuleIndex] = useState<(Rule & { path: string })[]>([]);
   const [indexing, setIndexing] = useState(false);
+  // What a failed write or a failed document read said, shown where it happened.
+  const [actionError, setActionError] = useState("");
+  /** Which document was asked for last; an older answer never paints over a newer one. */
+  const openedAt = useRef(0);
 
   const [owner, name] = repo.split("/");
 
@@ -314,6 +359,10 @@ export default function DocsTab({
     setError("");
     setDetail(null);
     setSelected(null);
+    // The palette indexes one repository's rules; keeping them across a change searched the one
+    // before and opened documents this one does not have.
+    setRuleIndex([]);
+    setActionError("");
     try {
       const res = await fetch(
         `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
@@ -345,69 +394,78 @@ export default function DocsTab({
   async function openDoc(path: string) {
     setSelected(path);
     setDetail(null);
+    setActionError("");
+    // Two clicks in a row answer in whatever order the network likes. Only the document asked for
+    // last may paint, or the pane shows one document's rules under another's name.
+    const wanted = ++openedAt.current;
     try {
       const res = await fetch(
         `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}&path=${encodeURIComponent(path)}`
       );
-      if (!res.ok) return;
+      if (wanted !== openedAt.current) return;
+      if (!res.ok) {
+        const answer = await res.json().catch(() => ({}));
+        setActionError(answer.message || answer.error || `Couldn't open ${path}.`);
+        return;
+      }
       setDetail(await res.json());
     } catch {
-      /* the list still stands; the pane simply stays empty */
+      if (wanted === openedAt.current) setActionError(`Couldn't open ${path}.`);
+    }
+  }
+
+  /**
+   * One write, one answer. A PATCH that failed used to reload the catalogue unchanged and say
+   * nothing, so a rejected token or a 500 looked exactly like a change that did not stick.
+   */
+  async function write(body: unknown, view: "" | "force-read", failed: string) {
+    setActionError("");
+    setBusy(true);
+    try {
+      const res = await fetch(
+        `/.netlify/functions/doc-catalog-proxy?${view ? `view=${view}&` : ""}installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
+      if (!res.ok) {
+        const answer = await res.json().catch(() => ({}));
+        setActionError(answer.message || answer.error || failed);
+        return false;
+      }
+      return true;
+    } catch {
+      setActionError(failed);
+      return false;
+    } finally {
+      setBusy(false);
     }
   }
 
   async function setExcluded(path: string, excluded: boolean) {
-    setBusy(true);
-    try {
-      await fetch(
-        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paths: [path], folders: [], excluded }),
-        }
-      );
-      await loadCatalog();
-      await openDoc(path);
-    } finally {
-      setBusy(false);
-    }
+    const ok = await write({ paths: [path], folders: [], excluded, actor },
+      "", `Couldn't ${excluded ? "exclude" : "include"} ${path}.`);
+    if (!ok) return;
+    await loadCatalog();
+    await openDoc(path);
   }
 
   /** Asks for a document a screen skipped to be read anyway, or leaves it to the screens again. */
   async function setForced(path: string, forced: boolean) {
-    setBusy(true);
-    try {
-      await fetch(
-        `/.netlify/functions/doc-catalog-proxy?view=force-read&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paths: [path], forced }),
-        }
-      );
-      await loadCatalog();
-      await openDoc(path);
-    } finally {
-      setBusy(false);
-    }
+    const ok = await write({ paths: [path], forced, actor }, "force-read",
+      `Couldn't ${forced ? "ask for" : "stop"} reading ${path}.`);
+    if (!ok) return;
+    await loadCatalog();
+    await openDoc(path);
   }
 
   async function setFolderExcluded(folder: string, excluded: boolean) {
-    setBusy(true);
-    try {
-      await fetch(
-        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paths: [], folders: [folder], excluded }),
-        }
-      );
-      await loadCatalog();
-    } finally {
-      setBusy(false);
-    }
+    const ok = await write({ paths: [], folders: [folder], excluded, actor },
+      "", `Couldn't ${excluded ? "exclude" : "include"} ${folder}/.`);
+    if (!ok) return;
+    await loadCatalog();
   }
 
   const documents = useMemo(() => {
@@ -526,6 +584,7 @@ export default function DocsTab({
     // apart by where they are, so opening one does not open the other.
     const id = `${where}:${path}`;
     const open = menuFor === id;
+    const covering = coveringFolder(path, catalog?.exclusions);
     return (
       <span className="docs-menu-wrap">
         <button
@@ -545,23 +604,44 @@ export default function DocsTab({
         {open && (
           <span className="docs-menu" role="menu">
             {folder ? (
-              <>
+              covering ? (
+                // Excluded by its own rule, or by a folder above it: either way the rule to take
+                // back is that folder's, not this path's.
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => setFolderExcluded(covering.path, false)}
+                >
+                  {covering.path === path
+                    ? "Include this folder again"
+                    : `Include ${covering.path}/ again`}
+                </button>
+              ) : (
                 <button type="button" role="menuitem" onClick={() => setFolderExcluded(path, true)}>
                   Exclude this folder from reading
                 </button>
-                <button type="button" role="menuitem" onClick={() => setFolderExcluded(path, false)}>
-                  Include this folder again
-                </button>
-              </>
+              )
             ) : doc?.state === "EXCLUDED" ? (
-              <button type="button" role="menuitem" onClick={() => setExcluded(path, false)}>
-                Include again
-              </button>
+              // A document excluded by a folder rule cannot be included on its own: deleting a
+              // rule for its path would delete nothing, and the doc would stay excluded.
+              covering ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => setFolderExcluded(covering.path, false)}
+                >
+                  Include {covering.path}/ again
+                </button>
+              ) : (
+                <button type="button" role="menuitem" onClick={() => setExcluded(path, false)}>
+                  Include again
+                </button>
+              )
             ) : (
               <>
                 {/* The screens are predictions; whoever wrote the doc may know better. */}
                 {doc?.state === "SCREENED_OUT" &&
-                  (doc.forcedBy ? (
+                  (doc.forced ? (
                     <button type="button" role="menuitem" onClick={() => setForced(path, false)}>
                       Go back to skipping it
                     </button>
@@ -577,7 +657,7 @@ export default function DocsTab({
             )}
             <a
               role="menuitem"
-              href={`https://github.com/${owner}/${name}/blob/HEAD/${path}`}
+              href={`https://github.com/${owner}/${name}/${folder ? "tree" : "blob"}/HEAD/${path}`}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -600,7 +680,7 @@ export default function DocsTab({
         {doc.state !== "READ" && (
           <span className={`docs-badge is-${doc.state.toLowerCase()}`}>{STATE_LABEL[doc.state]}</span>
         )}
-        {doc.forcedBy && doc.state !== "READ" && (
+        {doc.forced && doc.state !== "READ" && (
           <span className="docs-badge is-forced">Read anyway</span>
         )}
       </>
@@ -613,8 +693,13 @@ export default function DocsTab({
       const indent = { paddingLeft: 8 + depth * 14 };
       if (node.children.length > 0) {
         const open = expanded.has(node.path);
+        const excludedFolder = coveringFolder(node.path, catalog?.exclusions);
         const rows: any[] = [
-          <div key={node.path} className="docs-row is-folder" style={indent}>
+          <div
+            key={node.path}
+            className={`docs-row is-folder${excludedFolder ? " is-dim" : ""}`}
+            style={indent}
+          >
             <button
               type="button"
               className="docs-row-main"
@@ -626,6 +711,16 @@ export default function DocsTab({
               <span className="docs-row-name">{node.name}</span>
             </button>
             <span className="docs-row-meta">
+              {excludedFolder && (
+                <span
+                  className="docs-badge is-excluded"
+                  title={`Excluded${excludedFolder.excludedBy ? ` by ${excludedFolder.excludedBy}` : ""}${
+                    excludedFolder.reason ? `: ${excludedFolder.reason}` : ""
+                  }${excludedFolder.path === node.path ? "" : ` with ${excludedFolder.path}/`}`}
+                >
+                  Excluded
+                </span>
+              )}
               {node.broken > 0 && <span className="docs-dot" title={`${node.broken} broken`} />}
               {node.rules > 0 && <span className="docs-count">{node.rules}</span>}
               {rowMenu(node.path, undefined, true)}
@@ -755,7 +850,10 @@ export default function DocsTab({
               className="docs-title-select"
               aria-label="Repository"
               value={repo}
-              onChange={(event) => setRepo(event.target.value)}
+              onChange={(event) => {
+                setRepo(event.target.value);
+                onRepoChange?.(event.target.value);
+              }}
             >
               {repos.map((r) => (
                 <option key={r.full_name} value={r.full_name}>
@@ -824,6 +922,7 @@ export default function DocsTab({
               <span>Search docs and rules</span>
               <kbd>⌘K</kbd>
             </button>
+            {actionError && detail && <p className="docs-write-error">{actionError}</p>}
             <div className="docs-filters">
               {([
                 ["all", "All", filterCounts.all, ""],
@@ -848,6 +947,28 @@ export default function DocsTab({
             </div>
             <div className="docs-tree-foot">
               {catalog.summary.documents} docs{catalog.lastScanMs ? `, listed ${when(catalog.lastScanMs)}` : ""}
+              {/* Folder rules live above the tree they affect, so an excluded directory is
+                  visible without hunting for the folder it was set on. */}
+              {(catalog.exclusions || []).some((rule) => rule.folder) && (
+                <span className="docs-foot-folders">
+                  <span>Folders excluded:</span>
+                  {(catalog.exclusions || [])
+                    .filter((rule) => rule.folder)
+                    .map((rule) => (
+                      <button
+                        key={rule.path}
+                        type="button"
+                        className="docs-foot-folder"
+                        disabled={busy}
+                        title={`Include ${rule.path}/ again${rule.excludedBy ? ` (excluded by ${rule.excludedBy}${rule.reason ? `: ${rule.reason}` : ""})` : ""}`}
+                        onClick={() => setFolderExcluded(rule.path, false)}
+                      >
+                        {rule.path}/<i aria-hidden="true">×</i>
+                        <span className="sr-only"> — include again</span>
+                      </button>
+                    ))}
+                </span>
+              )}
             </div>
           </div>
           <div className="docs-pane">
@@ -855,6 +976,17 @@ export default function DocsTab({
               <p className="dashboard-metric-caption">
                 Choose a document to see the rules Striff read from it.
               </p>
+            )}
+            {selected && !detail && actionError && (
+              <div className="docs-pane-error">
+                <p>{actionError}</p>
+                <button type="button" onClick={() => openDoc(selected)} disabled={busy}>
+                  Try again
+                </button>
+              </div>
+            )}
+            {selected && !detail && !actionError && (
+              <p className="dashboard-metric-caption">Loading…</p>
             )}
             {selected && detail && (
               <>
@@ -877,7 +1009,10 @@ export default function DocsTab({
                         : detail.document.state.toLowerCase()
                     }`}
                   />
-                  <span>{withCode(stateLine(detail.document))}</span>
+                  <span>
+                    {withCode(stateLine(detail.document,
+                      coveringFolder(detail.document.path, catalog?.exclusions)))}
+                  </span>
                 </p>
 
                 {detail.rules.length > 0 && (

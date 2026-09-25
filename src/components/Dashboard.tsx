@@ -151,6 +151,9 @@ export default function Dashboard() {
       const instIdParam = params.get("installation_id");
       if (planParam && instIdParam) {
         setAutoCheckout({ installationId: Number(instIdParam), plan: planParam });
+        // Only the account in view renders its card now, so the one being paid for has to be the
+        // one in view: without this, a second account's checkout was picked up by nothing.
+        setAccountId(Number(instIdParam));
         window.history.replaceState({}, "", "/dashboard");
       }
     } catch (e: any) {
@@ -351,7 +354,14 @@ export default function Dashboard() {
                 setFocusDoc(null);
                 setSection("rules");
               }}
+              // Either tab's repository picker moves the whole shell: the sidebar, the memory and
+              // the other tab followed the first choice and then disagreed with the second.
+              onRepoChange={(fullName) => {
+                setOpenRepo(fullName);
+                setFocusDoc(null);
+              }}
               focusDoc={focusDoc}
+              viewer={user?.login || null}
               onOpenDoc={(path) => {
                 setFocusDoc(path);
                 setSection("docs");
@@ -499,7 +509,9 @@ function InstallationCard({
   openRepo,
   onOpenRepo,
   focusDoc,
+  viewer,
   onOpenDoc,
+  onRepoChange,
 }: {
   installation: Installation;
   onError: (msg: string) => void;
@@ -511,8 +523,12 @@ function InstallationCard({
   onOpenRepo?: (fullName: string) => void;
   /** The document the documents view should open on, where a reader followed a rule to its source. */
   focusDoc?: string | null;
+  /** The signed-in login, recorded against an exclusion or an override as who asked for it. */
+  viewer?: string | null;
   /** Follows a rule to the document it was read from. */
   onOpenDoc?: (path: string) => void;
+  /** Reports a repository picked inside a tab, so the shell and the other tab follow it. */
+  onRepoChange?: (fullName: string) => void;
 }) {
   const repos = installation.repositories || [];
   const privateRepos = repos.filter((r) => r.private);
@@ -859,6 +875,7 @@ function InstallationCard({
                 repos={repos}
                 openRepo={openRepo}
                 onOpenDoc={onOpenDoc}
+                onRepoChange={onRepoChange}
               />
             </div>
           ) : installTab === "docs" ? (
@@ -868,6 +885,8 @@ function InstallationCard({
                 repos={repos}
                 openRepo={openRepo}
                 focusDoc={focusDoc}
+                onRepoChange={onRepoChange}
+                actor={viewer}
               />
             </div>
           ) : installTab === "metrics" ? (

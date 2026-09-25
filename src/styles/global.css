@@ -5572,3 +5572,55 @@
   background: #eff6ff;
   color: #1d4ed8;
 }
+
+/* The folder rules, under the tree they affect: an excluded directory is visible without opening
+   the folder's own menu to find out. */
+.docs-foot-folders {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+.docs-foot-folder {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid #e3e8ee;
+  border-radius: 999px;
+  background: #f6f8fa;
+  padding: 0.1rem 0.45rem;
+  color: #57606a;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+}
+.docs-foot-folder:hover:not(:disabled) { border-color: #cbd5e1; background: #eef2f6; color: #24292f; }
+.docs-foot-folder i { font-style: normal; color: #8a95a1; }
+
+/* A read or a write that failed, said where it happened rather than nowhere. */
+.docs-pane-error {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  border: 1px solid #f3d0d0;
+  border-radius: 0.6rem;
+  background: #fef6f6;
+  padding: 0.9rem 1rem;
+  color: #8a1f1f;
+  font-size: 0.88rem;
+}
+.docs-pane-error button {
+  border: 1px solid #e3b7b7;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.35rem 0.7rem;
+  color: #8a1f1f;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.docs-pane-error button:hover:not(:disabled) { background: #fdeeee; }
+.docs-write-error {
+  margin: 0 0 0.5rem;
+  color: #8a1f1f;
+  font-size: 0.8rem;
+}
