@@ -5653,3 +5653,68 @@
   /* On paper the order is fixed, so the carets are noise. */
   .rules-sort svg { display: none; }
 }
+
+/* A tally number you can follow: it counts something, and clicking it shows what it counted. */
+button.docs-tally-item { cursor: pointer; border-radius: 0.5rem; padding: 0.1rem 0.4rem; margin: -0.1rem -0.4rem; }
+button.docs-tally-item:hover { background: #f1f5f9; }
+button.docs-tally-item.is-on { background: #eef2f7; }
+button.docs-tally-item.is-on i { color: #1f2328; }
+.docs-tally-item b em { color: #8a95a1; font-style: normal; font-weight: 600; font-size: 0.7em; }
+
+/* The issue this finding would become, one click away and already written. */
+.docs-issue-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  color: #2563eb;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.docs-issue-link:hover { text-decoration: underline; }
+@media print { .docs-issue-link { display: none; } }
+
+/* Which revision the page is a view of, under the repository's name. */
+.docs-revision {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  color: #8a95a1;
+  font-size: 0.78rem;
+}
+.docs-revision-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #57606a;
+  font-weight: 600;
+}
+.docs-revision-sha {
+  border: 1px solid var(--line);
+  border-radius: 0.35rem;
+  background: #f6f8fa;
+  padding: 0 0.3rem;
+  color: #57606a;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+}
+.docs-revision-when::before { content: "· "; }
+
+/* A document's own two versions: what is on the branch, and what its rules were read from. */
+.docs-version-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.35rem;
+  margin: 0.15rem 0 0.5rem;
+  color: #8a95a1;
+  font-size: 0.75rem;
+}
+.docs-version-line code {
+  border-radius: 0.3rem;
+  background: #f6f8fa;
+  padding: 0 0.25rem;
+  color: #57606a;
+  font-family: "IBM Plex Mono", monospace;
+}

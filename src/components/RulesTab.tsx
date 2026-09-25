@@ -1,4 +1,6 @@
 import { createElement, useEffect, useMemo, useState } from "react";
+import { issueUrl, worthAnIssue } from "./docIssue";
+import RevisionLine from "./RevisionLine";
 
 /**
  * Every rule Striff has read from one repository's documents, in one list.
@@ -50,6 +52,10 @@ interface Summary {
 interface RepoRules {
   repoOwner: string;
   repoName: string;
+  /** The branch this listing is of; null where GitHub would not say. */
+  defaultBranch: string | null;
+  /** The commit that branch pointed at when the documents were last listed. */
+  defaultBranchSha: string | null;
   lastScanMs: number | null;
   summary: Summary;
   documents: { document: Doc; rules: Rule[] }[];
@@ -59,12 +65,29 @@ interface RepoRules {
 /** One rule with the document it came from, which is how this view reads them. */
 type Row = Rule & { doc: Doc };
 
+/**
+ * What the last pull request to judge a rule said about it.
+ *
+ * "Broken" and "already broken" answer different questions and were told apart by nothing but the
+ * word "already": one is a rule this change broke, the other a rule the code was not keeping before
+ * this change either. Saying "newly broken" puts the difference in the label rather than in a
+ * footnote, and every pill and chip carries the longer sentence as its title.
+ */
 const OUTCOME_LABEL: Record<string, string> = {
   MAINTAINED: "Held",
-  VIOLATED: "Broken",
+  VIOLATED: "Newly broken",
   PRE_EXISTING: "Already broken",
   RESTORED: "Restored",
   UNCLEAR: "Couldn't check",
+};
+
+const OUTCOME_HELP: Record<string, string> = {
+  MAINTAINED: "The code kept this rule when the pull request last checked it.",
+  VIOLATED: "The pull request broke this rule: the code kept it before that change and not after.",
+  PRE_EXISTING:
+    "The code was already not keeping this rule before that pull request, so the change is not what broke it.",
+  RESTORED: "The pull request fixed this rule: the code was not keeping it before, and does now.",
+  UNCLEAR: "Striff could not tell, and says so rather than guessing either way.",
 };
 
 const ON_BRANCH_LABEL: Record<string, string> = {
@@ -73,7 +96,7 @@ const ON_BRANCH_LABEL: Record<string, string> = {
   UNCLEAR: "Couldn't check on the default branch",
 };
 
-type Filter = "all" | "broken" | "prior" | "held" | "unchecked";
+type Filter = "all" | "broken" | "prior" | "held" | "unchecked" | "onMain";
 
 /** Which column the list is ordered by. */
 type SortKey = "rule" | "source" | "outcome";
@@ -123,6 +146,7 @@ export default function RulesTab({
   openRepo,
   onOpenDoc,
   onRepoChange,
+  showFilter,
 }: {
   installationId: number;
   repos: { full_name: string }[];
@@ -132,6 +156,8 @@ export default function RulesTab({
   onOpenDoc?: (path: string) => void;
   /** Reports a repository picked here, so the shell and the documents view follow it. */
   onRepoChange?: (fullName: string) => void;
+  /** Which rules to show, where a reader followed a count here; `at` is when they asked. */
+  showFilter?: { value: string; at: number } | null;
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [data, setData] = useState<RepoRules | null>(null);
@@ -149,6 +175,12 @@ export default function RulesTab({
   useEffect(() => {
     if (openRepo && openRepo !== repo) setRepo(openRepo);
   }, [openRepo]);
+
+  // Keyed on when it was asked for, not on what was asked for: following the same count twice has
+  // to move the view both times.
+  useEffect(() => {
+    if (showFilter) setFilter(showFilter.value as Filter);
+  }, [showFilter?.at]);
 
   useEffect(() => {
     if (!owner || !name) return;
@@ -203,6 +235,7 @@ export default function RulesTab({
       prior: rows.filter((row) => row.status === "PRE_EXISTING").length,
       held: rows.filter((row) => row.status === "MAINTAINED" || row.status === "RESTORED").length,
       unchecked: rows.filter((row) => !row.status).length,
+      onMain: rows.filter((row) => row.onDefaultBranch === "HOLDS").length,
     }),
     [rows]
   );
@@ -219,6 +252,8 @@ export default function RulesTab({
           return row.status === "MAINTAINED" || row.status === "RESTORED";
         case "unchecked":
           return !row.status;
+        case "onMain":
+          return row.onDefaultBranch === "HOLDS";
         default:
           return true;
       }
@@ -353,27 +388,39 @@ export default function RulesTab({
             Every rule Striff has read from this repository's docs, and where each one came from.
             Open a document's name to see it beside the rest of its doc.
           </p>
+          {data && <RevisionLine catalog={data} />}
         </div>
         {summary && (
           <div className="docs-tally">
-            <span className="docs-tally-item">
-              <b>{summary.rules}</b>
-              <i>rules</i>
-            </span>
-            <span className="docs-tally-item is-violated">
-              <b>{summary.brokenRules}</b>
-              <i>broken</i>
-            </span>
-            <span className="docs-tally-item is-prior">
-              <b>{summary.alreadyBrokenRules}</b>
-              <i>already broken</i>
-            </span>
-            <span className="docs-tally-item is-held">
-              <b>{summary.holdsOnDefaultBranch}</b>
-              <i>hold on main</i>
-            </span>
-            <span className="docs-tally-item">
-              <b>{summary.read}</b>
+            {([
+              ["all", summary.rules, "rules", "", "Every rule read from this repository's docs."],
+              ["broken", summary.brokenRules, "newly broken", "is-violated", OUTCOME_HELP.VIOLATED],
+              ["prior", summary.alreadyBrokenRules, "already broken", "is-prior",
+                OUTCOME_HELP.PRE_EXISTING],
+              ["onMain", summary.holdsOnDefaultBranch, "hold on main", "is-held",
+                "Rules that hold in the code on the default branch right now."],
+            ] as const).map(([key, count, label, tone, help]) => (
+              <button
+                key={key}
+                type="button"
+                className={`docs-tally-item ${tone}${filter === key ? " is-on" : ""}`}
+                title={`${help} Click to show these.`}
+                onClick={() => setFilter(key)}
+              >
+                <b>{count}</b>
+                <i>{label}</i>
+              </button>
+            ))}
+            <span
+              className="docs-tally-item"
+              title="Documents whose rules have been extracted, of every document Striff can read here."
+            >
+              <b>
+                {summary.read}
+                <em>
+                  /{summary.documents - summary.retired - summary.screenedOut - summary.excluded}
+                </em>
+              </b>
               <i>docs read</i>
             </span>
           </div>
@@ -418,16 +465,20 @@ export default function RulesTab({
             </label>
             <div className="docs-filters">
               {([
-                ["all", "All", counts.all, ""],
-                ["broken", "Broken", counts.broken, "broken"],
-                ["prior", "Already broken", counts.prior, "prior"],
-                ["held", "Held", counts.held, "held"],
-                ["unchecked", "Not checked", counts.unchecked, "unread"],
-              ] as const).map(([key, label, count, dot]) => (
+                ["all", "All", counts.all, "", "Every rule read from this repository's docs."],
+                ["broken", "Newly broken", counts.broken, "broken", OUTCOME_HELP.VIOLATED],
+                ["prior", "Already broken", counts.prior, "prior", OUTCOME_HELP.PRE_EXISTING],
+                ["held", "Held last check", counts.held, "held", OUTCOME_HELP.MAINTAINED],
+                ["unchecked", "Not checked", counts.unchecked, "unread",
+                  "No pull request has judged this rule yet."],
+                ["onMain", "Holds on main", counts.onMain, "held",
+                  "The rule holds in the code on the default branch right now, whatever any one pull request said about it."],
+              ] as const).map(([key, label, count, dot, help]) => (
                 <button
                   key={key}
                   type="button"
                   className={`docs-filter${filter === key ? " is-on" : ""}`}
+                  title={help}
                   onClick={() => setFilter(key)}
                 >
                   {dot && <span className={`docs-fdot is-${dot}`} />}
@@ -505,7 +556,12 @@ export default function RulesTab({
                     </span>
                   </td>
                   <td>
-                    <span className={`docs-outcome is-${(row.status || "none").toLowerCase()}`}>
+                    <span
+                      className={`docs-outcome is-${(row.status || "none").toLowerCase()}`}
+                      title={row.status
+                        ? OUTCOME_HELP[row.status] || ""
+                        : "No pull request has judged this rule yet."}
+                    >
                       {row.status ? OUTCOME_LABEL[row.status] || row.status : "Not checked yet"}
                     </span>
                     {row.pullNo && (
@@ -517,6 +573,20 @@ export default function RulesTab({
                       <span className="docs-outcome-branch">
                         {ON_BRANCH_LABEL[row.onDefaultBranch] || row.onDefaultBranch}
                       </span>
+                    )}
+                    {worthAnIssue(row.status) && (
+                      <a
+                        className="docs-issue-link"
+                        href={issueUrl(owner, name, row.doc.path, row)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Opens GitHub with an issue written out: the sentence, the rule, what happened and what would close it."
+                      >
+                        Open an issue
+                        <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M6.5 3.5H3.5v9h9v-3" /><path d="M9.5 3.5h3v3" /><path d="M12.5 3.5 7 9" />
+                        </svg>
+                      </a>
                     )}
                   </td>
                 </tr>

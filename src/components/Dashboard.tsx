@@ -103,6 +103,9 @@ export default function Dashboard() {
   const [openRepo, setOpenRepo] = useState<string | null>(null);
   // The document the documents view should open on, set by following a rule to where it came from.
   const [focusDoc, setFocusDoc] = useState<string | null>(null);
+  // A count followed from the documents view: which rules to show, and when it was asked for, so
+  // asking twice for the same ones still moves the view.
+  const [rulesFilter, setRulesFilter] = useState<{ value: string; at: number } | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -362,6 +365,11 @@ export default function Dashboard() {
               }}
               focusDoc={focusDoc}
               viewer={user?.login || null}
+              rulesFilter={rulesFilter}
+              onOpenRules={(value) => {
+                setRulesFilter({ value, at: Date.now() });
+                setSection("rules");
+              }}
               onOpenDoc={(path) => {
                 setFocusDoc(path);
                 setSection("docs");
@@ -510,6 +518,8 @@ function InstallationCard({
   onOpenRepo,
   focusDoc,
   viewer,
+  rulesFilter,
+  onOpenRules,
   onOpenDoc,
   onRepoChange,
 }: {
@@ -525,6 +535,10 @@ function InstallationCard({
   focusDoc?: string | null;
   /** The signed-in login, recorded against an exclusion or an override as who asked for it. */
   viewer?: string | null;
+  /** Which rules to show, where a reader followed a count to them. */
+  rulesFilter?: { value: string; at: number } | null;
+  /** Follows a count of rules to the rules themselves. */
+  onOpenRules?: (filter: string) => void;
   /** Follows a rule to the document it was read from. */
   onOpenDoc?: (path: string) => void;
   /** Reports a repository picked inside a tab, so the shell and the other tab follow it. */
@@ -876,6 +890,7 @@ function InstallationCard({
                 openRepo={openRepo}
                 onOpenDoc={onOpenDoc}
                 onRepoChange={onRepoChange}
+                showFilter={rulesFilter}
               />
             </div>
           ) : installTab === "docs" ? (
@@ -887,6 +902,7 @@ function InstallationCard({
                 focusDoc={focusDoc}
                 onRepoChange={onRepoChange}
                 actor={viewer}
+                onOpenRules={onOpenRules}
               />
             </div>
           ) : installTab === "metrics" ? (

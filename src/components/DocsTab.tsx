@@ -1,4 +1,6 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
+import { issueUrl, worthAnIssue } from "./docIssue";
+import RevisionLine from "./RevisionLine";
 
 /**
  * The documents Striff can read in one repository, and the rules it found in them.
@@ -31,6 +33,10 @@ interface Doc {
   alreadyBrokenRules: number;
   excludedBy: string | null;
   excludedReason: string | null;
+  /** A fingerprint of the text on the default branch when it was last listed. */
+  currentContentHash: string | null;
+  /** A fingerprint of the text the rules were read from, which may be a branch's version. */
+  extractedContentHash: string | null;
   /** Whether this repository asked for it to be read whatever a screen says. */
   forced: boolean;
   forcedBy: string | null;
@@ -57,6 +63,10 @@ interface Summary {
 interface Catalog {
   repoOwner: string;
   repoName: string;
+  /** The branch this listing is of; null where GitHub would not say. */
+  defaultBranch: string | null;
+  /** The commit that branch pointed at when the documents were last listed. */
+  defaultBranchSha: string | null;
   lastScanMs: number | null;
   summary: Summary;
   documents: Doc[];
@@ -120,12 +130,29 @@ const STATE_LABEL: Record<DocState, string> = {
   EXCLUDED: "Excluded",
 };
 
+/**
+ * What the last pull request to judge a rule said about it.
+ *
+ * "Broken" and "already broken" answer different questions and were told apart by nothing but the
+ * word "already": one is a rule this change broke, the other a rule the code was not keeping before
+ * this change either. Saying "newly broken" puts the difference in the label rather than in a
+ * footnote, and every pill and chip carries the longer sentence as its title.
+ */
 const OUTCOME_LABEL: Record<string, string> = {
   MAINTAINED: "Held",
-  VIOLATED: "Broken",
+  VIOLATED: "Newly broken",
   PRE_EXISTING: "Already broken",
   RESTORED: "Restored",
   UNCLEAR: "Couldn't check",
+};
+
+const OUTCOME_HELP: Record<string, string> = {
+  MAINTAINED: "The code kept this rule when the pull request last checked it.",
+  VIOLATED: "The pull request broke this rule: the code kept it before that change and not after.",
+  PRE_EXISTING:
+    "The code was already not keeping this rule before that pull request, so the change is not what broke it.",
+  RESTORED: "The pull request fixed this rule: the code was not keeping it before, and does now.",
+  UNCLEAR: "Striff could not tell, and says so rather than guessing either way.",
 };
 
 const ON_BRANCH_LABEL: Record<string, string> = {
@@ -299,6 +326,7 @@ export default function DocsTab({
   focusDoc,
   actor,
   onRepoChange,
+  onOpenRules,
 }: {
   installationId: number;
   repos: { full_name: string }[];
@@ -310,6 +338,8 @@ export default function DocsTab({
   actor?: string | null;
   /** Reports a repository picked here, so the shell and the other tab follow it. */
   onRepoChange?: (fullName: string) => void;
+  /** Opens the rules on the rules this count counted. */
+  onOpenRules?: (filter: string) => void;
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
@@ -673,7 +703,11 @@ export default function DocsTab({
   function rowBadges(doc: Doc) {
     return (
       <>
-        {doc.brokenRules > 0 && <span className="docs-badge is-broken">{doc.brokenRules} broken</span>}
+        {doc.brokenRules > 0 && (
+          <span className="docs-badge is-broken" title={OUTCOME_HELP.VIOLATED}>
+            {doc.brokenRules} newly broken
+          </span>
+        )}
         {doc.outdated && doc.state === "READ" && (
           <span className="docs-badge is-outdated">Edited since</span>
         )}
@@ -867,34 +901,68 @@ export default function DocsTab({
             reads a doc when a pull request changes code the doc talks about, so some docs are still
             waiting for that.
           </p>
+          {catalog && <RevisionLine catalog={catalog} />}
         </div>
         {summary && (
           <div className="docs-tally">
-            <span
+            <button
+              type="button"
+              className="docs-tally-item"
+              title="Every document in this repository, whatever state it is in."
+              onClick={() => setFilter("all")}
+            >
+              <b>{summary.documents}</b>
+              <i>documents</i>
+            </button>
+            <button
+              type="button"
               className="docs-tally-item"
               title="Documents Striff can extract rules from: everything it holds, less the ones that say they are no longer current, the ones a screen kept out, and the ones you excluded."
+              onClick={() => setFilter("all")}
             >
               <b>
                 {summary.documents - summary.retired - summary.screenedOut - summary.excluded}
               </b>
-              <i>docs to read</i>
-            </span>
-            <span className="docs-tally-item is-violated">
+              <i>extractable</i>
+            </button>
+            {/* These three count rules, not documents, so they lead to the rules and land on the
+                ones they counted. A number you cannot follow is a number you have to trust. */}
+            <button
+              type="button"
+              className="docs-tally-item is-violated"
+              title={`${OUTCOME_HELP.VIOLATED} Opens the rules, showing these.`}
+              onClick={() => onOpenRules?.("broken")}
+            >
               <b>{summary.brokenRules}</b>
-              <i>broken</i>
-            </span>
-            <span className="docs-tally-item is-prior">
+              <i>newly broken</i>
+            </button>
+            <button
+              type="button"
+              className="docs-tally-item is-prior"
+              title={`${OUTCOME_HELP.PRE_EXISTING} Opens the rules, showing these.`}
+              onClick={() => onOpenRules?.("prior")}
+            >
               <b>{summary.alreadyBrokenRules}</b>
               <i>already broken</i>
-            </span>
-            <span className="docs-tally-item is-held">
+            </button>
+            <button
+              type="button"
+              className="docs-tally-item is-held"
+              title="Rules that hold in the code on the default branch right now, whatever any one pull request said. Opens the rules, showing these."
+              onClick={() => onOpenRules?.("onMain")}
+            >
               <b>{summary.holdsOnDefaultBranch}</b>
               <i>hold on main</i>
-            </span>
-            <span className="docs-tally-item">
+            </button>
+            <button
+              type="button"
+              className="docs-tally-item"
+              title="Every rule read from this repository's docs. Opens the rules."
+              onClick={() => onOpenRules?.("all")}
+            >
               <b>{summary.rules}</b>
               <i>rules</i>
-            </span>
+            </button>
           </div>
         )}
       </div>
@@ -926,7 +994,7 @@ export default function DocsTab({
             <div className="docs-filters">
               {([
                 ["all", "All", filterCounts.all, ""],
-                ["broken", "Broken", filterCounts.broken, "broken"],
+                ["broken", "Newly broken", filterCounts.broken, "broken"],
                 ["notRead", "Not read", filterCounts.notRead, "unread"],
                 ["skipped", "Skipped", filterCounts.skipped, "other"],
                 ["excluded", "Excluded", filterCounts.excluded, "other"],
@@ -1001,6 +1069,25 @@ export default function DocsTab({
                   </span>
                   <span className="docs-pane-actions">{rowMenu(selected, detail.document, false, "pane")}</span>
                 </div>
+                <p className="docs-version-line">
+                  <span title="The text on the default branch when Striff last listed it. Striff keeps a fingerprint, not the text.">
+                    On {catalog?.defaultBranch || "the default branch"}:{" "}
+                    <code>{detail.document.currentContentHash || "not listed yet"}</code>
+                  </span>
+                  {detail.document.extractedContentHash && (
+                    <span title="The version the rules below were read from. A pull request reads the text on its own branch, so this is not always a version that reached the default branch.">
+                      {" · rules from "}
+                      <code>{detail.document.extractedContentHash}</code>
+                      {detail.document.lastExtractedPullNo
+                        ? ` (PR #${detail.document.lastExtractedPullNo})`
+                        : ""}
+                      {detail.document.currentContentHash
+                        && detail.document.extractedContentHash !== detail.document.currentContentHash
+                        ? " — a different version to the one on the branch"
+                        : ""}
+                    </span>
+                  )}
+                </p>
                 <p className={`docs-state-line is-${detail.document.state.toLowerCase()}`}>
                   <span
                     className={`docs-sdot is-${
@@ -1053,6 +1140,20 @@ export default function DocsTab({
                               <span className="docs-outcome-branch">
                                 {ON_BRANCH_LABEL[rule.onDefaultBranch] || rule.onDefaultBranch}
                               </span>
+                            )}
+                            {worthAnIssue(rule.status) && (
+                              <a
+                                className="docs-issue-link"
+                                href={issueUrl(owner, name, selected, rule)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Opens GitHub with an issue written out: the sentence, the rule, what happened and what would close it."
+                              >
+                                Open an issue
+                                <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <path d="M6.5 3.5H3.5v9h9v-3" /><path d="M9.5 3.5h3v3" /><path d="M12.5 3.5 7 9" />
+                                </svg>
+                              </a>
                             )}
                           </td>
                         </tr>
