@@ -11,12 +11,15 @@ Every coding agent starts the same way. Before it writes a line, it reads the re
 Here is what that looks like in the [official C# SDK for the Model Context Protocol](https://github.com/modelcontextprotocol/csharp-sdk), the protocol built to give AI models accurate context. Line 258 of its Copilot instructions:
 
 <div class="bp-figure" data-reveal>
-<div class="bp-gh">
-<div class="bp-gh-head">.github/copilot-instructions.md<span class="bp-gh-sha">main &middot; Sep 2026</span></div>
-<div class="bp-gh-body">
-<div class="bp-gh-line"><span>256</span><span>- Server primitives (tools, prompts, resources) are discovered via reflection using attributes</span></div>
-<div class="bp-gh-line"><span>257</span><span>- Support both attribute-based registration (&#96;WithTools&lt;T&gt;()&#96;) and instance-based (&#96;WithTools(target)&#96;)</span></div>
-<div class="bp-gh-line bp-gh-line--hl"><span>258</span><span>- Use &#96;McpServerFactory&#96; to create server instances with configured options</span></div>
+<div class="bp-ghp">
+<div class="bp-ghp-bar"><span class="bp-ghp-crumbs">csharp-sdk <i>/</i> .github <i>/</i> <b>copilot-instructions.md</b></span><span class="bp-ghp-tabs"><span class="is-on">Preview</span><span>Code</span><span>Blame</span></span></div>
+<div class="bp-ghp-body">
+<p class="bp-ghp-h">Server Implementation</p>
+<ul>
+<li><span class="bp-ghp-ln">256</span><span class="bp-ghp-text">Server primitives (tools, prompts, resources) are discovered via reflection using attributes</span></li>
+<li><span class="bp-ghp-ln">257</span><span class="bp-ghp-text">Support both attribute-based registration (<code>WithTools&lt;T&gt;()</code>) and instance-based (<code>WithTools(target)</code>)</span></li>
+<li class="is-hl"><span class="bp-ghp-ln">258</span><span class="bp-ghp-text">Use <mark>McpServerFactory</mark> to create server instances with configured options<br /><span class="bp-ghp-callout"><b>Not in the code.</b> Deleted 2 Dec 2025 in <a href="https://github.com/modelcontextprotocol/csharp-sdk/pull/985">#985</a>.</span></span></li>
+</ul>
 </div>
 </div>
 <p class="bp-figure-caption"><a href="https://github.com/modelcontextprotocol/csharp-sdk/blob/main/.github/copilot-instructions.md#L258">The line on <code>main</code></a>. This file exists to brief a coding agent before it writes anything.</p>
@@ -59,6 +62,20 @@ In April 2026 a commit authored as "Architecture Bot" [added an Architecture sec
 A wrong sentence in a doc used to cost one confused engineer an afternoon. Now it is read by every agent run, acted on without question, and copied into the next document.
 </div>
 
+## The design doc got a new job
+
+Writing the design down first is not new. Teams at Google [generally require a design document](https://abseil.io/resources/swe-book/html/ch10.html) before any significant change to a product or service. Amazon replaced the slide deck with the six-pager. The logic never needed defending: thinking is cheaper than building, and a decision that is written down can be argued with before it costs anything.
+
+For all of that history the document had one reader, and it was a person. They read it, argued with it, went off to write the code, and noticed when something in it had stopped being true. The document shaped the result the way a conversation does: loosely, through a human who could tell when it was wrong.
+
+That is no longer what happens. The design doc is now the thing the code is generated *from*. The practice has a name, spec-driven development, and a toolchain: GitHub's [Spec Kit](https://github.com/github/spec-kit), AWS's [Kiro](https://kiro.dev), and the `AGENTS.md` and `CLAUDE.md` files that tell an agent how the system is put together before it touches it. The pitch is that the specification stops being a forgotten page on a wiki and becomes the operational contract the system is built to.
+
+<div class="bp-callout bp-callout--amber">
+Every other artefact your code is built from has something that checks it. Source has a compiler. Tests have a runner. Types have a checker, schemas have a validator, manifests have a resolver. The document your agents build from has nothing.
+</div>
+
+That is the gap. If the doc is the guideline the code is generated from, it has to be the guideline the code is *maintained* against, on every change, by something that reads the document and the code and complains when they disagree. Otherwise it is a contract nobody enforces, and line 258 is what an unenforced contract looks like after ten months.
+
 ## The sentences that don't fail the build
 
 A stale class name is the version of this problem you can see. The agent trips over it and recovers. The expensive version is silent.
@@ -76,34 +93,53 @@ The second one is where architecture goes. Not in one dramatic change but in a h
 We build [Striff](https://striff.io) to close that gap. It reads the documents already in a repository, turns each sentence that makes a claim about the code into a rule, and checks the rule against the parsed code before and after every pull request. We ran it over roughly six hundred recent public pull requests in Java, C#, TypeScript and Python. From those repositories' own documentation it read 7,161 rules:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">7,161 documented rules, checked on the pull request</p>
-<div class="bp-bars">
-<div class="bp-bar-row"><span class="bp-bar-label">Held</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:100%"></div></div><span class="bp-bar-value">5,519</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Broken by the change under review</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:1.8%"></div></div><span class="bp-bar-value">97</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Already broken before it</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:1%"></div></div><span class="bp-bar-value">53</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Restored by the change</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:0.1%"></div></div><span class="bp-bar-value">5</span></div>
+<p class="bp-figure-title">Every verdict, then the ones that accuse</p>
+<div class="bp-zoom">
+<div class="bp-zoom-strip bp-zoom-strip--all"><span class="is-held" style="flex:5519"></span><span class="is-acc" style="flex:155"></span></div>
+<div class="bp-zoom-legend"><span><i class="is-held"></i>5,519 held</span><span class="bp-zoom-legend-acc"><i class="is-acc"></i>155 accuse</span></div>
+<div class="bp-zoom-bracket" aria-hidden="true"><span></span></div>
+<div class="bp-zoom-strip bp-zoom-strip--acc"><span class="is-viol" style="flex:97"></span><span class="is-prior" style="flex:53"></span><span class="is-rest" style="flex:5"></span></div>
+<div class="bp-zoom-tiles">
+<div class="bp-zoom-tile is-viol"><b>97</b><span>broken by the pull request under review</span></div>
+<div class="bp-zoom-tile is-prior"><b>53</b><span>already broken before it, never blamed on the author</span></div>
+<div class="bp-zoom-tile is-rest"><b>5</b><span>restored: broken before, true after</span></div>
 </div>
-<p class="bp-figure-caption">Ninety-seven times, a pull request contradicted a sentence in that repository&rsquo;s own documentation, and would have merged without anyone comparing the two. Docs are right almost all the time, which is exactly why the exceptions get trusted. <a href="/blog/design-docs-are-enforceable-now">Here is one of the 97, sentence to verdict.</a></p>
+</div>
+<p class="bp-figure-caption">Roughly six hundred public pull requests; 7,161 rules read out of their repositories&rsquo; own documentation. Ninety-seven times a pull request contradicted a sentence in its own docs and would have merged without anyone comparing the two. Docs are right almost all the time, which is exactly why the exceptions get trusted. <a href="/blog/design-docs-are-enforceable-now">Here is one of the 97, sentence to verdict.</a></p>
 </div>
 
 Ninety-seven is not a firehose, and it shouldn't be: a check that fires on every pull request gets muted in a week. The point is that each of those 97 was surfaced on the line that caused it, in the pull request, while someone was already looking, instead of a year later as "how did the architecture end up like this?"
 
-## What we found in the docs agents are reading
+## What we found, and where
 
-The same run also asks a simpler question of every document: does it name a type this code no longer has? These are cases we checked by hand, each linking the sentence and the commit that removed the type:
+The sweep was not small repositories. Every one had over a thousand stars, and a third had over ten thousand:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Instructions an agent reads today</p>
-<div class="bp-drift">
-<div class="bp-drift-row"><span class="bp-drift-repo">modelcontextprotocol/csharp-sdk<a href="https://github.com/modelcontextprotocol/csharp-sdk/blob/main/.github/copilot-instructions.md?plain=1#L258">copilot-instructions.md:258</a></span><span class="bp-drift-name">McpServerFactory</span><span class="bp-drift-gone">agent instruction file &middot; <a href="https://github.com/modelcontextprotocol/csharp-sdk/commit/136755f2be0c78193a0b0e82298e9eaa9f424794">removed Dec 2025</a></span></div>
-<div class="bp-drift-row"><span class="bp-drift-repo">spring-projects/spring-ai<a href="https://github.com/spring-projects/spring-ai/blob/main/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/audio/speech/openai-speech.adoc">openai-speech.adoc</a></span><span class="bp-drift-name">OpenAiAudioApi</span><span class="bp-drift-gone">walked through ~20 times &middot; <a href="https://github.com/spring-projects/spring-ai/commit/75fa844869786f80113bef7a4a557e9600452ba6">removed Apr 2026</a></span></div>
-<div class="bp-drift-row"><span class="bp-drift-repo">yegor256/cactoos<a href="https://github.com/yegor256/cactoos/blob/master/README.md?plain=1#L404">README.md:404</a></span><span class="bp-drift-name">StickyList</span><span class="bp-drift-gone">written by an agent in 2026 &middot; <a href="https://github.com/yegor256/cactoos/commit/eed03c1fc05217eeda0564999cae2c87709b1e13">removed 2020</a></span></div>
-<div class="bp-drift-row"><span class="bp-drift-repo">apache/dolphinscheduler<a href="https://github.com/apache/dolphinscheduler/blob/dev/docs/docs/en/contribute/backend/spi/registry.md?plain=1#L20">spi/registry.md:20</a></span><span class="bp-drift-name">RegistryFactory</span><span class="bp-drift-gone">contributor guide &middot; <a href="https://github.com/apache/dolphinscheduler/commit/67cc260d52c1f2e5aa7db76aa8621cdd0f8c4ee0">removed Dec 2021</a></span></div>
+<div class="bp-stats">
+<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">7.6M</div><div class="bp-stat-label">GitHub stars across the repositories scanned</div></div>
+<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">175</div><div class="bp-stat-label">of them with more than 10,000 stars</div></div>
+<div class="bp-stat bp-stat--amber"><div class="bp-stat-value">7,161</div><div class="bp-stat-label">rules read out of their own documentation and checked at both revisions</div></div>
+<div class="bp-stat bp-stat--danger"><div class="bp-stat-value">97</div><div class="bp-stat-label">pull requests told, before merge, that they contradicted their own docs</div></div>
 </div>
-<p class="bp-figure-caption">Checked by hand against each default branch in September 2026. Every one is a sentence an agent will act on the next time it is asked to touch that area of the code.</p>
 </div>
 
-Spring AI's is the one to think about. Its speech documentation still builds a whole walkthrough on `OpenAiAudioApi`, five months after the project moved to the official OpenAI Java SDK. An agent asked to add text-to-speech reads twenty sentences describing a design the maintainers deliberately replaced. It will either fail the build and recover, or, if it is resourceful, rebuild the old design on top of the new one.
+These are the findings we checked by hand and can stand behind, largest repository first. Each links the sentence and the evidence.
+
+<div class="bp-figure" data-reveal>
+<p class="bp-figure-title">Checked by hand, largest first</p>
+<div class="bp-find">
+<div class="bp-find-row"><span class="bp-find-repo"><b>apache/dolphinscheduler</b><i>14.5k &#9733;</i></span><span class="bp-find-body"><span class="bp-find-doc"><a href="https://github.com/apache/dolphinscheduler/blob/dev/docs/docs/en/contribute/backend/spi/registry.md?plain=1#L20">Contributor guide</a> says a new registry plugin &ldquo;only needs to implement <code>RegistryFactory</code>&rdquo;.</span><span class="bp-find-code">The interface was <a href="https://github.com/apache/dolphinscheduler/commit/67cc260d52c1f2e5aa7db76aa8621cdd0f8c4ee0">removed in a package split</a>. First-time contributors, and agents, are sent to implement something that isn&rsquo;t there.</span></span><span class="bp-find-tag is-absent">type gone</span></div>
+<div class="bp-find-row"><span class="bp-find-repo"><b>aspnetboilerplate</b><i>12.0k &#9733;</i></span><span class="bp-find-body"><span class="bp-find-doc"><a href="https://github.com/aspnetboilerplate/aspnetboilerplate/blob/dev/doc/WebSite/Startup-Configuration.md?plain=1#L62">Startup-Configuration.md</a> walks the reader through <code>IAbpModuleConfigurations</code>.</span><span class="bp-find-code">No such type in the code; it was <a href="https://github.com/aspnetboilerplate/aspnetboilerplate/commit/d46b89df692fdb5e6caa7b06785fb6d49dea5978">replaced</a> and the page never followed.</span></span><span class="bp-find-tag is-absent">type gone</span></div>
+<div class="bp-find-row"><span class="bp-find-repo"><b>dotnet/BenchmarkDotNet</b><i>11.5k &#9733;</i></span><span class="bp-find-body"><span class="bp-find-doc"><a href="https://github.com/dotnet/BenchmarkDotNet/blob/master/docs/articles/configs/exporters.md?plain=1#L101">exporters.md</a> documents four properties of <code>ISummaryStyle</code>, with defaults.</span><span class="bp-find-code">The interface was <a href="https://github.com/dotnet/BenchmarkDotNet/commit/f10752ace1bf4c5e4316c6f9b7b34ca25ac46c19">deleted</a>; the properties live on a class with a different name.</span></span><span class="bp-find-tag is-absent">type gone</span></div>
+<div class="bp-find-row"><span class="bp-find-repo"><b>spring-projects/spring-ai</b><i>9.5k &#9733;</i></span><span class="bp-find-body"><span class="bp-find-doc"><a href="https://github.com/spring-projects/spring-ai/blob/main/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/audio/speech/openai-speech.adoc">The speech reference</a> builds its whole walkthrough on <code>OpenAiAudioApi</code>, about twenty mentions.</span><span class="bp-find-code">The project <a href="https://github.com/spring-projects/spring-ai/commit/75fa844869786f80113bef7a4a557e9600452ba6">moved to the official OpenAI Java SDK</a> five months ago. An agent asked to add speech reads twenty sentences describing the design that was replaced.</span></span><span class="bp-find-tag is-absent">type gone</span></div>
+<div class="bp-find-row"><span class="bp-find-repo"><b>apache/pinot</b><i>6.1k &#9733;</i></span><span class="bp-find-body"><span class="bp-find-doc"><code>pinot-sql-ddl/DESIGN.md</code> says the module &ldquo;depends only on <code>pinot-spi</code>, <code>pinot-common</code>, and <code>calcite-babel</code>&rdquo;.</span><span class="bp-find-code">It also depends on <code>pinot-query-planner</code>: declared in its pom, imported by <code>MaterializedViewSchemaInferer</code>. The design doc describes a boundary the code crossed.</span></span><span class="bp-find-tag is-prior">rule broken</span></div>
+<div class="bp-find-row"><span class="bp-find-repo"><b>modelcontextprotocol/csharp-sdk</b><i>4.5k &#9733;</i></span><span class="bp-find-body"><span class="bp-find-doc"><a href="https://github.com/modelcontextprotocol/csharp-sdk/blob/main/.github/copilot-instructions.md?plain=1#L258">copilot-instructions.md:258</a> tells the agent to use <code>McpServerFactory</code>.</span><span class="bp-find-code">Written by Copilot, <a href="https://github.com/modelcontextprotocol/csharp-sdk/commit/136755f2be0c78193a0b0e82298e9eaa9f424794">deleted by Copilot</a>. The only remaining mention is the instruction.</span></span><span class="bp-find-tag is-absent">agent file</span></div>
+<div class="bp-find-row"><span class="bp-find-repo"><b>MonoGame.Extended</b><i>1.8k &#9733;</i></span><span class="bp-find-body"><span class="bp-find-doc"><code>CODING_GUIDELINES.md</code>: &ldquo;Helper classes should be static classes with static methods.&rdquo;</span><span class="bp-find-code">Six of the seven <code>*Helper</code> types are static. <code>PrimitivesHelper</code> is an <code>internal class</code>. A rule over every class of a kind, and the one exception found.</span></span><span class="bp-find-tag is-prior">rule broken</span></div>
+<div class="bp-find-row"><span class="bp-find-repo"><b>yegor256/cactoos</b><i>782 &#9733;</i></span><span class="bp-find-body"><span class="bp-find-doc"><a href="https://github.com/yegor256/cactoos/blob/master/README.md?plain=1#L404">README.md:404</a>, an Architecture section written by an agent in 2026, says caching needs <code>StickyList</code>.</span><span class="bp-find-code">The class was <a href="https://github.com/yegor256/cactoos/commit/eed03c1fc05217eeda0564999cae2c87709b1e13">removed in 2020</a>. The agent copied it from a table further up the same README.</span></span><span class="bp-find-tag is-absent">agent-written</span></div>
+<div class="bp-find-row"><span class="bp-find-repo"><b>Ericsson/ecchronos</b><i>PR #1786</i></span><span class="bp-find-body"><span class="bp-find-doc"><code>core.impl/README.md:136</code>: <code>NodeWorker</code> &ldquo;calls <code>RepairScheduler.putConfigurations()</code>&rdquo;.</span><span class="bp-find-code">True before the pull request, false after it: a refactor moved the call into a new class and the README was not in the diff. Caught on the change that did it.</span></span><span class="bp-find-tag is-viol">broken by the PR</span></div>
+</div>
+<p class="bp-figure-caption">Star counts and default branches as of 24 September 2026. &ldquo;Rule broken&rdquo; means the documented rule fails in the code at both revisions of the pull request checked; &ldquo;broken by the PR&rdquo; means it held before and fails after. <a href="/blog/design-docs-are-enforceable-now#a-real-example">The ecChronos case, end to end.</a></p>
+</div>
 
 ## Why nothing you already run catches this
 
@@ -122,12 +158,15 @@ None of this is hard to check. "`core` must not import from `plugins`" is a one-
 - **Have the docs checked on the pull request**, where the change that contradicts them is being reviewed. This is what the MCP finding looks like when Striff posts it:
 
 <div class="bp-figure" data-reveal>
-<div class="bp-gh">
-<div class="bp-gh-head"><img src="/icon.svg" alt="" width="16" height="16" style="display:inline-block;vertical-align:-3px;margin-right:0.45rem" />Striff / architectural-review<span class="bp-gh-sha">Documented types</span></div>
-<div class="bp-gh-body">
-<div class="bp-gh-line bp-gh-line--hl"><span>&#9679;</span><span><b>.github/copilot-instructions.md names 1 type this repository does not have</b></span></div>
-<div class="bp-gh-line"><span></span><span>&#96;.github/copilot-instructions.md&#96; writes &#96;McpServerFactory&#96;. This revision declares no type by that name. This is a claim about the page rather than about this change: no diff took part in it, and it may have been wrong for a long time.</span></div>
-<div class="bp-gh-line"><span></span><span>this repository once held &#96;src/ModelContextProtocol.Core/Server/McpServerFactory.cs&#96; and does not now; .github/copilot-instructions.md says: &ldquo;Use &#96;McpServerFactory&#96; to create server instances with configured options&rdquo;</span></div>
+<div class="bp-check">
+<div class="bp-check-bar"><img src="/icon.svg" alt="" width="18" height="18" /><span class="bp-check-name"><b>Striff</b> / architectural-review</span><span class="bp-check-state">Documented types &middot; 1 finding</span></div>
+<div class="bp-check-item">
+<span class="bp-check-dot" aria-hidden="true"></span>
+<div class="bp-check-text">
+<p class="bp-check-title">.github/copilot-instructions.md names 1 type this repository does not have</p>
+<p class="bp-check-summary"><code>.github/copilot-instructions.md</code> writes <code>McpServerFactory</code>. This revision declares no type by that name. This is a claim about the page rather than about this change: no diff took part in it, and it may have been wrong for a long time.</p>
+<div class="bp-check-ev"><span class="bp-check-ev-k">evidence</span><span>this repository once held <code>src/ModelContextProtocol.Core/Server/McpServerFactory.cs</code> and does not now; .github/copilot-instructions.md says: &ldquo;Use <code>McpServerFactory</code> to create server instances with configured options&rdquo;</span></div>
+</div>
 </div>
 </div>
 <p class="bp-figure-caption">Posted on the pull request beside the tests, citing the line and the commit that removed the type. The architectural rules in the same documents are checked the same way, and a change that breaks one is told so before it merges.</p>

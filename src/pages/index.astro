@@ -192,14 +192,20 @@ const teamFailures = [
   { tone: "brand", title: "It writes new docs from the wrong ones", body: "Asked to document the architecture, the agent reads the existing docs and repeats their mistakes with a fresh timestamp. The next agent now has two sentences telling it the same wrong thing.", example: "An agent-written architecture section in 2026 names a class removed in 2020.", href: "/blog/architectural-findings-in-oss" }
 ];
 /**
- * The same four moments in a team's week, with and without the check. Left is what
- * happens today; right is what the check changes, and only that.
+ * One agent-written pull request, and the two futures it has. Illustrative: the repository,
+ * the file and the timeline are invented; the check row is worded the way the check writes it.
  */
-const teamCompare = [
-  { moment: "An agent-written PR routes around the service layer", without: "Compiles, passes tests, gets approved as a diff. The rule it broke is in ARCHITECTURE.md, which was not in the diff.", with: "Rule broken by this PR, quoting the sentence and the line, before the merge." },
-  { moment: "A class is renamed; the README still names the old one", without: "Nobody opens the README. The next agent reads it and builds on a class that does not exist.", with: "The README line and the commit that removed the type, on the PR that did it." },
-  { moment: "Your senior engineer is out for two weeks", without: "Architecture review waits, or it doesn't happen.", with: "Every PR is still checked against what they wrote down. They are pulled in only when a rule breaks." },
-  { moment: "A director asks where the code is drifting", without: "Someone's best guess.", with: "Rules held, broken and already broken, by repository, month over month." }
+const forkWithout = [
+  { when: "40 minutes later", text: "Approved and merged. The diff was clean, the tests passed, and ARCHITECTURE.md was not in the diff." },
+  { when: "Next week", text: "Two more agent pull requests copy the shortcut. It is now the pattern in that module." },
+  { when: "Next quarter", text: "The service layer is optional. The architecture doc describes a system that no longer exists, and the agents are still reading it." },
+  { when: "Next year", text: "Every change costs more than it should, and nobody can point to the pull request where it started." }
+];
+const forkWith = [
+  { when: "Before review", text: "The check posts: rule broken by this pull request, quoting the sentence and the line." },
+  { when: "10 minutes later", text: "The author routes the call through OrderService. A one-line fix, while it is still one line." },
+  { when: "Merged", text: "The doc is still true. The layering holds. The next agent reads a document that matches the code." },
+  { when: "Your senior engineer", text: "Never had to look." }
 ];
 const mgrSlides = [
   {
@@ -609,23 +615,25 @@ const plans = [
          tabs, so choosing one shows its illustration on the right. -->
     <section id="how" class="scroll-mt-24 bg-slate-100/60 pb-20 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
-        <div class="max-w-3xl" data-reveal>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For teams</p>
-          <h2 class="mt-3 text-balance">Agents do what your docs say. When the docs and the code disagree, nobody finds out.</h2>
-          <p class="section-subcopy mt-4">
-            Your architecture docs, your ADRs and your <code class="github-inline-code">AGENTS.md</code> used to be read by the next engineer, who could ask when something looked off. Now they are read by every agent run, taken as fact, and built on. Nothing in the merge path compares them to the code. <strong>Striff does, on every pull request: when a change contradicts what your team wrote down, it says so before the merge and quotes the line.</strong>
-          </p>
-        </div>
+        <div class="team-intro" data-reveal>
+          <div class="team-intro-copy">
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For teams</p>
+            <h2 class="mt-3 text-balance">Agents do what your docs say. When the docs and the code disagree, nobody finds out.</h2>
+            <p class="section-subcopy mt-4">
+              Your architecture docs, your ADRs and your <code class="github-inline-code">AGENTS.md</code> used to be read by the next engineer, who could ask when something looked off. Now they are read by every agent run, taken as fact, and built on. Nothing in the merge path compares them to the code. <strong>Striff does, on every pull request: when a change contradicts what your team wrote down, it says so before the merge and quotes the line.</strong>
+            </p>
+          </div>
 
-        <!-- The three ways an agent strays from the docs, each with a real case. -->
-        <div class="team-proof mt-10" data-reveal>
-          {teamFailures.map((f) => (
-            <a class={`team-stat team-stat-${f.tone}`} href={f.href}>
-              <span class="team-stat-title">{f.title}</span>
-              <span class="team-stat-label">{f.body}</span>
-              <span class="team-stat-cite">{f.example} &rarr;</span>
-            </a>
-          ))}
+          <!-- The three ways an agent strays from the docs, each with a real case. -->
+          <div class="team-proof">
+            {teamFailures.map((f) => (
+              <a class={`team-stat team-stat-${f.tone}`} href={f.href}>
+                <span class="team-stat-title">{f.title}</span>
+                <span class="team-stat-label">{f.body}</span>
+                <span class="team-stat-cite">{f.example} &rarr;</span>
+              </a>
+            ))}
+          </div>
         </div>
 
         <div class="mgr-split mgr-carousel mt-10" data-mgr-carousel aria-roledescription="carousel" aria-label="What changes for your team" data-reveal>
@@ -752,22 +760,44 @@ const plans = [
             </div>
           </div>
         </div>
-        <!-- The same week, twice. -->
-        <div class="team-compare-wrap mt-14" data-reveal>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">The same week, with and without the check</p>
-          <div class="team-compare" role="table" aria-label="Four moments in a team's week, with and without Striff">
-            <div class="team-compare-head" role="row">
-              <span role="columnheader">The moment</span>
-              <span role="columnheader">Today</span>
-              <span role="columnheader" class="is-with"><img src="/icon.svg" alt="" width="14" height="14" /> With Striff</span>
+        <!-- One agent-written pull request, two futures. -->
+        <div class="fork mt-14" data-reveal>
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">One agent pull request, two futures</p>
+          <div class="fork-pr">
+            <div class="fork-pr-head">
+              <span class="fork-pr-title"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg><b>Add CSV export for orders</b> <span class="ghl-label ghl-label-agent">agent</span></span>
+              <span class="fork-pr-meta">#418 opened by coding-agent[bot] &middot; 27 files &middot; +612 &minus;40</span>
+              <span class="hcc-chip hcc-chip-example">Illustrative</span>
             </div>
-            {teamCompare.map((r) => (
-              <div class="team-compare-row" role="row">
-                <span class="team-compare-moment" role="cell">{r.moment}</span>
-                <span class="team-compare-without" role="cell">{r.without}</span>
-                <span class="team-compare-with" role="cell">{r.with}</span>
+            <div class="fork-pr-diff">
+              <span class="fork-pr-file">src/api/OrderController.java</span>
+              <div class="fork-pr-line"><span>3</span><span>import com.acme.orders.service.OrderService;</span></div>
+              <div class="fork-pr-line is-add"><span>4</span><span>+ import com.acme.orders.data.OrderRepository;</span></div>
+              <div class="fork-pr-line is-add"><span>41</span><span>+ &nbsp;&nbsp;var rows = orderRepository.findForExport(range);</span></div>
+            </div>
+            <div class="fork-pr-doc">
+              <span class="fork-pr-file">ARCHITECTURE.md:42</span>
+              <span class="fork-pr-quote">&ldquo;Controllers never call repositories directly; everything goes through the service layer.&rdquo;</span>
+            </div>
+          </div>
+          <div class="fork-split">
+            <div class="fork-path fork-path-without">
+              <p class="fork-path-name">Without a check</p>
+              <ol class="fork-steps">
+                {forkWithout.map((st) => (<li><span class="fork-when">{st.when}</span><span class="fork-text">{st.text}</span></li>))}
+              </ol>
+            </div>
+            <div class="fork-path fork-path-with">
+              <p class="fork-path-name"><img src="/icon.svg" alt="" width="16" height="16" /> With Striff</p>
+              <div class="fork-check">
+                <span class="fork-check-flag">Rule broken by this PR</span>
+                <span class="fork-check-rule"><code>OrderController</code> depends on <code>OrderRepository</code></span>
+                <span class="fork-check-src">ARCHITECTURE.md:42 &middot; held before this change, fails after it</span>
               </div>
-            ))}
+              <ol class="fork-steps">
+                {forkWith.map((st) => (<li><span class="fork-when">{st.when}</span><span class="fork-text">{st.text}</span></li>))}
+              </ol>
+            </div>
           </div>
         </div>
 
