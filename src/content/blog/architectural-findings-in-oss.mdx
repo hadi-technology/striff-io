@@ -6,7 +6,9 @@ category: "Data & research"
 cover: "stale-line"
 ---
 
-Line 258 of `.github/copilot-instructions.md` in the [official C# SDK for the Model Context Protocol](https://github.com/modelcontextprotocol/csharp-sdk) reads:
+Before a coding agent touches a repository, it reads an instruction file: `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`. The agent treats whatever that file says as true about the code. Nothing checks it against the code.
+
+Here is line 258 of the one in the [official C# SDK for the Model Context Protocol](https://github.com/modelcontextprotocol/csharp-sdk), the protocol that exists to give AI models accurate context:
 
 <div class="bp-figure" data-reveal>
 <div class="bp-gh">
@@ -20,7 +22,9 @@ Line 258 of `.github/copilot-instructions.md` in the [official C# SDK for the Mo
 <p class="bp-figure-caption"><a href="https://github.com/modelcontextprotocol/csharp-sdk/blob/main/.github/copilot-instructions.md#L258">The line on <code>main</code></a>. The file exists to brief a coding agent on the codebase before it writes anything.</p>
 </div>
 
-`McpServerFactory` was deleted on 2 December 2025. Search the repository for the name today and line 258 is the only result.
+`McpServerFactory` was deleted on 2 December 2025. Search the repository for the name today and line 258 is the only result. The only place the class still exists is the file agents read first.
+
+One stale line is a small thing. Where it sits is what makes it worth a post. It is in the one file whose only job is to be right for agents, in the SDK of the protocol built to give models context, and every commit around it was reviewed and merged by experienced maintainers. If it happens there, it is happening in repositories with far less attention on them. And agents don't only read these files. As the second example below shows, they write new documentation from them.
 
 We build [Striff](https://striff.io), which checks pull requests against what a repository's own documentation says about its code. This post is about lines like 258: how one gets written, what we found when we looked for more in public repositories, and what makes them harder to find than they look.
 
