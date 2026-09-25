@@ -1695,7 +1695,7 @@ html[data-scheme="auto"] body { background: #fbfbfa; }
 .sb .bp-drift-gone a:hover { color: var(--sb-accent); }
 
 @container sb-fig (min-width: 34rem) {
-  .sb .bp-drift-row { grid-template-columns: 17rem minmax(0, 1fr) 9rem; align-items: baseline; }
+  .sb .bp-drift-row { grid-template-columns: 16rem minmax(0, 1fr) 13rem; align-items: baseline; }
   .sb .bp-drift-gone { text-align: right; }
 }
 
