@@ -119,6 +119,23 @@ interface Detail {
   document: Doc;
   rules: Rule[];
   history: DocEvent[];
+  /** Every version of this document Striff holds an extraction for, newest reading first. */
+  versions: Version[];
+  /** The version the rules above were read from. */
+  showing: string | null;
+}
+
+/**
+ * One version of a document Striff has read. A pull request reads the text on its own branch, so a
+ * version can hold rules without ever having been on the default branch.
+ */
+interface Version {
+  contentHash: string;
+  ruleCount: number;
+  readAtMs: number | null;
+  pullNo: string | null;
+  onDefaultBranch: boolean;
+  shown: boolean;
 }
 
 const STATE_LABEL: Record<DocState, string> = {
@@ -421,7 +438,7 @@ export default function DocsTab({
     }
   }
 
-  async function openDoc(path: string) {
+  async function openDoc(path: string, version?: string | null) {
     setSelected(path);
     setDetail(null);
     setActionError("");
@@ -430,7 +447,7 @@ export default function DocsTab({
     const wanted = ++openedAt.current;
     try {
       const res = await fetch(
-        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}&path=${encodeURIComponent(path)}`
+        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}&path=${encodeURIComponent(path)}${version ? `&version=${encodeURIComponent(version)}` : ""}`
       );
       if (wanted !== openedAt.current) return;
       if (!res.ok) {
@@ -1088,6 +1105,43 @@ export default function DocsTab({
                     </span>
                   )}
                 </p>
+                {detail.versions && detail.versions.length > 1 && (
+                  <p className="docs-versions">
+                    <span className="docs-versions-label">Versions Striff has read:</span>
+                    {detail.versions.map((version) => (
+                      <button
+                        key={version.contentHash}
+                        type="button"
+                        className={`docs-version${version.shown ? " is-on" : ""}`}
+                        title={`${version.ruleCount} rule${version.ruleCount === 1 ? "" : "s"}${
+                          version.pullNo ? `, read on PR #${version.pullNo}` : ""
+                        }${version.readAtMs ? ` on ${when(version.readAtMs)}` : ""}${
+                          version.onDefaultBranch
+                            ? ". This is the text on the default branch."
+                            : ". This version is not what the default branch holds — a pull request read it on its own branch."
+                        }`}
+                        onClick={() => openDoc(detail.document.path, version.contentHash)}
+                      >
+                        <code>{version.contentHash.slice(0, 8)}</code>
+                        {version.onDefaultBranch && <i>on {catalog?.defaultBranch || "main"}</i>}
+                        {version.pullNo && !version.onDefaultBranch && <i>PR #{version.pullNo}</i>}
+                        <b>{version.ruleCount}</b>
+                      </button>
+                    ))}
+                  </p>
+                )}
+                {detail.showing
+                  && detail.document.extractedContentHash
+                  && !detail.showing.startsWith(detail.document.extractedContentHash) && (
+                    <p className="docs-version-note">
+                      These are the rules of the version you picked, not the ones Striff checks
+                      pull requests against — those come from{" "}
+                      <code>{detail.document.extractedContentHash}</code>.{" "}
+                      <button type="button" onClick={() => openDoc(detail.document.path)}>
+                        Show those
+                      </button>
+                    </p>
+                  )}
                 <p className={`docs-state-line is-${detail.document.state.toLowerCase()}`}>
                   <span
                     className={`docs-sdot is-${

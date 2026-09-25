@@ -138,7 +138,9 @@ export const handler = async (event) => {
       url = `${base}/rules?token=${token}`;
       init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
     } else if (params.path) {
-      url = `${base}/doc?path=${encodeURIComponent(params.path)}&token=${token}`;
+      url = `${base}/doc?path=${encodeURIComponent(params.path)}`
+        + (params.version ? `&version=${encodeURIComponent(params.version)}` : "")
+        + `&token=${token}`;
       init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
     } else {
       url = `${base}?token=${token}`;

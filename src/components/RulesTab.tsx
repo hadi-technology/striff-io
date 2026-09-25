@@ -134,10 +134,17 @@ function when(ms: number | null | undefined): string {
   return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-/** Plain text, for a file someone opens in a spreadsheet: no backticks, no newlines, quotes doubled. */
+/**
+ * Plain text, for a file someone opens in a spreadsheet: no backticks, no newlines, quotes doubled.
+ *
+ * A cell that begins with =, +, -, @ or a control character is a formula to Excel and Sheets, not
+ * text, and these cells carry sentences out of a customer's own documents. A leading apostrophe is
+ * the standard way to say "this is text": the spreadsheet drops it, and nothing is evaluated.
+ */
 function csvCell(value: string | number | null | undefined): string {
   const text = String(value ?? "").replace(/`/g, "").replace(/\s+/g, " ").trim();
-  return `"${text.replace(/"/g, '""')}"`;
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return `"${safe.replace(/"/g, '""')}"`;
 }
 
 export default function RulesTab({
