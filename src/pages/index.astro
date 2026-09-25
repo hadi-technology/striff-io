@@ -61,10 +61,10 @@ const extensionHighlights = [
 // The languages the parser (Clarpse, via striff-lib) reads, shown under the hero card.
 // Monograms in each language's own colour rather than four mismatched logo styles.
 const heroLanguages = [
-  { name: "Java", mark: "J", color: "#e76f00", mature: true },
-  { name: "Python", mark: "Py", color: "#3776ab", mature: false },
-  { name: "C#", mark: "C#", color: "#7b3fbd", mature: true },
-  { name: "TypeScript", mark: "TS", color: "#3178c6", mature: false }
+  { name: "Java", mark: "J", color: "#e76f00" },
+  { name: "Python", mark: "Py", color: "#3776ab" },
+  { name: "C#", mark: "C#", color: "#7b3fbd" },
+  { name: "TypeScript", mark: "TS", color: "#3178c6" }
 ];
 
 
@@ -298,13 +298,10 @@ const plans = [
             {heroLanguages.map((lang) => (
               <span class="lang-chip" style={`--lang: ${lang.color}`}>
                 <span class="lang-chip-mark" aria-hidden="true">{lang.mark}</span>
-                {lang.name}{!lang.mature && <sup>&dagger;</sup>}
+                {lang.name}
               </span>
             ))}
           </div>
-          <p class="hero-langs-note">
-            <a href="#languages">&dagger; Documented-rule checking is production-ready on Java and C#; Python and TypeScript are further along on the diagram than on rules</a>
-          </p>
 
         </div>
       </div>
