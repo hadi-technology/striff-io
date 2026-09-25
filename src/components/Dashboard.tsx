@@ -1046,7 +1046,7 @@ function FaqSection() {
     },
     {
       q: "Which languages does Striff support?",
-      a: "Diagrams run on <b>Java, TypeScript, Python and C#</b>, with Go coming. Documented rules are further along on some than others: <b>Java and C# are production-ready</b>, Python extracts rules from your docs but cannot yet answer all of them, and TypeScript is still being proven out. Every language is parsed into a full structural model, not regex or text matching.",
+      a: "Diagrams run on <b>Java, TypeScript, Python and C#</b>, with Go coming. Every language is parsed into a full structural model, not regex or text matching.",
     },
     {
       q: "What does Striff actually do on my pull requests?",
