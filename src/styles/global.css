@@ -6128,3 +6128,34 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   .clamp { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
   .clamp-toggle { display: none; }
 }
+
+/* Asking Striff to read a repository now, and what came of the last time. */
+.docs-actions { margin-top: 0.6rem; }
+.read-repo { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.read-repo-button {
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: #fff;
+  padding: 0.4rem 0.75rem;
+  color: #24292f;
+  font-size: 0.83rem;
+  font-weight: 600;
+}
+.read-repo-button:hover:not(:disabled) { background: #f6f8fa; border-color: #cbd5e1; }
+.read-repo-button:disabled { opacity: 0.55; cursor: not-allowed; }
+.read-repo-button.is-primary { border-color: #1f2937; background: #16202b; color: #fff; }
+.read-repo-button.is-primary:hover:not(:disabled) { background: #0f172a; }
+.read-repo-note { color: #8a95a1; font-size: 0.76rem; }
+.read-repo-note.is-bad { color: #8a5a1f; }
+.read-repo.is-running { color: #57606a; font-size: 0.83rem; font-weight: 600; }
+.read-repo-spinner {
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 2px solid #cbd5e1;
+  border-top-color: #2563eb;
+  border-radius: 999px;
+  animation: read-repo-spin 700ms linear infinite;
+}
+@keyframes read-repo-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .read-repo-spinner { animation-duration: 2.4s; } }
+@media print { .read-repo { display: none; } }

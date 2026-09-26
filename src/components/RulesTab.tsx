@@ -2,6 +2,7 @@ import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
 import { Clamped, mark, withCode, when } from "./docRules";
+import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
 
 /**
  * Every rule Striff has read from one repository's documents, in one list.
@@ -60,6 +61,8 @@ interface RepoRules {
   lastScanMs: number | null;
   /** What came of the last attempt to list this repository, null where none is recorded. */
   lastAttempt: { atMs: number; outcome: string; reason: string | null; documents: number } | null;
+  /** Where the last whole-repository reading got to, null where none was asked for. */
+  reading: Reading | null;
   summary: Summary;
   documents: { document: Doc; rules: Rule[] }[];
   truncated: boolean;
@@ -161,6 +164,9 @@ export default function RulesTab({
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
+  const [asking, setAsking] = useState(false);
+  /** Stops the watch when the view goes away or the repository changes under it. */
+  const watching = useRef<number | null>(null);
   // Document order to begin with: a repository's rules read as its documents do until someone
   // asks for something else.
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "source", dir: 1 });
@@ -224,6 +230,64 @@ export default function RulesTab({
       setLoading(false);
     }
   }
+
+  /**
+   * Asks for the repository to be read, then watches until the run stops.
+   *
+   * The run is a queued job of minutes. Watching is a poll, deliberately: it is one small request
+   * every few seconds against a page someone is already looking at, and it stops the moment the
+   * run does. It never clears what is on screen — a refresh that fails leaves the rules where they
+   * are — and it pauses while the tab is hidden, because nobody is watching a background tab.
+   */
+  async function readRepository() {
+    setAsking(true);
+    setError("");
+    try {
+      const res = await fetch(
+        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
+        { method: "POST" }
+      );
+      if (!res.ok) {
+        const answer = await res.json().catch(() => ({}));
+        setError(answer.message || answer.error || "Couldn't ask Striff to read this repository.");
+        return;
+      }
+      await load();
+      watch();
+    } catch {
+      setError("Couldn't ask Striff to read this repository.");
+    } finally {
+      setAsking(false);
+    }
+  }
+
+  /** Looks again every few seconds while a reading is under way, and stops when it is not. */
+  function watch() {
+    if (watching.current) window.clearInterval(watching.current);
+    let looks = 0;
+    watching.current = window.setInterval(() => {
+      // Twenty minutes of looking is longer than any reading should take; after that the run
+      // record says what happened and nothing is gained by asking again.
+      if (++looks > 240 || !isRunning(dataRef.current?.reading)) {
+        if (watching.current) window.clearInterval(watching.current);
+        watching.current = null;
+        return;
+      }
+      if (!document.hidden) load();
+    }, 5000);
+  }
+
+  // A reading someone else asked for, or one still going when this page was opened, is followed
+  // the same way: the page does not care who asked.
+  useEffect(() => {
+    if (isRunning(data?.reading) && !watching.current) watch();
+    return () => {
+      if (watching.current) {
+        window.clearInterval(watching.current);
+        watching.current = null;
+      }
+    };
+  }, [data?.reading?.state, repo]);
 
   /** Every rule, in document order, each carrying the document it was read from. */
   const rows = useMemo<Row[]>(() => {
@@ -396,6 +460,23 @@ export default function RulesTab({
               GitHub
             </a>
           </div>
+          {data && (
+            <div className="docs-actions">
+              <ReadRepository
+                reading={data.reading}
+                waiting={Math.max(
+                  0,
+                  summary
+                    ? summary.documents - summary.retired - summary.screenedOut - summary.excluded
+                        - summary.read
+                    : 0
+                )}
+                read={summary ? summary.read : 0}
+                busy={asking || loading}
+                onRead={readRepository}
+              />
+            </div>
+          )}
           <p className="docs-lede">
             Every rule Striff has read from this repository's docs, and where each one came from.
             Open a document's name to see it beside the rest of its doc.

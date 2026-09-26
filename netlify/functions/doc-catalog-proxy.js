@@ -173,7 +173,7 @@ async function callerLogin(ghToken) {
 
 export const handler = async (event) => {
   const method = event.httpMethod;
-  if (method !== "GET" && method !== "PATCH") {
+  if (method !== "GET" && method !== "PATCH" && method !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
@@ -229,7 +229,13 @@ export const handler = async (event) => {
 
     let url;
     let init;
-    if (method === "PATCH") {
+    if (method === "POST") {
+      // Reading a whole repository: queued, minutes long, and rate-limited by the API. The name on
+      // it comes from the token, like every other write.
+      const asked = await callerLogin(ghToken);
+      url = `${base}/baseline?token=${token}${asked ? `&actor=${encodeURIComponent(asked)}` : ""}`;
+      init = { method: "POST", headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
+    } else if (method === "PATCH") {
       // Two lists, opposite jobs: one says never read this, the other says never skip it.
       url = `${base}/${params.view === "force-read" ? "force-read" : "exclusions"}?token=${token}`;
       let asked;
