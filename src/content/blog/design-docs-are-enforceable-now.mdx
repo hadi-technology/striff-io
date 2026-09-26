@@ -1,6 +1,6 @@
 ---
-title: "Your architecture docs matter more than ever. Now every pull request is checked against them."
-description: "Coding agents read your docs as context, and nothing checks that the code still agrees with them. How Striff turns the sentences already in your repository into rules computed at both revisions of every pull request, and the one real violation it found in 1,394 checks."
+title: "A README that sends you to the wrong class, and the pull request that never opened it"
+description: "Coding agents read your docs as context, and nothing in the merge path checks that the code still agrees with them. How Striff turns the sentences already in a repository into rules computed at both revisions of a pull request, with the ecChronos case end to end and the counts from 7,161 rules across 609 public pull requests."
 date: 2026-09-10
 category: "Product"
 cover: "docs-to-checks"
@@ -8,16 +8,7 @@ cover: "docs-to-checks"
 
 import RuleRows from "../../components/RuleRows.astro";
 import { ecchronosRules, baseSha, headSha } from "../../data/ecchronosRules";
-
-For twenty years a design doc had one reader: *other engineers*. You wrote down how the system fits together (what lives where, what calls what, what must never depend on what) and hoped the next person read it before their first pull request.
-
-That changed in **both directions at once**.
-
-**Docs got more valuable.** Coding agents read `AGENTS.md`, `CLAUDE.md`, READMEs and architecture notes as context. A decision written down once now steers thousands of generated lines, and a constraint nobody wrote down does not exist for the agent writing your code.
-
-**And docs got easier to break.** A sentence that describes the code stops being true the moment the code changes and the sentence does not. At agent volume that happens constantly, and nothing in the merge path compares the two: the diff shows the code, and the sentence is in a different file.
-
-## A real one: ecChronos #1786
+import { ruleShapes } from "../../data/ruleShapes";
 
 Ericsson's [ecChronos](https://github.com/Ericsson/ecchronos) schedules repairs for Apache Cassandra, and its `core.impl` module has the kind of README most teams only intend to write. It goes through the module class by class and says what each one does. Of `NodeWorker`, the background thread that runs for each Cassandra node, line 136 says:
 
@@ -27,7 +18,9 @@ Pull request [#1786](https://github.com/Ericsson/ecchronos/pull/1786), *"Add Rep
 
 The pull request was approved and merged on 8 September. The README was not in the diff, so nobody reading the diff had a reason to open it. At the time of writing, line 136 on `master` still credits `NodeWorker`, and so does the execution-flow sketch at line 156 of the same file.
 
-Striff checked 28 rules from that repository's documentation at both revisions of the pull request. Three of them:
+That used to cost one confused engineer some time. It now costs more, because a design doc has a second reader. Coding agents read `AGENTS.md`, `CLAUDE.md`, READMEs and architecture notes as context before they write anything, so a decision written down once steers thousands of generated lines, and a constraint nobody wrote down does not exist for the agent writing your code. The same sentence also goes stale faster, because at agent volume the code changes constantly and nothing in the merge path compares it with the prose. The diff shows the code. The sentence is in a different file.
+
+Striff checked 28 rules from ecChronos's documentation at both revisions of the pull request. Three of them:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Ericsson/ecchronos #1786 · documented rules</p>
@@ -35,7 +28,7 @@ Striff checked 28 rules from that repository's documentation at both revisions o
 <div class="bp-rules">
 <RuleRows rows={ecchronosRules} baseSha={baseSha} headSha={headSha} />
 </div>
-<p class="bp-figure-caption">On the left, the sentence as the maintainers wrote it, with the file and line it came from. In the middle, the rule it became, in plain English and as the formula that is actually evaluated. On the right, the verdict on this pull request, stated as what it is: whether the model of the code Striff checked, before the change and after it, satisfies the formula. The second row resolves a general term, "from utils", to the package it means; the third turns one sentence into one rule per class it names.</p>
+<p class="bp-figure-caption">On the left, the sentence as the maintainers wrote it, with the file and line it came from. In the middle, the rule it became, in plain English and as the formula that is evaluated. On the right, the verdict on this pull request, stated as what it is: whether the model of the code Striff checked, before the change and after it, satisfies the formula. The second row resolves a general term, "from utils", to the package it means; the third turns one sentence into one rule per class it names.</p>
 </div>
 
 ## The violation, as facts you can check
@@ -56,17 +49,17 @@ A finding is only worth something if you can check it without trusting us. This 
 <p class="bp-figure-caption">The rule came out of the prose. Everything under it was computed from the parsed code at each revision, which is why the finding can name the line that moved and cannot invent one that did not.</p>
 </div>
 
-Underneath, the rule is a claim about the code that is either true or false at a given revision. Two lookups settle it: the claim held at the base commit, and it doesn't hold at the head commit. That's the entire violation, and nothing about it is a matter of opinion, which is also why it's checkable by anyone willing to open both commits.
+Underneath, the rule is a claim about the code that is either true or false at a given revision. Two lookups settle it: the claim held at the base commit and fails at the head commit. Nothing about that is a matter of opinion, so anyone willing to open both commits can check it.
 
 ## A one-line fix, while it is still one line
 
-The fix is one word in a README: `NodeWorker` becomes `SchemaRefresher`. In the pull request that caused it, that's a one-line follow-up commit, made while the author still remembers why the call moved. Left alone, though, it doesn't just sit there being wrong: it costs someone real time.
+The fix is one word in a README: `NodeWorker` becomes `SchemaRefresher`. In the pull request that caused it, that is a one-line follow-up commit, made while the author still remembers why the call moved. Left alone, the sentence costs someone time.
 
-The next contributor looking for where repair configurations are scheduled is sent to `NodeWorker` by the README, spends time reading a class that no longer does that, and only finds `SchemaRefresher` by giving up on the doc and reading the diff history instead. A coding agent handed the same README as context does something worse: it has an obvious way to make the sentence true again, which is to give `NodeWorker` a scheduler and re-create the dependency the refactor had just removed. That's not a hypothetical failure mode; it's the path of least resistance for an agent that takes the doc at its word, and undoing it costs another round of review, another set of tokens, and another pull request to notice the regression a second time. **A stale doc isn't merely out of date. It's instructions for undoing your last refactor**, and every agent or engineer who follows it before someone fixes the sentence pays for that instruction in wasted work.
+The next contributor looking for where repair configurations are scheduled is sent to `NodeWorker` by the README, spends a while reading a class that no longer does that, and finds `SchemaRefresher` only by giving up on the doc and reading the diff history. A coding agent handed the same README does something worse. It has an obvious way to make the sentence true again: give `NodeWorker` a scheduler and re-create the dependency the refactor had just removed. That is the path of least resistance for an agent that takes the doc at its word, and undoing it costs another round of review, more tokens, and another pull request to notice the regression a second time. A stale sentence like this one is a set of instructions for undoing your last refactor, and everyone who follows it before someone fixes it pays in wasted work.
 
 ## The same change, on the diagram
 
-The documented rules are the headline; the diagram is the context for them. Every pull request also gets a structural diff of the classes the change touched, what they gained and lost, and how they connect.
+The documented rules are the headline and the diagram is the context for them. Every pull request also gets a structural diff of the classes the change touched, what they gained and lost, and how they connect.
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Ericsson/ecchronos #1786 · framed on NodeWorker</p>
@@ -76,6 +69,22 @@ The documented rules are the headline; the diagram is the context for them. Ever
 </div>
 <p class="bp-figure-caption">The real render for #1786, cropped to <code>NodeWorker</code>. The members it lost are marked, the <code>RepairScheduler</code> field among them, next to the <code>SchemaRefresher</code> it gained. The diagram shows what moved; the rule on the README says which of those moves your docs now disagree with.</p>
 </div>
+
+## More than one class calling another
+
+`NodeWorker` calling `RepairScheduler` is the simplest thing a document can say: one class, one reference. Documents also make claims about whole modules, about a word that stands for several packages at once, and about every class of a kind. The rule language has the quantifiers for those, and the same program answers them. Three more rules Striff read out of public repositories' own documents:
+
+<div class="bp-figure" data-reveal>
+<p class="bp-figure-title">Three shapes of rule, three repositories</p>
+<div class="bp-rules">
+<RuleRows rows={ruleShapes} />
+</div>
+<p class="bp-figure-caption">Each row is Striff&rsquo;s own output on a public pull request, with the witness it cited. The first names the only modules a module may use; the second binds a word in the document, &ldquo;GUI&rdquo;, to the two namespaces it means, and shows the binding so a maintainer can correct it; the third quantifies over every class whose name ends in <code>Helper</code>.</p>
+</div>
+
+Apache Pinot's design note for its SQL DDL module says the module "depends only on" three things. Two of them are modules of the same repository and the third, `calcite-babel`, is an external library, so the rule is about which of Pinot's own modules it may use. Since the materialized-view work, the module's build has also pulled in `pinot-query-planner`, and `MaterializedViewSchemaInferer` imports from it. The sentence has been wrong ever since, and it still is. Striff reports it as already broken and never blames it on the pull request in front of it.
+
+SubtitleEdit's command-line reference says the `seconv` tool uses "no Avalonia / GUI runtime". There is no namespace called GUI. The rule works because the word is bound to the two namespaces that are the GUI, and it held: `seconv` references neither. MonoGame-Extended's coding guidelines ask for static helper classes; six of its seven are, and `PrimitivesHelper` is not.
 
 ## How a sentence becomes a check
 
@@ -94,36 +103,42 @@ Nobody at Ericsson wrote a rule for Striff. There is no rule file and no configu
 <p class="bp-figure-caption">The model proposes and the program decides. A proposed rule that names a class the parsed code does not contain never reaches evaluation, so the model cannot invent a violation by inventing a name. <a href="/blog/grounded-ai-findings">How every claim traces back to your docs or your code</a>.</p>
 </div>
 
-Every rule Striff reports gets one of four outcomes: **held** (this change keeps it: nothing in this pull request breaks it), **violated** (broken by this change), **already broken** (broken in the code Striff checked, not by this change, and never blamed on it), or **restored** (broken before, true after). Striff only reports what it can verify from the code. A rule it cannot answer from a source parse is left out, never shown as passing.
+Every rule Striff reports gets one of four outcomes. It held, meaning nothing in this pull request breaks it. It was violated, meaning this change broke it. It was already broken in the code Striff checked, before this change, and that is never blamed on the change. Or it was restored: broken before, true after. Striff reports only what it can verify from the code, so a rule it cannot answer from a source parse is left out rather than shown as passing.
 
 ## How often this fires
 
-Rarely, and that is the point. Across a scan of 74 public pull requests in 74 different repositories, run between 5 and 9 September, Striff checked 1,394 documented rules:
+Rarely. Across 609 public pull requests in 542 different repositories, Striff evaluated 7,161 rules read out of those repositories' own documentation:
 
+{/* TODO: 7,161 vs 5,674 gap; the remaining 1,487 need a named category or the headline count needs to be 5,674 */}
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">1,394 documented-rule checks, 74 pull requests</p>
+<p class="bp-figure-title">7,161 documented-rule verdicts, 609 pull requests</p>
 <div class="bp-bars">
-<div class="bp-bar-row"><span class="bp-bar-label">Held</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:100%"></div></div><span class="bp-bar-value">1,344</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Already broken</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:3.6%"></div></div><span class="bp-bar-value">49</span></div>
-<div class="bp-bar-row"><span class="bp-bar-label">Violated by the change</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:0.8%"></div></div><span class="bp-bar-value">1</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Held</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:100%"></div></div><span class="bp-bar-value">5,519</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Violated by the change</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:1.8%"></div></div><span class="bp-bar-value">97</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Already broken</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:1%"></div></div><span class="bp-bar-value">53</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Restored</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:0.1%"></div></div><span class="bp-bar-value">5</span></div>
 </div>
-<p class="bp-figure-caption">The repositories were chosen because their docs said something checkable, so this is the rate on documented codebases, not on every codebase. The one violation is the ecChronos rule above. One in 1,394 is what a check you can afford to read looks like: when it fires, it is an event.</p>
+<p class="bp-figure-caption">Roughly two percent accuse: 97 rules broken by the change under review, 53 already broken before it. Everything else held, which is what a correct document looks like. Accusations also concentrate: a single repository accounts for half of them, so the per-repository rate is far lower than the per-verdict rate suggests.</p>
 </div>
 
-The 49 already-broken rows are the other quiet result: rules a repository's own documentation states that were already broken in the code Striff checked, not by the pull request. They are never blamed on the pull request in front of you, and they are never shown as a pass either. Whether the fix belongs in the code or in the sentence is the maintainer's call. The difference is that somebody now knows.
+A check that fired on every pull request would be muted within a week, so a low rate is what we want. The 53 already-broken rows are the other quiet result: rules a repository's own documentation states that were already false in the code Striff checked, before the pull request. They are never blamed on the pull request in front of you, and they are never shown as a pass either. Whether the fix belongs in the code or in the sentence is the maintainer's call, and now the maintainer knows there is one to make.
 
 ## Writing docs that can be checked
 
-You do not have to change how you write to get value from this; ecChronos's README was written for people, not for us. But sentences of a certain shape get checked, and it is worth knowing which:
+You do not have to change how you write to get value from this. ecChronos's README was written for people, not for us. Sentences of a certain shape get checked, though, and it is worth knowing which.
 
-- **Name real things.** `NodeWorker` is checkable. "The worker" is checkable only if one class answers to it. Backticks help a reader and cost nothing.
-- **Say where things live and what they use.** "`ConnectionType` is in `utils`." "`NodeWorker` calls `RepairScheduler`." Placement and dependency are the relations a parser can answer at both revisions.
-- **Say what must not happen.** "The core never imports from plugins" is a rule the moment it is written down, and it is the kind of rule an agent in a hurry is most likely to break.
-- **Leave intent as prose.** "We prefer composition" is not a claim about structure, and nothing will pretend it is one.
-- **Keep the agent files honest too.** `AGENTS.md` and `.github/copilot-instructions.md` are read by the same process, so the layering and naming rules you give your agents are checked against the code they write.
+Name real things. `NodeWorker` is checkable, and "the worker" is checkable only if one class answers to it. Backticks help a reader and cost nothing.
 
-## Write the doc. Then wire it to reality.
+Say where things live and what they use. "`ConnectionType` is in `utils`" and "`NodeWorker` calls `RepairScheduler`" are placement and dependency claims, which are the relations a parser can answer at both revisions.
 
-If your team is leaning into AI-assisted development, the move is not to write fewer docs. It is the opposite. **Write the decisions down, because agents will read them.** Then make sure something checks every pull request against them, because agents and humans will also break them: cleanly, plausibly, a few lines at a time, in files nobody thought to open.
+Say what must not happen. "The core never imports from plugins" is a rule the moment it is written down, and it is the kind of rule an agent in a hurry is most likely to break.
+
+Leave intent as prose. "We prefer composition" is not a claim about structure, and nothing will pretend it is one.
+
+Keep the agent files honest too. `AGENTS.md` and `.github/copilot-instructions.md` are read by the same process, so the layering and naming rules you give your agents are checked against the code they write.
+
+## Where to start
+
+If your team is leaning into AI-assisted development, write the decisions down, because agents will read them. Then have something check every pull request against them, because agents and humans will also break them, cleanly and plausibly, a few lines at a time, in files nobody thought to open.
 
 [Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open your next pull request. Striff reads the docs you already have and checks every rule in them, with nothing to write and nothing to configure. For a public pull request in somebody else's repository, [the browser extension](/#extension) does the same in a tab beside Files changed.
