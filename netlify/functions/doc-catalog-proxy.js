@@ -14,10 +14,12 @@ const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
 const STRIFF_API_BASE = process.env.STRIFF_API_BASE_URL || "https://api.striff.io";
 
-// Valid for 30 days from issue, matching the installation token's lifetime:
+// Minted for this one request and spent immediately, so it lives in minutes, not days. It travels
+// as a query parameter, which means it lands in any access log along the way; a token that has
+// expired by the time a log is read is worth much less to whoever reads it.
 // v1.<expiresAtEpochSec>.<hex HMAC of "v1:<installation id>:<owner>/<repo>:<expiry>">. A token
 // minted for one repository is invalid for any other; striff-api answers an expired one with 401.
-const TOKEN_LIFETIME_SEC = 30 * 24 * 60 * 60;
+const TOKEN_LIFETIME_SEC = 10 * 60;
 
 function generateRepoToken(installationId, owner, repo) {
   const expiresAt = Math.floor(Date.now() / 1000) + TOKEN_LIFETIME_SEC;
@@ -56,7 +58,41 @@ const SEES = "yes";
 const SEES_NOT = "no";
 const CANNOT_TELL = "unknown";
 
+/**
+ * What this token was last told about a repository, and when.
+ *
+ * Every read of the dashboard re-pages `/user/installations/{id}/repositories` — up to ten calls of
+ * a hundred — before anything of ours is touched. Opening a page, opening a document, switching a
+ * version and every write each paid that, which is slow, and on a busy tab it is how a person finds
+ * GitHub's secondary rate limit. The answer does not change minute to minute, so it is kept for a
+ * few, per function instance, keyed by a hash of the token so the token itself is not held.
+ */
+const seenCache = new Map();
+const SEEN_TTL_MS = 3 * 60 * 1000;
+
+function seenKey(ghToken, installationId, owner, repo) {
+  return `${crypto.createHash("sha256").update(ghToken).digest("hex").slice(0, 16)}:`
+    + `${installationId}:${owner}/${repo}`.toLowerCase();
+}
+
 async function callerSeesRepository(ghToken, installationId, owner, repo) {
+  const key = seenKey(ghToken, installationId, owner, repo);
+  const remembered = seenCache.get(key);
+  if (remembered && Date.now() - remembered.at < SEEN_TTL_MS) {
+    return remembered.answer;
+  }
+  const answer = await askGitHubIfCallerSees(ghToken, installationId, owner, repo);
+  // Only a definite answer is worth keeping: "could not tell" is the state that should be retried.
+  if (answer !== CANNOT_TELL) {
+    seenCache.set(key, { answer, at: Date.now() });
+    if (seenCache.size > 500) {
+      for (const old of [...seenCache.keys()].slice(0, 100)) seenCache.delete(old);
+    }
+  }
+  return answer;
+}
+
+async function askGitHubIfCallerSees(ghToken, installationId, owner, repo) {
   const wanted = `${owner}/${repo}`.toLowerCase();
   for (let page = 1; page <= 10; page += 1) {
     let res;
@@ -74,9 +110,19 @@ async function callerSeesRepository(ghToken, installationId, owner, repo) {
     } catch (e) {
       return CANNOT_TELL;
     }
-    // 401 and 403 are about the caller's own token and are answers; the rest is GitHub having a
-    // moment, and a moment is not a denial.
-    if (res.status === 401 || res.status === 403) {
+    // GitHub answers a rate limit with 403 as well as a refusal, and the difference matters: one
+    // says this caller may not see the repository, the other says ask again later. Telling a
+    // person they have lost access because they clicked twice is the worse mistake, so anything
+    // carrying a rate-limit marker is "could not tell".
+    if (res.status === 403 || res.status === 429) {
+      const remaining = res.headers.get("x-ratelimit-remaining");
+      const retryAfter = res.headers.get("retry-after");
+      const body = await res.text().catch(() => "");
+      const limited = res.status === 429 || retryAfter !== null || remaining === "0"
+        || /rate limit|secondary rate|abuse/i.test(body);
+      return limited ? CANNOT_TELL : SEES_NOT;
+    }
+    if (res.status === 401) {
       return SEES_NOT;
     }
     if (!res.ok) {
@@ -127,7 +173,7 @@ async function callerLogin(ghToken) {
 
 export const handler = async (event) => {
   const method = event.httpMethod;
-  if (method !== "GET" && method !== "PATCH") {
+  if (method !== "GET" && method !== "PATCH" && method !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
@@ -183,7 +229,13 @@ export const handler = async (event) => {
 
     let url;
     let init;
-    if (method === "PATCH") {
+    if (method === "POST") {
+      // Reading a whole repository: queued, minutes long, and rate-limited by the API. The name on
+      // it comes from the token, like every other write.
+      const asked = await callerLogin(ghToken);
+      url = `${base}/baseline?token=${token}${asked ? `&actor=${encodeURIComponent(asked)}` : ""}`;
+      init = { method: "POST", headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
+    } else if (method === "PATCH") {
       // Two lists, opposite jobs: one says never read this, the other says never skip it.
       url = `${base}/${params.view === "force-read" ? "force-read" : "exclusions"}?token=${token}`;
       let asked;

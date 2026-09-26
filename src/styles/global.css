@@ -5996,6 +5996,170 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   font-size: 0.85rem;
 }
 
+/* One status, so one set of colours for it. */
+.docs-outcome.is-broken { border-color: #f6c9ce; background: #fdeef0; color: #b3253a; }
+.docs-outcome.is-holds { border-color: #bfe3cd; background: #edf9f1; color: #1a7f45; }
+.docs-outcome.is-unchecked { border-color: #e3e8ee; background: #f6f8fa; color: #57606a; }
+
+/* The rule is the column someone reads; the other two are a reference and a word. */
+.rules-table { table-layout: fixed; }
+.rules-table td:first-child, .rules-table th:first-child { width: 52%; }
+.rules-table td:nth-child(2), .rules-table th:nth-child(2) { width: 27%; }
+.rules-table td:nth-child(3), .rules-table th:nth-child(3) { width: 21%; }
+
+/* Search and export share a line: the export button had a row of its own and nothing in it. */
+.rules-toolbar { flex-wrap: nowrap; align-items: center; }
+.rules-search { flex: 1 1 auto; }
+.rules-export { flex: 0 0 auto; margin-left: 0.25rem; }
+
+/* Room between the counts and the panel they are counting. */
+.rules-panel { margin-top: 1.5rem; }
+.rules-view .docs-head { margin-bottom: 0.35rem; }
+
+@media (max-width: 860px) {
+  .rules-toolbar { flex-wrap: wrap; }
+  .rules-table td:first-child, .rules-table th:first-child,
+  .rules-table td:nth-child(2), .rules-table th:nth-child(2),
+  .rules-table td:nth-child(3), .rules-table th:nth-child(3) { width: auto; }
+}
+
+/* The repository itself, one click away from the page that is about it. */
+.docs-repo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.2rem 0.5rem;
+  color: #57606a;
+  font-size: 0.78rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.docs-repo-link:hover { border-color: #cbd5e1; color: #24292f; text-decoration: none; }
+
+/* The line on GitHub, beside the path that opens it in the documents view. */
+.rules-source-github { margin-left: 0.3rem; color: #8a95a1; vertical-align: baseline; }
+.rules-source-github:hover { color: #24292f; }
+@media print { .rules-source-github, .docs-repo-link { display: none; } }
+
+/* The account the page is about, in the bar: a chip, not a browser default select. */
+.bar-account-select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  padding: 0 0.1rem 0 0;
+  cursor: pointer;
+  max-width: 12rem;
+  text-overflow: ellipsis;
+}
+.bar-account-select:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: 3px; border-radius: 0.3rem; }
+.bar-account-select option { color: #0f172a; background: #fff; font-weight: 500; }
+.bar-account { transition: background 120ms ease, border-color 120ms ease; }
+.bar-account:focus-within { border-color: rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.14); }
+
+/* The path and the link to it on GitHub share a line, and wrap together. */
+.rules-source-where { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.3rem; }
+.rules-source-where .rules-source-github { margin-left: 0; position: relative; top: 2px; }
+
+/* The metrics a young installation has nothing for: named on one line rather than drawn as a grid
+   of empty panels. */
+.dashboard-metric-waiting {
+  margin-top: 1rem;
+  color: #8a95a1;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.dashboard-metric-waiting span { color: #57606a; font-weight: 600; }
+
+/* What went wrong with a listing, in the words of whatever failed. */
+.docs-attempt-reason {
+  margin-top: 0.4rem;
+  color: #8a5a1f;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.75rem;
+  word-break: break-word;
+}
+
+/* The per-document table: a line number is three characters, and the sentence and the rule are
+   what a reader is here for. table-layout is fixed, so without this every column took a quarter. */
+.docs-pane .docs-rules th:nth-child(1), .docs-pane .docs-rules td:nth-child(1) { width: 4.5rem; }
+.docs-pane .docs-rules th:nth-child(2), .docs-pane .docs-rules td:nth-child(2) { width: 34%; }
+.docs-pane .docs-rules th:nth-child(3), .docs-pane .docs-rules td:nth-child(3) { width: 34%; }
+.docs-pane .docs-rules th:nth-child(4), .docs-pane .docs-rules td:nth-child(4) { width: auto; }
+@media (max-width: 640px) {
+  .docs-pane .docs-rules th:nth-child(1), .docs-pane .docs-rules td:nth-child(1),
+  .docs-pane .docs-rules th:nth-child(2), .docs-pane .docs-rules td:nth-child(2),
+  .docs-pane .docs-rules th:nth-child(3), .docs-pane .docs-rules td:nth-child(3) { width: auto; }
+}
+
+/* A cell that stops after a few lines. One long sentence used to set the height of its row and
+   push the rest of the table off the screen. */
+.clamp-wrap { display: block; }
+.clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--clamp-lines, 3);
+  line-clamp: var(--clamp-lines, 3);
+  overflow: hidden;
+}
+.clamp.is-open {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+.clamp-toggle {
+  margin-top: 0.2rem;
+  color: #2563eb;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.clamp-toggle:hover { text-decoration: underline; }
+@media print {
+  /* Paper cannot expand anything, so nothing is cut on it. */
+  .clamp { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
+  .clamp-toggle { display: none; }
+}
+
+/* Asking Striff to read a repository now, and what came of the last time. */
+.docs-actions { margin-top: 0.6rem; }
+.read-repo { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.read-repo-button {
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: #fff;
+  padding: 0.4rem 0.75rem;
+  color: #24292f;
+  font-size: 0.83rem;
+  font-weight: 600;
+}
+.read-repo-button:hover:not(:disabled) { background: #f6f8fa; border-color: #cbd5e1; }
+.read-repo-button:disabled { opacity: 0.55; cursor: not-allowed; }
+.read-repo-button.is-primary { border-color: #1f2937; background: #16202b; color: #fff; }
+.read-repo-button.is-primary:hover:not(:disabled) { background: #0f172a; }
+.read-repo-note { color: #8a95a1; font-size: 0.76rem; }
+.read-repo-note.is-bad { color: #8a5a1f; }
+.read-repo.is-running { color: #57606a; font-size: 0.83rem; font-weight: 600; }
+.read-repo-spinner {
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 2px solid #cbd5e1;
+  border-top-color: #2563eb;
+  border-radius: 999px;
+  animation: read-repo-spin 700ms linear infinite;
+}
+@keyframes read-repo-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .read-repo-spinner { animation-duration: 2.4s; } }
+@media print { .read-repo { display: none; } }
+.read-repo-note.is-good { color: #1a7f45; }
 /* The rest of the questions, behind one line. Eleven open at once is a wall to scroll past on the
    way to the thing someone actually came to the billing page for. */
 .dashboard-faq-more {

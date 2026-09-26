@@ -1,7 +1,8 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { OUTCOME_LABEL, OUTCOME_HELP, ON_BRANCH_LABEL, mark, withCode, when } from "./docRules";
+import { Clamped, mark, useWatch, withCode, when } from "./docRules";
+import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
 
 /**
  * Every rule Striff has read from one repository's documents, in one list.
@@ -58,6 +59,10 @@ interface RepoRules {
   /** The commit that branch pointed at when the documents were last listed. */
   defaultBranchSha: string | null;
   lastScanMs: number | null;
+  /** What came of the last attempt to list this repository, null where none is recorded. */
+  lastAttempt: { atMs: number; outcome: string; reason: string | null; documents: number } | null;
+  /** Where the last whole-repository reading got to, null where none was asked for. */
+  reading: Reading | null;
   summary: Summary;
   documents: { document: Doc; rules: Rule[] }[];
   truncated: boolean;
@@ -66,25 +71,57 @@ interface RepoRules {
 /** One rule with the document it came from, which is how this view reads them. */
 type Row = Rule & { doc: Doc };
 
-type Filter = "all" | "broken" | "prior" | "held" | "unchecked" | "onMain";
+type Filter = "all" | "broken" | "holds" | "unchecked";
+
+/**
+ * How a rule stands, in one answer.
+ *
+ * There were two: what the last pull request said about it, and how it stands on the default
+ * branch. They measure different moments -- a pull request judged it at that revision, the branch
+ * is now -- and as two sets of filters side by side they asked a reader to hold both in their head
+ * to work out whether a rule is being kept. It is one repository and one branch, so the question is
+ * one question: does this hold now? The branch answers it where anything has judged it there, and
+ * the last pull request answers it where nothing has. Which pull request said what stays on the
+ * row, as how it got that way.
+ *
+ * A rule nothing could judge is neither: see {@link standing}.
+ */
+type Standing = "holds" | "broken" | "unchecked" | "unclear";
+
+function standing(row: { status: string | null; onDefaultBranch: string | null }): Standing {
+  if (row.onDefaultBranch === "HOLDS") return "holds";
+  if (row.onDefaultBranch === "BROKEN") return "broken";
+  if (row.onDefaultBranch === "UNCLEAR") return "unclear";
+  if (row.status === "MAINTAINED" || row.status === "RESTORED") return "holds";
+  if (row.status === "VIOLATED" || row.status === "PRE_EXISTING") return "broken";
+  if (row.status === "UNCLEAR") return "unclear";
+  return "unchecked";
+}
 
 /** Which column the list is ordered by. */
 type SortKey = "rule" | "source" | "outcome";
 
 /**
- * Outcomes in the order someone reads them: what a change broke, what was already broken, what
- * could not be judged, what was restored, what holds, and last what nothing has looked at. An
- * alphabetical sort of these words would put "Already broken" above "Broken" and "Held" above both,
- * which is no order at all.
+ * Worst first: what the code does not keep, then what nothing has judged, then what it keeps. An
+ * alphabetical sort of these words would put "Broken" above "Holds" by luck rather than by
+ * meaning, and "Not checked yet" above both.
  */
-const SEVERITY: Record<string, number> = {
-  VIOLATED: 0,
-  PRE_EXISTING: 1,
-  UNCLEAR: 2,
-  RESTORED: 3,
-  MAINTAINED: 4,
+/** Worst first: what is broken, then what nothing has judged, then what holds. */
+const SEVERITY: Record<Standing, number> = { broken: 0, unchecked: 1, holds: 2, unclear: 3 };
+
+const STANDING_LABEL: Record<Standing, string> = {
+  broken: "Broken",
+  holds: "Holds",
+  unchecked: "Not checked yet",
+  unclear: "Couldn't check",
 };
-const NEVER_CHECKED = 5;
+
+const STANDING_HELP: Record<Standing, string> = {
+  broken: "The code does not keep this rule.",
+  holds: "The code keeps this rule.",
+  unchecked: "Nothing has judged this rule against the code yet.",
+  unclear: "Striff could not tell.",
+};
 
 /**
  * Plain text, for a file someone opens in a spreadsheet: no backticks, no newlines, quotes doubled.
@@ -127,13 +164,28 @@ export default function RulesTab({
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
+  const [asking, setAsking] = useState(false);
+
   // Document order to begin with: a repository's rules read as its documents do until someone
   // asks for something else.
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "source", dir: 1 });
-  /** How many times this view has waited for a listing it asked for; see DocsTab. */
-  const waitedForListing = useRef(0);
+
+  /** What the page is showing right now, so a wait never reloads over someone reading it. */
+  const dataRef = useRef<RepoRules | null>(null);
 
   const [owner, name] = repo.split("/");
+  dataRef.current = data;
+
+  // Two kinds of waiting, one watcher. A listing this page asked for lands in seconds; a reading
+  // takes minutes, and is followed whoever asked for it — including someone at another desk.
+  useWatch(
+    !!data
+      && (data.documents || []).length === 0
+      && data.lastScanMs === null
+      && data.lastAttempt?.outcome !== "failed",
+    () => load()
+  );
+  useWatch(isRunning(data?.reading), () => load(), 5000, 20 * 60 * 1000);
 
   useEffect(() => {
     if (openRepo && openRepo !== repo) setRepo(openRepo);
@@ -147,7 +199,6 @@ export default function RulesTab({
 
   useEffect(() => {
     if (!owner || !name) return;
-    waitedForListing.current = 0;
     load();
   }, [repo]);
 
@@ -167,15 +218,12 @@ export default function RulesTab({
       );
       const body = await res.json();
       if (!res.ok) {
-        setError(body.error || "Couldn't load this repository's rules");
-        setData(null);
+        setError(body.message || body.error || "Couldn't load this repository's rules");
+        // Same as the documents view: a failed refresh says so and leaves the rules where they are.
+        if (!dataRef.current) setData(null);
         return;
       }
       setData(body);
-      if (body.lastScanMs === null && waitedForListing.current < 3) {
-        waitedForListing.current += 1;
-        window.setTimeout(() => load(), 6000);
-      }
     } catch {
       setError("Couldn't load this repository's rules");
     } finally {
@@ -183,11 +231,48 @@ export default function RulesTab({
     }
   }
 
+  /**
+   * Asks for the repository to be read, then watches until the run stops.
+   *
+   * The run is a queued job of minutes. Watching is a poll, deliberately: it is one small request
+   * every few seconds against a page someone is already looking at, and it stops the moment the
+   * run does. It never clears what is on screen — a refresh that fails leaves the rules where they
+   * are — and it pauses while the tab is hidden, because nobody is watching a background tab.
+   */
+  async function readRepository() {
+    setAsking(true);
+    setError("");
+    try {
+      const res = await fetch(
+        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
+        { method: "POST" }
+      );
+      if (!res.ok) {
+        const answer = await res.json().catch(() => ({}));
+        setError(answer.message || answer.error || "Couldn't ask Striff to read this repository.");
+        return;
+      }
+      await load();
+    } catch {
+      setError("Couldn't ask Striff to read this repository.");
+    } finally {
+      setAsking(false);
+    }
+  }
+
   /** Every rule, in document order, each carrying the document it was read from. */
   const rows = useMemo<Row[]>(() => {
     const all: Row[] = [];
     for (const group of data?.documents || []) {
-      for (const rule of group.rules) all.push({ ...rule, doc: group.document });
+      for (const rule of group.rules) {
+        // A rule Striff could not judge says nothing about the code, and a list of things that
+        // said nothing is not worth a reader's attention or a place in the counts. It is still
+        // stored, and the next pull request that touches the code it names judges it again.
+        if (standing({ status: rule.status, onDefaultBranch: rule.onDefaultBranch }) === "unclear") {
+          continue;
+        }
+        all.push({ ...rule, doc: group.document });
+      }
     }
     return all.sort((a, b) =>
       a.doc.path === b.doc.path
@@ -199,33 +284,16 @@ export default function RulesTab({
   const counts = useMemo(
     () => ({
       all: rows.length,
-      broken: rows.filter((row) => row.status === "VIOLATED").length,
-      prior: rows.filter((row) => row.status === "PRE_EXISTING").length,
-      held: rows.filter((row) => row.status === "MAINTAINED" || row.status === "RESTORED").length,
-      unchecked: rows.filter((row) => !row.status).length,
-      onMain: rows.filter((row) => row.onDefaultBranch === "HOLDS").length,
+      broken: rows.filter((row) => standing(row) === "broken").length,
+      holds: rows.filter((row) => standing(row) === "holds").length,
+      unchecked: rows.filter((row) => standing(row) === "unchecked").length,
     }),
     [rows]
   );
 
   const term = query.trim().toLowerCase();
   const shown = useMemo(() => {
-    const matchesFilter = (row: Row) => {
-      switch (filter) {
-        case "broken":
-          return row.status === "VIOLATED";
-        case "prior":
-          return row.status === "PRE_EXISTING";
-        case "held":
-          return row.status === "MAINTAINED" || row.status === "RESTORED";
-        case "unchecked":
-          return !row.status;
-        case "onMain":
-          return row.onDefaultBranch === "HOLDS";
-        default:
-          return true;
-      }
-    };
+    const matchesFilter = (row: Row) => (filter === "all" ? true : standing(row) === filter);
     const matchesTerm = (row: Row) =>
       term === "" ||
       (row.statement || "").replace(/`/g, "").toLowerCase().includes(term) ||
@@ -241,8 +309,7 @@ export default function RulesTab({
         return plain(a).localeCompare(plain(b)) || byDocument(a, b);
       }
       if (sort.key === "outcome") {
-        const rank = (row: Row) =>
-          row.status ? SEVERITY[row.status] ?? NEVER_CHECKED : NEVER_CHECKED;
+        const rank = (row: Row) => SEVERITY[standing(row)];
         // Judged most recently first within a standing, so "what happened lately" is one click
         // away from "what is broken".
         return rank(a) - rank(b) || (b.judgedAtMs || 0) - (a.judgedAtMs || 0) || byDocument(a, b);
@@ -289,10 +356,10 @@ export default function RulesTab({
           csvCell(row.sourceLine ?? ""),
           csvCell(row.statement),
           csvCell(row.quote),
-          csvCell(row.status ? OUTCOME_LABEL[row.status] || row.status : "Not checked yet"),
+          csvCell(STANDING_LABEL[standing(row)]),
           csvCell(row.pullNo ? `#${row.pullNo}` : ""),
           csvCell(row.judgedAtMs ? new Date(row.judgedAtMs).toISOString().slice(0, 10) : ""),
-          csvCell(row.onDefaultBranch ? ON_BRANCH_LABEL[row.onDefaultBranch] || row.onDefaultBranch : ""),
+          csvCell(row.onDefaultBranch ? "judged against the default branch" : "judged on a pull request"),
         ].join(",")
       );
     }
@@ -351,22 +418,49 @@ export default function RulesTab({
                 </option>
               ))}
             </select>
+            <a
+              className="docs-repo-link"
+              href={`https://github.com/${owner}/${name}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open this repository on GitHub"
+            >
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+              </svg>
+              GitHub
+            </a>
           </div>
+          {data && (
+            <div className="docs-actions">
+              <ReadRepository
+                reading={data.reading}
+                waiting={Math.max(
+                  0,
+                  summary
+                    ? summary.documents - summary.retired - summary.screenedOut - summary.excluded
+                        - summary.read
+                    : 0
+                )}
+                read={summary ? summary.read : 0}
+                busy={asking || loading}
+                onRead={readRepository}
+              />
+            </div>
+          )}
           <p className="docs-lede">
             Every rule Striff has read from this repository's docs, and where each one came from.
             Open a document's name to see it beside the rest of its doc.
           </p>
           {data && <RevisionLine catalog={data} />}
         </div>
-        {summary && (
+        {summary && rows.length > 0 && (
           <div className="docs-tally">
             {([
-              ["all", summary.rules, "rules", "", "Every rule read from this repository's docs."],
-              ["broken", summary.brokenRules, "newly broken", "is-violated", OUTCOME_HELP.VIOLATED],
-              ["prior", summary.alreadyBrokenRules, "already broken", "is-prior",
-                OUTCOME_HELP.PRE_EXISTING],
-              ["onMain", summary.holdsOnDefaultBranch, "hold on main", "is-held",
-                "Rules that hold in the code on the default branch right now."],
+              ["all", counts.all, "rules", "", "Every rule read from this repository's docs."],
+              ["broken", counts.broken, "broken", "is-violated", STANDING_HELP.broken],
+              ["holds", counts.holds, "holding", "is-held", STANDING_HELP.holds],
+              ["unchecked", counts.unchecked, "not checked", "", STANDING_HELP.unchecked],
             ] as const).map(([key, count, label, tone, help]) => (
               <button
                 key={key}
@@ -409,7 +503,13 @@ export default function RulesTab({
 
       {data && rows.length === 0 && !loading && !data.truncated && (
         <div className="dashboard-empty">
-          {data.lastScanMs === null ? (
+          {data.lastAttempt?.outcome === "failed" ? (
+            <p className="text-slate-600">
+              Striff could not read this repository to list its documents, so it cannot say what
+              rules it holds.{" "}
+              {data.lastAttempt.reason ? <span className="docs-attempt-reason">{data.lastAttempt.reason}</span> : null}
+            </p>
+          ) : data.lastScanMs === null ? (
             <p className="text-slate-600">
               Striff is listing this repository's documents. Any rules it has already read appear
               here as soon as that lands — a few seconds, usually.
@@ -439,29 +539,6 @@ export default function RulesTab({
                 onChange={(event) => setQuery(event.target.value)}
               />
             </label>
-            <div className="docs-filters">
-              {([
-                ["all", "All", counts.all, "", "Every rule read from this repository's docs."],
-                ["broken", "Newly broken", counts.broken, "broken", OUTCOME_HELP.VIOLATED],
-                ["prior", "Already broken", counts.prior, "prior", OUTCOME_HELP.PRE_EXISTING],
-                ["held", "Held last check", counts.held, "held", OUTCOME_HELP.MAINTAINED],
-                ["unchecked", "Not checked", counts.unchecked, "unread",
-                  "No pull request has judged this rule yet."],
-                ["onMain", "Holds on main", counts.onMain, "held",
-                  "The rule holds in the code on the default branch right now, whatever any one pull request said about it."],
-              ] as const).map(([key, label, count, dot, help]) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={`docs-filter${filter === key ? " is-on" : ""}`}
-                  title={help}
-                  onClick={() => setFilter(key)}
-                >
-                  {dot && <span className={`docs-fdot is-${dot}`} />}
-                  {label} <b>{count}</b>
-                </button>
-              ))}
-            </div>
             <div className="rules-export" onClick={(event) => event.stopPropagation()}>
               <button
                 type="button"
@@ -503,7 +580,7 @@ export default function RulesTab({
               <tr>
                 {heading("rule", "The rule")}
                 {heading("source", "Where it came from")}
-                {heading("outcome", "Latest outcome")}
+                {heading("outcome", "How it stands")}
               </tr>
             </thead>
             <tbody>
@@ -515,16 +592,31 @@ export default function RulesTab({
                   }
                 >
                   <td className="docs-rule-statement">
-                    {withCode(row.statement, term)}
-                    {row.quote && (
-                      <span className="rules-quote">“{withCode(row.quote, term)}”</span>
-                    )}
+                    <Clamped lines={4}>
+                      {withCode(row.statement, term)}
+                      {row.quote && (
+                        <span className="rules-quote">“{withCode(row.quote, term)}”</span>
+                      )}
+                    </Clamped>
                   </td>
                   <td className="rules-source">
+                    <span className="rules-source-where">
                     <button type="button" className="rules-source-link" onClick={() => onOpenDoc?.(row.doc.path)}>
                       {mark(row.doc.path, term)}
                       {row.sourceLine ? <i>:{row.sourceLine}</i> : null}
                     </button>
+                    <a
+                      className="rules-source-github"
+                      href={`https://github.com/${owner}/${name}/blob/${data.defaultBranch || "HEAD"}/${row.doc.path}${row.sourceLine ? `#L${row.sourceLine}` : ""}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`Open ${row.doc.path}${row.sourceLine ? ` at line ${row.sourceLine}` : ""} on GitHub`}
+                    >
+                      <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                      </svg>
+                    </a>
+                    </span>
                     <span className="rules-source-when">
                       {row.doc.outdated
                         ? `Doc edited since Striff read it${row.doc.lastExtractedMs ? `, ${when(row.doc.lastExtractedMs)}` : ""}`
@@ -535,24 +627,17 @@ export default function RulesTab({
                   </td>
                   <td>
                     <span
-                      className={`docs-outcome is-${(row.status || "none").toLowerCase()}`}
-                      title={row.status
-                        ? OUTCOME_HELP[row.status] || ""
-                        : "No pull request has judged this rule yet."}
+                      className={`docs-outcome is-${standing(row)}`}
+                      title={STANDING_HELP[standing(row)]}
                     >
-                      {row.status ? OUTCOME_LABEL[row.status] || row.status : "Not checked yet"}
+                      {STANDING_LABEL[standing(row)]}
                     </span>
                     {row.pullNo && (
                       <span className="docs-outcome-when">
-                        PR #{row.pullNo} · {when(row.judgedAtMs)}
+                        last judged on PR #{row.pullNo} · {when(row.judgedAtMs)}
                       </span>
                     )}
-                    {row.onDefaultBranch && (
-                      <span className="docs-outcome-branch">
-                        {ON_BRANCH_LABEL[row.onDefaultBranch] || row.onDefaultBranch}
-                      </span>
-                    )}
-                    {worthAnIssue(row.status) && (
+                    {standing(row) === "broken" && (
                       <a
                         className="docs-issue-link"
                         href={issueUrl(owner, name, row.doc.path, row)}

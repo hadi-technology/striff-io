@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { OUTCOME_LABEL, OUTCOME_HELP, ON_BRANCH_LABEL, mark, snippet, withCode, when } from "./docRules";
+import { Clamped, mark, snippet, useWatch, withCode, when } from "./docRules";
 
 /**
  * The documents Striff can read in one repository, and the rules it found in them.
@@ -69,6 +69,8 @@ interface Catalog {
   /** The commit that branch pointed at when the documents were last listed. */
   defaultBranchSha: string | null;
   lastScanMs: number | null;
+  /** What came of the last attempt to list this repository, null where none is recorded. */
+  lastAttempt: { atMs: number; outcome: string; reason: string | null; documents: number } | null;
   summary: Summary;
   documents: Doc[];
   exclusions: Exclusion[];
@@ -184,6 +186,31 @@ function stateLine(doc: Doc, covering?: Exclusion | null): string {
   }
 }
 
+
+/**
+ * How a rule stands, in one answer: the default branch where anything has judged it there, the last
+ * pull request where nothing has. Two statuses side by side asked a reader to work out for
+ * themselves whether a rule is being kept; it is one repository and one branch, so it is one
+ * question.
+ */
+type DocStanding = "holds" | "broken" | "unchecked" | "unclear";
+
+function docStanding(rule: { status: string | null; onDefaultBranch: string | null }): DocStanding {
+  if (rule.onDefaultBranch === "HOLDS") return "holds";
+  if (rule.onDefaultBranch === "BROKEN") return "broken";
+  if (rule.onDefaultBranch === "UNCLEAR") return "unclear";
+  if (rule.status === "MAINTAINED" || rule.status === "RESTORED") return "holds";
+  if (rule.status === "VIOLATED" || rule.status === "PRE_EXISTING") return "broken";
+  if (rule.status === "UNCLEAR") return "unclear";
+  return "unchecked";
+}
+
+const DOC_STANDING_LABEL: Record<DocStanding, string> = {
+  broken: "Broken",
+  holds: "Holds",
+  unchecked: "Not checked yet",
+  unclear: "Couldn't check",
+};
 
 /** One node of the document tree: a folder holding more, or a document. */
 interface TreeNode {
@@ -320,15 +347,22 @@ export default function DocsTab({
   const openedAt = useRef(0);
   /** The same for the catalogue: switching repository twice must not land on the first one. */
   const loadedAt = useRef(0);
-  /**
-   * How many times this view has waited for a listing. A repository nobody has listed is listed
-   * because this page asked for it, which takes a few seconds; looking again a couple of times
-   * saves the reader refreshing, and stopping after that saves polling a repository whose listing
-   * genuinely failed.
-   */
-  const waitedForListing = useRef(0);
+
+  /** What the view is showing right now, for the listing wait to look at before it reloads. */
+  const catalogRef = useRef<Catalog | null>(null);
 
   const [owner, name] = repo.split("/");
+  catalogRef.current = catalog;
+
+  // A listing this page asked for is queued work: watch until it lands, and stop as soon as there
+  // is anything to show or anything to say about why there is not.
+  useWatch(
+    !!catalog
+      && (catalog.documents || []).length === 0
+      && catalog.lastScanMs === null
+      && catalog.lastAttempt?.outcome !== "failed",
+    () => loadCatalog()
+  );
 
   useEffect(() => {
     if (openRepo && openRepo !== repo) setRepo(openRepo);
@@ -336,7 +370,6 @@ export default function DocsTab({
 
   useEffect(() => {
     if (!owner || !name) return;
-    waitedForListing.current = 0;
     loadCatalog();
   }, [repo]);
 
@@ -371,15 +404,13 @@ export default function DocsTab({
       // A repository switched away from still answers; it just no longer has a view to paint.
       if (wanted !== loadedAt.current) return;
       if (!res.ok) {
-        setError(data.error || "Couldn't load this repository's documents");
-        setCatalog(null);
+        setError(data.message || data.error || "Couldn't load this repository's documents");
+        // What is on screen was true when it arrived. A refresh that failed is a reason to say so,
+        // not to take the documents away from whoever is reading them.
+        if (!catalogRef.current) setCatalog(null);
         return;
       }
       setCatalog(data);
-      if (data.lastScanMs === null && waitedForListing.current < 3) {
-        waitedForListing.current += 1;
-        window.setTimeout(() => loadCatalog(), 6000);
-      }
       const docs: Doc[] = data.documents || [];
       setExpanded(allFolders(buildTree(docs)));
       // Landing on an empty pane wastes the arrival: open what a reader would have opened first,
@@ -482,7 +513,7 @@ export default function DocsTab({
     const all = catalog?.documents || [];
     switch (filter) {
       case "broken":
-        return all.filter((doc) => doc.brokenRules > 0);
+        return all.filter((doc) => doc.brokenRules + doc.alreadyBrokenRules > 0);
       case "notRead":
         return all.filter((doc) => doc.state === "NOT_READ");
       case "skipped":
@@ -499,7 +530,7 @@ export default function DocsTab({
     const all = catalog?.documents || [];
     return {
       all: all.length,
-      broken: all.filter((doc) => doc.brokenRules > 0).length,
+      broken: all.filter((doc) => doc.brokenRules + doc.alreadyBrokenRules > 0).length,
       notRead: all.filter((doc) => doc.state === "NOT_READ").length,
       skipped: all.filter((doc) => doc.state === "SCREENED_OUT").length,
       excluded: all.filter((doc) => doc.state === "EXCLUDED").length,
@@ -676,9 +707,9 @@ export default function DocsTab({
   function rowBadges(doc: Doc) {
     return (
       <>
-        {doc.brokenRules > 0 && (
-          <span className="docs-badge is-broken" title={OUTCOME_HELP.VIOLATED}>
-            {doc.brokenRules} newly broken
+        {doc.brokenRules + doc.alreadyBrokenRules > 0 && (
+          <span className="docs-badge is-broken" title="Rules of this doc the code does not keep.">
+            {doc.brokenRules + doc.alreadyBrokenRules} broken
           </span>
         )}
         {doc.outdated && doc.state === "READ" && (
@@ -849,7 +880,7 @@ export default function DocsTab({
                       <span className="docs-palette-sub">
                         {marked(rule.path)}
                         {rule.sourceLine ? `:${rule.sourceLine}` : ""}
-                        {rule.status ? ` · ${OUTCOME_LABEL[rule.status] || rule.status}` : " · not checked yet"}
+                        {` · ${DOC_STANDING_LABEL[docStanding(rule)].toLowerCase()}`}
                       </span>
                     </button>
                   ))}
@@ -878,6 +909,18 @@ export default function DocsTab({
                 </option>
               ))}
             </select>
+            <a
+              className="docs-repo-link"
+              href={`https://github.com/${owner}/${name}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open this repository on GitHub"
+            >
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+              </svg>
+              GitHub
+            </a>
           </div>
           <p className="docs-lede">
             Every doc Striff can read in this repository, and the rules it found in them. Striff
@@ -913,29 +956,20 @@ export default function DocsTab({
             <button
               type="button"
               className="docs-tally-item is-violated"
-              title={`${OUTCOME_HELP.VIOLATED} Opens the rules, showing these.`}
+              title="Rules the code does not keep. Opens the rules, showing these."
               onClick={() => onOpenRules?.("broken")}
             >
-              <b>{summary.brokenRules}</b>
-              <i>newly broken</i>
-            </button>
-            <button
-              type="button"
-              className="docs-tally-item is-prior"
-              title={`${OUTCOME_HELP.PRE_EXISTING} Opens the rules, showing these.`}
-              onClick={() => onOpenRules?.("prior")}
-            >
-              <b>{summary.alreadyBrokenRules}</b>
-              <i>already broken</i>
+              <b>{summary.brokenRules + summary.alreadyBrokenRules}</b>
+              <i>broken</i>
             </button>
             <button
               type="button"
               className="docs-tally-item is-held"
-              title="Rules that hold in the code on the default branch right now, whatever any one pull request said. Opens the rules, showing these."
-              onClick={() => onOpenRules?.("onMain")}
+              title="Rules the code keeps. Opens the rules, showing these."
+              onClick={() => onOpenRules?.("holds")}
             >
               <b>{summary.holdsOnDefaultBranch}</b>
-              <i>hold on main</i>
+              <i>holding</i>
             </button>
             <button
               type="button"
@@ -955,11 +989,31 @@ export default function DocsTab({
 
       {catalog && catalog.documents.length === 0 && !loading && (
         <div className="dashboard-empty">
-          <p className="text-slate-600">
-            {catalog.lastScanMs === null
-              ? "Striff is listing this repository's documents now. They appear here as soon as it has them — a few seconds, usually."
-              : "Striff found no document it can read in this repository. It looks for Markdown and text documents on the default branch."}
-          </p>
+          {catalog.lastAttempt?.outcome === "failed" ? (
+            <>
+              <p className="text-slate-600">
+                Striff could not read this repository to list its documents. Nothing about it is
+                known yet — this is not a repository with no documents.
+              </p>
+              {catalog.lastAttempt.reason && (
+                <p className="docs-attempt-reason">{catalog.lastAttempt.reason}</p>
+              )}
+              <button
+                type="button"
+                className="dashboard-button dashboard-button-secondary mt-4"
+                disabled={busy}
+                onClick={() => loadCatalog()}
+              >
+                Try again
+              </button>
+            </>
+          ) : (
+            <p className="text-slate-600">
+              {catalog.lastScanMs === null
+                ? "Striff is listing this repository's documents now. They appear here as soon as it has them — a few seconds, usually."
+                : "Striff found no document it can read in this repository. It looks for Markdown and text documents on the default branch."}
+            </p>
+          )}
         </div>
       )}
 
@@ -978,7 +1032,7 @@ export default function DocsTab({
             <div className="docs-filters">
               {([
                 ["all", "All", filterCounts.all, ""],
-                ["broken", "Newly broken", filterCounts.broken, "broken"],
+                ["broken", "Broken", filterCounts.broken, "broken"],
                 ["notRead", "Not read", filterCounts.notRead, "unread"],
                 ["skipped", "Skipped", filterCounts.skipped, "other"],
                 ["excluded", "Excluded", filterCounts.excluded, "other"],
@@ -1134,7 +1188,9 @@ export default function DocsTab({
                       </tr>
                     </thead>
                     <tbody>
-                      {detail.rules.map((rule) => (
+                      {detail.rules
+                        .filter((rule) => docStanding(rule) !== "unclear")
+                        .map((rule) => (
                         <tr
                           key={rule.factId}
                           className={
@@ -1146,20 +1202,31 @@ export default function DocsTab({
                           }
                         >
                           <td className="docs-rule-line">{rule.sourceLine ? `:${rule.sourceLine}` : ""}</td>
-                          <td className="docs-rule-quote">{withCode(rule.quote)}</td>
-                          <td className="docs-rule-statement">{withCode(rule.statement)}</td>
+                          <td className="docs-rule-quote">
+                            <Clamped lines={4}>{withCode(rule.quote)}</Clamped>
+                          </td>
+                          <td className="docs-rule-statement">
+                            <Clamped lines={4}>{withCode(rule.statement)}</Clamped>
+                          </td>
                           <td>
-                            <span className={`docs-outcome is-${(rule.status || "none").toLowerCase()}`}>
-                              {rule.status ? OUTCOME_LABEL[rule.status] || rule.status : "Not checked yet"}
+                            <span
+                              className={`docs-outcome is-${docStanding(rule)}`}
+                              title={docStanding(rule) === "broken"
+                                ? "The code does not keep this rule."
+                                : docStanding(rule) === "holds"
+                                ? "The code keeps this rule."
+                                : "Nothing has judged this rule against the code yet."}
+                            >
+                              {DOC_STANDING_LABEL[docStanding(rule)]}
                             </span>
                             {rule.pullNo && (
                               <span className="docs-outcome-when">
                                 PR #{rule.pullNo} · {when(rule.judgedAtMs)}
                               </span>
                             )}
-                            {rule.onDefaultBranch && (
+                            {rule.pullNo && !rule.onDefaultBranch && (
                               <span className="docs-outcome-branch">
-                                {ON_BRANCH_LABEL[rule.onDefaultBranch] || rule.onDefaultBranch}
+                                judged on a pull request, not against the branch
                               </span>
                             )}
                             {worthAnIssue(rule.status) && (
