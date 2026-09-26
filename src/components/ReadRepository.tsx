@@ -8,6 +8,10 @@ import { useEffect, useRef, useState } from "react";
  * wants to see what it promises. This asks for all of it at once — parse the repository, read every
  * document, judge every rule against the default branch.
  *
+ * It sits beside the "read / extractable" count, because that count is what it changes: five of
+ * eight documents read, and here is how the other three get read. A button of its own under the
+ * heading made a repository look like it needed configuring.
+ *
  * The work is a queued job of minutes, so the button is not the interesting part; the state is.
  * What it offers depends on what there is to do:
  *
@@ -67,6 +71,7 @@ export default function ReadRepository({
   waiting,
   read,
   busy,
+  stale,
   onRead,
 }: {
   /** Where the last reading got to, null where none was ever asked for. */
@@ -78,8 +83,22 @@ export default function ReadRepository({
   /** Whether another request is in flight from this page. */
   busy?: boolean;
   /** Asks for a reading; resolves when the API has taken the request. */
-  onRead: () => void;
+  onRead: () => void | Promise<void>;
+  /** Whether the page has stopped watching this run, so it must say to come back. */
+  stale?: boolean;
 }) {
+  // Pressed, and not yet visible in the run record: the gap between the click and the first answer
+  // is where someone presses again, and again, each press queueing another reading. The control
+  // takes itself out of service the moment it is pressed and stays out until the record says
+  // something — running, finished, or stopped.
+  const [asked, setAsked] = useState(false);
+  useEffect(() => {
+    if (!reading) return;
+    if (isRunning(reading) || reading.state === "done" || reading.state === "failed"
+        || reading.state === "skipped") {
+      setAsked(false);
+    }
+  }, [reading?.state, reading?.askedAtMs]);
   // Re-rendered on a timer only while something is running, so "23s" does not go stale in front of
   // someone watching it, and nothing ticks on a page where nothing is happening.
   const [, setTick] = useState(0);
@@ -94,14 +113,24 @@ export default function ReadRepository({
     };
   }, [reading?.state, reading?.finishedAtMs]);
 
-  if (isRunning(reading)) {
-    const started = reading!.state === "running";
+  if (asked || isRunning(reading)) {
+    const started = reading?.state === "running";
+    const label = !isRunning(reading)
+      ? "Asking Striff to read this repository…"
+      : started
+      ? `Reading… ${since(reading!.startedAtMs)}`
+      : `Queued to read… ${since(reading!.askedAtMs)}`;
+    // A minute in, it is worth saying that nobody has to sit here for it.
+    const patience = stale
+      ? "Striff is still at it. This page has stopped checking — refresh to see where it got to."
+      : started && Date.now() - reading!.startedAtMs > 60_000
+      ? "Reading a repository takes a few minutes. You can leave this page; it keeps going."
+      : null;
     return (
       <span className="read-repo is-running" role="status" aria-live="polite">
         <span className="read-repo-spinner" aria-hidden="true" />
-        {started
-          ? `Reading this repository… ${since(reading!.startedAtMs)}`
-          : `Queued to read… ${since(reading!.askedAtMs)}`}
+        <span className="read-repo-running-label" title={label}>{label}</span>
+        {patience && <span className="read-repo-note">{patience}</span>}
       </span>
     );
   }
@@ -131,11 +160,8 @@ export default function ReadRepository({
   const blockedUntil = reading?.canAskAgainAtMs && reading.canAskAgainAtMs > Date.now()
     ? reading.canAskAgainAtMs
     : 0;
-  const label = stopped
-    ? "Try reading it again"
-    : waiting > 0
-    ? `Read the ${waiting} doc${waiting === 1 ? "" : "s"} waiting`
-    : "Read this repository now";
+  // Short, because it sits inside a row of counts. The sentence lives in the title.
+  const label = stopped ? "Try again" : waiting > 0 ? `Read ${waiting}` : "Read them";
   const help = waiting > 0
     ? "Reads every document Striff has not read yet and judges every rule against the default branch. Costs a model call per document."
     : "Reads every document in this repository and judges the rules it finds against the default branch. Costs a model call per document.";
@@ -144,13 +170,20 @@ export default function ReadRepository({
     <span className="read-repo">
       <button
         type="button"
-        className={`read-repo-button${stopped ? "" : " is-primary"}`}
+        className={`read-repo-button${stopped ? " is-bad" : ""}`}
         disabled={!!busy || blockedUntil > 0}
         title={blockedUntil > 0
           ? `Striff read this repository recently. Another reading can be asked for in ${until(blockedUntil)}.`
           : help}
-        onClick={onRead}
+        onClick={() => {
+          setAsked(true);
+          onRead();
+        }}
       >
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M2.5 3.5h4a2 2 0 0 1 2 2v7a1.6 1.6 0 0 0-1.6-1.6H2.5Z" />
+          <path d="M13.5 3.5h-4a2 2 0 0 0-2 2v7a1.6 1.6 0 0 1 1.6-1.6h4.4Z" />
+        </svg>
         {label}
       </button>
       {justFinished && (
