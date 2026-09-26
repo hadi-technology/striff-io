@@ -15,7 +15,9 @@ interface Revision {
 }
 
 function listedWhen(ms: number | null): string {
-  if (!ms) return "not listed yet";
+  // Reading a repository nothing has listed asks for it to be listed, so "never" is never the
+  // whole truth by the time anyone reads this line.
+  if (!ms) return "listing its documents now";
   const minutes = Math.round((Date.now() - ms) / 60000);
   if (minutes < 1) return "listed just now";
   if (minutes < 60) return `listed ${minutes} min ago`;

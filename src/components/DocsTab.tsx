@@ -153,6 +153,11 @@ function stateLine(doc: Doc, covering?: Exclusion | null): string {
       if (doc.outdated) {
         return `Edited on the default branch since Striff last read it. These rules come from the ${when(doc.lastExtractedMs)} version${doc.lastExtractedPullNo ? ` (PR #${doc.lastExtractedPullNo})` : ""}, and refresh on the next pull request that changes code this doc talks about.`;
       }
+      if (!doc.lastExtractedMs) {
+        // A repository read before Striff kept a catalogue: the rules are real, the date is not
+        // known, and inventing one would be worse than saying so.
+        return "Striff has rules for this doc from a reading it made before it kept a record of when. They refresh on the next pull request that changes code this doc talks about.";
+      }
       return `Rules last extracted ${when(doc.lastExtractedMs)}${doc.lastExtractedPullNo ? ` on PR #${doc.lastExtractedPullNo}` : ""}.`;
     case "NOT_READ":
       return "Striff hasn't read this doc yet. It reads a doc the first time a pull request changes code the doc talks about.";
@@ -315,6 +320,13 @@ export default function DocsTab({
   const openedAt = useRef(0);
   /** The same for the catalogue: switching repository twice must not land on the first one. */
   const loadedAt = useRef(0);
+  /**
+   * How many times this view has waited for a listing. A repository nobody has listed is listed
+   * because this page asked for it, which takes a few seconds; looking again a couple of times
+   * saves the reader refreshing, and stopping after that saves polling a repository whose listing
+   * genuinely failed.
+   */
+  const waitedForListing = useRef(0);
 
   const [owner, name] = repo.split("/");
 
@@ -324,6 +336,7 @@ export default function DocsTab({
 
   useEffect(() => {
     if (!owner || !name) return;
+    waitedForListing.current = 0;
     loadCatalog();
   }, [repo]);
 
@@ -363,6 +376,10 @@ export default function DocsTab({
         return;
       }
       setCatalog(data);
+      if (data.lastScanMs === null && waitedForListing.current < 3) {
+        waitedForListing.current += 1;
+        window.setTimeout(() => loadCatalog(), 6000);
+      }
       const docs: Doc[] = data.documents || [];
       setExpanded(allFolders(buildTree(docs)));
       // Landing on an empty pane wastes the arrival: open what a reader would have opened first,
@@ -939,8 +956,9 @@ export default function DocsTab({
       {catalog && catalog.documents.length === 0 && !loading && (
         <div className="dashboard-empty">
           <p className="text-slate-600">
-            Striff hasn't listed this repository's documents yet. It lists them when the app is
-            installed, and reads one when a pull request changes code that document talks about.
+            {catalog.lastScanMs === null
+              ? "Striff is listing this repository's documents now. They appear here as soon as it has them — a few seconds, usually."
+              : "Striff found no document it can read in this repository. It looks for Markdown and text documents on the default branch."}
           </p>
         </div>
       )}
