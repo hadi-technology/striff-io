@@ -6,17 +6,23 @@
  * copy taken from a shared machine, a proxy log, or a backup would still read the account weeks
  * later. So sign-out also asks GitHub to destroy the token, and only then drops the cookie.
  *
- * The revoke is best-effort. If GitHub is unreachable, or the app's secret is not configured, the
- * visitor is still signed out here -- a browser that cannot reach GitHub must not be left holding
- * a session it asked to end.
+ * The revoke is best-effort, and strictly time-boxed. Signing out must not be able to fail: if
+ * GitHub is slow, unreachable, or the app's secret is not configured, the cookie still goes. An
+ * un-timed call here would be the worst kind of bug -- press "sign out", wait, and stay signed in
+ * because the function timed out before it ever set the header.
  *
  * What this deliberately does not do is revoke the authorization grant. Striff stays on the
  * visitor's list of authorized apps, so signing back in is one click rather than a fresh consent
  * screen. Someone who wants Striff to forget them entirely does that from GitHub's own settings.
  */
 
+import { Buffer } from "node:buffer";
+
 const CLIENT_ID = process.env.GITHUB_OAUTH_CLIENT_ID;
 const CLIENT_SECRET = process.env.GITHUB_OAUTH_CLIENT_SECRET;
+
+/** Longest the revoke may take before sign-out stops waiting for it and clears the cookie. */
+const REVOKE_TIMEOUT_MS = 2500;
 
 /** Cookies cleared on the way out, each written the same way it was set. */
 const CLEARED = [
@@ -38,8 +44,11 @@ export const handler = async (event) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ access_token: token }),
+        signal: AbortSignal.timeout(REVOKE_TIMEOUT_MS),
       });
     } catch (e) {
+      // Including the timeout. The token outlives the session in this case, which is the old
+      // behaviour and not worse than it; being unable to sign out would be.
       console.error("Could not revoke the access token on sign-out:", e.message);
     }
   }

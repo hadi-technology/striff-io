@@ -522,7 +522,8 @@ export default function DocsTab({
    * opens the documents of a fresh repository sees a tree of "not read yet" and should not have to
    * find another page to do something about it.
    */
-  async function readRepository() {
+  /** @return false where the request was refused, so the control stops saying it is asking */
+  async function readRepository(): Promise<boolean> {
     setAsking(true);
     setActionError("");
     try {
@@ -533,11 +534,13 @@ export default function DocsTab({
       if (!res.ok) {
         const answer = await res.json().catch(() => ({}));
         setActionError(answer.message || answer.error || "Couldn't ask Striff to read this repository.");
-        return;
+        return false;
       }
       await loadCatalog();
+      return true;
     } catch {
       setActionError("Couldn't ask Striff to read this repository.");
+      return false;
     } finally {
       setAsking(false);
     }
@@ -592,6 +595,13 @@ export default function DocsTab({
   }, [catalog]);
 
   const tree = useMemo(() => buildTree(documents), [documents]);
+  // The rules of the open document that are worth listing. A rule nothing has judged says nothing
+  // about the code, so it is not given a row -- but it was still extracted, and the count above the
+  // table says so rather than quietly losing it.
+  const shownRules = useMemo(
+    () => (detail?.rules || []).filter((rule) => docStanding(rule) !== "unclear"),
+    [detail]
+  );
 
   /**
    * Opens the palette, and indexes the rules the first time.
@@ -1255,7 +1265,38 @@ export default function DocsTab({
                   </span>
                 </p>
 
-                {detail.rules.length > 0 && (
+                {/* How many rules came out of this doc, said in words.
+                    A doc Striff read and found nothing in used to show the extraction date and
+                    then simply stop, which reads like a page that failed to load. Zero is an
+                    answer, and a doc is entitled to have it stated. The same line carries the
+                    count when there are rules, so the number under the table is never in doubt,
+                    and it says separately when rules exist but nothing has judged them. */}
+                {(detail.document.state === "READ" || detail.rules.length > 0) && (
+                  <p className="docs-rule-count">
+                    {detail.rules.length === 0 ? (
+                      <>
+                        <b>0 rules</b> extracted from this doc. Striff read it and found nothing in
+                        it that states a rule about the code.
+                      </>
+                    ) : (
+                      <>
+                        <b>{detail.rules.length} rule{detail.rules.length === 1 ? "" : "s"}</b>{" "}
+                        extracted from this doc
+                        {shownRules.length < detail.rules.length && (
+                          <>
+                            {", "}
+                            {detail.rules.length - shownRules.length} of which nothing has been able
+                            to judge yet, so {detail.rules.length - shownRules.length === 1 ? "it is" : "they are"}{" "}
+                            not listed
+                          </>
+                        )}
+                        .
+                      </>
+                    )}
+                  </p>
+                )}
+
+                {shownRules.length > 0 && (
                   <table className="docs-rules">
                     <thead>
                       <tr>
@@ -1266,9 +1307,7 @@ export default function DocsTab({
                       </tr>
                     </thead>
                     <tbody>
-                      {detail.rules
-                        .filter((rule) => docStanding(rule) !== "unclear")
-                        .map((rule) => (
+                      {shownRules.map((rule) => (
                         <tr
                           key={rule.factId}
                           className={

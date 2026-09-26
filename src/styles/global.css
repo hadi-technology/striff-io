@@ -6005,7 +6005,17 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 }
 .bar-account-wrap .bar-account[aria-expanded="true"] .bar-chevron { transform: rotate(180deg); }
 .bar-chevron { transition: transform 140ms ease; }
-.bar-account-menu { left: 0; right: auto; min-width: 13rem; max-width: 18rem; }
+/* An account per row, and a scrollbar rather than a menu running off the bottom of the screen
+   for someone who belongs to twenty organizations. */
+.bar-account-menu {
+  left: 0;
+  right: auto;
+  min-width: 13rem;
+  max-width: 18rem;
+  max-height: min(60vh, 22rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .bar-account-option {
   display: flex;
   align-items: center;
@@ -6015,6 +6025,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .bar-account-option .bar-account-avatar { width: 1.25rem; height: 1.25rem; flex: 0 0 auto; }
 .bar-account-option-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bar-account-option.is-current { font-weight: 700; }
+.bar-account-option:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; background: #f6f8fa; }
 .bar-account-tick { margin-left: auto; color: var(--accent, #2563eb); flex: 0 0 auto; }
 
 /* The path and the link to it on GitHub share a line, and wrap together. */
@@ -6419,3 +6430,12 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   .mgr-shot-back { display: none; }
   .mgr-shot-front { width: 100%; margin-top: 0; max-height: none; }
 }
+
+/* How many rules came out of the open document, including none. */
+.docs-rule-count {
+  margin: 0.65rem 0 0.15rem;
+  color: #57606a;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.docs-rule-count b { color: #16202b; font-weight: 700; }

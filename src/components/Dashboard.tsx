@@ -1,4 +1,4 @@
-import { createElement, useState, useEffect } from "react";
+import { createElement, useState, useEffect, useRef } from "react";
 import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab from "./DocsTab";
 import RulesTab from "./RulesTab";
@@ -494,25 +494,57 @@ function AccountPicker({
   onAccount: (id: number) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+
+  // A native select could be driven entirely from the keyboard, and replacing it with our own
+  // markup would quietly take that away. Arrows move, Home and End jump, Escape closes and hands
+  // focus back to the chip that opened the menu.
+  function items(): HTMLElement[] {
+    return Array.from(wrap.current?.querySelectorAll<HTMLElement>(".bar-account-option") || []);
+  }
 
   useEffect(() => {
     if (!open) return;
+    // Opening lands on the account in use, so the first arrow press moves from where you are.
+    const all = items();
+    (all.find((item) => item.getAttribute("aria-checked") === "true") || all[0])?.focus();
+
     function close(event: MouseEvent) {
       if (!(event.target as HTMLElement).closest(".bar-account-wrap")) setOpen(false);
     }
-    function escape(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+    function keys(event: KeyboardEvent) {
+      const all = items();
+      if (!all.length) return;
+      const at = all.indexOf(document.activeElement as HTMLElement);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        wrap.current?.querySelector<HTMLElement>(".bar-account")?.focus();
+      } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const step = event.key === "ArrowDown" ? 1 : -1;
+        all[(at + step + all.length) % all.length].focus();
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        all[0].focus();
+      } else if (event.key === "End") {
+        event.preventDefault();
+        all[all.length - 1].focus();
+      } else if (event.key === "Tab") {
+        // Tabbing out of a menu closes it, the way every other menu on this page behaves.
+        setOpen(false);
+      }
     }
     document.addEventListener("click", close);
-    document.addEventListener("keydown", escape);
+    document.addEventListener("keydown", keys);
     return () => {
       document.removeEventListener("click", close);
-      document.removeEventListener("keydown", escape);
+      document.removeEventListener("keydown", keys);
     };
   }, [open]);
 
   return (
-    <div className="bar-account-wrap">
+    <div className="bar-account-wrap" ref={wrap}>
       <button
         type="button"
         className="bar-account"

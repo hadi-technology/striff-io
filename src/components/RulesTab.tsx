@@ -260,7 +260,8 @@ export default function RulesTab({
    * run does. It never clears what is on screen — a refresh that fails leaves the rules where they
    * are — and it pauses while the tab is hidden, because nobody is watching a background tab.
    */
-  async function readRepository() {
+  /** @return false where the request was refused, so the control stops saying it is asking */
+  async function readRepository(): Promise<boolean> {
     setAsking(true);
     setError("");
     try {
@@ -271,12 +272,14 @@ export default function RulesTab({
       if (!res.ok) {
         const answer = await res.json().catch(() => ({}));
         setError(answer.message || answer.error || "Couldn't ask Striff to read this repository.");
-        return;
+        return false;
       }
       setWatchedOut(false);
       await load();
+      return true;
     } catch {
       setError("Couldn't ask Striff to read this repository.");
+      return false;
     } finally {
       setAsking(false);
     }
