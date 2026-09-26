@@ -9,6 +9,24 @@ import Dashboard from "../components/Dashboard";
   robots="noindex,nofollow"
   chrome={false}
 >
+  <!-- Before anything else on the page, and before analytics: GitHub sends people here from the
+       App's own callback with ?code=&state=&iss= on the URL. Nothing on this page exchanges that
+       code -- the sign-in flow goes through /.netlify/functions/auth-callback, which redirects
+       here clean -- so what is left is a one-time credential sitting in the address bar, the
+       browser's history, and the URL every analytics pageview and outbound referrer carries.
+       It costs nothing to take it out of all three. -->
+  <script is:inline slot="head">
+    (function () {
+      var url = new URL(window.location.href);
+      var carried = ["code", "state", "iss"].filter(function (name) {
+        return url.searchParams.has(name);
+      });
+      if (carried.length === 0) return;
+      carried.forEach(function (name) { url.searchParams.delete(name); });
+      window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    })();
+  </script>
+
   <main class="dashboard-page text-slate-900">
     <Dashboard client:load />
   </main>
