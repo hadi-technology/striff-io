@@ -1,5 +1,7 @@
 import { createElement, useState, useEffect } from "react";
 import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
+import DocsTab from "./DocsTab";
+import RulesTab from "./RulesTab";
 
 const OAUTH_CLIENT_ID =
   typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_GITHUB_OAUTH_CLIENT_ID
@@ -11,6 +13,9 @@ interface User {
   avatar_url: string;
   name: string | null;
 }
+
+/** The sections of the dashboard: two belong to the account, two to the repository in view. */
+type Section = "repos" | "docs" | "rules" | "metrics" | "billing";
 
 interface Repo {
   full_name: string;
@@ -93,6 +98,15 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [autoCheckout, setAutoCheckout] = useState<{ installationId: number; plan: string } | null>(null);
+  const [section, setSection] = useState<Section>("rules");
+  // Which repository the documents view is showing; set by opening one from Repositories.
+  const [openRepo, setOpenRepo] = useState<string | null>(null);
+  // The document the documents view should open on, set by following a rule to where it came from.
+  const [focusDoc, setFocusDoc] = useState<string | null>(null);
+  // A count followed from the documents view: which rules to show, and when it was asked for, so
+  // asking twice for the same ones still moves the view.
+  const [rulesFilter, setRulesFilter] = useState<{ value: string; at: number } | null>(null);
+  const [accountId, setAccountId] = useState<number | null>(null);
 
   useEffect(() => {
     init();
@@ -140,6 +154,9 @@ export default function Dashboard() {
       const instIdParam = params.get("installation_id");
       if (planParam && instIdParam) {
         setAutoCheckout({ installationId: Number(instIdParam), plan: planParam });
+        // Only the account in view renders its card now, so the one being paid for has to be the
+        // one in view: without this, a second account's checkout was picked up by nothing.
+        setAccountId(Number(instIdParam));
         window.history.replaceState({}, "", "/dashboard");
       }
     } catch (e: any) {
@@ -155,12 +172,73 @@ export default function Dashboard() {
     }
   }
 
+  const current =
+    installations.find((inst) => inst.id === accountId) || installations[0] || null;
+
+  // Opening on the rules means opening on a repository: the one last looked at for this account,
+  // and otherwise its first. Remembered per account, so switching accounts does not carry a
+  // repository that does not belong to it.
+  useEffect(() => {
+    if (!current) return;
+    const repos = current.repositories || [];
+    if (repos.length === 0) return;
+    const remembered = (() => {
+      try {
+        return window.localStorage.getItem(`striff.lastRepo.${current.id}`);
+      } catch {
+        return null;
+      }
+    })();
+    const wanted = repos.find((repo) => repo.full_name === remembered) || repos[0];
+    if (!openRepo || !repos.some((repo) => repo.full_name === openRepo)) {
+      setOpenRepo(wanted.full_name);
+    }
+  }, [current?.id, current?.repositories?.length]);
+
+  useEffect(() => {
+    if (!current || !openRepo) return;
+    try {
+      window.localStorage.setItem(`striff.lastRepo.${current.id}`, openRepo);
+    } catch {
+      // A browser that will not remember is no reason to fail: the first repository is the default.
+    }
+  }, [current?.id, openRepo]);
+
   function signOut() {
     window.location.href = "/.netlify/functions/auth-logout";
   }
 
+  // Every state of this page wears the bar: signing out and switching account must not depend on
+  // the dashboard below having loaded.
+  const framed = (children: any) => (
+    <>
+      <DashBar
+        user={user}
+        installations={installations}
+        current={current}
+        onAccount={setAccountId}
+        onSignOut={signOut}
+      />
+      <div className="dash-page">
+        {children}
+        {/* The marketing footer is off on this page, and these still have to be reachable. */}
+        <footer className="dash-foot">
+          <a href="/privacy">Privacy</a>
+          <span aria-hidden="true">·</span>
+          <a href="/terms">Terms</a>
+          <span aria-hidden="true">·</span>
+          <a href="/cookies">Cookies</a>
+          <span aria-hidden="true">·</span>
+          <a href="/contact">Contact</a>
+          <span aria-hidden="true">·</span>
+          <a href="/">striff.io</a>
+        </footer>
+      </div>
+    </>
+  );
+
   if (loading) {
-    return (
+    return framed(
       <div className="dashboard-loading">
         <div className="dashboard-spinner" aria-hidden="true" />
         <div className="text-slate-500">Loading dashboard...</div>
@@ -169,7 +247,7 @@ export default function Dashboard() {
   }
 
   if (error && !user) {
-    return (
+    return framed(
       <div className="dashboard-error-state">
         <h1 className="dashboard-error-title">We can't load your dashboard right now</h1>
         <p className="dashboard-error-body">{error}</p>
@@ -192,38 +270,8 @@ export default function Dashboard() {
     );
   }
 
-  return (
+  return framed(
     <div className="dashboard-shell">
-      {/* Header */}
-      <div className="dashboard-account-bar">
-        <div className="flex items-center gap-4">
-          {user && (
-            <img src={user.avatar_url} alt={user.login} className="h-11 w-11 rounded-lg border border-slate-200" />
-          )}
-          <div>
-            <p className="dashboard-kicker">Striff account</p>
-            <h1 className="text-2xl font-bold text-slate-950">{user?.name || user?.login}</h1>
-            <p className="text-sm text-slate-500">@{user?.login}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <a
-            href="https://github.com/apps/striff-app/installations/new"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="dashboard-button dashboard-button-secondary"
-          >
-            Add installation
-          </a>
-          <button
-            onClick={signOut}
-            className="dashboard-button dashboard-button-secondary"
-          >
-            Sign out
-          </button>
-        </div>
-      </div>
-
       {/* Installations */}
       {installations.length === 0 ? (
         <div className="dashboard-empty">
@@ -241,26 +289,220 @@ export default function Dashboard() {
           </a>
         </div>
       ) : (
-        <div className="mt-8 space-y-5">
-          {installations.map((inst) => (
+        <div className="dash-shell">
+          <aside className="dash-side">
+            <p className="nav-label">Account</p>
+            {/* Switching account is the bar's job; here the name only says which one this is. */}
+            <p className="dash-account-name">{current.account.login}</p>
+            <nav className="dash-nav">
+              {([
+                ["metrics", "Metrics", "overview", ""],
+                ["repos", "Repositories", "repos", String((current.repositories || []).length)],
+                ["billing", "Billing", "billing", ""],
+              ] as const).map(([key, label, icon, count]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`nav-item${section === key ? " active" : ""}`}
+                  onClick={() => setSection(key)}
+                >
+                  <NavIcon name={icon} />
+                  <span>{label}</span>
+                  {count && <span className="nav-count">{count}</span>}
+                </button>
+              ))}
+            </nav>
+            {openRepo && (
+              <div className="dash-repo-group">
+                <p className="nav-label">Repository</p>
+                <p className="dash-repo-name" title={openRepo}>
+                  {openRepo.split("/")[1] || openRepo}
+                </p>
+                <nav className="dash-nav">
+                  <button
+                    type="button"
+                    className={`nav-item${section === "rules" ? " active" : ""}`}
+                    onClick={() => setSection("rules")}
+                  >
+                    <NavIcon name="rules" />
+                    <span>Rules</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`nav-item${section === "docs" ? " active" : ""}`}
+                    onClick={() => {
+                      setFocusDoc(null);
+                      setSection("docs");
+                    }}
+                  >
+                    <NavIcon name="docs" />
+                    <span>Documents</span>
+                  </button>
+                </nav>
+              </div>
+            )}
+          </aside>
+          <div className="dash-main">
             <InstallationCard
-              key={inst.id}
-              installation={inst}
+              key={current.id}
+              installation={current}
               onError={setError}
-              autoPlan={autoCheckout?.installationId === inst.id ? autoCheckout.plan : null}
+              autoPlan={autoCheckout?.installationId === current.id ? autoCheckout.plan : null}
               onAutoPlanConsumed={() => setAutoCheckout(null)}
+              section={section}
+              onSection={setSection}
+              openRepo={openRepo}
+              onOpenRepo={(fullName) => {
+                setOpenRepo(fullName);
+                setFocusDoc(null);
+                setSection("rules");
+              }}
+              // Either tab's repository picker moves the whole shell: the sidebar, the memory and
+              // the other tab followed the first choice and then disagreed with the second.
+              onRepoChange={(fullName) => {
+                setOpenRepo(fullName);
+                setFocusDoc(null);
+              }}
+              focusDoc={focusDoc}
+              rulesFilter={rulesFilter}
+              onOpenRules={(value) => {
+                setRulesFilter({ value, at: Date.now() });
+                setSection("rules");
+              }}
+              onOpenDoc={(path) => {
+                setFocusDoc(path);
+                setSection("docs");
+              }}
             />
-          ))}
+          </div>
         </div>
       )}
 
       {error && <p className="dashboard-inline-error">{error}</p>}
 
-      {/* FAQ */}
-      <FaqSection />
+      {/* FAQ: asked when someone is looking at what they pay, not at their documents. */}
+      {(installations.length === 0 || section === "billing") && <FaqSection />}
     </div>
   );
 }
+
+
+/**
+ * The application's own bar: who you are signed in as, which account you are looking at, and the
+ * way out. The marketing header is turned off on this page, so this is the only chrome above the
+ * work, and switching account happens here rather than inside the sections it changes.
+ */
+function DashBar({
+  user,
+  installations,
+  current,
+  onAccount,
+  onSignOut,
+}: {
+  user: User | null;
+  installations: Installation[];
+  current: Installation | null;
+  onAccount: (id: number) => void;
+  onSignOut: () => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function close(event: MouseEvent) {
+      if (!(event.target as HTMLElement).closest(".bar-user")) setMenuOpen(false);
+    }
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [menuOpen]);
+
+  return (
+    <header className="dash-bar">
+      <div className="dash-bar-inner">
+        <a className="bar-logo" href="/">
+          <span className="bar-tile"><img src="/icon.svg" alt="" width="20" height="20" /></span>
+          <span className="bar-word">Striff</span>
+        </a>
+        {current && (
+          <div className="bar-account">
+            {current.account.avatar_url && (
+              <img className="bar-account-avatar" src={current.account.avatar_url} alt="" />
+            )}
+            {installations.length > 1 ? (
+              <>
+                <select
+                  className="bar-account-select"
+                  aria-label="Account"
+                  value={String(current.id)}
+                  onChange={(event) => onAccount(Number(event.target.value))}
+                >
+                  {installations.map((inst) => (
+                    <option key={inst.id} value={String(inst.id)}>
+                      {inst.account.login}
+                    </option>
+                  ))}
+                </select>
+                <Chevron />
+              </>
+            ) : (
+              <span className="bar-account-name">{current.account.login}</span>
+            )}
+          </div>
+        )}
+        <div className="bar-right">
+          <a className="bar-link" href="/contact">Help</a>
+          {user && (
+            <div className="bar-user">
+              <button
+                type="button"
+                className="bar-user-button"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((open) => !open)}
+              >
+                <img src={user.avatar_url} alt={user.login} />
+                <Chevron />
+              </button>
+              {menuOpen && (
+                <div className="bar-menu" role="menu">
+                  <p className="bar-menu-who">{user.login}</p>
+                  <a className="bar-menu-item" href="https://github.com/apps/striff-app/installations/new" target="_blank" rel="noopener noreferrer" role="menuitem">
+                    Add an account
+                  </a>
+                  <button type="button" className="bar-menu-item" onClick={onSignOut} role="menuitem">
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+const Chevron = () => (
+  <svg className="bar-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 6.5 8 10.5 12 6.5" />
+  </svg>
+);
+
+
+const NavIcon = ({ name }: { name: string }) => {
+  const paths: Record<string, any> = {
+    overview: ["M2 2h5v5H2z", "M9 2h5v5H9z", "M2 9h5v5H2z", "M9 9h5v5H9z"],
+    repos: ["M3 12.75V2.75A1.25 1.25 0 0 1 4.25 1.5H13v10H4.25A1.25 1.25 0 0 0 3 12.75Z", "M3 12.75A1.25 1.25 0 0 0 4.25 14H13v-2.5"],
+    docs: ["M3.5 1.75h5.5l3.5 3.5v9h-9Z", "m5.75 9.5 1.5 1.5 3-3"],
+    rules: ["M2.75 3.5h10.5", "M2.75 7h10.5", "M2.75 10.5h7"],
+    billing: ["M1.5 3.5h13v9h-13z", "M1.5 6.5h13"],
+  };
+  return createElement(
+    "svg",
+    { viewBox: "0 0 16 16", width: 16, height: 16, fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
+    ...(paths[name] || []).map((d: string, i: number) => createElement("path", { key: i, d }))
+  );
+};
 
 /* ─── Installation Card ─────────────────────────────────────────── */
 
@@ -269,11 +511,34 @@ function InstallationCard({
   onError,
   autoPlan,
   onAutoPlanConsumed,
+  section,
+  onSection,
+  openRepo,
+  onOpenRepo,
+  focusDoc,
+  rulesFilter,
+  onOpenRules,
+  onOpenDoc,
+  onRepoChange,
 }: {
   installation: Installation;
   onError: (msg: string) => void;
   autoPlan: string | null;
   onAutoPlanConsumed: () => void;
+  section?: Section;
+  onSection?: (section: Section) => void;
+  openRepo?: string | null;
+  onOpenRepo?: (fullName: string) => void;
+  /** The document the documents view should open on, where a reader followed a rule to its source. */
+  focusDoc?: string | null;
+  /** Which rules to show, where a reader followed a count to them. */
+  rulesFilter?: { value: string; at: number } | null;
+  /** Follows a count of rules to the rules themselves. */
+  onOpenRules?: (filter: string) => void;
+  /** Follows a rule to the document it was read from. */
+  onOpenDoc?: (path: string) => void;
+  /** Reports a repository picked inside a tab, so the shell and the other tab follow it. */
+  onRepoChange?: (fullName: string) => void;
 }) {
   const repos = installation.repositories || [];
   const privateRepos = repos.filter((r) => r.private);
@@ -285,7 +550,10 @@ function InstallationCard({
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
   const [billingError, setBillingError] = useState(false);
-  const [installTab, setInstallTab] = useState<"repos" | "metrics" | "billing">("repos");
+  const [ownTab, setOwnTab] = useState<"repos" | "docs" | "metrics" | "billing">("repos");
+  // The sidebar owns the section when the shell passes one; the card keeps its own otherwise.
+  const installTab = section ?? ownTab;
+  const setInstallTab = onSection ?? setOwnTab;
   const [metrics, setMetrics] = useState<OrgMetricsData | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [metricsError, setMetricsError] = useState("");
@@ -447,8 +715,10 @@ function InstallationCard({
   const displayedRepos = repoTab === "private" ? privateRepos : publicRepos;
 
   return (
-    <div className="dashboard-installation-card">
-      {/* Header row */}
+    <div className={section === undefined ? "dashboard-installation-card" : "dashboard-section"}>
+      {/* Header row: rendered only when this card stands alone; the shell's sidebar names the
+          account otherwise, and a hidden attribute would lose to the flex display. */}
+      {section === undefined && (
       <div className="dashboard-installation-head">
         <div className="flex items-center gap-3">
           <img src={installation.account.avatar_url} alt={installation.account.login} className="h-9 w-9 rounded-lg border border-slate-200" />
@@ -465,6 +735,7 @@ function InstallationCard({
           </span>
         )}
       </div>
+      )}
 
       {/* No-plan prompt for private repos */}
       {hasNoPlan && installTab !== "billing" && (
@@ -487,14 +758,21 @@ function InstallationCard({
         </div>
       )}
 
-      {/* Repositories / Metrics / Billing tabs */}
-      <div className="mt-5">
+      {/* Repositories / Metrics / Billing tabs, when the sidebar is not driving them */}
+      <div className={section === undefined ? "mt-5" : ""}>
+          {section === undefined && (
           <div className="dashboard-tabs">
             <button
               onClick={() => setInstallTab("repos")}
               className={`dashboard-tab ${installTab === "repos" ? "dashboard-tab-active" : ""}`}
             >
               Repositories
+            </button>
+            <button
+              onClick={() => setInstallTab("docs")}
+              className={`dashboard-tab ${installTab === "docs" ? "dashboard-tab-active" : ""}`}
+            >
+              Docs &amp; rules
             </button>
             <button
               onClick={() => setInstallTab("metrics")}
@@ -509,6 +787,7 @@ function InstallationCard({
               Billing
             </button>
           </div>
+          )}
 
           {installTab === "repos" ? (
             <div className="dashboard-metric-fade-in">
@@ -554,23 +833,34 @@ function InstallationCard({
                       (r) => r.repoOwner === repoOwner && r.repoName === repoName && r.active
                     );
                     return (
-                      <a
-                        key={repo.full_name}
-                        href={repo.html_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`dashboard-repo-link ${
-                          repo.private ? "dashboard-repo-private" : "dashboard-repo-public"
-                        }`}
-                      >
+                      <div key={repo.full_name} className={`dashboard-repo-link ${repo.private ? "dashboard-repo-private" : "dashboard-repo-public"}`}>
                         <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${repo.private ? "bg-amber-500" : "bg-emerald-600"}`} />
-                        <span className="truncate text-slate-700">{repo.full_name}</span>
+                        {onOpenRepo ? (
+                          <button
+                            type="button"
+                            className="dashboard-repo-open"
+                            onClick={() => onOpenRepo(repo.full_name)}
+                          >
+                            {repo.full_name}
+                          </button>
+                        ) : (
+                          <span className="truncate text-slate-700">{repo.full_name}</span>
+                        )}
                         {isActive && (
                           <span className="dashboard-plan-badge ml-auto shrink-0" title="Actively analyzed by Striff">
                             {"\u2713"} Active
                           </span>
                         )}
-                      </a>
+                        <a
+                          href={repo.html_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="dashboard-repo-github"
+                          aria-label={`${repo.full_name} on GitHub`}
+                        >
+                          GitHub
+                        </a>
+                      </div>
                     );
                   })}
                 </div>
@@ -587,6 +877,28 @@ function InstallationCard({
                   )}
                 </p>
               )}
+            </div>
+          ) : installTab === "rules" ? (
+            <div className="mt-3 dashboard-metric-fade-in">
+              <RulesTab
+                installationId={installation.id}
+                repos={repos}
+                openRepo={openRepo}
+                onOpenDoc={onOpenDoc}
+                onRepoChange={onRepoChange}
+                showFilter={rulesFilter}
+              />
+            </div>
+          ) : installTab === "docs" ? (
+            <div className="mt-3 dashboard-metric-fade-in">
+              <DocsTab
+                installationId={installation.id}
+                repos={repos}
+                openRepo={openRepo}
+                focusDoc={focusDoc}
+                onRepoChange={onRepoChange}
+                onOpenRules={onOpenRules}
+              />
             </div>
           ) : installTab === "metrics" ? (
             <div className="mt-3 dashboard-metric-fade-in">
@@ -764,7 +1076,7 @@ function FaqSection() {
     },
     {
       q: "Which languages does Striff support?",
-      a: "Diagrams run on <b>Java, TypeScript, Python and C#</b>, with Go coming. Documented rules are further along on some than others: <b>Java and C# are production-ready</b>, Python extracts rules from your docs but cannot yet answer all of them, and TypeScript is still being proven out. Every language is parsed into a full structural model, not regex or text matching.",
+      a: "Diagrams run on <b>Java, TypeScript, Python and C#</b>, with Go coming. Every language is parsed into a full structural model, not regex or text matching.",
     },
     {
       q: "What does Striff actually do on my pull requests?",

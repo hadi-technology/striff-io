@@ -1,0 +1,54 @@
+---
+/**
+ * Cover for the stale-instructions post, set as a poster rather than a diagram: the sentence
+ * itself, large, on paper, with the class it names struck out and stamped. The one line is the
+ * whole story, so the cover is the one line. It paints its own light plate over the shared dark
+ * one so the type can be big and black.
+ */
+const RED = "#d5232f";
+const INK = "#0f1522";
+const MUTE = "#6b7385";
+const PAPER = "#f6f3ec";
+---
+
+<rect x="-1000" y="-600" width="2640" height="1600" fill={PAPER} />
+<rect x="-1000" y="-600" width="2640" height="1600" fill="url(#cv-paper-grain)" opacity="0.5" />
+<defs>
+  <pattern id="cv-paper-grain" width="6" height="6" patternUnits="userSpaceOnUse">
+    <circle cx="1" cy="1" r="0.5" fill="#000" opacity="0.045" />
+  </pattern>
+</defs>
+
+<!-- Where the line lives -->
+<g class="cv-fade">
+  <text x="48" y="58" font-family="var(--sb-mono)" font-size="12.5" letter-spacing="0.14em" style={`fill:${MUTE};text-transform:uppercase`}>.github/copilot-instructions.md</text>
+  <rect x="493" y="40" width="99" height="28" rx="14" fill="none" stroke={INK} stroke-width="2" />
+  <text x="542" y="59" font-family="var(--sb-mono)" font-size="13" font-weight="700" text-anchor="middle" style={`fill:${INK}`}>line 258</text>
+</g>
+
+<!-- The sentence, big -->
+<g class="cv-fade" style="--d:0.15s">
+  <text x="48" y="140" font-family="var(--sb-serif)" font-size="54" font-weight="500" letter-spacing="-0.02em" style={`fill:${INK}`}>Use</text>
+  <text x="152" y="140" font-family="var(--sb-mono)" font-size="46" font-weight="700" letter-spacing="-0.03em" style={`fill:${RED}`}>McpServerFactory</text>
+  <text x="48" y="204" font-family="var(--sb-serif)" font-size="54" font-weight="500" letter-spacing="-0.02em" style={`fill:${INK}`}>to create server instances</text>
+  <text x="48" y="268" font-family="var(--sb-serif)" font-size="54" font-weight="500" letter-spacing="-0.02em" style={`fill:${INK}`}>with configured options.</text>
+</g>
+
+<!-- The strike, drawn -->
+<path class="cv-draw" style="--d:0.8s" pathLength="1" d="M148 124 L 592 118" stroke={RED} stroke-width="7" stroke-linecap="round" fill="none" />
+
+<!-- The stamp -->
+<g class="cv-stamp" style="--d:1.25s"><g transform="rotate(-7 470 330)">
+  <rect x="330" y="300" width="284" height="62" rx="6" fill="rgba(213,35,47,0.06)" stroke={RED} stroke-width="4" />
+  <rect x="337" y="307" width="270" height="48" rx="3" fill="none" stroke={RED} stroke-width="1.5" />
+  <text x="472" y="336" font-family="var(--sb-sans)" font-size="24" font-weight="900" letter-spacing="0.12em" text-anchor="middle" style={`fill:${RED}`}>NOT IN THE CODE</text>
+  <text x="472" y="352" font-family="var(--sb-mono)" font-size="9.5" letter-spacing="0.1em" text-anchor="middle" style={`fill:${RED}`}>DELETED 2 DEC 2025 · PR #985</text>
+</g></g>
+
+<!-- The two facts -->
+<g class="cv-fade" style="--d:1.0s">
+  <path d="M48 300 H300" stroke={INK} stroke-width="2" />
+  <text x="48" y="328" font-family="var(--sb-sans)" font-size="15" font-weight="700" style={`fill:${INK}`}>Written by Copilot.</text>
+  <text x="48" y="350" font-family="var(--sb-sans)" font-size="15" font-weight="700" style={`fill:${INK}`}>Deleted by Copilot.</text>
+  <text x="48" y="374" font-family="var(--sb-sans)" font-size="14" style={`fill:${MUTE}`}>Read by every agent since.</text>
+</g>

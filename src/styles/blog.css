@@ -1226,10 +1226,23 @@ html[data-scheme="auto"] body { background: #fbfbfa; }
 
 .sb .sb-prose {
   counter-reset: sb-fig;
-  font-size: 1.0625rem;
-  line-height: 1.72;
+  /* Long-form prose is set in the serif, not the interface sans: Newsreader carries an optical
+     size axis, so it holds its colour at reading sizes where a UI face goes flat. The sans stays
+     for apparatus -- figures, labels, captions -- which is what the contrast is for. */
+  font-family: var(--sb-serif);
+  font-size: 1.1875rem;
+  line-height: 1.68;
+  letter-spacing: 0.004em;
   color: var(--sb-text);
   font-kerning: normal;
+}
+
+/* The apparatus keeps the sans, so a figure still reads as an instrument beside the prose. */
+.sb .sb-prose .bp-figure,
+.sb .sb-prose .bp-figure-caption,
+.sb .sb-prose table,
+.sb .sb-prose .sb-label {
+  font-family: var(--sb-sans);
 }
 
 @media (min-width: 48rem) {
@@ -1330,12 +1343,13 @@ html[data-scheme="auto"] body { background: #fbfbfa; }
 .sb .sb-prose img { border-radius: 12px; }
 
 .sb .sb-prose code {
-  padding: 0.12em 0.36em;
-  border-radius: 5px;
+  padding: 0.05em 0.3em;
+  border-radius: 4px;
   background: var(--sb-code-bg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sb-ink) 7%, transparent);
   color: var(--sb-code-ink);
-  font-size: 0.84em;
-  font-weight: 500;
+  font-size: 0.8em;
+  font-weight: 450;
   overflow-wrap: break-word;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
@@ -1644,6 +1658,308 @@ html[data-scheme="auto"] body { background: #fbfbfa; }
   color: var(--sb-danger);
   background: rgba(192, 43, 58, 0.09);
   background: color-mix(in srgb, var(--sb-danger) 11%, transparent);
+}
+
+/* ---- Drift rows: a documented name, and when the code stopped agreeing ----
+   Three short columns, because the point is scanned rather than read. Anything that needs a
+   sentence belongs in the prose around the figure, not in the cells. */
+
+.sb .bp-drift { display: grid; gap: 0.55rem; }
+
+.sb .bp-drift-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.2rem 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--sb-line);
+  border-radius: 10px;
+  background: var(--sb-surface);
+}
+
+.sb .bp-drift-repo { font-family: var(--sb-sans); font-weight: 600; color: var(--sb-ink); font-size: 0.95rem; }
+.sb .bp-drift-repo span { font-weight: 400; color: var(--sb-muted); font-size: 0.82rem; }
+.sb .bp-drift-name { font-family: var(--sb-mono); font-size: 0.84rem; color: var(--sb-danger); }
+.sb .bp-drift-gone { font-family: var(--sb-sans); font-size: 0.82rem; color: var(--sb-muted); }
+.sb .bp-drift-gone b { color: var(--sb-ink); font-weight: 600; }
+
+.sb .bp-drift-repo a {
+  display: block;
+  margin-top: 0.1rem;
+  font-family: var(--sb-mono);
+  font-size: 0.74rem;
+  font-weight: 400;
+  color: var(--sb-muted);
+  overflow-wrap: anywhere;
+}
+.sb .bp-drift-gone a { color: inherit; }
+.sb .bp-drift-repo a:hover,
+.sb .bp-drift-gone a:hover { color: var(--sb-accent); }
+
+@container sb-fig (min-width: 34rem) {
+  .sb .bp-drift-row { grid-template-columns: 16rem minmax(0, 1fr) 13rem; align-items: baseline; }
+  .sb .bp-drift-gone { text-align: right; }
+}
+
+/* ---- Timeline: dated steps down a rail ----
+   One commit or event per step. `is-del` marks the step that removed something, `is-now` the
+   present, so the eye finds where the story turns without reading every date. */
+
+.sb .bp-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+}
+
+.sb .bp-timeline li {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.15rem 1.25rem;
+  padding: 0 0 1.1rem 1.4rem;
+  font-family: var(--sb-sans);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--sb-text);
+}
+
+.sb .bp-timeline li::before {
+  content: "";
+  position: absolute;
+  left: 0.3rem;
+  top: 0.55rem;
+  bottom: -0.45rem;
+  width: 1px;
+  background: var(--sb-line-2);
+}
+
+.sb .bp-timeline li:last-child { padding-bottom: 0; }
+.sb .bp-timeline li:last-child::before { display: none; }
+
+.sb .bp-timeline li::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.4rem;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--sb-surface);
+  box-shadow: inset 0 0 0 2px var(--sb-line-2);
+}
+
+.sb .bp-timeline li.is-del::after { background: var(--sb-danger); box-shadow: none; }
+.sb .bp-timeline li.is-now::after { background: var(--sb-amber); box-shadow: none; }
+
+.sb .bp-tl-date {
+  font-family: var(--sb-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  color: var(--sb-muted);
+  padding-top: 0.12rem;
+}
+
+.sb .bp-timeline li.is-del .bp-tl-date { color: var(--sb-danger); }
+.sb .bp-timeline li.is-now .bp-tl-date,
+.sb .bp-timeline li.is-now .bp-tl-body { color: var(--sb-amber); font-weight: 600; }
+.sb .bp-tl-body code { font-size: 0.85em; }
+
+@container sb-fig (min-width: 34rem) {
+  .sb .bp-timeline li { grid-template-columns: 7.5rem minmax(0, 1fr); }
+}
+
+/* ---- Audit rows: what a check reported beside what was true ----
+   The finding on the left in the check's own terms, the correction on the right in plain prose. */
+
+.sb .bp-audit { display: grid; gap: 0.55rem; }
+
+.sb .bp-audit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.25rem 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--sb-line);
+  border-radius: 10px;
+  background: var(--sb-surface);
+  font-family: var(--sb-sans);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.sb .bp-audit-repo { font-weight: 600; color: var(--sb-ink); font-size: 0.92rem; }
+.sb .bp-audit-saw { color: var(--sb-muted); }
+.sb .bp-audit-saw code { font-size: 0.92em; }
+.sb .bp-audit-true { color: var(--sb-text); }
+
+@container sb-fig (min-width: 34rem) {
+  .sb .bp-audit-row { grid-template-columns: 9.5rem minmax(0, 0.9fr) minmax(0, 1.3fr); align-items: baseline; }
+}
+
+/* ---- Method note: the small print, set as small print ---- */
+
+.sb .bp-note {
+  margin-top: 2.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--sb-line-2);
+  font-family: var(--sb-sans);
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--sb-muted);
+}
+
+.sb .bp-note p { margin: 0; }
+.sb .bp-note .bp-note-title {
+  margin-bottom: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sb-ink);
+}
+
+/* ---- Key stat: a single number lifted out of the prose ----
+   Deliberately unlike bp-callout. A callout is a sentence in the serif with a rule down its left
+   edge; this is a numeral in the display face on a tinted band, so a reader skimming for figures
+   and a reader skimming for claims are served by different shapes. */
+
+.sb .bp-keystat {
+  --tone: var(--sb-accent);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0 1.25rem;
+  padding: 1.15rem 1.5rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--tone) 9%, var(--sb-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 26%, transparent);
+}
+
+.sb .bp-keystat-value {
+  font-family: var(--sb-serif);
+  font-size: clamp(2.2rem, 6vw, 3rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: color-mix(in srgb, var(--tone) 78%, var(--sb-ink));
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.sb .bp-keystat-body {
+  font-family: var(--sb-sans);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--sb-text);
+}
+
+.sb .bp-keystat-body b { color: var(--sb-ink); font-weight: 600; }
+
+.sb .bp-keystat-src {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: var(--sb-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--sb-muted);
+}
+
+.sb .bp-keystat--amber { --tone: var(--sb-amber); }
+.sb .bp-keystat--danger { --tone: var(--sb-danger); }
+.sb .bp-keystat--mint { --tone: var(--sb-mint); }
+
+.sb .sb-prose > .bp-keystat,
+.sb .sb-prose > .bp-keystat + * { margin-top: 2rem; }
+
+@media (max-width: 34rem) {
+  .sb .bp-keystat { grid-template-columns: minmax(0, 1fr); gap: 0.5rem; }
+}
+
+/* ---- GitHub-shaped cards: a file at a line, and a commit that touched it ----
+   Used where the point is that two artefacts in one repository disagree, and the fastest way to
+   show it is to put them side by side in the chrome the reader already knows. Not a screenshot:
+   real text, so it stays legible, selectable and correct in both themes. */
+
+.sb .bp-gh {
+  border: 1px solid var(--sb-line);
+  border-radius: 10px;
+  background: var(--sb-surface);
+  overflow: hidden;
+  font-family: var(--sb-mono);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.sb .bp-gh + .bp-gh { margin-top: 0.9rem; }
+
+.sb .bp-gh-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--sb-line);
+  background: var(--sb-bg-2);
+  color: var(--sb-muted);
+  font-size: 0.74rem;
+}
+
+.sb .bp-gh-head b { color: var(--sb-ink); font-weight: 600; }
+.sb .bp-gh-head .bp-gh-sha { margin-left: auto; opacity: 0.75; }
+
+.sb .bp-gh-body { padding: 0.35rem 0; }
+
+.sb .bp-gh-line {
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.08rem 0.8rem 0.08rem 0;
+  color: var(--sb-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sb .bp-gh-line > span:first-child {
+  text-align: right;
+  padding-right: 0.6rem;
+  color: var(--sb-muted);
+  opacity: 0.7;
+  background: var(--sb-bg-2);
+  user-select: none;
+}
+.sb .bp-gh-line--hl > span:first-child { background: color-mix(in srgb, var(--sb-amber) 22%, var(--sb-bg-2)); opacity: 1; color: var(--sb-ink); }
+
+.sb .bp-gh-line--hl { background: color-mix(in srgb, var(--sb-amber) 13%, transparent); }
+.sb .bp-gh-line--hl > span:last-child { color: var(--sb-ink); font-weight: 600; }
+
+.sb .bp-gh-line--del { background: color-mix(in srgb, var(--sb-danger) 11%, transparent); }
+.sb .bp-gh-line--del > span:last-child { color: var(--sb-danger); }
+
+.sb .bp-gh-note {
+  padding: 0.5rem 0.8rem;
+  border-top: 1px solid var(--sb-line);
+  background: var(--sb-bg-2);
+  font-family: var(--sb-sans);
+  font-size: 0.78rem;
+  color: var(--sb-muted);
+}
+
+/* The join between two cards that should have seen each other and did not. */
+.sb .bp-gh-join {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.9rem 0;
+  font-family: var(--sb-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--sb-danger);
+}
+
+.sb .bp-gh-join::before,
+.sb .bp-gh-join::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--sb-danger) 35%, transparent);
 }
 
 /* ---- Callouts: asides set like pull quotes ---- */
@@ -2678,3 +2994,140 @@ html[data-scheme="auto"] body { background: #fbfbfa; }
     transform: none !important;
   }
 }
+
+
+/* ---- A rendered document page, as GitHub shows it ----
+   The sentence in the form the agent reads it: rendered markdown, not a code listing. Line
+   numbers sit in the margin as the citation; the one line that matters is highlighted and
+   carries its correction in a callout beside it. */
+
+.sb .bp-ghp {
+  border: 1px solid var(--sb-line);
+  border-radius: 12px;
+  background: var(--sb-surface);
+  overflow: hidden;
+}
+
+.sb .bp-ghp-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--sb-line);
+  background: var(--sb-bg-2);
+  font-family: var(--sb-mono);
+  font-size: 0.76rem;
+  color: var(--sb-muted);
+}
+
+.sb .bp-ghp-crumbs b { color: var(--sb-ink); font-weight: 600; }
+.sb .bp-ghp-crumbs i { margin: 0 0.3rem; font-style: normal; opacity: 0.5; }
+
+.sb .bp-ghp-tabs { margin-left: auto; display: inline-flex; border: 1px solid var(--sb-line); border-radius: 6px; overflow: hidden; font-family: var(--sb-sans); }
+.sb .bp-ghp-tabs span { padding: 0.15rem 0.6rem; font-size: 0.72rem; }
+.sb .bp-ghp-tabs span.is-on { background: var(--sb-surface); color: var(--sb-ink); font-weight: 600; }
+
+.sb .bp-ghp-body { padding: 1.1rem 1.4rem 1.2rem 1.1rem; font-family: var(--sb-sans); font-size: 0.95rem; line-height: 1.6; color: var(--sb-text); }
+.sb .bp-ghp-h { margin: 0 0 0.6rem 2.6rem; font-size: 1.15rem; font-weight: 700; color: var(--sb-ink); }
+.sb .bp-ghp-body ul { list-style: none; margin: 0; padding: 0; }
+.sb .bp-ghp-body li { display: flex; align-items: baseline; gap: 0; padding: 0.3rem 0.6rem 0.3rem 0; border-radius: 6px; }
+.sb .bp-ghp-body li::before { content: "\2022"; order: 1; margin-right: 0.6rem; color: var(--sb-muted); }
+.sb .bp-ghp-body li > .bp-ghp-ln { order: 0; flex: 0 0 2.6rem; }
+.sb .bp-ghp-body li > .bp-ghp-text { order: 2; flex: 1 1 auto; min-width: 0; }
+.sb .bp-ghp-ln { font-family: var(--sb-mono); font-size: 0.72rem; color: var(--sb-muted); opacity: 0.7; text-align: right; padding-right: 0.9rem; user-select: none; }
+.sb .bp-ghp-body li.is-hl { background: color-mix(in srgb, var(--sb-danger) 8%, transparent); box-shadow: inset 3px 0 0 var(--sb-danger); }
+.sb .bp-ghp-body li.is-hl .bp-ghp-ln { opacity: 1; color: var(--sb-danger); }
+.sb .bp-ghp-body li.is-hl::before { color: var(--sb-ink); }
+.sb .bp-ghp-body mark { padding: 0.05rem 0.3rem; border-radius: 4px; background: color-mix(in srgb, var(--sb-danger) 16%, transparent); color: var(--sb-danger); font-family: var(--sb-mono); font-size: 0.86em; font-weight: 600; text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.sb .bp-ghp-callout {
+  display: inline-block;
+  margin: 0.45rem 0 0.2rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--sb-danger) 40%, transparent);
+  background: var(--sb-surface);
+  font-size: 0.8rem;
+  color: var(--sb-text);
+  box-shadow: 0 6px 16px -10px rgba(0, 0, 0, 0.3);
+}
+.sb .bp-ghp-callout b { color: var(--sb-danger); }
+.sb .bp-ghp-callout a { color: var(--sb-danger); }
+
+/* ---- Zoom strip: every verdict, then the sliver that accuses, magnified ----
+   Four bars in a row hid the story, because three of them were invisible. One full-width
+   strip shows the whole, a bracket picks out its last 2.7%, and a second strip shows what
+   that sliver is made of. */
+
+.sb .bp-zoom { display: grid; gap: 0.5rem; }
+.sb .bp-zoom-strip { display: flex; height: 1.6rem; border-radius: 8px; overflow: hidden; gap: 2px; }
+.sb .bp-zoom-strip span { display: block; min-width: 4px; }
+.sb .bp-zoom-strip--acc { height: 2.6rem; }
+.sb .bp-zoom-strip .is-held, .sb .bp-zoom-legend i.is-held { background: var(--sb-mint); }
+.sb .bp-zoom-strip .is-acc, .sb .bp-zoom-legend i.is-acc { background: var(--sb-danger); }
+.sb .bp-zoom-strip .is-viol { background: var(--sb-danger); }
+.sb .bp-zoom-strip .is-prior { background: var(--sb-amber); }
+.sb .bp-zoom-strip .is-rest { background: var(--sb-accent); }
+.sb .bp-zoom-legend { display: flex; justify-content: space-between; font-family: var(--sb-sans); font-size: 0.82rem; color: var(--sb-muted); }
+.sb .bp-zoom-legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.sb .bp-zoom-legend i { width: 0.6rem; height: 0.6rem; border-radius: 3px; }
+.sb .bp-zoom-legend-acc { color: var(--sb-danger); font-weight: 600; }
+.sb .bp-zoom-bracket { position: relative; height: 1.4rem; margin: 0.1rem 0; }
+.sb .bp-zoom-bracket span {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(100% 0, 97.3% 0, 0 100%, 100% 100%);
+  background: color-mix(in srgb, var(--sb-danger) 12%, transparent);
+}
+.sb .bp-zoom-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin-top: 0.4rem; }
+.sb .bp-zoom-tile { --tone: var(--sb-danger); padding: 0.75rem 0.9rem; border-radius: 10px; border: 1px solid var(--sb-line); box-shadow: inset 3px 0 0 var(--tone); background: var(--sb-surface); font-family: var(--sb-sans); font-size: 0.82rem; line-height: 1.45; color: var(--sb-muted); }
+.sb .bp-zoom-tile.is-prior { --tone: var(--sb-amber); }
+.sb .bp-zoom-tile.is-rest { --tone: var(--sb-accent); }
+.sb .bp-zoom-tile b { display: block; font-family: var(--sb-serif); font-size: 1.8rem; font-weight: 500; line-height: 1.1; color: var(--tone); font-variant-numeric: tabular-nums; }
+@container sb-fig (max-width: 30rem) { .sb .bp-zoom-tiles { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Findings keyed by repository ---- */
+
+.sb .bp-find { display: grid; gap: 0.6rem; }
+.sb .bp-find-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.4rem 1.2rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--sb-line);
+  border-radius: 12px;
+  background: var(--sb-surface);
+  font-family: var(--sb-sans);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+.sb .bp-find-repo { display: flex; flex-direction: column; gap: 0.1rem; }
+.sb .bp-find-repo b { font-weight: 700; color: var(--sb-ink); font-size: 0.86rem; overflow-wrap: anywhere; }
+.sb .bp-find-repo i { font-style: normal; font-family: var(--sb-mono); font-size: 0.74rem; color: var(--sb-amber); }
+.sb .bp-find-body { display: grid; gap: 0.25rem; }
+.sb .bp-find-doc { color: var(--sb-ink); }
+.sb .bp-find-code { color: var(--sb-muted); }
+.sb .bp-find-body code { font-size: 0.86em; }
+.sb .bp-find-tag { align-self: start; justify-self: start; padding: 0.15rem 0.55rem; border-radius: 999px; font-family: var(--sb-mono); font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+.sb .bp-find-tag.is-absent { color: var(--sb-amber); background: color-mix(in srgb, var(--sb-amber) 14%, transparent); }
+.sb .bp-find-tag.is-prior { color: var(--sb-amber); background: color-mix(in srgb, var(--sb-amber) 14%, transparent); }
+.sb .bp-find-tag.is-viol { color: var(--sb-danger); background: color-mix(in srgb, var(--sb-danger) 12%, transparent); }
+@container sb-fig (min-width: 40rem) {
+  .sb .bp-find-row { grid-template-columns: 13.5rem minmax(0, 1fr) auto; align-items: start; }
+}
+
+/* ---- A check as the app posts it ---- */
+
+.sb .bp-check { border: 1px solid var(--sb-line); border-radius: 12px; background: var(--sb-surface); overflow: hidden; font-family: var(--sb-sans); }
+.sb .bp-check-bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1rem; border-bottom: 1px solid var(--sb-line); background: var(--sb-bg-2); font-size: 0.82rem; color: var(--sb-muted); }
+.sb .bp-check-name b { color: var(--sb-ink); }
+.sb .bp-check-state { margin-left: auto; font-family: var(--sb-mono); font-size: 0.72rem; }
+.sb .bp-check-item { display: grid; grid-template-columns: 1.2rem minmax(0, 1fr); gap: 0.6rem; padding: 1rem 1.1rem 1.1rem; }
+.sb .bp-check-dot { width: 0.7rem; height: 0.7rem; margin-top: 0.35rem; border-radius: 50%; background: var(--sb-amber); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sb-amber) 18%, transparent); }
+.sb .bp-check-title { margin: 0; font-size: 0.98rem; font-weight: 700; line-height: 1.4; color: var(--sb-ink); }
+.sb .bp-check-summary { margin: 0.4rem 0 0; font-size: 0.88rem; line-height: 1.6; color: var(--sb-text); }
+.sb .bp-check-ev { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.6rem; margin-top: 0.7rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: var(--sb-bg-2); font-family: var(--sb-mono); font-size: 0.76rem; line-height: 1.55; color: var(--sb-text); overflow-wrap: anywhere; }
+.sb .bp-check-ev-k { color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.66rem; padding-top: 0.15rem; }
+.sb .sb-prose .bp-check code { background: var(--sb-surface); }

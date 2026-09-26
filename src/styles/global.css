@@ -3007,7 +3007,7 @@
 }
 
 .hcc-quote-src svg { flex: 0 0 auto; color: #aab4c0; }
-.hcc-quote-src b { margin-left: -0.35rem; font-weight: 600; color: #0f62d0; }
+.hcc-quote-src b { flex: 0 0 auto; margin-left: -0.35rem; font-weight: 600; color: #0f62d0; white-space: nowrap; word-break: normal; }
 .hcc-quote-src:hover, .hcc-quote-src:focus-visible { color: #0f62d0; }
 .hcc-quote-src:hover svg { color: #0f62d0; }
 
@@ -4572,6 +4572,14 @@
   --st-glow: rgba(211, 58, 75, 0.4);
 }
 
+.hcc-status.is-prior {
+  --st-bd: #f1d6a8;
+  --st-top: #fffaf1;
+  --st-bottom: #fdf1dc;
+  --st-fg: #9b5a07;
+  --st-glow: rgba(224, 161, 58, 0.32);
+}
+
 .hcc-status-head {
   display: flex;
   white-space: nowrap;
@@ -4813,24 +4821,6 @@
   color: #94a3b8;
 }
 
-.hero-langs-note {
-  margin-top: 0.5rem;
-  text-align: center;
-  font-size: 0.72rem;
-  color: #94a3b8;
-}
-
-.hero-langs-note a {
-  color: inherit;
-  text-decoration: underline;
-  text-decoration-color: #cbd5e1;
-  text-underline-offset: 2px;
-}
-
-.hero-langs-note a:hover {
-  color: #64748b;
-}
-
 .lang-chip {
   display: inline-flex;
   align-items: center;
@@ -4860,4 +4850,1148 @@
   font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+/* ---- Dashboard: documents and the rules read from them ----
+   Every eligible document is listed, including ones nothing has read yet, so the list is a picture
+   of the repository rather than of what happened to be extracted. The states carry the colour:
+   broken red, edited-since amber, everything a person has not been given a reason to act on grey. */
+.docs-tab { margin-top: 0.85rem; }
+
+.docs-tab-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.docs-repo-label { color: #57606a; font-size: 0.78rem; font-weight: 600; }
+.docs-repo-select {
+  border: 1px solid rgba(31, 35, 40, 0.14);
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  color: #24292f;
+}
+.docs-scanned { margin-left: auto; color: #57606a; font-size: 0.78rem; }
+
+.docs-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  margin-top: 0.75rem;
+  color: #57606a;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.docs-summary b { color: #16202b; font-weight: 700; }
+.docs-summary-broken b { color: #c9313f; }
+.docs-summary-prior b { color: #a8660b; }
+
+.docs-split { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: 1rem; margin-top: 0.85rem; }
+@media (max-width: 900px) { .docs-split { grid-template-columns: minmax(0, 1fr); } }
+
+.docs-list { border: 1px solid rgba(31, 35, 40, 0.12); border-radius: 0.75rem; background: #fff; overflow: hidden; }
+.docs-filters { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.6rem; border-bottom: 1px solid #edf1f5; }
+.docs-filter {
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.18rem 0.55rem;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+.docs-filter.is-on { background: #0f172a; border-color: #0f172a; color: #f8fafc; }
+
+.docs-files { max-height: 26rem; overflow-y: auto; }
+.docs-file {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid #f1f4f7;
+  background: #fff;
+  text-align: left;
+}
+.docs-file:hover { background: #f8fafc; }
+.docs-file.is-open { background: #eef4fe; }
+.docs-file-path { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.82rem; color: #24292f; }
+.docs-file-meta { display: flex; align-items: center; gap: 0.35rem; }
+.docs-count { color: #64748b; font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; }
+
+.docs-badge { border: 1px solid; border-radius: 0.3rem; padding: 0.05rem 0.35rem; font-size: 0.65rem; font-weight: 700; white-space: nowrap; }
+.docs-badge.is-broken { background: #fdeaec; border-color: #f2c1c7; color: #b4233c; }
+.docs-badge.is-outdated { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+.docs-badge.is-not_read { background: #fff; border-color: #cbd5e1; border-style: dashed; color: #64748b; }
+.docs-badge.is-screened_out,
+.docs-badge.is-retired,
+.docs-badge.is-excluded { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
+.docs-badge.is-unreadable { background: #fff; border-color: #f2c1c7; color: #b4233c; }
+
+.docs-pane { border: 1px solid rgba(31, 35, 40, 0.12); border-radius: 0.75rem; background: #fff; padding: 0.9rem 1rem; min-width: 0; }
+.docs-pane-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.docs-pane-path { font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; color: #0f172a; font-weight: 600; }
+.docs-pane-actions { margin-left: auto; }
+
+.docs-state-line { margin: 0.6rem 0 0; font-size: 0.85rem; line-height: 1.55; color: #334155; }
+.docs-state-line.is-read { color: #334155; }
+.docs-state-line.is-excluded, .docs-state-line.is-screened_out, .docs-state-line.is-retired { color: #57606a; }
+.docs-state-line.is-unreadable { color: #9f1f33; }
+
+.docs-rules { width: 100%; margin-top: 0.85rem; border-collapse: collapse; table-layout: fixed; }
+.docs-rules th {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-align: left;
+  text-transform: uppercase;
+}
+.docs-rules td { padding: 0.6rem 0.5rem; border-bottom: 1px solid #edf1f5; vertical-align: top; font-size: 0.82rem; }
+.docs-rules tr:last-child td { border-bottom: 0; }
+.docs-rule-line { width: 3.4rem; color: #1d4ed8; font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; font-weight: 600; }
+.docs-rule-quote { font-family: "Source Serif 4", ui-serif, Georgia, serif; font-size: 0.9rem; line-height: 1.5; color: #0f172a; }
+.docs-rule-statement { color: #1e293b; line-height: 1.5; }
+
+.docs-outcome { display: inline-flex; border: 1px solid; border-radius: 999px; padding: 0.1rem 0.45rem; font-size: 0.72rem; font-weight: 650; white-space: nowrap; }
+.docs-outcome.is-maintained, .docs-outcome.is-restored { background: #eaf8f0; border-color: #bfe6cf; color: #17794a; }
+.docs-outcome.is-violated { background: #fdeaec; border-color: #f2c1c7; color: #b4233c; }
+.docs-outcome.is-pre_existing { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+.docs-outcome.is-unclear, .docs-outcome.is-none { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
+.docs-outcome-when, .docs-outcome-branch { display: block; margin-top: 0.25rem; color: #64748b; font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; }
+.docs-outcome-branch { font-family: "Inter", system-ui, sans-serif; font-size: 0.72rem; }
+
+
+/* A name the document wrote in backticks, inside a rule or a sentence in the documents view. */
+.docs-rule-quote .github-inline-code,
+.docs-rule-statement .github-inline-code {
+  border: 0;
+  background: #eff3f8;
+  color: #16202b;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86em;
+  padding: 0.04em 0.28em;
+  border-radius: 0.28rem;
+}
+.docs-rule-quote .github-inline-code { background: #e8edf4; font-size: 0.82em; }
+
+/* ---- Dashboard documents: the file explorer ----
+   Folders open and close, documents sit under them, and every row carries the same menu, so an
+   action is where the thing is rather than only in the pane. */
+.docs-tree { max-height: 30rem; overflow-y: auto; padding: 0.35rem 0.35rem 0.5rem; }
+
+.docs-row { display: flex; align-items: center; gap: 0.25rem; min-height: 30px; border-radius: 0.4rem; }
+.docs-row:hover { background: #f8fafc; }
+.docs-row.is-open { background: #eef4fe; }
+.docs-row.is-dim .docs-row-name { color: #8a95a1; }
+
+.docs-row-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0;
+  background: transparent;
+  text-align: left;
+}
+.docs-row-main svg { flex: 0 0 auto; color: #8a95a1; }
+.docs-row.is-open .docs-row-main svg { color: #2563eb; }
+.docs-row-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.82rem; color: #24292f; }
+.docs-row.is-folder .docs-row-name { font-weight: 600; }
+.docs-row.is-open .docs-row-name { color: #1d4ed8; font-weight: 600; }
+.docs-chev { display: inline-flex; width: 12px; justify-content: center; color: #64748b; }
+
+.docs-row-meta { display: flex; align-items: center; gap: 0.3rem; padding-right: 0.15rem; }
+.docs-dot { width: 7px; height: 7px; border-radius: 999px; background: #d33a4b; }
+
+.docs-menu-wrap { position: relative; display: inline-flex; }
+.docs-menu-button {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: #94a3b8;
+  opacity: 0;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+.docs-row:hover .docs-menu-button,
+.docs-row.is-open .docs-menu-button,
+.docs-menu-button[aria-expanded="true"],
+.docs-pane-actions .docs-menu-button { opacity: 1; }
+.docs-menu-button:hover { background: #e2e8f0; color: #334155; }
+.docs-pane-actions .docs-menu-button { width: 30px; height: 30px; border: 1px solid rgba(31, 35, 40, 0.14); background: #fff; }
+
+.docs-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  min-width: 15rem;
+  flex-direction: column;
+  padding: 0.25rem;
+  border: 1px solid rgba(31, 35, 40, 0.14);
+  border-radius: 0.6rem;
+  background: #fff;
+  box-shadow: var(--shadow-lg);
+}
+.docs-menu > * {
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.55rem;
+  color: #24292f;
+  font-size: 0.8rem;
+  text-align: left;
+  white-space: nowrap;
+}
+.docs-menu > *:hover { background: #f1f5f9; color: #0f172a; text-decoration: none; }
+
+.docs-tree-foot { padding: 0.5rem 0.75rem 0.6rem; border-top: 1px solid #edf1f5; color: #64748b; font-size: 0.74rem; }
+
+/* ---- Dashboard shell: the account, its sections, and the work beside them ---- */
+.dash-shell { display: grid; grid-template-columns: 13.5rem minmax(0, 1fr); gap: 1.25rem; margin-top: 1.5rem; align-items: start; }
+@media (max-width: 860px) { .dash-shell { grid-template-columns: minmax(0, 1fr); } }
+
+.dash-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem 0.75rem;
+  border: 1px solid rgba(31, 35, 40, 0.12);
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 5rem;
+}
+.dash-side-account { display: grid; gap: 0.3rem; padding: 0 0.35rem; }
+.dash-account-name { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
+.dash-account-select {
+  border: 1px solid rgba(31, 35, 40, 0.14);
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+.dash-nav { display: flex; flex-direction: column; gap: 0.15rem; }
+.dash-nav-item {
+  display: block;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  color: #57606a;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+}
+.dash-nav-item:hover { background: #f6f8fa; color: #24292f; text-decoration: none; }
+.dash-nav-item.is-on { background: #f1f5f9; color: #1f2328; }
+.dash-side-foot { margin-top: auto; padding-top: 0.5rem; border-top: 1px solid #edf1f5; }
+.dash-main { min-width: 0; }
+
+/* ---- Documents view: the page head ---- */
+.docs-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
+.docs-head-copy { min-width: 0; }
+.docs-title { margin: 0.2rem 0 0.3rem; }
+.docs-title-select {
+  max-width: 100%;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  padding: 0 0.15rem;
+  color: #0f172a;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.docs-title-select:hover { background: #f1f5f9; }
+.docs-lede { max-width: 44rem; color: #57606a; font-size: 0.85rem; line-height: 1.55; }
+
+.docs-tally { display: flex; gap: 1.35rem; padding-left: 1.35rem; border-left: 1px solid #e2e8f0; }
+.docs-tally-item { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+.docs-tally-item b { font-size: 1.4rem; font-weight: 700; line-height: 1; color: #16202b; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.docs-tally-item i { font-style: normal; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: #64748b; white-space: nowrap; }
+.docs-tally-item.is-violated b { color: #c9313f; }
+.docs-tally-item.is-prior b { color: #b45309; }
+.docs-tally-item.is-held b { color: #17794a; }
+
+/* A section inside the dashboard shell carries no card of its own: the sidebar frames it. */
+.dashboard-section { min-width: 0; }
+.docs-pane-path .docs-crumb-sep { font-style: normal; margin: 0 0.3rem; color: #c3cedb; }
+.docs-pane-path b { color: #0f172a; font-weight: 600; }
+
+/* ---- Dashboard on a phone ----
+   The shell stacks, the account bar wraps rather than running off the side, and a rule stops
+   being a table row: the outcome leads, then the sentence, then the rule, each on its own line. */
+@media (max-width: 860px) {
+  .dash-side { position: static; }
+}
+
+@media (max-width: 640px) {
+  .dashboard-account-bar { flex-wrap: wrap; }
+  .dashboard-account-bar > div { min-width: 0; }
+
+  .docs-head { gap: 0.75rem; }
+  .docs-tally { padding-left: 0; border-left: 0; gap: 1rem; flex-wrap: wrap; }
+  .docs-title-select { font-size: 1.15rem; max-width: 100%; }
+  .docs-summary { gap: 0.25rem 0.75rem; font-size: 0.78rem; }
+
+  .docs-tree { max-height: 18rem; }
+  .docs-pane { padding: 0.75rem; }
+
+  .docs-rules { table-layout: auto; }
+  .docs-rules thead { display: none; }
+  .docs-rules tbody,
+  .docs-rules tr,
+  .docs-rules td { display: block; width: 100%; }
+  .docs-rules tr { padding: 0.7rem 0; border-bottom: 1px solid #edf1f5; }
+  .docs-rules tr:last-child { border-bottom: 0; }
+  .docs-rules td { border: 0; padding: 0.15rem 0; }
+  /* The outcome leads on a phone: it is what a reader came for. */
+  .docs-rules td:nth-child(4) { order: -1; margin-bottom: 0.35rem; }
+  .docs-rules tr { display: flex; flex-direction: column; }
+  .docs-rule-line { font-size: 0.7rem; }
+  .docs-rule-quote { font-size: 0.88rem; }
+  /* The outcome line reads as one sentence: pill, then when, then where it stands. */
+  .docs-rules td:nth-child(4) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.5rem; }
+  .docs-outcome-when, .docs-outcome-branch { display: inline-block; margin: 0; }
+
+    }
+
+/* ---- The dashboard's own chrome, as the design draws it ----
+   A white panel of sections down the left with the accent on the one you are in, and the work
+   beside it. Values are the design's: nav rows, the search box, the segmented control. */
+.dash-side {
+  gap: 2px;
+  padding: 16px 12px;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+}
+.dash-side .nav-label {
+  padding: 6px 10px 8px;
+  color: #57606a;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.dash-nav { display: flex; flex-direction: column; gap: 2px; margin-top: 0.5rem; }
+.nav-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  border-radius: 0.5rem;
+  padding: 9px 10px;
+  color: #57606a;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+}
+.nav-item svg { color: #8a95a1; flex: 0 0 auto; }
+.nav-item:hover { background: #f6f8fa; color: #24292f; text-decoration: none; }
+.nav-item.active { background: #f1f5f9; color: #1f2328; }
+/* The accent marks where you are, and nowhere else in this panel. */
+.nav-item.active svg { color: #2563eb; }
+.nav-item .nav-count { margin-left: auto; color: #8a95a1; font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; }
+
+.tree-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid rgba(31, 35, 40, 0.14);
+  border-radius: 0.5rem;
+  background: #f6f8fa;
+  color: #6b7684;
+}
+.tree-search:focus-within { border-color: #93b4f5; background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+.tree-search svg { color: #8a95a1; }
+.tree-search-input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 0.85rem; color: #24292f; outline: none; }
+
+
+/* A repository opens its own documents; GitHub stays one click away. */
+.dashboard-repo-open { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1d4ed8; font-weight: 600; text-align: left; }
+.dashboard-repo-open:hover { text-decoration: underline; }
+.dashboard-repo-github { margin-left: 0.5rem; color: #57606a; font-size: 0.75rem; font-weight: 600; }
+.dashboard-repo-github:hover { color: #1d4ed8; }
+
+/* The state's dot, the filters' dots, and the edge a broken rule's row carries. */
+.docs-state-line { display: flex; align-items: flex-start; gap: 0.55rem; }
+.docs-sdot { flex: 0 0 auto; width: 0.55rem; height: 0.55rem; margin-top: 0.42rem; border-radius: 999px; }
+.docs-sdot.is-read { background: #17794a; box-shadow: 0 0 0 4px rgba(23, 121, 74, 0.12); }
+.docs-sdot.is-outdated { background: #d97706; box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.14); }
+.docs-sdot.is-not_read { background: #94a3b8; box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.16); }
+.docs-sdot.is-retired,
+.docs-sdot.is-screened_out,
+.docs-sdot.is-excluded { background: #cbd5e1; box-shadow: 0 0 0 4px rgba(203, 213, 225, 0.3); }
+.docs-sdot.is-unreadable { background: #d33a4b; box-shadow: 0 0 0 4px rgba(211, 58, 75, 0.12); }
+
+.docs-filter { display: inline-flex; align-items: center; gap: 6px; }
+.docs-filter b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.docs-filter.is-on b { color: #fff; }
+.docs-fdot { width: 7px; height: 7px; border-radius: 999px; background: #94a3b8; }
+.docs-fdot.is-broken { background: #d33a4b; }
+.docs-fdot.is-outdated { background: #d97706; }
+.docs-fdot.is-unread { background: #fff; box-shadow: inset 0 0 0 1.5px #94a3b8; }
+.docs-fdot.is-other { background: #cbd5e1; }
+
+.docs-rules tr.is-violated td:first-child { box-shadow: inset 2px 0 0 #d33a4b; }
+.docs-rules tr.is-prior td:first-child { box-shadow: inset 2px 0 0 #e0a13a; }
+
+/* The two levels these things live at: an account, and a repository inside it. */
+.dash-repo-group { margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid #edf1f5; }
+.dash-repo-name {
+  padding: 0 10px 0.35rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+/* ---- Search across documents and the rules read from them ---- */
+.tree-search { width: calc(100% - 24px); text-align: left; }
+.tree-search span { flex: 1; }
+.tree-search kbd { border: 1px solid #d0d7de; border-bottom-width: 2px; border-radius: 4px; background: #fff; padding: 0 0.3rem; color: #57606a; font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; }
+
+.docs-palette-scrim { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: center; padding-top: 12vh; background: rgba(15, 23, 42, 0.38); }
+.docs-palette {
+  width: min(42rem, calc(100vw - 2rem));
+  max-height: 70vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(31, 35, 40, 0.14);
+  border-radius: 0.9rem;
+  background: #fff;
+  box-shadow: var(--shadow-xl);
+}
+.docs-palette-input { display: flex; align-items: center; gap: 10px; padding: 0.85rem 1rem; border-bottom: 1px solid #edf1f5; color: #64748b; }
+.docs-palette-input input { flex: 1; min-width: 0; border: 0; background: transparent; color: #0f172a; font-size: 1rem; outline: none; }
+.docs-palette-body { overflow-y: auto; padding: 0.4rem; }
+.docs-palette-hint { padding: 0.9rem 0.85rem; color: #64748b; font-size: 0.85rem; }
+.docs-palette-group { padding: 0.35rem 0.35rem 0.5rem; }
+.docs-palette-group .dashboard-kicker { padding: 0.25rem 0.5rem 0.35rem; }
+.docs-palette-item { display: flex; width: 100%; flex-direction: column; gap: 0.15rem; border-radius: 0.5rem; padding: 0.45rem 0.55rem; text-align: left; }
+.docs-palette-item:hover { background: #eef4fe; }
+.docs-palette-main { color: #24292f; font-size: 0.875rem; }
+.docs-palette-main mark { background: #fde68a; color: inherit; border-radius: 2px; padding: 0 1px; }
+.docs-palette-sub { color: #64748b; font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; }
+
+/* ---- The application bar ----
+   The dashboard turns the marketing header off, so this is the only chrome above the work: the
+   mark, the account being looked at, help, and the way out. Dark, as the design draws it, so the
+   pale panels below read as the page. */
+.dash-bar {
+  background: linear-gradient(180deg, #111c31 0%, #0f172a 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.dash-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  min-height: 3.5rem;
+}
+.bar-logo { display: flex; align-items: center; gap: 0.6rem; color: #fff; font-weight: 800; letter-spacing: -0.01em; }
+.bar-logo:hover { text-decoration: none; }
+.bar-tile {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+.bar-word { font-size: 1.02rem; }
+.bar-account {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 0.3rem 0.6rem;
+  color: #e6edf6;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.bar-account:hover { background: rgba(255, 255, 255, 0.12); }
+.bar-account-avatar { width: 1.15rem; height: 1.15rem; border-radius: 0.35rem; }
+.bar-account-name { color: #fff; }
+.bar-account-select {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  padding-right: 0.25rem;
+  cursor: pointer;
+}
+.bar-account-select option { color: #0f172a; }
+.bar-chevron { width: 0.85rem; height: 0.85rem; color: rgba(255, 255, 255, 0.6); flex: 0 0 auto; }
+.bar-right { display: flex; align-items: center; gap: 0.9rem; margin-left: auto; }
+.bar-link { color: #c7d2e1; font-size: 0.86rem; font-weight: 600; }
+.bar-link:hover { color: #fff; text-decoration: none; }
+.bar-user { position: relative; }
+.bar-user-button {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 0.2rem 0.45rem 0.2rem 0.2rem;
+}
+.bar-user-button:hover { background: rgba(255, 255, 255, 0.14); }
+.bar-user-button img { width: 1.6rem; height: 1.6rem; border-radius: 999px; }
+.bar-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.45rem);
+  z-index: 40;
+  min-width: 11rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  background: #fff;
+  padding: 0.3rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+}
+.bar-menu-who {
+  padding: 0.4rem 0.6rem 0.45rem;
+  color: #8a95a1;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  border-bottom: 1px solid #edf1f5;
+  margin-bottom: 0.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bar-menu-item {
+  display: block;
+  width: 100%;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.6rem;
+  color: #24292f;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+}
+.bar-menu-item:hover { background: #f6f8fa; text-decoration: none; }
+.dash-page { max-width: 90rem; margin: 0 auto; padding: 1.75rem 1.5rem 3rem; }
+@media (max-width: 640px) {
+  .dash-bar-inner { padding: 0 1rem; gap: 0.6rem; }
+  .bar-word { display: none; }
+  .bar-right { gap: 0.6rem; }
+  .dash-page { padding: 1.25rem 1rem 2.5rem; }
+}
+
+/* ---- The rules of a repository, in one list ----
+   The dashboard opens here: every rule Striff has read, what it came from, and how it last stood.
+   Wider than the documents view's pane because this is the page someone reads, searches and
+   prints. */
+.rules-panel {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+  overflow: hidden;
+}
+.rules-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: #fbfcfd;
+}
+.rules-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 16rem;
+  min-width: 12rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: #fff;
+  padding: 0.45rem 0.7rem;
+  color: #8a95a1;
+}
+.rules-search input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: #1f2328;
+  font-size: 0.88rem;
+  outline: none;
+}
+.rules-search input::-webkit-search-cancel-button { cursor: pointer; }
+.rules-toolbar .docs-filters { margin: 0; }
+.rules-export { position: relative; margin-left: auto; }
+.rules-export-button {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: #fff;
+  padding: 0.45rem 0.7rem;
+  color: #24292f;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.rules-export-button:hover { background: #f6f8fa; }
+.rules-export-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 30;
+  min-width: 12rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background: #fff;
+  padding: 0.3rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+}
+.rules-export-menu button {
+  display: block;
+  width: 100%;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.6rem;
+  color: #24292f;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+}
+.rules-export-menu button:hover { background: #f6f8fa; }
+.rules-table { margin: 0; }
+.rules-table th, .rules-table td { padding: 0.7rem 1rem; vertical-align: top; }
+.rules-table td:first-child { width: 46%; }
+.rules-quote {
+  display: block;
+  margin-top: 0.3rem;
+  color: #57606a;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 0.88rem;
+}
+.rules-source { white-space: normal; }
+.rules-source-link {
+  display: inline;
+  color: #2563eb;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+  word-break: break-all;
+}
+.rules-source-link:hover { text-decoration: underline; }
+.rules-source-link i { color: #8a95a1; font-style: normal; }
+.rules-source-when {
+  display: block;
+  margin-top: 0.25rem;
+  color: #8a95a1;
+  font-size: 0.75rem;
+}
+/* Only on paper. */
+.rules-print-head { display: none; }
+
+@media (max-width: 860px) {
+  .rules-toolbar { flex-direction: column; align-items: stretch; }
+  /* Stacked, the search box would grow to fill the column: it is one line tall, not a panel. */
+  .rules-search { flex: 0 0 auto; }
+  .rules-export { margin-left: 0; }
+  .rules-export-menu { right: auto; left: 0; }
+  .rules-table td:first-child { width: auto; }
+}
+
+/* What a printed page carries: the rules, and nothing that only works with a pointer. */
+@media print {
+  /* The printed page carries its own heading, so the screen's goes; the rest is chrome. */
+  .dash-bar,
+  .dash-side,
+  .rules-toolbar,
+  .docs-head,
+  .site-footer,
+  .scroll-top { display: none !important; }
+  .dash-page { max-width: none; padding: 0; }
+  .dash-shell { display: block; margin: 0; }
+  .rules-panel { border: 0; border-radius: 0; }
+  .rules-print-head { display: block; margin-bottom: 0.75rem; }
+  .rules-print-head h1 { font-size: 1.15rem; font-weight: 700; }
+  .rules-print-head p { color: #57606a; font-size: 0.8rem; }
+  .rules-table { font-size: 0.78rem; }
+  .rules-table th, .rules-table td { padding: 0.4rem 0.5rem; }
+  .rules-table tr { break-inside: avoid; }
+  .docs-outcome { border: 1px solid #d0d7de; }
+  /* On paper nothing is clickable: a blue name is just harder to read. */
+  .rules-source-link { color: #1f2328; text-decoration: none; }
+  a[href]::after { content: ""; }
+}
+
+/* The rules list stacks on a phone like the documents view's table, but it has three columns, not
+   four: the outcome is the last cell here, and it reads as one line. */
+@media (max-width: 640px) {
+  .rules-table td:nth-child(3) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.5rem;
+  }
+  .rules-table td { padding: 0.15rem 0; }
+  .rules-table tr { padding: 0.8rem 0; }
+  /* Stacked, the accent rule down the side of a broken row would otherwise touch the words. */
+  .rules-table tr.is-violated,
+  .rules-table tr.is-prior { padding-left: 0.6rem; }
+  .rules-panel { border-radius: 0.6rem; }
+  .rules-table .docs-rule-statement { font-size: 0.92rem; }
+}
+
+/* The dashboard's own footer: the links the marketing one carried, and nothing else. */
+.dash-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: #8a95a1;
+  font-size: 0.8rem;
+}
+.dash-foot a { color: #57606a; }
+.dash-foot a:hover { color: #24292f; }
+
+/* A document a screen skipped that this repository asked for anyway. */
+.docs-badge.is-forced {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* The folder rules, under the tree they affect: an excluded directory is visible without opening
+   the folder's own menu to find out. */
+.docs-foot-folders {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+.docs-foot-folder {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid #e3e8ee;
+  border-radius: 999px;
+  background: #f6f8fa;
+  padding: 0.1rem 0.45rem;
+  color: #57606a;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+}
+.docs-foot-folder:hover:not(:disabled) { border-color: #cbd5e1; background: #eef2f6; color: #24292f; }
+.docs-foot-folder i { font-style: normal; color: #8a95a1; }
+
+/* A read or a write that failed, said where it happened rather than nowhere. */
+.docs-pane-error {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  border: 1px solid #f3d0d0;
+  border-radius: 0.6rem;
+  background: #fef6f6;
+  padding: 0.9rem 1rem;
+  color: #8a1f1f;
+  font-size: 0.88rem;
+}
+.docs-pane-error button {
+  border: 1px solid #e3b7b7;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.35rem 0.7rem;
+  color: #8a1f1f;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.docs-pane-error button:hover:not(:disabled) { background: #fdeeee; }
+.docs-write-error {
+  margin: 0 0 0.5rem;
+  color: #8a1f1f;
+  font-size: 0.8rem;
+}
+
+/* A column heading that orders the list. The caret only shows the column in use; the others keep
+   their arrow faint, so the heading still reads as a heading. */
+.rules-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+.rules-sort svg { color: #c3cbd5; flex: 0 0 auto; }
+.rules-sort:hover { color: #24292f; }
+.rules-sort:hover svg { color: #8a95a1; }
+.rules-sort.is-on { color: #1f2328; }
+.rules-sort.is-on svg { color: #2563eb; }
+@media print {
+  /* On paper the order is fixed, so the carets are noise. */
+  .rules-sort svg { display: none; }
+}
+
+/* A tally number you can follow: it counts something, and clicking it shows what it counted. */
+button.docs-tally-item { cursor: pointer; border-radius: 0.5rem; padding: 0.1rem 0.4rem; margin: -0.1rem -0.4rem; }
+button.docs-tally-item:hover { background: #f1f5f9; }
+button.docs-tally-item.is-on { background: #eef2f7; }
+button.docs-tally-item.is-on i { color: #1f2328; }
+.docs-tally-item b em { color: #8a95a1; font-style: normal; font-weight: 600; font-size: 0.7em; }
+
+/* The issue this finding would become, one click away and already written. */
+.docs-issue-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  color: #2563eb;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.docs-issue-link:hover { text-decoration: underline; }
+@media print { .docs-issue-link { display: none; } }
+
+/* Which revision the page is a view of, under the repository's name. */
+.docs-revision {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  color: #8a95a1;
+  font-size: 0.78rem;
+}
+.docs-revision-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #57606a;
+  font-weight: 600;
+}
+.docs-revision-sha {
+  border: 1px solid var(--line);
+  border-radius: 0.35rem;
+  background: #f6f8fa;
+  padding: 0 0.3rem;
+  color: #57606a;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+}
+.docs-revision-when::before { content: "· "; }
+
+/* A document's own two versions: what is on the branch, and what its rules were read from. */
+.docs-version-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.35rem;
+  margin: 0.15rem 0 0.5rem;
+  color: #8a95a1;
+  font-size: 0.75rem;
+}
+.docs-version-line code {
+  border-radius: 0.3rem;
+  background: #f6f8fa;
+  padding: 0 0.25rem;
+  color: #57606a;
+  font-family: "IBM Plex Mono", monospace;
+}
+
+/* ============================================================================
+   FOR TEAMS — PROOF BAND AND THE SAME-WEEK TABLE
+   Four numbers a team lead can check, each a link to where it comes from, then
+   the same four moments in a week laid out twice. Same vocabulary as the rest of
+   the page: white cards, hairlines, one accent line per card in its tone.
+   ========================================================================== */
+.team-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 2rem 3.5rem;
+  align-items: start;
+}
+.team-proof {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+@media (max-width: 1024px) {
+  .team-intro { grid-template-columns: minmax(0, 1fr); }
+  .team-proof { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.team-stat {
+  --tone: var(--brand);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.05rem 1.2rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.team-stat::before {
+  content: "";
+  display: block;
+  width: 1.75rem;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--tone);
+  margin-bottom: 0.2rem;
+}
+.team-stat:hover { border-color: color-mix(in srgb, var(--tone) 40%, transparent); box-shadow: 0 10px 24px -14px rgba(30, 58, 138, 0.35); transform: translateY(-1px); }
+.team-stat-brand { --tone: #2563eb; }
+.team-stat-amber { --tone: #d97706; }
+.team-stat-danger { --tone: #dc2626; }
+.team-stat-value {
+  font-size: clamp(1.85rem, 1.4rem + 1.2vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.team-stat-title {
+  font-size: 1.08rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.team-stat-label { font-size: 0.9rem; line-height: 1.55; color: var(--ink-muted); }
+.team-stat-cite {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(15, 23, 42, 0.1);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--tone);
+}
+@media (max-width: 760px) { .team-proof { grid-template-columns: minmax(0, 1fr); } }
+
+/* The PR list on slide one is invented, and says so the same way the hero does. */
+.ghl-example { margin-left: 0.75rem; }
+
+/* ---- One agent pull request, two futures ----
+   The pull request at the top is the shared premise: an agent-written change, a diff
+   line, and the sentence it contradicts. Below it the page forks. The left path is red
+   and gets darker down the timeline; the right path is the product, and ends early. */
+.fork-pr {
+  margin-top: 1rem;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #ffffff;
+  box-shadow: var(--lift-shadow);
+  overflow: hidden;
+}
+.fork-pr-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #f8fafd, #f2f6fb);
+}
+.fork-pr-title { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 1rem; color: var(--ink); }
+.fork-pr-title svg { color: #1a7f37; }
+.fork-pr-meta { font-size: 0.8rem; color: var(--ink-muted); }
+.fork-pr-head .hcc-chip { margin-left: auto; }
+.fork-pr-diff,
+.fork-pr-doc {
+  padding: 0.85rem 1.25rem;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+.fork-pr-file { display: block; margin-bottom: 0.4rem; font-size: 0.72rem; color: var(--ink-muted); }
+.fork-pr-line { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); color: var(--ink); line-height: 1.7; }
+.fork-pr-line span:first-child { color: #9aa4b2; text-align: right; padding-right: 0.9rem; }
+.fork-pr-line.is-add { background: #e6ffec; color: #116329; margin: 0 -1.25rem; padding: 0 1.25rem; }
+.fork-pr-doc {
+  display: grid;
+  gap: 0.2rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(220, 38, 38, 0.035);
+}
+.fork-pr-quote { font-family: inherit; font-size: 0.92rem; font-style: italic; color: var(--ink); font-family: ui-serif, Georgia, serif; }
+
+.fork-split {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+.fork-path {
+  --tone: #dc2626;
+  padding: 1.25rem 1.4rem 1.4rem;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+}
+.fork-path-with { --tone: #2563eb; background: linear-gradient(180deg, rgba(37, 99, 235, 0.06), rgba(37, 99, 235, 0.02)); border-color: rgba(37, 99, 235, 0.22); }
+.fork-path-without { background: linear-gradient(180deg, #ffffff, rgba(220, 38, 38, 0.04)); }
+.fork-path-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tone);
+}
+.fork-check {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.9rem 0 0.4rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  background: #fff5f5;
+  font-size: 0.86rem;
+}
+.fork-check-flag { font-weight: 800; color: #b91c1c; }
+.fork-check-rule { color: var(--ink); }
+.fork-check-rule code { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.86em; background: #ffffff; border: 1px solid #f1d4d4; border-radius: 4px; padding: 0 0.3em; }
+.fork-check-src { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.7rem; color: var(--ink-muted); }
+.fork-steps { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.15rem; }
+.fork-steps li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 0 1rem;
+  padding: 0.55rem 0 0.55rem 1.35rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+.fork-steps li::before {
+  content: "";
+  position: absolute;
+  left: 0.3rem;
+  top: 0.95rem;
+  bottom: -0.65rem;
+  width: 1px;
+  background: color-mix(in srgb, var(--tone) 35%, transparent);
+}
+.fork-steps li:last-child::before { display: none; }
+.fork-steps li::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.85rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 2px var(--tone);
+}
+/* The left path gets worse as it goes: the last two dots fill in. */
+.fork-path-without .fork-steps li:nth-child(n+3)::after { background: var(--tone); box-shadow: none; }
+.fork-path-without .fork-steps li:last-child .fork-text { color: #991b1b; font-weight: 600; }
+.fork-path-with .fork-steps li:last-child::after { background: var(--tone); box-shadow: none; }
+.fork-path-with .fork-steps li:last-child .fork-text { color: var(--brand); font-weight: 700; }
+.fork-when {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-muted);
+  padding-top: 0.2rem;
+}
+.fork-text { color: var(--ink-muted); }
+.fork-path-with .fork-text { color: var(--ink); }
+@media (max-width: 900px) {
+  .fork-split { grid-template-columns: minmax(0, 1fr); }
+  .fork-steps li { grid-template-columns: minmax(0, 1fr); gap: 0.1rem; }
+}
+
+/* The versions of one document Striff holds rules for. A document is not one text: a pull request
+   reads the text on its own branch, and each reading is its own set of rules. */
+.docs-versions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.1rem 0 0.6rem;
+}
+.docs-versions-label { color: #8a95a1; font-size: 0.75rem; margin-right: 0.15rem; }
+.docs-version {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.1rem 0.5rem;
+  color: #57606a;
+  font-size: 0.72rem;
+}
+.docs-version code { font-family: "IBM Plex Mono", monospace; color: #57606a; }
+.docs-version i { font-style: normal; color: #8a95a1; }
+.docs-version b { color: #8a95a1; font-weight: 600; }
+.docs-version:hover { border-color: #cbd5e1; background: #f6f8fa; }
+.docs-version.is-on { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+.docs-version.is-on code, .docs-version.is-on i, .docs-version.is-on b { color: #1d4ed8; }
+.docs-version-note {
+  margin: -0.3rem 0 0.6rem;
+  color: #8a5a1f;
+  font-size: 0.78rem;
+}
+.docs-version-note code {
+  font-family: "IBM Plex Mono", monospace;
+  background: #fdf6e7;
+  border-radius: 0.3rem;
+  padding: 0 0.25rem;
+}
+.docs-version-note button { color: #2563eb; font-weight: 600; text-decoration: underline; }
+
+/* What you searched for, marked where it was found. Quiet enough to read through: this marks runs
+   inside a customer's own sentences, and a highlighter that shouts makes the sentence unreadable. */
+.docs-tab mark,
+.rules-view mark {
+  border-radius: 0.2rem;
+  background: #fef3c7;
+  padding: 0 0.1em;
+  color: inherit;
+}
+.docs-tab code mark,
+.rules-view code mark { background: #fde68a; }
+@media print {
+  .rules-view mark { background: transparent; box-shadow: inset 0 -0.5em 0 #fef3c7; }
+}
+
+/* Why a rule matched, where the match is in the sentence rather than in the rule. */
+.docs-palette-quote {
+  display: block;
+  margin: 0.15rem 0 0.1rem;
+  color: #57606a;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 0.85rem;
 }

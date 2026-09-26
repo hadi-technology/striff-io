@@ -51,17 +51,21 @@ export const heroExampleRules = [
   {
     verdict: "held",
     verdictLabel: "Held",
-    craft: "Layering",
-    quote: "The domain layer never depends on infrastructure.",
+    craft: "Peer modules",
+    quote: "Feature modules never depend on each other; shared code goes in `common`.",
     doc: "ARCHITECTURE.md",
     line: 42,
-    statement: "Nothing in `domain` depends on `infrastructure`",
-    logic: [[
-      String.raw`\htmlClass{lg-q}{\neg\exists}\, c, d.`,
-      String.raw`\mathrm{in}(c, \mathtt{domain})`,
-      String.raw`\wedge\ \mathrm{in}(d, \mathtt{infrastructure})`,
-      String.raw`\wedge\ \mathrm{refs}(c, d)`
-    ]],
+    statement: "No feature module depends on another feature module, where the features are `cart`, `catalog` and `accounts`",
+    logic: [
+      [
+        String.raw`\htmlClass{lg-q}{\neg\exists}\, c, d.`,
+        String.raw`\mathrm{in\_group}(c, \textsf{feature})`,
+        String.raw`\wedge\ \mathrm{in\_group}(d, \textsf{feature})`,
+        String.raw`\wedge\ \neg\,\mathrm{same\_group}(c, d, \textsf{feature})`,
+        String.raw`\wedge\ \mathrm{refs}(c, d)`
+      ],
+      [String.raw`\textsf{feature} \coloneqq \{`, String.raw`\mathtt{cart},`, String.raw`\mathtt{catalog},`, String.raw`\mathtt{accounts}\,\}`]
+    ],
     base: true,
     head: true
   }

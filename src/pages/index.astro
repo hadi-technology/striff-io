@@ -61,10 +61,10 @@ const extensionHighlights = [
 // The languages the parser (Clarpse, via striff-lib) reads, shown under the hero card.
 // Monograms in each language's own colour rather than four mismatched logo styles.
 const heroLanguages = [
-  { name: "Java", mark: "J", color: "#e76f00", mature: true },
-  { name: "Python", mark: "Py", color: "#3776ab", mature: false },
-  { name: "C#", mark: "C#", color: "#7b3fbd", mature: true },
-  { name: "TypeScript", mark: "TS", color: "#3178c6", mature: false }
+  { name: "Java", mark: "J", color: "#e76f00" },
+  { name: "Python", mark: "Py", color: "#3776ab" },
+  { name: "C#", mark: "C#", color: "#7b3fbd" },
+  { name: "TypeScript", mark: "TS", color: "#3178c6" }
 ];
 
 
@@ -182,18 +182,43 @@ const mgrPrs = [
   { num: 418, title: "Refactor NodeWorker lifecycle", who: "coding-agent[bot]", when: "yesterday", review: "Review required", label: "agent", verdict: "violated" }
 ];
 
+/**
+ * For-teams: the three ways an agent strays from the docs, each with a real case from a
+ * published post on this site. The cards say what goes wrong, not how old a doc is.
+ */
+const teamFailures = [
+  { tone: "amber", title: "It follows a sentence that is no longer true", body: "The agent builds on a class, a call or a pattern the team already retired. If the build breaks it recovers, at a cost. If it doesn\u2019t, the old design comes back.", example: "The MCP C# SDK\u2019s Copilot instructions tell every agent to use a class Copilot itself deleted.", href: "/blog/design-docs-are-enforceable-now" },
+  { tone: "danger", title: "It breaks a rule that is still true", body: "\u201cControllers go through the service layer.\u201d The agent takes the shortcut. The code compiles, the tests pass, the diff looks fine, and the document that forbade it is not in the diff. Merged.", example: "97 of 7,161 documented rules were broken by the pull request under review, in a sweep of public repositories.", href: "/blog/design-docs-are-enforceable-now" },
+  { tone: "brand", title: "It writes new docs from the wrong ones", body: "Asked to document the architecture, the agent reads the existing docs and repeats their mistakes with a fresh timestamp. The next agent now has two sentences telling it the same wrong thing.", example: "An agent-written architecture section in 2026 names a class removed in 2020.", href: "/blog/design-docs-are-enforceable-now" }
+];
+/**
+ * One agent-written pull request, and the two futures it has. Illustrative: the repository,
+ * the file and the timeline are invented; the check row is worded the way the check writes it.
+ */
+const forkWithout = [
+  { when: "40 minutes later", text: "Approved and merged. The diff was clean, the tests passed, and ARCHITECTURE.md was not in the diff." },
+  { when: "Next week", text: "Two more agent pull requests copy the shortcut. It is now the pattern in that module." },
+  { when: "Next quarter", text: "The service layer is optional. The architecture doc describes a system that no longer exists, and the agents are still reading it." },
+  { when: "Next year", text: "Every change costs more than it should, and nobody can point to the pull request where it started." }
+];
+const forkWith = [
+  { when: "Before review", text: "The check posts: rule broken by this pull request, quoting the sentence and the line." },
+  { when: "10 minutes later", text: "The author routes the call through OrderService. A one-line fix, while it is still one line." },
+  { when: "Merged", text: "The doc is still true. The layering holds. The next agent reads a document that matches the code." },
+  { when: "Your senior engineer", text: "Never had to look." }
+];
 const mgrSlides = [
   {
     title: "Your senior engineers stop being the bottleneck.",
-    body: "Architecture review usually waits on the few people who know the system, and agent-written pull requests have made that queue longer. Striff checks every pull request against what those people already wrote down, so they are pulled in when a rule breaks, not to re-check the ones that held."
+    body: "Architecture review waits on the few people who know the system, and agent-written pull requests have made that queue longer. Striff checks every pull request against what those people already wrote down. They are pulled in when a rule breaks, not to re-check the ninety-eight percent that held."
   },
   {
-    title: "Your documentation stops rotting.",
-    body: "A document nobody checks drifts until nobody trusts it, and then nobody writes the next one. Once every pull request is checked against it, a stale sentence gets caught: a README describing a call the code has just dropped shows up on the pull request that dropped it."
+    title: "Your docs stay true, because a change that contradicts them is caught.",
+    body: "An agent builds from what the docs say, so a sentence the code no longer matches is a defect that gets copied into the next change. Once every pull request is checked against the docs, the contradiction shows up on the change that made it, with the line quoted, while the fix is still one line."
   },
   {
     title: "See which repositories are drifting from their docs.",
-    body: "The dashboard shows, month over month, which repositories and pull requests break your documented rules: rules held, broken and already broken, the share of pull requests that broke none, and the repositories flagged most. You know where to spend fix-up time."
+    body: "The dashboard shows, month over month, which repositories and pull requests break your documented rules: held, broken and already broken, the share of pull requests that broke none, and the repositories flagged most. You know where to spend fix-up time before it becomes a rewrite."
   }
 ]
 
@@ -298,13 +323,10 @@ const plans = [
             {heroLanguages.map((lang) => (
               <span class="lang-chip" style={`--lang: ${lang.color}`}>
                 <span class="lang-chip-mark" aria-hidden="true">{lang.mark}</span>
-                {lang.name}{!lang.mature && <sup>&dagger;</sup>}
+                {lang.name}
               </span>
             ))}
           </div>
-          <p class="hero-langs-note">
-            <a href="#languages">&dagger; Documented-rule checking is production-ready on Java and C#; Python and TypeScript are further along on the diagram than on rules</a>
-          </p>
 
         </div>
       </div>
@@ -593,12 +615,25 @@ const plans = [
          tabs, so choosing one shows its illustration on the right. -->
     <section id="how" class="scroll-mt-24 bg-slate-100/60 pb-20 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
-        <div class="max-w-3xl" data-reveal>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For engineering managers</p>
-          <h2 class="mt-3 text-balance">What your senior engineers decided, checked on every pull request.</h2>
-          <p class="section-subcopy mt-4">
-            Keeping a system coherent while people and agents change it every day is the part nobody owns. <strong>Striff makes it part of every pull request: reviews that do not wait on your seniors, documents that stay true, and a view of where the code is drifting from them.</strong>
-          </p>
+        <div class="team-intro" data-reveal>
+          <div class="team-intro-copy">
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For teams</p>
+            <h2 class="mt-3 text-balance">Agents do what your docs say. When the docs and the code disagree, nobody finds out.</h2>
+            <p class="section-subcopy mt-4">
+              Your architecture docs, your ADRs and your <code class="github-inline-code">AGENTS.md</code> used to be read by the next engineer, who could ask when something looked off. Now they are read by every agent run, taken as fact, and built on. Nothing in the merge path compares them to the code. <strong>Striff does, on every pull request: when a change contradicts what your team wrote down, it says so before the merge and quotes the line.</strong>
+            </p>
+          </div>
+
+          <!-- The three ways an agent strays from the docs, each with a real case. -->
+          <div class="team-proof">
+            {teamFailures.map((f) => (
+              <a class={`team-stat team-stat-${f.tone}`} href={f.href}>
+                <span class="team-stat-title">{f.title}</span>
+                <span class="team-stat-label">{f.body}</span>
+                <span class="team-stat-cite">{f.example} &rarr;</span>
+              </a>
+            ))}
+          </div>
         </div>
 
         <div class="mgr-split mgr-carousel mt-10" data-mgr-carousel aria-roledescription="carousel" aria-label="What changes for your team" data-reveal>
@@ -634,6 +669,7 @@ const plans = [
                         <span class="ghl-open"><svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg>4 Open</span>
                         <span class="ghl-closed"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>212 Closed</span>
                         <span class="ghl-filters" aria-hidden="true"><span>Author</span><span>Label</span><span>Reviews</span></span>
+                        <span class="hcc-chip hcc-chip-example ghl-example">Illustrative</span>
                       </div>
                       {mgrPrs.map((pr) => (
                         <div class={`ghl-row${pr.verdict === "violated" ? " is-flag" : ""}`}>
@@ -724,8 +760,49 @@ const plans = [
             </div>
           </div>
         </div>
+        <!-- One agent-written pull request, two futures. -->
+        <div class="fork mt-14" data-reveal>
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">One agent pull request, two futures</p>
+          <div class="fork-pr">
+            <div class="fork-pr-head">
+              <span class="fork-pr-title"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg><b>Add CSV export for orders</b> <span class="ghl-label ghl-label-agent">agent</span></span>
+              <span class="fork-pr-meta">#418 opened by coding-agent[bot] &middot; 27 files &middot; +612 &minus;40</span>
+              <span class="hcc-chip hcc-chip-example">Illustrative</span>
+            </div>
+            <div class="fork-pr-diff">
+              <span class="fork-pr-file">src/api/OrderController.java</span>
+              <div class="fork-pr-line"><span>3</span><span>import com.acme.orders.service.OrderService;</span></div>
+              <div class="fork-pr-line is-add"><span>4</span><span>+ import com.acme.orders.data.OrderRepository;</span></div>
+              <div class="fork-pr-line is-add"><span>41</span><span>+ &nbsp;&nbsp;var rows = orderRepository.findForExport(range);</span></div>
+            </div>
+            <div class="fork-pr-doc">
+              <span class="fork-pr-file">ARCHITECTURE.md:42</span>
+              <span class="fork-pr-quote">&ldquo;Controllers never call repositories directly; everything goes through the service layer.&rdquo;</span>
+            </div>
+          </div>
+          <div class="fork-split">
+            <div class="fork-path fork-path-without">
+              <p class="fork-path-name">Without a check</p>
+              <ol class="fork-steps">
+                {forkWithout.map((st) => (<li><span class="fork-when">{st.when}</span><span class="fork-text">{st.text}</span></li>))}
+              </ol>
+            </div>
+            <div class="fork-path fork-path-with">
+              <p class="fork-path-name"><img src="/icon.svg" alt="" width="16" height="16" /> With Striff</p>
+              <div class="fork-check">
+                <span class="fork-check-flag">Rule broken by this PR</span>
+                <span class="fork-check-rule"><code>OrderController</code> depends on <code>OrderRepository</code></span>
+                <span class="fork-check-src">ARCHITECTURE.md:42 &middot; held before this change, fails after it</span>
+              </div>
+              <ol class="fork-steps">
+                {forkWith.map((st) => (<li><span class="fork-when">{st.when}</span><span class="fork-text">{st.text}</span></li>))}
+              </ol>
+            </div>
+          </div>
+        </div>
+
         <div class="section-invite">
-          <BlogLink slug="architecture-review-checklist" kicker="What your seniors check by hand, step by step" />
+          <BlogLink slug="design-docs-are-enforceable-now" kicker="What happens when an agent builds from a doc that is wrong" />
         </div>
       </div>
     </section>
@@ -877,7 +954,7 @@ const plans = [
           </details>
           <details class="faq-item" id="languages">
             <summary class="faq-q">What languages does Striff support?</summary>
-            <p class="faq-a">The diagram runs on <strong>Java, TypeScript, Python and C#</strong>. Striff parses source into a full structural model with its own parser, not regex or text matching, so references, inheritance and dependencies resolve the way a compiler sees them. Documented rules are further along on some of those than others: <strong>Java and C# are production-ready</strong>, Python extracts rules from your docs but cannot yet answer all of them, and TypeScript is still being proven out. <em>We would rather say that here than have you install and find out.</em> Go is coming.</p>
+            <p class="faq-a">The diagram runs on <strong>Java, TypeScript, Python and C#</strong>. Striff parses source into a full structural model with its own parser, not regex or text matching, so references, inheritance and dependencies resolve the way a compiler sees them. Go is coming.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-q">Is it just an LLM wrapper?</summary>
