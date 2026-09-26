@@ -76,6 +76,46 @@ Rarely, and that is the design. A check that fired on every pull request would b
 
 The 53 already-broken rules are the quiet second result. Each is a sentence in a repository's own documentation that was already false before the pull request. Whether the fix belongs in the code or in the sentence is the maintainer's call, and now the maintainer knows there is a call to make.
 
+## Where the docs and the code disagree
+
+The sweep was not small repositories. Nearly every one had over a thousand stars, and a third had over ten thousand. Five of the disagreements it found, each checked by hand against the default branch in September 2026, largest repository first:
+
+<div class="bp-figure" data-reveal>
+<div class="bp-stats bp-stats--3">
+<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">7.6M</div><div class="bp-stat-label">GitHub stars across the repositories scanned</div></div>
+<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">175</div><div class="bp-stat-label">of them with more than 10,000 stars</div></div>
+<div class="bp-stat bp-stat--danger"><div class="bp-stat-value">5</div><div class="bp-stat-label">below: what the document says, and what the code does</div></div>
+</div>
+<ul class="bp-repos">
+<li class="bp-repo">
+<a class="bp-repo-head" href="https://github.com/apache/dolphinscheduler/blob/dev/docs/docs/en/contribute/backend/spi/registry.md?plain=1#L20"><span class="bp-repo-name">Apache DolphinScheduler</span><span class="bp-repo-stars"><i style="width:97%"></i><b>&#9733; 14.5k</b></span></a>
+<p class="bp-repo-doc"><span>docs</span>The contributor guide says to implement <code>org.apache.dolphinscheduler.registry.api.RegistryFactory</code>.</p>
+<p class="bp-repo-code"><span>code</span>No type by that name is declared anywhere in the repository. The name survives only in the guide, in two languages.</p>
+</li>
+<li class="bp-repo">
+<a class="bp-repo-head" href="https://github.com/dotnet/BenchmarkDotNet/blob/master/docs/articles/configs/exporters.md?plain=1#L101"><span class="bp-repo-name">BenchmarkDotNet</span><span class="bp-repo-stars"><i style="width:94%"></i><b>&#9733; 11.5k</b></span></a>
+<p class="bp-repo-doc"><span>docs</span>The exporters page documents the properties of <code>ISummaryStyle</code>.</p>
+<p class="bp-repo-code"><span>code</span>The type is <code>SummaryStyle</code>, a class. There is no interface by the documented name.</p>
+</li>
+<li class="bp-repo">
+<a class="bp-repo-head" href="https://github.com/apache/pinot/blob/master/pinot-sql-ddl/DESIGN.md?plain=1#L97"><span class="bp-repo-name">Apache Pinot</span><span class="bp-repo-stars"><i style="width:88%"></i><b>&#9733; 6.1k</b></span></a>
+<p class="bp-repo-doc"><span>docs</span><code>DESIGN.md</code> says <code>pinot-sql-ddl</code> depends only on <code>pinot-spi</code>, <code>pinot-common</code> and <code>calcite-babel</code>.</p>
+<p class="bp-repo-code"><span>code</span>The module&rsquo;s build and <code>MaterializedViewSchemaInferer</code> also pull in <code>pinot-query-planner</code>.</p>
+</li>
+<li class="bp-repo">
+<a class="bp-repo-head" href="https://github.com/modelcontextprotocol/csharp-sdk/blob/c40ee044fd415c70da5176c749cb5ef02f2b59f6/.github/copilot-instructions.md#L258"><span class="bp-repo-name">MCP C# SDK</span><span class="bp-repo-stars"><i style="width:85%"></i><b>&#9733; 4.5k</b></span></a>
+<p class="bp-repo-doc"><span>docs</span>Line 258 of the Copilot instructions says to use <code>McpServerFactory</code>.</p>
+<p class="bp-repo-code"><span>code</span>Deleted in December 2025 by the same agent that wrote the line. The line is still on <code>main</code>; a fix is open.</p>
+</li>
+<li class="bp-repo">
+<a class="bp-repo-head" href="https://github.com/Ericsson/ecchronos/pull/1786"><span class="bp-repo-name">Ericsson ecChronos</span><span class="bp-repo-stars"><i style="width:36%"></i><b>&#9733; 37</b></span></a>
+<p class="bp-repo-doc"><span>docs</span>The <code>core.impl</code> README says <code>NodeWorker</code> calls <code>RepairScheduler.putConfigurations()</code>.</p>
+<p class="bp-repo-code"><span>code</span>The call moved to <code>SchemaRefresher</code> in #1786. The sentence did not move with it.</p>
+</li>
+</ul>
+<p class="bp-figure-caption">Each row links to the line in the document. The bar is the repository&rsquo;s star count on a log scale. These are disagreements between a repository&rsquo;s own documentation and its code, reported as such; whether the fix belongs in the sentence or in the code is the maintainer&rsquo;s call.</p>
+</div>
+
 ## Writing docs that get checked
 
 You do not have to change how you write. ecChronos's README was written for people, and it produced 28 rules. Sentences of a certain shape get checked, though, and it helps to know which.
