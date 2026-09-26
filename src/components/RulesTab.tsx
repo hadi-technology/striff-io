@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
 import { OUTCOME_LABEL, OUTCOME_HELP, ON_BRANCH_LABEL, mark, withCode, when } from "./docRules";
@@ -130,6 +130,8 @@ export default function RulesTab({
   // Document order to begin with: a repository's rules read as its documents do until someone
   // asks for something else.
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "source", dir: 1 });
+  /** How many times this view has waited for a listing it asked for; see DocsTab. */
+  const waitedForListing = useRef(0);
 
   const [owner, name] = repo.split("/");
 
@@ -145,6 +147,7 @@ export default function RulesTab({
 
   useEffect(() => {
     if (!owner || !name) return;
+    waitedForListing.current = 0;
     load();
   }, [repo]);
 
@@ -169,6 +172,10 @@ export default function RulesTab({
         return;
       }
       setData(body);
+      if (body.lastScanMs === null && waitedForListing.current < 3) {
+        waitedForListing.current += 1;
+        window.setTimeout(() => load(), 6000);
+      }
     } catch {
       setError("Couldn't load this repository's rules");
     } finally {
@@ -402,10 +409,18 @@ export default function RulesTab({
 
       {data && rows.length === 0 && !loading && !data.truncated && (
         <div className="dashboard-empty">
-          <p className="text-slate-600">
-            Striff hasn't read a rule out of this repository yet. It reads a doc when a pull request
-            changes code that doc talks about; the documents view lists everything it can read.
-          </p>
+          {data.lastScanMs === null ? (
+            <p className="text-slate-600">
+              Striff is listing this repository's documents. Any rules it has already read appear
+              here as soon as that lands — a few seconds, usually.
+            </p>
+          ) : (
+            <p className="text-slate-600">
+              Striff hasn't read a rule out of this repository yet. It reads a doc when a pull
+              request changes code that doc talks about; the documents view lists everything it can
+              read.
+            </p>
+          )}
         </div>
       )}
 
