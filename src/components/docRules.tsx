@@ -46,16 +46,71 @@ export const ON_BRANCH_LABEL: Record<string, string> = {
  * the marks on screen. Split rather than set HTML: the text is a customer's own document, and it
  * is never trusted as markup.
  */
-export function withCode(text: string | null | undefined) {
+export function withCode(text: string | null | undefined, term?: string) {
   if (!text) return null;
   return text.split(/`([^`]+)`/g).map((part, index) =>
     index % 2 === 1
-      ? createElement("code", { key: index, className: "github-inline-code" }, part)
-      : part
+      ? createElement("code", { key: index, className: "github-inline-code" },
+          mark(part, term, `c${index}`))
+      : mark(part, term, `p${index}`)
   );
+}
+
+/**
+ * The text with every run of what someone is searching for marked.
+ *
+ * Every occurrence, not the first: a rule that says the same name twice was showing a reader one
+ * of them. Case-insensitive, because nobody types the case of a package name. The text is split
+ * and rebuilt as elements rather than wrapped in markup, for the same reason {@link withCode}
+ * does: it is a customer's own document, and it is never trusted as HTML.
+ *
+ * @param text the text to show
+ * @param term what is being searched for, already trimmed; empty or absent leaves the text alone
+ * @param keyPrefix distinguishes the runs of one call from another's, for React's keys
+ * @return the text, with the matches wrapped in <mark>
+ */
+export function mark(text: string, term?: string, keyPrefix = "m"): any {
+  const needle = (term || "").trim().toLowerCase();
+  if (!needle || !text) return text;
+  const haystack = text.toLowerCase();
+  const parts: any[] = [];
+  let at = 0;
+  let found = haystack.indexOf(needle);
+  while (found >= 0) {
+    if (found > at) parts.push(text.slice(at, found));
+    parts.push(createElement("mark", { key: `${keyPrefix}-${found}` },
+        text.slice(found, found + needle.length)));
+    at = found + needle.length;
+    found = haystack.indexOf(needle, at);
+  }
+  if (at === 0) return text;
+  if (at < text.length) parts.push(text.slice(at));
+  return parts;
 }
 
 export function when(ms: number | null | undefined): string {
   if (!ms) return "";
   return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+/**
+ * A window of text around what was searched for.
+ *
+ * A result that matched on text the list does not show reads as a result that should not be there.
+ * Where the match is in a long sentence, this cuts a window around it so the reader sees the words
+ * that matched rather than the first ninety characters of something else.
+ *
+ * @param text the text the match was found in
+ * @param term what was searched for
+ * @param radius how much of the sentence to keep either side of the match
+ * @return the window, with an ellipsis where it was cut
+ */
+export function snippet(text: string, term?: string, radius = 45): string {
+  const needle = (term || "").trim().toLowerCase();
+  if (!needle || !text) return text;
+  const at = text.toLowerCase().indexOf(needle);
+  if (at < 0) return text;
+  const from = Math.max(0, at - radius);
+  const to = Math.min(text.length, at + needle.length + radius);
+  return `${from > 0 ? "…" : ""}${text.slice(from, to).trim()}${to < text.length ? "…" : ""}`;
 }

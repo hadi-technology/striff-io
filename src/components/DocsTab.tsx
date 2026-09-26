@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { OUTCOME_LABEL, OUTCOME_HELP, ON_BRANCH_LABEL, withCode, when } from "./docRules";
+import { OUTCOME_LABEL, OUTCOME_HELP, ON_BRANCH_LABEL, mark, snippet, withCode, when } from "./docRules";
 
 /**
  * The documents Striff can read in one repository, and the rules it found in them.
@@ -547,16 +547,9 @@ export default function DocsTab({
     .slice(0, 8);
 
   /** The matched run of a result, marked, so a reader sees why it matched. */
+  /** The matched runs of a palette result, marked, so a reader sees why it matched. */
   function marked(text: string) {
-    const at = text.toLowerCase().indexOf(term);
-    if (term === "" || at < 0) return text;
-    return (
-      <>
-        {text.slice(0, at)}
-        <mark>{text.slice(at, at + term.length)}</mark>
-        {text.slice(at + term.length)}
-      </>
-    );
+    return mark(text, term);
   }
 
   function toggleFolder(path: string) {
@@ -826,8 +819,18 @@ export default function DocsTab({
                       <span className="docs-palette-main">
                         {marked((rule.statement || "").replace(/`/g, ""))}
                       </span>
+                      {/* A rule can match on the sentence it was read from, which the line above
+                          does not show: without this the result looks like one that should not be
+                          in the list. */}
+                      {rule.quote
+                        && !(rule.statement || "").replace(/`/g, "").toLowerCase().includes(term)
+                        && rule.quote.toLowerCase().includes(term) && (
+                          <span className="docs-palette-quote">
+                            “{marked(snippet(rule.quote, term))}”
+                          </span>
+                        )}
                       <span className="docs-palette-sub">
-                        {rule.path}
+                        {marked(rule.path)}
                         {rule.sourceLine ? `:${rule.sourceLine}` : ""}
                         {rule.status ? ` · ${OUTCOME_LABEL[rule.status] || rule.status}` : " · not checked yet"}
                       </span>

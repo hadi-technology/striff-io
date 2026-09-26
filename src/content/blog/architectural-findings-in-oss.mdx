@@ -1,14 +1,12 @@
 ---
-title: "Coding agents build from your docs. Nobody checks your docs."
-description: "The instruction file in the official MCP C# SDK tells every coding agent to use a class the code no longer has. Copilot wrote the instruction; Copilot removed the class. That is what happens now that documentation is an input to code generation and nothing compares it to the code."
+title: "The MCP C# SDK's Copilot instructions tell agents to use a class Copilot deleted"
+description: "Line 258 of the official C# SDK's copilot-instructions.md says to use McpServerFactory. Copilot wrote that line in October 2025 and deleted the class in December. Ten months on, every agent that opens the repository is still told to use it. How that happens, why a normal pipeline never notices, and what to do about it."
 date: 2026-09-24
 category: "Data & research"
 cover: "stale-line"
 ---
 
-Every coding agent starts the same way. Before it writes a line, it reads the repository's instruction file: `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`. Whatever that file says about the code, the agent takes as fact and builds on. It does not verify; it has no way to. And nothing else does either. Your tests check the code. Your types check the code. Nobody checks the document that the code is now generated from.
-
-Here is what that looks like in the [official C# SDK for the Model Context Protocol](https://github.com/modelcontextprotocol/csharp-sdk), the protocol built to give AI models accurate context. Line 258 of its Copilot instructions:
+Every coding agent opens the same file first. Before it writes anything it reads the repository's instruction file, whichever of `CLAUDE.md`, `AGENTS.md` or `.github/copilot-instructions.md` the project keeps, and takes what that file says about the code as a starting point. Here is line 258 of the one in the [official C# SDK for the Model Context Protocol](https://github.com/modelcontextprotocol/csharp-sdk), the protocol whose whole job is to give models accurate context:
 
 <div class="bp-figure" data-reveal>
 <div class="bp-ghp">
@@ -22,20 +20,20 @@ Here is what that looks like in the [official C# SDK for the Model Context Proto
 </ul>
 </div>
 </div>
-<p class="bp-figure-caption"><a href="https://github.com/modelcontextprotocol/csharp-sdk/blob/main/.github/copilot-instructions.md#L258">The line on <code>main</code></a>. This file exists to brief a coding agent before it writes anything.</p>
+<p class="bp-figure-caption"><a href="https://github.com/modelcontextprotocol/csharp-sdk/blob/c40ee044fd415c70da5176c749cb5ef02f2b59f6/.github/copilot-instructions.md#L258">The line, at the commit we checked</a>. This file exists to brief a coding agent before it writes anything.</p>
 </div>
 
-`McpServerFactory` does not exist. It was deleted last December. Search the repository for the name and you get one result: this line, in the file every agent reads first.
+`McpServerFactory` does not exist. Search the repository for the name and you get one result: this line, in the file every agent reads first. The class was marked obsolete in September 2025 with a note to use `McpServer.Create` instead, and deleted in December.
 
 <div class="bp-callout">
-Copilot wrote that instruction. Seven weeks later, Copilot deleted the class it names. Ten months on, every agent that opens the repository is still told to use it.
+Copilot wrote that instruction. Seven weeks later, Copilot deleted the class it names. Ten months on, the line is still there.
 </div>
 
-The person who wrote a design doc in 2015 knew a colleague might read it, get confused, and ask. The agent reading line 258 today does not ask. It writes `McpServerFactory`, watches the build fail, and goes looking for what it should have done. That one is cheap: a few wasted turns. The reason to care is what it tells you about every other sentence in that file, and in yours.
+To be precise about the cost: an agent that takes line 258 at face value writes `McpServerFactory`, watches the build fail, and goes looking for what it should have done. A more careful agent greps for the name first, finds nothing, and does the same search a few turns earlier. Either way the damage is a few wasted turns, which is cheap. The reason we wrote this up is what it says about every other sentence in that file, and in yours.
 
-## How the input to your codebase went wrong
+## How the line got there and stayed
 
-None of the people involved would have caught this, because nothing they did required them to:
+Nobody involved would have caught this, because nothing they did required them to:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">One line, five commits</p>
@@ -48,132 +46,51 @@ None of the people involved would have caught this, because nothing they did req
 </ol>
 </div>
 
-The reviewer of the instructions read a long document and it was almost entirely right. The reviewer of the removal read a diff and the document was not in it. That is the whole mechanism. A document and the code it describes live in different files, and a pull request only ever shows you one of them.
+The reviewer of the instructions read a long document that was almost entirely right. The reviewer of the removal read a diff, and the document was not in it. That is the whole mechanism. A document and the code it describes live in different files, and a pull request only ever shows you one of them.
 
-## The agent doesn't just read the wrong sentence. It repeats it.
+## The agent repeats the wrong sentence
 
-In April 2026 a commit authored as "Architecture Bot" [added an Architecture section](https://github.com/yegor256/cactoos/commit/18a0c8ad8d8b64d6bbb62fa36e668f967afda2ac) to the README of [`yegor256/cactoos`](https://github.com/yegor256/cactoos). The commit message links a Claude Code session. The new section says:
+Stale names do not just sit there. In April 2026 a commit authored as "Architecture Bot" [added an Architecture section](https://github.com/yegor256/cactoos/commit/18a0c8ad8d8b64d6bbb62fa36e668f967afda2ac) to the README of [`yegor256/cactoos`](https://github.com/yegor256/cactoos). The commit message links a Claude Code session. The new section says:
 
 > Explicit caching requires opting in with `Sticky` or `StickyList`.
 
-`StickyList` was [removed in 2020](https://github.com/yegor256/cactoos/commit/eed03c1fc05217eeda0564999cae2c87709b1e13). It survived in a comparison table further up the same README, an agent asked to describe the architecture read that table, and the old name came out the other side as a confident new instruction with a fresh timestamp. The next agent to open that README now has two sentences telling it to use a class that isn't there, and the newer one looks authoritative.
+`StickyList` was [renamed away in December 2018](https://github.com/yegor256/cactoos/commit/be02845), and the list class it became was [removed in 2020](https://github.com/yegor256/cactoos/commit/eed03c1fc05217eeda0564999cae2c87709b1e13). The old name survived in a comparison table further up the same README. An agent asked to describe the architecture read that table, and the name came out the other side as a confident new instruction with a fresh timestamp. The next agent to open that README finds two sentences recommending a class that has been gone for seven years, and the newer one looks authoritative.
 
 <div class="bp-callout bp-callout--amber">
-A wrong sentence in a doc used to cost one confused engineer an afternoon. Now it is read by every agent run, acted on without question, and copied into the next document.
+A wrong sentence in a doc used to cost one engineer an afternoon of confusion. Now every agent run reads it, acts on it, and sometimes copies it into the next document.
 </div>
 
-## The design doc got a new job
+## Why your pipeline does not catch this
 
-Writing the design down first is not new. Teams at Google [generally require a design document](https://abseil.io/resources/swe-book/html/ch10.html) before any significant change to a product or service. Amazon replaced the slide deck with the six-pager. The logic never needed defending: thinking is cheaper than building, and a decision that is written down can be argued with before it costs anything.
+Design docs used to have one reader, a person, who noticed when a sentence had stopped being true. Now the instruction file is an input to code generation, and the tooling around it has not caught up. Everything else your code is built from has a check: source has a compiler, tests have a runner, types have a checker, manifests have a resolver. Prose has some checks too, and they are worth naming so nobody thinks we are pretending otherwise. Rustdoc warns on a broken intra-doc link. Doctests run the examples. A link checker catches a dead URL. None of them reads a sentence. "Use `McpServerFactory`" is not a link, not an example and not a URL, so it passes all of them.
 
-For all of that history the document had one reader, and it was a person. They read it, argued with it, went off to write the code, and noticed when something in it had stopped being true. The document shaped the result the way a conversation does: loosely, through a human who could tell when it was wrong.
-
-That is no longer what happens. The design doc is now the thing the code is generated *from*. The practice has a name, spec-driven development, and a toolchain: GitHub's [Spec Kit](https://github.com/github/spec-kit), AWS's [Kiro](https://kiro.dev), and the `AGENTS.md` and `CLAUDE.md` files that tell an agent how the system is put together before it touches it. The pitch is that the specification stops being a forgotten page on a wiki and becomes the operational contract the system is built to.
-
-<div class="bp-callout bp-callout--amber">
-Every other artefact your code is built from has something that checks it. Source has a compiler. Tests have a runner. Types have a checker, schemas have a validator, manifests have a resolver. The document your agents build from has nothing.
-</div>
-
-That is the gap. If the doc is the guideline the code is generated from, it has to be the guideline the code is *maintained* against, on every change, by something that reads the document and the code and complains when they disagree. Otherwise it is a contract nobody enforces, and line 258 is what an unenforced contract looks like after ten months.
-
-## The sentences that don't fail the build
-
-A stale class name is the version of this problem you can see. The agent trips over it and recovers. The expensive version is silent.
+The obvious answer is to grep. `git grep -w McpServerFactory -- '*.md'` takes a second, and if every removal PR ran it, this post would have nothing to show you. We would genuinely like everyone to do that, and it is the first item in the list at the end. It also only catches the version of the problem you can see. The expensive version has no name in it:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Two ways an agent strays from the docs</p>
 <div class="bp-outcomes">
-<div class="bp-outcome bp-outcome--amber"><p class="bp-outcome-name">It follows a sentence that is no longer true</p><p class="bp-outcome-desc"><em>&ldquo;Use <code>McpServerFactory</code>.&rdquo;</em> The build breaks, the agent recovers, you pay in turns and tokens. If the sentence describes a pattern rather than a class, the build doesn&rsquo;t break, and the agent reproduces a design the team retired.</p></div>
+<div class="bp-outcome bp-outcome--amber"><p class="bp-outcome-name">It follows a sentence that is no longer true</p><p class="bp-outcome-desc"><em>&ldquo;Use <code>McpServerFactory</code>.&rdquo;</em> The build breaks, the agent recovers, you pay in turns and tokens. If the sentence describes a pattern rather than a class, the build does not break, and the agent reproduces a design the team retired.</p></div>
 <div class="bp-outcome bp-outcome--danger"><p class="bp-outcome-name">It ignores a sentence that is still true</p><p class="bp-outcome-desc"><em>&ldquo;Controllers go through the service layer.&rdquo; &ldquo;<code>core</code> never imports from <code>plugins</code>.&rdquo;</em> The agent takes a shortcut. The code compiles, the tests pass, the diff looks fine, and the document that forbade it is not in the diff. Merged.</p></div>
 </div>
 </div>
 
-The second one is where architecture goes. Not in one dramatic change but in a hundred small ones, each of which compiled, each reviewed as a diff, each contradicting a sentence nobody had open. A year later the layering the team agreed on is a description of a system that no longer exists, and every change costs more than it should.
+The second box is where architecture goes: a hundred small changes, each of which compiled, each reviewed as a diff, each contradicting a sentence nobody had open. A year later the layering the team agreed on describes a system that no longer exists. Grep cannot find that, because there is no token to search for. Checking "`core` never imports from `plugins`" means turning the sentence into a question about the dependency graph and asking it at both ends of the pull request.
 
-We build [Striff](https://striff.io) to close that gap. It reads the documents already in a repository, turns each sentence that makes a claim about the code into a rule, and checks the rule against the parsed code before and after every pull request. We ran it over roughly six hundred public pull requests in Java, C#, TypeScript and Python. From those repositories' own documentation it read 7,161 rules:
+## It is not rare
 
-<div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Every verdict, then the ones that accuse</p>
-<div class="bp-zoom">
-<div class="bp-zoom-strip bp-zoom-strip--all"><span class="is-held" style="flex:5519"></span><span class="is-acc" style="flex:155"></span></div>
-<div class="bp-zoom-legend"><span><i class="is-held"></i>5,519 held</span><span class="bp-zoom-legend-acc"><i class="is-acc"></i>155 accuse</span></div>
-<div class="bp-zoom-bracket" aria-hidden="true"><span></span></div>
-<div class="bp-zoom-strip bp-zoom-strip--acc"><span class="is-viol" style="flex:97"></span><span class="is-prior" style="flex:53"></span><span class="is-rest" style="flex:5"></span></div>
-<div class="bp-zoom-tiles">
-<div class="bp-zoom-tile is-viol"><b>97</b><span>broken by the pull request under review</span></div>
-<div class="bp-zoom-tile is-prior"><b>53</b><span>already broken before it, never blamed on the author</span></div>
-<div class="bp-zoom-tile is-rest"><b>5</b><span>restored: broken before, true after</span></div>
-</div>
-</div>
-<p class="bp-figure-caption">Roughly six hundred public pull requests; 7,161 rules read out of their repositories&rsquo; own documentation. Ninety-seven times a pull request contradicted a sentence in its own docs and would have merged without anyone comparing the two. Docs are right almost all the time, which is exactly why the exceptions get trusted. <a href="/blog/design-docs-are-enforceable-now">Here is one of the 97, sentence to verdict.</a></p>
-</div>
-
-Ninety-seven is not a firehose, and it shouldn't be: a check that fires on every pull request gets muted in a week. The point is that each of those 97 was surfaced on the line that caused it, in the pull request, while someone was already looking, instead of a year later as "how did the architecture end up like this?"
-
-## What we found, and where
-
-The sweep was not small repositories. Nearly every one had over a thousand stars, and a third had over ten thousand:
-
-<div class="bp-figure" data-reveal>
-<div class="bp-stats">
-<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">7.6M</div><div class="bp-stat-label">GitHub stars across the repositories scanned</div></div>
-<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">175</div><div class="bp-stat-label">of them with more than 10,000 stars</div></div>
-<div class="bp-stat bp-stat--amber"><div class="bp-stat-value">7,161</div><div class="bp-stat-label">rules read out of their own documentation and checked at both revisions</div></div>
-<div class="bp-stat bp-stat--danger"><div class="bp-stat-value">97</div><div class="bp-stat-label">documented rules that a pull request in the sweep contradicted, concentrated in a handful of repositories</div></div>
-</div>
-</div>
-
-The findings that matter are the ones where the code moved and the document was not in the diff. These are the cases we checked by hand and can stand behind, largest repository first:
-
-<div class="bp-figure" data-reveal>
-<p class="bp-figure-title">The code moved. The document was not in the diff.</p>
-<div class="bp-find">
-<div class="bp-find-row"><span class="bp-find-repo"><b>Alluxio/alluxio</b><i>7.2k &#9733;</i></span><span class="bp-find-body"><span class="bp-find-doc"><code>docs/en/core-services/Caching.md</code> lists the eviction policies you can configure: <code>LRUEvictor</code>, <code>GreedyEvictor</code>, <code>LRFUEvictor</code>, <code>PartialLRUEvictor</code>.</span><span class="bp-find-code"><a href="https://github.com/Alluxio/alluxio/pull/11129">#11129</a>, &ldquo;Improve multi-tier block management&rdquo;, deleted three of the four. The doc was not among its files, so at merge it still told users to configure classes that would fail to load. Nine weeks later a <a href="https://github.com/Alluxio/alluxio/commit/582423c">DOCFIX</a> rewrote the section, warning that the old evictors now throw <code>ClassNotFoundException</code>.</span></span><span class="bp-find-tag is-viol">broken by the PR</span></div>
-<div class="bp-find-row"><span class="bp-find-repo"><b>apache/pinot</b><i>6.1k &#9733;</i></span><span class="bp-find-body"><span class="bp-find-doc"><code>pinot-sql-ddl/DESIGN.md</code> says the module &ldquo;depends only on <code>pinot-spi</code>, <code>pinot-common</code>, and <code>calcite-babel</code>&rdquo;.</span><span class="bp-find-code">The code also depends on <code>pinot-query-planner</code>: declared in its pom, imported by <code>MaterializedViewSchemaInferer</code>. The boundary the design doc draws is one the module has already crossed, and the doc still draws it.</span></span><span class="bp-find-tag is-prior">rule broken</span></div>
-<div class="bp-find-row"><span class="bp-find-repo"><b>MonoGame.Extended</b><i>1.8k &#9733;</i></span><span class="bp-find-body"><span class="bp-find-doc"><code>CODING_GUIDELINES.md</code>: &ldquo;Helper classes should be static classes with static methods.&rdquo;</span><span class="bp-find-code">Six of the seven <code>*Helper</code> types are static. <code>PrimitivesHelper</code> is an <code>internal class</code>, and nothing in the build or the review had a reason to notice.</span></span><span class="bp-find-tag is-prior">rule broken</span></div>
-<div class="bp-find-row"><span class="bp-find-repo"><b>Ericsson/ecchronos</b><i>PR #1786</i></span><span class="bp-find-body"><span class="bp-find-doc"><code>core.impl/README.md:136</code>: <code>NodeWorker</code> &ldquo;calls <code>RepairScheduler.putConfigurations()</code>&rdquo;.</span><span class="bp-find-code">A refactor moved that call into a new class. True before the pull request, false after it, and the README was not in the diff. Caught on the change that did it, while the fix was one line.</span></span><span class="bp-find-tag is-viol">broken by the PR</span></div>
-</div>
-<p class="bp-figure-caption">&ldquo;Broken by the PR&rdquo; means the documented rule held at the pull request&rsquo;s base commit and fails at its head. &ldquo;Rule broken&rdquo; means it fails at both, and the sentence is still on the default branch. Star counts as of 24 September 2026. <a href="/blog/design-docs-are-enforceable-now#a-real-example">The ecChronos case, end to end.</a></p>
-</div>
-
-The Alluxio row is the whole argument in one pull request. The change was right. The document was right until the change. Nobody was asked to compare them, and for nine weeks the official docs told users to configure classes that crashed the worker on startup.
-
-The other direction, where the document strays and the agent builds from it, is the MCP and cactoos story above. It is not rare: in the same sweep, [DolphinScheduler](https://github.com/apache/dolphinscheduler/blob/dev/docs/docs/en/contribute/backend/spi/registry.md?plain=1#L20)'s contributor guide sends new contributors to implement an interface that was removed in a package split, [Spring AI](https://github.com/spring-projects/spring-ai/blob/main/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/audio/speech/openai-speech.adoc)'s speech reference walks through a class the project replaced five months ago, and [BenchmarkDotNet](https://github.com/dotnet/BenchmarkDotNet/blob/master/docs/articles/configs/exporters.md?plain=1#L101) documents four properties of an interface that no longer exists.
-
-## Why nothing you already run catches this
-
-Every check in a pipeline compares code to code. Tests execute it, types constrain it, the linter parses it, the dependency audit reads a manifest. A sentence in a markdown file is in none of those places. It is not compiled, not executed, and not in the diff, so no reviewer has a reason to open it and no tool has an opinion about it.
-
-<div class="bp-callout">
-The sentence and the code that contradicts it are both plainly visible. They are just never visible to the same reader at the same moment.
-</div>
-
-None of this is hard to check. "`core` must not import from `plugins`" is a one-line question about a dependency graph, and your compiler answers harder questions on every build. What was missing is anything that turns the sentence into the question.
+The MCP line is the one we chose to lead with because the irony is hard to beat, but it was not hard to find. In the same sweep of public repositories, [DolphinScheduler](https://github.com/apache/dolphinscheduler/blob/dev/docs/docs/en/contribute/backend/spi/registry.md?plain=1#L20)'s contributor guide sends new contributors to implement an interface that was removed in a package split, [Spring AI](https://github.com/spring-projects/spring-ai/blob/main/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/audio/speech/openai-speech.adoc)'s speech reference walks through a class the project replaced five months ago, and [BenchmarkDotNet](https://github.com/dotnet/BenchmarkDotNet/blob/master/docs/articles/configs/exporters.md?plain=1#L101) documents four properties of an interface that no longer exists. These are well-maintained projects with careful reviewers. That is the point: the review process is fine, it just never puts the sentence and the code in front of the same person.
 
 ## What to do about it
 
 - **Treat your agent instruction files as code.** They are an input to your codebase now. When you delete or rename a type, `git grep -w OldName -- '*.md'` takes a second, and IDE rename refactorings skip markdown.
 - **Keep them short, and prefer rules to names.** "Controllers never call repositories directly" stays true across a hundred refactors. A class name is a claim that can go stale on the next one.
-- **Have the docs checked on the pull request**, where the change that contradicts them is being reviewed. This is what the MCP finding looks like when Striff posts it:
+- **Have the docs checked on the pull request**, where the change that contradicts them is being reviewed, by something that reads the sentence and the code together.
 
-<div class="bp-figure" data-reveal>
-<div class="bp-check">
-<div class="bp-check-bar"><img src="/icon.svg" alt="" width="18" height="18" /><span class="bp-check-name"><b>Striff</b> / architectural-review</span><span class="bp-check-state">Documented types &middot; 1 finding</span></div>
-<div class="bp-check-item">
-<span class="bp-check-dot" aria-hidden="true"></span>
-<div class="bp-check-text">
-<p class="bp-check-title">.github/copilot-instructions.md names 1 type this repository does not have</p>
-<p class="bp-check-summary"><code>.github/copilot-instructions.md</code> writes <code>McpServerFactory</code>. This revision declares no type by that name. This is a claim about the page rather than about this change: no diff took part in it, and it may have been wrong for a long time.</p>
-<div class="bp-check-ev"><span class="bp-check-ev-k">evidence</span><span>this repository once held <code>src/ModelContextProtocol.Core/Server/McpServerFactory.cs</code> and does not now; .github/copilot-instructions.md says: &ldquo;Use <code>McpServerFactory</code> to create server instances with configured options&rdquo;</span></div>
-</div>
-</div>
-</div>
-<p class="bp-figure-caption">Posted on the pull request beside the tests, citing the line and the commit that removed the type. The architectural rules in the same documents are checked the same way, and a change that breaks one is told so before it merges.</p>
-</div>
+That last one is what we build. [Striff](https://striff.io) is a GitHub App, free on public repositories, that parses both revisions of a pull request, reads the documents already in the repository, turns each sentence that makes a claim about the code into a rule, and checks it at the base and the head. A name the repository does not have, like line 258, is reported against the page with the commit that removed the type. A rule the change broke is reported against the change. There is nothing to write and nothing to configure, because the rules are the ones your team already wrote down and your agents are already reading. The sweep these examples came from, with its numbers and a worked example from sentence to verdict, is in [the previous post](/blog/design-docs-are-enforceable-now).
 
-Striff runs as a [GitHub App](https://striff.io), free on public repositories. It reads the documents already in the repository, so there is nothing to write and nothing to configure: the rules are the ones your team already wrote down, and the agents are already reading them.
+{/* TODO before publishing: link the upstream fix PRs for csharp-sdk line 258 and the cactoos README here, once opened. */}
 
 <div class="bp-note">
 <p class="bp-note-title">Method notes</p>
-<p>Roughly six hundred public pull requests across several hundred repositories in Java, C#, TypeScript and Python. Code is parsed from source without compiling it, so the model has no generated members and no resolved annotations; where that leaves a rule unanswerable, the check reports nothing rather than a pass or a failure. A documented type counts as absent only on an exact-token match against the whole revision, with the repository&rsquo;s history checked to tell a moved type from a removed one. Every repository named above was checked by hand against its default branch in September 2026; line numbers are for the default branch at the time of writing.</p>
+<p>Every repository named above was checked by hand against its default branch in September 2026, and the primary links go to commit permalinks so they survive the fix. A documented type counts as absent only on an exact-token match against the whole revision, with the repository&rsquo;s history checked to tell a moved type from a removed one. Code is parsed from source without compiling it; where that leaves a claim unanswerable, the check reports nothing rather than a pass or a failure.</p>
 </div>

@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { OUTCOME_LABEL, OUTCOME_HELP, ON_BRANCH_LABEL, withCode, when } from "./docRules";
+import { OUTCOME_LABEL, OUTCOME_HELP, ON_BRANCH_LABEL, mark, withCode, when } from "./docRules";
 
 /**
  * Every rule Striff has read from one repository's documents, in one list.
@@ -500,12 +500,14 @@ export default function RulesTab({
                   }
                 >
                   <td className="docs-rule-statement">
-                    {withCode(row.statement)}
-                    {row.quote && <span className="rules-quote">“{withCode(row.quote)}”</span>}
+                    {withCode(row.statement, term)}
+                    {row.quote && (
+                      <span className="rules-quote">“{withCode(row.quote, term)}”</span>
+                    )}
                   </td>
                   <td className="rules-source">
                     <button type="button" className="rules-source-link" onClick={() => onOpenDoc?.(row.doc.path)}>
-                      {row.doc.path}
+                      {mark(row.doc.path, term)}
                       {row.sourceLine ? <i>:{row.sourceLine}</i> : null}
                     </button>
                     <span className="rules-source-when">

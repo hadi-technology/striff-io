@@ -1,14 +1,14 @@
 ---
-title: "The architecture review checklist: catching structural risk in a pull request, by hand"
-description: "A checklist for reviewing pull requests for architectural risk: what your own docs already decided, new dependency directions, reaches into module internals, blast radius and cycles. With an honest accounting of which steps a machine can take off you and which it cannot."
+title: "An architecture review checklist for pull requests, done by hand"
+description: "Seven steps for reviewing a pull request for structural risk: what your own docs already say, new dependency directions, reaches into module internals, blast radius and cycles. Plus the arithmetic on how long it takes, and which steps a machine can do for you."
 date: 2026-08-12
 category: "Architecture"
 cover: "checklist"
 ---
 
-Most review checklists cover correctness, tests, and style. Almost none cover the thing that actually degrades a codebase over years: **structure.** Which new dependencies a change creates, what they point at, and whether the system still matches what its own documentation says about it.
+Most review checklists cover correctness, tests and style. Almost none cover structure: which new dependencies a change creates, what they point at, and whether the system still matches what its own documentation says about it. Structure is what degrades a codebase over years, and it degrades one reviewed pull request at a time.
 
-This is the checklist we wish every team had. It is fully manual: everything below can be done with an IDE, a search box, and patience. At the end we are honest about how much patience, and about which steps can be handed to a machine and which cannot.
+This is the checklist we wish every team had. It is fully manual. Everything below can be done with an IDE, a search box and patience. At the end we do the arithmetic on how much patience, and say which steps can be handed to a machine and which cannot.
 
 ## The checklist
 
@@ -25,12 +25,12 @@ Work through this on any change that adds imports, moves code, or touches shared
 <div class="bp-check-row"><span class="bp-check-box"></span><div><p class="bp-check-title">6. Hunt for cycles, including near-cycles</p><p class="bp-check-desc">For each new edge A → B, ask: is there any existing path from B back to A? If yes, this change closes a cycle. If a path gets within one hop, it plants a near-cycle seed. Flag it now, while the fix is one comment.</p></div></div>
 <div class="bp-check-row"><span class="bp-check-box"></span><div><p class="bp-check-title">7. Ask the trend question</p><p class="bp-check-desc">Is this the second or third change nudging the same component in the same direction? One convenient import is an exception; three are a new architecture nobody decided on. This is the step that catches drift, and the one that needs memory rather than analysis.</p></div></div>
 </div>
-<p class="bp-figure-caption">Steps 1, 3 and 4 need only the diff and the repository. Steps 2, 5, 6 and 7 need the <em>rest of the system</em>: every document nobody opened, every file the change did not touch, and in step 7, every previous change. That is exactly why they are the ones that get skipped under deadline.</p>
+<p class="bp-figure-caption">Steps 1, 3 and 4 need only the diff and the repository. Steps 2, 5, 6 and 7 need the <em>rest of the system</em>: every document nobody opened, every file the change did not touch, and in step 7, every previous change. That is why they are the ones that get skipped under deadline.</p>
 </div>
 
 ## What step 2 looks like on a real pull request
 
-Step 2 sounds like diligence. It is really a search problem, and a real example shows why.
+Step 2 sounds like diligence. In practice it is a search problem, and a real example shows why.
 
 Ericsson's ecChronos documents its `core.impl` module class by class. Line 136 of that module's README says that `NodeWorker` *"Calls `RepairScheduler.putConfigurations()` to keep jobs up to date."* Pull request [#1786](https://github.com/Ericsson/ecchronos/pull/1786) touched 27 files and, along the way, handed that call to `SchemaRefresher`. After it, `NodeWorker` does not reference `RepairScheduler` at all.
 
@@ -41,7 +41,7 @@ A reviewer working from the diff sees `NodeWorker.java` lose one field and gain 
 The compressed version, for pinning next to your review queue:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Signal → question → red flag</p>
+<p class="bp-figure-title">Signal, question, red flag</p>
 <div class="bp-compare-scroll">
 <table class="bp-compare">
 <thead><tr><th>You see in the diff</th><th>You ask</th><th>Red flag</th></tr></thead>
@@ -59,9 +59,9 @@ The compressed version, for pinning next to your review queue:
 <p class="bp-figure-caption">Every row here is something that happens in ordinary, well-reviewed pull requests. The first is the one this post opened with: <a href="/blog/design-docs-are-enforceable-now">a README still crediting a class with work a refactor took away from it</a>.</p>
 </div>
 
-## The honest math
+## The arithmetic
 
-This is the part most checklist posts skip, so it's worth doing the arithmetic rather than just asserting it. Suppose a competent structural pass, done honestly, takes fifteen to thirty minutes on a non-trivial change. At twenty minutes average:
+Suppose a competent structural pass takes fifteen to thirty minutes on a non-trivial change. At twenty minutes average:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Manual structural review, minutes per day</p>
@@ -73,13 +73,13 @@ This is the part most checklist posts skip, so it's worth doing the arithmetic r
 <p class="bp-figure-caption">Arithmetic, not a study: count × twenty minutes, and the twenty is our estimate, not a measurement. Three hundred minutes is five senior-engineer hours a day, and it lands on your most senior people, because they are the only ones holding enough of the documents and the graph in their heads to do steps 2 and 5 to 7 at all.</p>
 </div>
 
-This is why "we will just review more carefully" fails as a strategy at [current shipping volume](/blog/architecture-matters-more-not-less). The checklist is sound, but the budget for it does not exist, and teams do not skip structural review because they do not care; they skip it because it is the only review activity whose cost scales with the size of the *codebase* rather than the size of the *diff*.
+This is why "we will just review more carefully" fails as a strategy at [current shipping volume](/blog/architecture-matters-more-not-less). The checklist is sound, but the budget for it does not exist. Teams skip structural review because it is the only review activity whose cost scales with the size of the codebase rather than the size of the diff, and no amount of caring changes that.
 
-And skipping step 2 specifically has a second cost that doesn't show up in this chart: it's not just that nobody caught the stale sentence, it's that everyone who reads it afterward, including [a coding agent using it as context](/blog/architecture-matters-more-not-less), now acts on wrong information, and someone pays for that a second time, later, in a form that's harder to trace back to the doc that caused it.
+Skipping step 2 has a second cost that the chart does not show. Everyone who reads the stale sentence afterward, [a coding agent using it as context](/blog/architecture-matters-more-not-less) included, acts on wrong information. Someone pays for that a second time, later, in a form that is hard to trace back to the doc that caused it.
 
 ## Which steps a machine can take, and which it cannot
 
-Any tool that claims to automate all seven of these is either overstating what it does or has quietly redefined "the trend question" into something smaller. Here is the honest split, including the one row we don't try to automate:
+Any tool that claims to automate all seven of these is either overstating what it does or has quietly redefined "the trend question" into something smaller. Here is the split, including the one row we don't try to automate:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Mechanical, and not</p>
@@ -97,9 +97,9 @@ Any tool that claims to automate all seven of these is either overstating what i
 </tbody>
 </table>
 </div>
-<p class="bp-figure-caption">The split is not about difficulty. Steps 1 and 3 to 6 have a right answer a program can compute. Step 2 has one for every sentence that is actually about structure, and that is most of them: in a scan of 609 public pull requests, 5,674 of the 7,161 rules read out of their docs could be answered from the parsed code. Step 7 does not have a right answer.</p>
+<p class="bp-figure-caption">Steps 1 and 3 to 6 have a right answer a program can compute. Step 2 has one for every sentence that is about structure, and that is most of them: in a scan of 609 public pull requests, 5,674 of the 7,161 rules read out of their docs could be answered from the parsed code. Step 7 does not have a right answer.</p>
 </div>
 
-<div class="bp-callout bp-callout--mint"><strong>Use the checklist either way.</strong> If it gets your team to do even steps 1 to 3 on risky changes, this post did its job. But notice which parts are mechanical: building the graph, counting dependents, tracing paths, re-reading the doc nobody re-reads. Mechanical work is what computers are for; the judgment about whether the answer is acceptable stays where it belongs.</div>
+<div class="bp-callout bp-callout--mint">Use the checklist either way. If it gets your team to do even steps 1 to 3 on risky changes, this post did its job. Building the graph, counting dependents, tracing paths and re-reading the doc nobody re-reads are mechanical, and a program can do them. Whether the answer is acceptable is still your call.</div>
 
-Step 2 is the one we automate. The sentences in your own documentation are read as rules and [checked at both revisions of every pull request](/blog/design-docs-are-enforceable-now), and every pull request gets a diagram of the components it touched and how they connect, which is most of step 1 done before you open the diff. If your layering matters, write it down (*"`domain` does not depend on `infrastructure`"*) and step 3 is checked for that rule on every change too. On most pull requests nothing breaks a rule, and the check lists what it looked at. [Install the GitHub App](https://github.com/apps/striff-app/installations/new) and keep the rest of the checklist for the steps that need you.
+Step 2 is the one we automate. Striff reads the sentences in your own documentation as rules and [checks them at both revisions of every pull request](/blog/design-docs-are-enforceable-now), and every pull request gets a diagram of the components it touched and how they connect, which is most of step 1 done before you open the diff. If your layering matters, write it down (*"`domain` does not depend on `infrastructure`"*) and step 3 is checked for that rule on every change too. On most pull requests nothing breaks a rule, and the check lists what it looked at. [Install the GitHub App](https://github.com/apps/striff-app/installations/new) and keep the rest of the checklist for the steps that need you.

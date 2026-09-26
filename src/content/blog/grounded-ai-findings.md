@@ -8,9 +8,9 @@ cover: "receipt"
 
 Most developers have the same experience with AI code review. The comments sound right. Some of them are right. You cannot tell which without redoing the analysis yourself, so after a few weeks you stop reading them.
 
-A better prompt does not fix that, because the problem is not how the model writes. It is that the model's opinion *is* the finding, and there is nothing underneath it to check. So Striff works the other way round, with one rule we hold everything to:
+A better prompt does not fix that. The model's opinion is the finding, and there is nothing underneath it to check. Striff works the other way round, with one rule we hold everything to:
 
-<div class="bp-callout"><strong>The AI is never the source of a claim.</strong> Every statement in a Striff check is either a sentence quoted from your own docs, with its file and line, or a fact computed from your code at the two revisions of the pull request. A language model reads the docs and writes the sentences. It never decides what is true.</div>
+<div class="bp-callout">The AI is never the source of a claim. Every statement in a Striff check is either a sentence quoted from your own docs, with its file and line, or a fact computed from your code at the two revisions of the pull request. A language model reads the docs and writes the sentences. Whether a claim is true is decided elsewhere.</div>
 
 Here is what that looks like from your side of the pull request.
 
@@ -18,10 +18,10 @@ Here is what that looks like from your side of the pull request.
 
 When you open a pull request in a repository with Striff installed, a check appears beside your CI. It has four parts, the same four you can see [on the homepage](/#report):
 
-- **A review summary.** A few sentences on what the change does structurally: what gained or lost a dependency, what public surface moved.
-- **Top review items.** Only the things worth your attention, which in practice means places where the change contradicts your own documentation.
-- **Documented rules.** Every rule from your docs that Striff could check, each with the sentence it came from and whether this change kept it or broke it.
-- **A diagram of the change.** The classes the pull request touched, what they gained and lost, and how they connect.
+- A review summary: a few sentences on what the change does structurally, which classes gained or lost a dependency, what public surface moved.
+- Top review items, which in practice means the places where the change contradicts your own documentation.
+- Documented rules: every rule from your docs that Striff could check, each with the sentence it came from and whether this change kept it or broke it.
+- A diagram of the change: the classes the pull request touched, what they gained and lost, and how they connect.
 
 None of it needs configuring. The rules come from the READMEs, ADRs, `ARCHITECTURE.md` and agent instruction files already in the repository.
 
@@ -42,16 +42,16 @@ A check is built in four steps. Two use a language model, and neither of those c
 </tbody>
 </table>
 </div>
-<p class="bp-figure-caption">The model proposes and the program decides. When the model gets something wrong, the mistake has to contradict the code or the docs it was given, which a program can catch. You do not have to.</p>
+<p class="bp-figure-caption">When the model gets something wrong, the mistake has to contradict the code or the docs it was given, and a program can catch that.</p>
 </div>
 
 This also means that when Striff is wrong, it is wrong the way ordinary software is wrong. A bad verdict traces back to a sentence, a rule and two parsed facts, so it can be reproduced, fixed and tested. There is no equivalent for "the model felt confident".
 
-[Ericsson's ecChronos #1786](/blog/design-docs-are-enforceable-now) is the walkthrough of one such finding end to end: the doc sentence, the rule it became, and the two lookups in the public commit history that anyone can redo themselves in under a minute. This post is about the mechanism that makes that walkthrough trustworthy; that one is about the specific pull request.
+[Ericsson's ecChronos #1786](/blog/design-docs-are-enforceable-now) walks through one such finding end to end: the doc sentence, the rule it became, and the two lookups in the public commit history that anyone can redo themselves in under a minute. This post is about the mechanism that makes that walkthrough trustworthy; that one is about the specific pull request.
 
 ## What it will not tell you
 
-Being true is not enough to earn a line in your check. The bar is one question: *does the reviewer already know this from the diff or the diagram?*
+Being true is not enough to earn a line in your check. The bar is one question: does the reviewer already know this from the diff or the diagram?
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">True, and still not a finding</p>
@@ -66,12 +66,12 @@ Being true is not enough to earn a line in your check. The bar is one question: 
 </tbody>
 </table>
 </div>
-<p class="bp-figure-caption">There is no battery of generic heuristics grading the shape of your code. A rule nobody on your team wrote down is a rule nobody on your team agreed to. If you want something checked, write it in your docs.</p>
+<p class="bp-figure-caption">There is no battery of generic heuristics grading the shape of your code. If nobody on your team wrote a rule down, nobody agreed to it, so it is not checked. If you want something checked, write it in your docs.</p>
 </div>
 
 ## It only reports what it can verify
 
-The other half of not making things up is not *implying* things. A pass/fail check can put "we looked and it is fine" and "we could not look" behind the same green tick, and a green tick is exactly what a reviewer trusts. Striff does not do that. It is a best-effort check: a rule it cannot answer from the code is left out of the results, never shown as passing. Every rule it does report has one of four outcomes:
+The other half of not making things up is not implying things. A pass/fail check can put "we looked and it is fine" and "we could not look" behind the same green tick, and a green tick is exactly what a reviewer trusts. Striff is a best-effort check instead: a rule it cannot answer from the code is left out of the results, never shown as passing. Every rule it does report has one of four outcomes:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Every rule it reports is one of four</p>
@@ -84,18 +84,18 @@ The other half of not making things up is not *implying* things. A pass/fail che
 <p class="bp-figure-caption">A source parser sees less than a compiler: no generated methods, no annotations, no reflection. Say your docs mention <code>Order.total()</code> and <code>Order</code> is a Java record. The compiler generates <code>total()</code>, so the parser never sees it. "The method is missing" would be false, and "the rule held" would be a guess. So Striff says neither, and leaves that rule out.</p>
 </div>
 
-That makes Striff best-effort by design. It can miss a rule a compiler would have answered. What it will not do is tell you a rule held when it could not see whether it did.
+Striff can therefore miss a rule a compiler would have answered. What it will not do is tell you a rule held when it could not see whether it did.
 
 ## What you get out of it
 
-Fewer comments, and every one of them checkable. In [the largest public window we've measured so far](/blog/design-docs-are-enforceable-now), that quietness held up at scale rather than being an artifact of a small sample. When a check that quiet says something, it is worth reading, and you can verify it faster than you could argue with it.
+Fewer comments, and every one of them checkable. In [the largest public window we've measured so far](/blog/design-docs-are-enforceable-now), that quietness held up at scale. When a check that quiet says something, it is worth reading.
 
-It also changes what your docs are for. A sentence in your README stops being a hope and becomes a rule, checked on every pull request, whether a person or a coding agent wrote the code. [Here is how to write docs Striff can check](/blog/design-docs-are-enforceable-now#writing-docs-that-can-be-checked), though it reads the docs you already have without any changes.
+It also changes what your docs are for. A sentence in your README becomes a rule, checked on every pull request, whether a person or a coding agent wrote the code. [Here is how to write docs Striff can check](/blog/design-docs-are-enforceable-now#writing-docs-that-can-be-checked), though it reads the docs you already have without any changes.
 
 ## Try it on a pull request you know
 
 The quickest test is a pull request whose history you already know, so you can judge every line of the check yourself.
 
-- **Your public repositories are free.** [Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open a pull request. Rules, diagram and review notes, on every PR.
-- **Someone else's public pull request.** The [free Chrome extension](/#extension) shows the same review in a tab beside Files changed, without installing anything on the repository.
-- **Private repositories** start at $29 a month. [See pricing](/pricing).
+- Your public repositories are free. [Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open a pull request. Rules, diagram and review notes, on every PR.
+- For someone else's public pull request, the [free Chrome extension](/#extension) shows the same review in a tab beside Files changed, without installing anything on the repository.
+- Private repositories start at $29 a month. [See pricing](/pricing).

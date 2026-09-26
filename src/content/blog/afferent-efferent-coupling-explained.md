@@ -1,22 +1,22 @@
 ---
-title: "Coupling metrics, explained, and why a coupling delta is not a finding"
-description: "What afferent and efferent coupling actually measure, how to read them together with complexity, inheritance depth and encapsulation, and the case for why none of these numbers should ever be reported to a reviewer as a finding on its own."
+title: "What coupling metrics measure, and why a coupling delta is not a finding"
+description: "What afferent and efferent coupling measure, how to read them alongside complexity, inheritance depth and encapsulation, and why none of these numbers should reach a reviewer as a finding on its own."
 date: 2026-08-18
 category: "Architecture"
 cover: "coupling"
 ---
 
-Every architecture tool eventually shows you two numbers: **afferent coupling** and **efferent coupling**. Most engineers nod, half-recall that the definitions point in opposite directions, and move on. That is a shame, because read together they are the closest thing software has to a blood-pressure reading for a component.
+Every architecture tool eventually shows you two numbers, afferent coupling and efferent coupling. Most engineers nod, half-recall that the definitions point in opposite directions, and move on. That is a shame, because read together they are the closest thing software has to a blood-pressure reading for a component.
 
-They are also a trap. It is tempting to report *changes* in those numbers as findings on a pull request: "efferent coupling grew by 4." This post is both halves of that: what the numbers mean and how to read them, and why a delta on one of them should not be allowed to interrupt a reviewer.
+They are also a trap. It is tempting to report changes in those numbers as findings on a pull request: "efferent coupling grew by 4." This post covers what the numbers mean, how to read them, and why a delta on one of them should not be allowed to interrupt a reviewer.
 
 ## The two directions
 
 Both metrics count dependencies on a single component (a class, or a package). The only difference is which way the arrows point.
 
-**Afferent coupling (Ca)**: arrows *in*. How many components depend on **you**. This is your blast radius: if you change, this is how many places can break.
+Afferent coupling (Ca) counts the arrows pointing in: how many components depend on you. This is your blast radius. If you change, this is how many places can break.
 
-**Efferent coupling (Ce)**: arrows *out*. How many components **you** depend on. This is your exposure: every outgoing arrow is a reason you might be forced to change.
+Efferent coupling (Ce) counts the arrows pointing out: how many components you depend on. This is your exposure. Every outgoing arrow is a reason you might be forced to change.
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Same node, opposite questions</p>
@@ -51,7 +51,7 @@ Both metrics count dependencies on a single component (a class, or a package). T
 <p class="bp-figure-caption">Illustrative components. The shapes are the point: a repository that half the system calls, and an orchestrator that calls half the system, are opposite risks that the same word, "coupling," covers.</p>
 </div>
 
-The definitions come from Robert C. Martin's package-design metrics, which also give the derived number worth knowing: **instability**, *I = Ce / (Ce + Ca)*. High Ca and low Ce is *stable*: hard to justify changing, safe to depend on. High Ce and low Ca is *unstable*: free to change, dangerous to depend on. Neither is bad by itself. **Problems start when a component is high on both axes at once.**
+The definitions come from Robert C. Martin's package-design metrics, which also give the derived number worth knowing: instability, *I = Ce / (Ce + Ca)*. High Ca and low Ce is stable: hard to justify changing, safe to depend on. High Ce and low Ca is unstable: free to change, dangerous to depend on. Neither is bad by itself. Problems start when a component is high on both axes at once.
 
 ## The four quadrants
 
@@ -107,13 +107,13 @@ It is easy to see why tools report them anyway. "Efferent coupling grew from 8 t
 <div class="bp-flow" style="--bp-flow-cols: 4">
 <div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">1</span><p class="bp-flow-title">No action follows</p><p class="bp-flow-desc">"Coupling grew by 4." And then what? Every action a reviewer might take next requires knowing <em>which</em> four and <em>toward what</em>. The number by itself terminates in a shrug.</p></div>
 <div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">2</span><p class="bp-flow-title">A linter does it better</p><p class="bp-flow-desc">Thresholds on complexity and fan-out are a solved problem, per file, in your existing pipeline, with configuration you control. Reimplementing that in a review comment is worse at the same job.</p></div>
-<div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">3</span><p class="bp-flow-title">The number is already on the page</p><p class="bp-flow-desc">Every one of these values, with its delta, is printed on the component itself. A finding that restates a label six inches away is not information, it is repetition.</p></div>
-<div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">4</span><p class="bp-flow-title">It crowds out the rest</p><p class="bp-flow-desc">Two thirds of the output being restatement means the one row that needed a human is two thirds less likely to be read. Volume is not free; it is paid for out of the same attention budget.</p></div>
+<div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">3</span><p class="bp-flow-title">The number is already on the page</p><p class="bp-flow-desc">Every one of these values, with its delta, is printed on the component itself. A finding that restates a label six inches away is repetition.</p></div>
+<div class="bp-flow-step bp-flow-step--amber"><span class="bp-flow-num">4</span><p class="bp-flow-title">It crowds out the rest</p><p class="bp-flow-desc">Two thirds of the output being restatement means the one row that needed a human is two thirds less likely to be read. Volume is paid for out of the same attention budget.</p></div>
 </div>
-<p class="bp-figure-caption">None of this is an argument against the metrics. They belong on the component, where a reader can look them up, and in deciding what to read first. What they should not have is the right to interrupt.</p>
+<p class="bp-figure-caption">The metrics belong on the component, where a reader can look them up, and in deciding what to read first. What they should not have is the right to interrupt.</p>
 </div>
 
-A better test for any candidate finding is a single question: **does a reviewer already know this from the diff or from the diagram?** A metric delta fails it. So does an added import, which is a line of the diff. What passes is what needs more than the diff to know at all: a sentence in your own documentation that this change made false, or a dependency your team has written down must not exist.
+A better test for any candidate finding is a single question: does a reviewer already know this from the diff or from the diagram? A metric delta fails it. So does an added import, which is a line of the diff. What passes is what needs more than the diff to know at all: a sentence in your own documentation that this change made false, or a dependency your team has written down must not exist.
 
 ## When fan-in *does* earn a finding
 
@@ -121,15 +121,15 @@ There is one place a coupling number legitimately reaches the reviewer, and the 
 
 In [Activiti/activiti-cloud #2552](https://github.com/Activiti/activiti-cloud/pull/2552), the public interface `IntegrationResult` loses the method `getIntegrationRequest()`. At least twelve components reference that type.
 
-<div class="bp-callout"><strong>The finding is not "afferent coupling is 12". The finding is "a public method was removed from a type twelve things depend on".</strong> The number is not the claim; it is the <em>magnitude</em> attached to a claim that stands on its own. Delete the number and there is still a finding: a public contract shrank. Delete the contract change and there is nothing: twelve dependents is just a fact about the code, and it was true yesterday too.</div>
+<div class="bp-callout">The finding is "a public method was removed from a type twelve things depend on". The twelve is the magnitude attached to a claim that stands on its own. Delete the number and there is still a finding: a public contract shrank. Delete the contract change and there is nothing: twelve dependents is a fact about the code, and it was true yesterday too.</div>
 
-That is the whole distinction. A metric is a property of the code. A finding is an *event*, something this change did, with a property of the code attached to say how much it matters. Reporting the property without the event is how a tool ends up with a lot to say and nothing worth reading.
+A metric is a property of the code. A finding is an event, something this change did, with a property of the code attached to say how much it matters. Reporting the property without the event is how a tool ends up with a lot to say and nothing worth reading.
 
-## How to actually use these numbers
+## How to use these numbers
 
-- **Read the quadrant, not the value.** A Ce of 40 means nothing until you know the Ca. Instability, not either raw number, is the thing that tells you whether a component is safe to depend on.
-- **Watch high-Ca components the way you watch production config.** Any change touching a component with dozens of dependents deserves a closer read, *especially* when the diff looks trivial. Small diffs on high fan-in nodes are where blast-radius accidents live.
-- **Use metrics to decide reading order.** That is what they are good for: not "look at this", but "look at this *first*".
-- **Do not set thresholds and argue about them.** "Ce must stay under 20" produces meetings, not architecture. If you want a hard gate on complexity, put it in your linter where it belongs, and let structural review answer the questions a linter cannot see.
+- Read the quadrant rather than the value. A Ce of 40 means nothing until you know the Ca. Instability is what tells you whether a component is safe to depend on.
+- Watch high-Ca components the way you watch production config. Any change touching a component with dozens of dependents deserves a closer read, especially when the diff looks trivial. Small diffs on high fan-in nodes are where blast-radius accidents live.
+- Use metrics to decide reading order. They are good at telling you what to look at first.
+- Do not set thresholds and argue about them. "Ce must stay under 20" produces meetings. If you want a hard gate on complexity, put it in your linter where it belongs, and let structural review answer the questions a linter cannot see.
 
 The questions a linter cannot see are the ones worth writing down: which module may depend on which, and what lives where. Once they are sentences in your architecture docs, [Striff checks each one at both revisions of every pull request](/blog/design-docs-are-enforceable-now) and quotes the one a change broke. [Install the GitHub App](https://github.com/apps/striff-app/installations/new), and keep the metrics on the diagram, where you can read them, and out of your notifications, where they cannot help.
