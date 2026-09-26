@@ -18,8 +18,8 @@ import { useEffect, useRef, useState } from "react";
  * - nothing read yet → "Read this repository now"
  * - some documents waiting → "Read the N docs waiting"
  * - everything read → nothing at all
- * - asked for, not started → "Queued to read 8 docs", with how long it has waited
- * - reading → "Reading — 3 of 8 docs left", falling as each one is read
+ * - asked for, not started → "Queued to read 8 documents", with how long it has waited
+ * - reading → "Reading 8 documents…", with how long it has been going
  * - just finished → what it found, for a few minutes, then nothing
  * - stopped → what went wrong, and a way to try again
  *
@@ -29,8 +29,15 @@ import { useEffect, useRef, useState } from "react";
  * all again would be a button whose only use is spending money on an answer Striff mostly has, so
  * it goes away once its job is done.
  *
- * A reading costs a parse and a model call per document, so the API rate-limits it. The button says
- * when the next one is allowed rather than letting someone click into a refusal.
+ * A reading is expensive to serve -- a parse of the repository and a model call for every document
+ * whose rules are not already held -- so the API rate-limits it. The button says when the next one
+ * is allowed rather than letting someone click into a refusal. What it costs us is our problem and
+ * is not said out loud: the reader is told how long it takes, which is what they can act on.
+ *
+ * The count beside "Reading" is how many documents the run has to get through, not how many are
+ * left. The catalogue only hears what a run read once the whole run is finished, so a number
+ * presented as progress would sit still for minutes and read as a hang. The elapsed time is the
+ * liveness signal; the count is the size of the job.
  */
 
 export interface Reading {
@@ -51,6 +58,9 @@ export function isRunning(reading: Reading | null | undefined): boolean {
 
 /** How long a finished reading keeps saying what it found before the whole thing goes away. */
 const JUST_FINISHED_MS = 3 * 60 * 1000;
+
+/** How long a press waits for the run record to appear before it stops believing in it. */
+const STUCK_MS = 45 * 1000;
 
 function since(ms: number): string {
   const seconds = Math.max(0, Math.round((Date.now() - ms) / 1000));
@@ -82,8 +92,8 @@ export default function ReadRepository({
   read: number;
   /** Whether another request is in flight from this page. */
   busy?: boolean;
-  /** Asks for a reading; resolves when the API has taken the request. */
-  onRead: () => void | Promise<void>;
+  /** Asks for a reading. Resolves false where the API refused it, so the control can recover. */
+  onRead: () => void | boolean | Promise<boolean | void>;
   /** Whether the page has stopped watching this run, so it must say to come back. */
   stale?: boolean;
 }) {
@@ -99,6 +109,15 @@ export default function ReadRepository({
       setAsked(false);
     }
   }, [reading?.state, reading?.askedAtMs]);
+  // Insurance against a spinner with nothing behind it. The API writes the run record before it
+  // answers, so a press that was taken shows up on the next load; if nothing has shown up after
+  // this long, something went wrong that nobody told us about, and a control stuck saying
+  // "asking..." for the rest of the session is worse than one that can be pressed again.
+  useEffect(() => {
+    if (!asked) return;
+    const giveUp = window.setTimeout(() => setAsked(false), STUCK_MS);
+    return () => window.clearTimeout(giveUp);
+  }, [asked]);
   // Re-rendered on a timer only while something is running, so "23s" does not go stale in front of
   // someone watching it, and nothing ticks on a page where nothing is happening.
   const [, setTick] = useState(0);
@@ -115,26 +134,22 @@ export default function ReadRepository({
 
   if (asked || isRunning(reading)) {
     const started = reading?.state === "running";
-    // What someone watching this wants is not a stopwatch, it is how much is left. The counts come
-    // from the catalogue, which the page is re-reading anyway while a run is on, so they fall as
-    // documents are read: "3 of 8 left" becomes "1 of 8 left" without anyone doing anything.
-    const total = read + waiting;
-    const left = waiting > 0 && total > 0 ? `${waiting} of ${total} doc${total === 1 ? "" : "s"} left` : null;
+    // How big the job is, said once. Not how much of it is done: the catalogue is only told what a
+    // run read when the run ends, so a figure offered as progress would not move for minutes.
+    const scope = waiting > 0
+      ? `${waiting} document${waiting === 1 ? "" : "s"}`
+      : null;
     const label = !isRunning(reading)
       ? "Asking Striff to read this repository…"
       : started
-      ? left
-        ? `Reading — ${left}`
-        : "Reading…"
-      : left
-      ? `Queued to read ${waiting} doc${waiting === 1 ? "" : "s"}`
-      : "Queued to read…";
+      ? scope ? `Reading ${scope}…` : "Reading…"
+      : scope ? `Queued to read ${scope}` : "Queued to read…";
     const elapsed = started ? since(reading!.startedAtMs) : reading ? since(reading!.askedAtMs) : null;
-    // A minute in, it is worth saying that nobody has to sit here for it.
+    // Said early, because the count does not move and the clock is the only thing that does.
     const patience = stale
       ? "Striff is still at it. This page has stopped checking — refresh to see where it got to."
-      : started && Date.now() - reading!.startedAtMs > 60_000
-      ? "Reading a repository takes a few minutes. You can leave this page; it keeps going."
+      : started && Date.now() - reading!.startedAtMs > 20_000
+      ? "This takes a few minutes. You can leave the page; it keeps going without you."
       : null;
     return (
       <span className="read-repo is-running" role="status" aria-live="polite">
@@ -176,8 +191,8 @@ export default function ReadRepository({
   // Short, because it sits inside a row of counts. The sentence lives in the title.
   const label = stopped ? "Try again" : waiting > 0 ? `Read ${waiting}` : "Read them";
   const help = waiting > 0
-    ? "Reads every document Striff has not read yet and judges every rule against the default branch. Costs a model call per document."
-    : "Reads every document in this repository and judges the rules it finds against the default branch. Costs a model call per document.";
+    ? "Reads the documents Striff has not read yet and checks every rule it finds against your default branch. Takes a few minutes."
+    : "Reads every document in this repository and checks every rule it finds against your default branch. Takes a few minutes.";
 
   return (
     <span className="read-repo">
@@ -188,9 +203,13 @@ export default function ReadRepository({
         title={blockedUntil > 0
           ? `Striff read this repository recently. Another reading can be asked for in ${until(blockedUntil)}.`
           : help}
-        onClick={() => {
+        onClick={async () => {
           setAsked(true);
-          onRead();
+          try {
+            if ((await onRead()) === false) setAsked(false);
+          } catch {
+            setAsked(false);
+          }
         }}
       >
         <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
