@@ -6160,3 +6160,19 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 @media (prefers-reduced-motion: reduce) { .read-repo-spinner { animation-duration: 2.4s; } }
 @media print { .read-repo { display: none; } }
 .read-repo-note.is-good { color: #1a7f45; }
+/* The rest of the questions, behind one line. Eleven open at once is a wall to scroll past on the
+   way to the thing someone actually came to the billing page for. */
+.dashboard-faq-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: #fff;
+  padding: 0.45rem 0.8rem;
+  color: #24292f;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.dashboard-faq-more:hover { background: #f6f8fa; }
