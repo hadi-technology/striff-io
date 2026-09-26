@@ -13,10 +13,17 @@ import { useEffect, useRef, useState } from "react";
  *
  * - nothing read yet → "Read this repository now"
  * - some documents waiting → "Read the N docs waiting"
- * - everything read → "Re-check against main", quietly, because there is little to gain
+ * - everything read → nothing at all
  * - asked for, not started → "Waiting its turn", with how long
  * - reading → "Reading…", with how long
- * - finished → what it found, and when another may be asked for
+ * - just finished → what it found, for a few minutes, then nothing
+ * - stopped → what went wrong, and a way to try again
+ *
+ * There is deliberately no standing "re-check" button. Once every document is read, the rules are
+ * kept current by the work that is already happening: a pull request re-judges the rules its change
+ * touches, and a merge carries its verdicts onto the branch for free. A button offering to do it
+ * all again would be a button whose only use is spending money on an answer Striff mostly has, so
+ * it goes away once its job is done.
  *
  * A reading costs a parse and a model call per document, so the API rate-limits it. The button says
  * when the next one is allowed rather than letting someone click into a refusal.
@@ -37,6 +44,9 @@ export interface Reading {
 export function isRunning(reading: Reading | null | undefined): boolean {
   return reading?.state === "queued" || reading?.state === "running";
 }
+
+/** How long a finished reading keeps saying what it found before the whole thing goes away. */
+const JUST_FINISHED_MS = 3 * 60 * 1000;
 
 function since(ms: number): string {
   const seconds = Math.max(0, Math.round((Date.now() - ms) / 1000));
@@ -75,12 +85,14 @@ export default function ReadRepository({
   const [, setTick] = useState(0);
   const timer = useRef<number | null>(null);
   useEffect(() => {
-    if (!isRunning(reading)) return;
+    const finishing = reading?.state === "done" && reading.finishedAtMs > 0
+      && Date.now() - reading.finishedAtMs < JUST_FINISHED_MS;
+    if (!isRunning(reading) && !finishing) return;
     timer.current = window.setInterval(() => setTick((n) => n + 1), 1000);
     return () => {
       if (timer.current) window.clearInterval(timer.current);
     };
-  }, [reading?.state]);
+  }, [reading?.state, reading?.finishedAtMs]);
 
   if (isRunning(reading)) {
     const started = reading!.state === "running";
@@ -94,25 +106,45 @@ export default function ReadRepository({
     );
   }
 
+  const stopped = reading?.state === "failed";
+  const justFinished = reading?.state === "done"
+    && reading.finishedAtMs > 0
+    && Date.now() - reading.finishedAtMs < JUST_FINISHED_MS;
+  const nothingToRead = waiting === 0 && read > 0;
+
+  // Everything is read and nothing went wrong: there is no work to offer and nothing to report.
+  if (nothingToRead && !stopped && !justFinished) {
+    return null;
+  }
+
+  if (nothingToRead && justFinished) {
+    return (
+      <span className="read-repo">
+        <span className="read-repo-note is-good">
+          Read {since(reading!.finishedAtMs)} ago · {reading!.rulesJudged} rule
+          {reading!.rulesJudged === 1 ? "" : "s"} judged
+        </span>
+      </span>
+    );
+  }
+
   const blockedUntil = reading?.canAskAgainAtMs && reading.canAskAgainAtMs > Date.now()
     ? reading.canAskAgainAtMs
     : 0;
-  const label = waiting > 0
+  const label = stopped
+    ? "Try reading it again"
+    : waiting > 0
     ? `Read the ${waiting} doc${waiting === 1 ? "" : "s"} waiting`
-    : read > 0
-    ? "Re-check against main"
     : "Read this repository now";
   const help = waiting > 0
     ? "Reads every document Striff has not read yet and judges every rule against the default branch. Costs a model call per document."
-    : read > 0
-    ? "Everything here has been read. This judges every rule against the default branch again, and re-reads any doc edited since."
     : "Reads every document in this repository and judges the rules it finds against the default branch. Costs a model call per document.";
 
   return (
     <span className="read-repo">
       <button
         type="button"
-        className={`read-repo-button${waiting > 0 || read === 0 ? " is-primary" : ""}`}
+        className={`read-repo-button${stopped ? "" : " is-primary"}`}
         disabled={!!busy || blockedUntil > 0}
         title={blockedUntil > 0
           ? `Striff read this repository recently. Another reading can be asked for in ${until(blockedUntil)}.`
@@ -121,21 +153,21 @@ export default function ReadRepository({
       >
         {label}
       </button>
-      {reading?.state === "done" && reading.finishedAtMs > 0 && (
-        <span className="read-repo-note">
-          Read {since(reading.finishedAtMs)} ago · {reading.rulesJudged} rule
-          {reading.rulesJudged === 1 ? "" : "s"} judged
+      {justFinished && (
+        <span className="read-repo-note is-good">
+          Read {since(reading!.finishedAtMs)} ago · {reading!.rulesJudged} rule
+          {reading!.rulesJudged === 1 ? "" : "s"} judged
         </span>
       )}
       {reading?.state === "skipped" && (
         <span className="read-repo-note">{reading.reason}</span>
       )}
-      {reading?.state === "failed" && (
+      {stopped && (
         <span className="read-repo-note is-bad">
-          The last reading stopped: {reading.reason || "no reason recorded"}
+          The last reading stopped: {reading!.reason || "no reason recorded"}
         </span>
       )}
-      {blockedUntil > 0 && reading?.state !== "failed" && (
+      {blockedUntil > 0 && !stopped && !justFinished && (
         <span className="read-repo-note">Another can be asked for in {until(blockedUntil)}</span>
       )}
     </span>

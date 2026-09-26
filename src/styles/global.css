@@ -6159,3 +6159,4 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 @keyframes read-repo-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .read-repo-spinner { animation-duration: 2.4s; } }
 @media print { .read-repo { display: none; } }
+.read-repo-note.is-good { color: #1a7f45; }
