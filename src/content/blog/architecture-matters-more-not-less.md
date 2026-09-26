@@ -52,6 +52,14 @@ The adoption curve is steep:
 <p class="bp-figure-caption">Sources: <a href="https://www.linuxfoundation.org/press/linux-foundation-announces-the-formation-of-the-agentic-ai-foundation" target="_blank" rel="noopener">Linux Foundation</a>; <a href="https://github.com/github/spec-kit" target="_blank" rel="noopener">github/spec-kit</a> and <a href="https://github.com/obra/superpowers" target="_blank" rel="noopener">obra/superpowers</a>, star counts as of September 15, 2026 (OpenSpec has 68k and the BMAD method 53k); <a href="https://arxiv.org/abs/2511.12884" target="_blank" rel="noopener"><em>Agent READMEs</em>, arXiv 2511.12884</a>.</p>
 </div>
 
+## Three levels of spec-driven, and where the guard goes missing
+
+Böckeler's [survey of Spec Kit, Kiro and Tessl](https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html) sorts spec-driven development into three levels, and the sorting matters more than the label. At the first level, spec-first, a spec drives one task and can be thrown away when the task ends. At the second, spec-anchored, the spec is kept after the task and the feature keeps evolving through it. At the third, spec-as-source, a human edits only the spec and never the code.
+
+The first level asks nothing of the spec once the task is done. The other two ask it to stay true indefinitely, because every later change is made from it. That is the level most teams in our survey are already at without naming it: 22% keep spec or plan files for agents to build from, and the 63% that hand their agents `AGENTS.md`, `CLAUDE.md` or architecture docs are spec-anchored in practice, whatever toolkit they use. The document outlives the task and the next task starts from it.
+
+So the question a spec-anchored team has to answer is who notices when the spec stops being true. The toolkits answer how to write the spec and how to build from it. None of them answers that. In our survey, 8% of the repositories that hand their agents docs run anything that checks the code against an architecture rule, and no tool in the table above checks a spec against the code it produced. The rest of this post is about that gap.
+
 ## Every practice got more load-bearing
 
 There's a comforting story that goes with all this: AI writes cleaner code than most humans, so the old disciplines matter less now. I think it has it backwards. Almost no engineering practice exists to help you write code. They exist so you can change code later, safely, without holding the whole system in your head:
