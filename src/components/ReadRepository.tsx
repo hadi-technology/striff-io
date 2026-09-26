@@ -18,8 +18,8 @@ import { useEffect, useRef, useState } from "react";
  * - nothing read yet → "Read this repository now"
  * - some documents waiting → "Read the N docs waiting"
  * - everything read → nothing at all
- * - asked for, not started → "Waiting its turn", with how long
- * - reading → "Reading…", with how long
+ * - asked for, not started → "Queued to read 8 docs", with how long it has waited
+ * - reading → "Reading — 3 of 8 docs left", falling as each one is read
  * - just finished → what it found, for a few minutes, then nothing
  * - stopped → what went wrong, and a way to try again
  *
@@ -115,11 +115,21 @@ export default function ReadRepository({
 
   if (asked || isRunning(reading)) {
     const started = reading?.state === "running";
+    // What someone watching this wants is not a stopwatch, it is how much is left. The counts come
+    // from the catalogue, which the page is re-reading anyway while a run is on, so they fall as
+    // documents are read: "3 of 8 left" becomes "1 of 8 left" without anyone doing anything.
+    const total = read + waiting;
+    const left = waiting > 0 && total > 0 ? `${waiting} of ${total} doc${total === 1 ? "" : "s"} left` : null;
     const label = !isRunning(reading)
       ? "Asking Striff to read this repository…"
       : started
-      ? `Reading… ${since(reading!.startedAtMs)}`
-      : `Queued to read… ${since(reading!.askedAtMs)}`;
+      ? left
+        ? `Reading — ${left}`
+        : "Reading…"
+      : left
+      ? `Queued to read ${waiting} doc${waiting === 1 ? "" : "s"}`
+      : "Queued to read…";
+    const elapsed = started ? since(reading!.startedAtMs) : reading ? since(reading!.askedAtMs) : null;
     // A minute in, it is worth saying that nobody has to sit here for it.
     const patience = stale
       ? "Striff is still at it. This page has stopped checking — refresh to see where it got to."
@@ -128,8 +138,11 @@ export default function ReadRepository({
       : null;
     return (
       <span className="read-repo is-running" role="status" aria-live="polite">
-        <span className="read-repo-spinner" aria-hidden="true" />
-        <span className="read-repo-running-label" title={label}>{label}</span>
+        <span className="read-repo-running-line">
+          <span className="read-repo-spinner" aria-hidden="true" />
+          <span className="read-repo-running-label" title={label}>{label}</span>
+          {elapsed && <span className="read-repo-elapsed">{elapsed}</span>}
+        </span>
         {patience && <span className="read-repo-note">{patience}</span>}
       </span>
     );

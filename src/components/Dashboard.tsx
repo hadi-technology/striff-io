@@ -424,30 +424,20 @@ function DashBar({
           <span className="bar-word">Striff</span>
         </a>
         {current && (
-          <div className="bar-account">
-            {current.account.avatar_url && (
-              <img className="bar-account-avatar" src={current.account.avatar_url} alt="" />
-            )}
-            {installations.length > 1 ? (
-              <>
-                <select
-                  className="bar-account-select"
-                  aria-label="Account"
-                  value={String(current.id)}
-                  onChange={(event) => onAccount(Number(event.target.value))}
-                >
-                  {installations.map((inst) => (
-                    <option key={inst.id} value={String(inst.id)}>
-                      {inst.account.login}
-                    </option>
-                  ))}
-                </select>
-                <Chevron />
-              </>
-            ) : (
+          installations.length > 1 ? (
+            <AccountPicker
+              installations={installations}
+              current={current}
+              onAccount={onAccount}
+            />
+          ) : (
+            <span className="bar-account is-only">
+              {current.account.avatar_url && (
+                <img className="bar-account-avatar" src={current.account.avatar_url} alt="" />
+              )}
               <span className="bar-account-name">{current.account.login}</span>
-            )}
-          </div>
+            </span>
+          )
         )}
         <div className="bar-right">
           <a className="bar-link" href="/contact">Help</a>
@@ -481,6 +471,107 @@ function DashBar({
     </header>
   );
 }
+
+/**
+ * Choosing which account the dashboard is about.
+ *
+ * This was a native select for a while, and it looked it: the closed control could be made to fit
+ * the dark bar, but the open list is drawn by the operating system, so the menu that appeared was
+ * a grey system popup in the wrong font with no avatars, floating over a page that looks nothing
+ * like it. A menu of our own costs a few lines and matches the one beside it.
+ *
+ * Each account is shown the way GitHub shows it -- avatar and login -- because someone with a
+ * personal account and two organizations recognises the picture before the name, and the whole
+ * point of this control is telling them apart.
+ */
+function AccountPicker({
+  installations,
+  current,
+  onAccount,
+}: {
+  installations: Installation[];
+  current: Installation;
+  onAccount: (id: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    function close(event: MouseEvent) {
+      if (!(event.target as HTMLElement).closest(".bar-account-wrap")) setOpen(false);
+    }
+    function escape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("click", close);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("click", close);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [open]);
+
+  return (
+    <div className="bar-account-wrap">
+      <button
+        type="button"
+        className="bar-account"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Account: ${current.account.login}. Change account`}
+        onClick={() => setOpen((was) => !was)}
+      >
+        {current.account.avatar_url && (
+          <img className="bar-account-avatar" src={current.account.avatar_url} alt="" />
+        )}
+        <span className="bar-account-name">{current.account.login}</span>
+        <Chevron />
+      </button>
+      {open && (
+        <div className="bar-menu bar-account-menu" role="menu">
+          <p className="bar-menu-who">Accounts</p>
+          {installations.map((inst) => (
+            <button
+              key={inst.id}
+              type="button"
+              role="menuitemradio"
+              aria-checked={inst.id === current.id}
+              className={`bar-menu-item bar-account-option${inst.id === current.id ? " is-current" : ""}`}
+              onClick={() => {
+                setOpen(false);
+                if (inst.id !== current.id) onAccount(inst.id);
+              }}
+            >
+              {inst.account.avatar_url && (
+                <img className="bar-account-avatar" src={inst.account.avatar_url} alt="" />
+              )}
+              <span className="bar-account-option-name">{inst.account.login}</span>
+              {inst.id === current.id && (
+                <svg className="bar-account-tick" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m3.5 8.5 3 3 6-7" />
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Locked or open: the one thing about a repository that changes what Striff may charge for it. */
+const RepoVisibilityIcon = ({ private: isPrivate }: { private: boolean }) =>
+  isPrivate ? (
+    <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="7" width="10" height="7" rx="1.5" />
+      <path d="M5.5 7V4.75a2.5 2.5 0 0 1 5 0V7" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="8" cy="8" r="6" />
+      <path d="M2 8h12M8 2c1.6 1.7 2.4 3.7 2.4 6S9.6 12.3 8 14c-1.6-1.7-2.4-3.7-2.4-6S6.4 3.7 8 2Z" />
+    </svg>
+  );
 
 const Chevron = () => (
   <svg className="bar-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -826,39 +917,51 @@ function InstallationCard({
 
               {/* Repo grid */}
               {displayedRepos.length > 0 ? (
-                <div className="dashboard-repo-grid">
+                <div className="repo-grid">
                   {displayedRepos.map((repo) => {
                     const [repoOwner, repoName] = repo.full_name.split("/");
                     const isActive = metrics?.activeRepos.some(
                       (r) => r.repoOwner === repoOwner && r.repoName === repoName && r.active
                     );
                     return (
-                      <div key={repo.full_name} className={`dashboard-repo-link ${repo.private ? "dashboard-repo-private" : "dashboard-repo-public"}`}>
-                        <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${repo.private ? "bg-amber-500" : "bg-emerald-600"}`} />
-                        {onOpenRepo ? (
-                          <button
-                            type="button"
-                            className="dashboard-repo-open"
-                            onClick={() => onOpenRepo(repo.full_name)}
-                          >
-                            {repo.full_name}
-                          </button>
-                        ) : (
-                          <span className="truncate text-slate-700">{repo.full_name}</span>
-                        )}
-                        {isActive && (
-                          <span className="dashboard-plan-badge ml-auto shrink-0" title="Actively analyzed by Striff">
-                            {"\u2713"} Active
+                      <div key={repo.full_name} className="repo-card">
+                        {/* The card is the target. The whole face opens the repository, so nobody
+                            has to hit a link the width of its own text. */}
+                        <button
+                          type="button"
+                          className="repo-card-face"
+                          onClick={() => onOpenRepo?.(repo.full_name)}
+                          disabled={!onOpenRepo}
+                          title={onOpenRepo ? `Open ${repo.full_name}` : repo.full_name}
+                        >
+                          <span className="repo-card-name">
+                            <span className="repo-card-owner">{repoOwner}/</span>
+                            <span className="repo-card-repo">{repoName}</span>
                           </span>
-                        )}
+                          <span className="repo-card-meta">
+                            <span className={`repo-card-vis${repo.private ? " is-private" : ""}`}>
+                              <RepoVisibilityIcon private={repo.private} />
+                              {repo.private ? "Private" : "Public"}
+                            </span>
+                            {isActive && (
+                              <span className="repo-card-active" title="Striff is analyzing pull requests here">
+                                <span className="repo-card-pulse" aria-hidden="true" />
+                                Analyzing
+                              </span>
+                            )}
+                          </span>
+                        </button>
                         <a
                           href={repo.html_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="dashboard-repo-github"
+                          className="repo-card-gh"
                           aria-label={`${repo.full_name} on GitHub`}
+                          title="Open on GitHub"
                         >
-                          GitHub
+                          <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true">
+                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+                          </svg>
                         </a>
                       </div>
                     );
@@ -1177,6 +1280,10 @@ function getOAuthUrl() {
     scope: "read:user,user:email",
     redirect_uri: `${window.location.origin}/.netlify/functions/auth-callback`,
     state,
+    // GitHub remembers who was signed in and hands the token straight back, so someone who has
+    // just signed out is signed back into the same account without being asked. Asking for the
+    // account picker makes signing in mean choosing, which is what the button appears to offer.
+    prompt: "select_account",
   });
   return `https://github.com/login/oauth/authorize?${params}`;
 }
