@@ -57,6 +57,8 @@ async function readBody(res) {
 const SEES = "yes";
 const SEES_NOT = "no";
 const CANNOT_TELL = "unknown";
+/** GitHub would not accept the caller's own token: expired, revoked, or signed out elsewhere. */
+const SIGNED_OUT = "signed_out";
 
 /**
  * What this token was last told about a repository, and when.
@@ -123,7 +125,10 @@ async function askGitHubIfCallerSees(ghToken, installationId, owner, repo) {
       return limited ? CANNOT_TELL : SEES_NOT;
     }
     if (res.status === 401) {
-      return SEES_NOT;
+      // The caller's own token, not the repository: telling someone they lack access to their own
+      // repository when the truth is that their sign-in lapsed sends them looking in the wrong
+      // place.
+      return SIGNED_OUT;
     }
     if (!res.ok) {
       return CANNOT_TELL;
@@ -205,10 +210,28 @@ export const handler = async (event) => {
 
   try {
     const sees = await callerSeesRepository(ghToken, installationId, owner, repo);
+    if (sees === SIGNED_OUT) {
+      return {
+        statusCode: 401,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          error: "github_sign_in_expired",
+          message: "Your GitHub sign-in has expired. Sign in again to see this repository.",
+        }),
+      };
+    }
     if (sees === SEES_NOT) {
       // Deliberately the same answer whether the repository is invisible or absent: which private
       // repositories an installation covers is itself something not to hand out.
-      return { statusCode: 403, body: JSON.stringify({ error: "Not authorized for this repository" }) };
+      return {
+        statusCode: 403,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          error: "not_authorized",
+          message: "This GitHub account cannot see that repository through this installation. "
+            + "If it should, check that the Striff app still has access to it.",
+        }),
+      };
     }
     if (sees !== SEES) {
       // Retryable, and said so: the caller may well have access, and a 403 would tell them they do

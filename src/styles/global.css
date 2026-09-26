@@ -6176,3 +6176,87 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   font-weight: 600;
 }
 .dashboard-faq-more:hover { background: #f6f8fa; }
+
+/* The read control lives in the row of counts, so it is the size of one. */
+.docs-tally .read-repo { align-self: center; margin-left: 0.15rem; }
+.docs-tally .read-repo-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.76rem;
+}
+.docs-tally .read-repo-button.is-bad { border-color: #e3b7b7; color: #8a1f1f; }
+.docs-tally .read-repo.is-running { flex-direction: column; align-items: flex-start; gap: 0.15rem; }
+.read-repo-running-label { display: inline-flex; align-items: center; gap: 0.35rem; }
+.docs-tally .read-repo.is-running .read-repo-note { font-weight: 500; max-width: 22rem; }
+
+/* The rule is the thing being read: bigger, with room between the lines, and the names it mentions
+   set as code so the eye can pick them out of the sentence. */
+.rules-table .docs-rule-statement {
+  color: #16202b;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+}
+.rules-table .docs-rule-statement .github-inline-code {
+  border: 1px solid #e6ebf1;
+  border-radius: 0.3rem;
+  background: #f6f8fa;
+  padding: 0.02em 0.32em;
+  color: #0f2a4a;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.82em;
+  white-space: nowrap;
+}
+
+
+/* Four columns, as the documents view has them: where it came from, what it said, what Striff read
+   out of it, how it stands. The two middle ones carry the prose and take the room. */
+.rules-table td:nth-child(1), .rules-table th:nth-child(1) { width: 20%; }
+.rules-table td:nth-child(2), .rules-table th:nth-child(2) { width: 30%; }
+.rules-table td:nth-child(3), .rules-table th:nth-child(3) { width: 30%; }
+.rules-table td:nth-child(4), .rules-table th:nth-child(4) { width: 20%; }
+.rules-table .docs-rule-quote {
+  color: #57606a;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+/* Waiting, shown rather than described: the shapes the documents will take, moving while they are
+   still expected. */
+.listing { display: grid; gap: 0.85rem; }
+.listing-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #57606a;
+  font-size: 0.88rem;
+}
+.listing-spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid #dbe3ec;
+  border-top-color: #2563eb;
+  border-radius: 999px;
+  animation: listing-spin 750ms linear infinite;
+  flex: 0 0 auto;
+}
+.listing-rows { display: grid; gap: 0.55rem; }
+.listing-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: listing-pulse 1.5s ease-in-out infinite;
+}
+.listing-bar { height: 0.7rem; border-radius: 0.35rem; background: #e8edf3; display: block; }
+.listing-bar.is-name { width: clamp(8rem, 28%, 18rem); }
+.listing-bar.is-meta { width: clamp(4rem, 12%, 7rem); background: #eef2f7; }
+@keyframes listing-spin { to { transform: rotate(360deg); } }
+@keyframes listing-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) {
+  .listing-row { animation: none; }
+  .listing-spinner { animation-duration: 2.4s; }
+}
+.listing.is-stale { gap: 0.6rem; justify-items: start; color: #57606a; }

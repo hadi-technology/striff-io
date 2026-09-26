@@ -179,9 +179,17 @@ export function Clamped({ lines = 3, children }: { lines?: number; children: any
  * @param everyMs how often to look
  * @param untilMs how long to keep looking before giving up
  */
-export function useWatch(active: boolean, look: () => void, everyMs = 5000, untilMs = 180000) {
+export function useWatch(
+  active: boolean,
+  look: () => void,
+  everyMs = 5000,
+  untilMs = 180000,
+  onGiveUp?: () => void
+) {
   const latest = useRef(look);
   latest.current = look;
+  const gaveUp = useRef(onGiveUp);
+  gaveUp.current = onGiveUp;
 
   useEffect(() => {
     if (!active) return;
@@ -189,6 +197,9 @@ export function useWatch(active: boolean, look: () => void, everyMs = 5000, unti
     const timer = window.setInterval(() => {
       if (Date.now() - startedAt > untilMs) {
         window.clearInterval(timer);
+        // Watching stopped, and the page has to say so. Going quiet leaves someone looking at a
+        // spinner that will never resolve, wondering whether anything is happening at all.
+        gaveUp.current?.();
         return;
       }
       if (!document.hidden) latest.current();

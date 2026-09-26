@@ -2,6 +2,7 @@ import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
 import { Clamped, mark, snippet, useWatch, withCode, when } from "./docRules";
+import Listing from "./Listing";
 
 /**
  * The documents Striff can read in one repository, and the rules it found in them.
@@ -334,6 +335,8 @@ export default function DocsTab({
   const [filter, setFilter] = useState<"all" | "broken" | "notRead" | "skipped" | "excluded">("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  /** Whether this page gave up waiting for a listing that had not arrived. */
+  const [listingStale, setListingStale] = useState(false);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -360,8 +363,11 @@ export default function DocsTab({
     !!catalog
       && (catalog.documents || []).length === 0
       && catalog.lastScanMs === null
-      && catalog.lastAttempt?.outcome !== "failed",
-    () => loadCatalog()
+      && !catalog.lastAttempt,
+    () => loadCatalog(),
+    5000,
+    180000,
+    () => setListingStale(true)
   );
 
   useEffect(() => {
@@ -1007,12 +1013,23 @@ export default function DocsTab({
                 Try again
               </button>
             </>
-          ) : (
+          ) : catalog.lastAttempt?.outcome === "listed" || catalog.lastScanMs !== null ? (
+            // It looked, and there was nothing to find. Saying "listing now" here is how a page
+            // waits forever for something that already happened.
             <p className="text-slate-600">
-              {catalog.lastScanMs === null
-                ? "Striff is listing this repository's documents now. They appear here as soon as it has them — a few seconds, usually."
-                : "Striff found no document it can read in this repository. It looks for Markdown and text documents on the default branch."}
+              Striff found no document it can read in this repository. It looks for Markdown and
+              text documents on the default branch, and skips ones that say they are no longer
+              current.
             </p>
+          ) : (
+            <Listing
+              what="this repository's documents"
+              stale={listingStale}
+              onLookAgain={() => {
+                setListingStale(false);
+                loadCatalog();
+              }}
+            />
           )}
         </div>
       )}

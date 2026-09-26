@@ -2,6 +2,7 @@ import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
 import { Clamped, mark, useWatch, withCode, when } from "./docRules";
+import Listing from "./Listing";
 import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
 
 /**
@@ -161,10 +162,14 @@ export default function RulesTab({
   const [data, setData] = useState<RepoRules | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  /** Whether this page gave up waiting for a listing that had not arrived. */
+  const [listingStale, setListingStale] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
   const [asking, setAsking] = useState(false);
+  /** Whether this page gave up watching a run that had not finished. */
+  const [watchedOut, setWatchedOut] = useState(false);
 
   // Document order to begin with: a repository's rules read as its documents do until someone
   // asks for something else.
@@ -182,10 +187,14 @@ export default function RulesTab({
     !!data
       && (data.documents || []).length === 0
       && data.lastScanMs === null
-      && data.lastAttempt?.outcome !== "failed",
-    () => load()
+      && !data.lastAttempt,
+    () => load(),
+    5000,
+    180000,
+    () => setListingStale(true)
   );
-  useWatch(isRunning(data?.reading), () => load(), 5000, 20 * 60 * 1000);
+  useWatch(isRunning(data?.reading), () => load(), 5000, 20 * 60 * 1000,
+    () => setWatchedOut(true));
 
   useEffect(() => {
     if (openRepo && openRepo !== repo) setRepo(openRepo);
@@ -252,6 +261,7 @@ export default function RulesTab({
         setError(answer.message || answer.error || "Couldn't ask Striff to read this repository.");
         return;
       }
+      setWatchedOut(false);
       await load();
     } catch {
       setError("Couldn't ask Striff to read this repository.");
@@ -431,23 +441,7 @@ export default function RulesTab({
               GitHub
             </a>
           </div>
-          {data && (
-            <div className="docs-actions">
-              <ReadRepository
-                reading={data.reading}
-                waiting={Math.max(
-                  0,
-                  summary
-                    ? summary.documents - summary.retired - summary.screenedOut - summary.excluded
-                        - summary.read
-                    : 0
-                )}
-                read={summary ? summary.read : 0}
-                busy={asking || loading}
-                onRead={readRepository}
-              />
-            </div>
-          )}
+
           <p className="docs-lede">
             Every rule Striff has read from this repository's docs, and where each one came from.
             Open a document's name to see it beside the rest of its doc.
@@ -485,6 +479,21 @@ export default function RulesTab({
               </b>
               <i>docs read</i>
             </span>
+            {/* Beside the count it changes: this is how the unread ones get read. */}
+            {data && (
+              <ReadRepository
+                reading={data.reading}
+                waiting={Math.max(
+                  0,
+                  summary.documents - summary.retired - summary.screenedOut - summary.excluded
+                    - summary.read
+                )}
+                read={summary.read}
+                busy={asking || loading}
+                stale={watchedOut}
+                onRead={readRepository}
+              />
+            )}
           </div>
         )}
       </div>
@@ -509,11 +518,15 @@ export default function RulesTab({
               rules it holds.{" "}
               {data.lastAttempt.reason ? <span className="docs-attempt-reason">{data.lastAttempt.reason}</span> : null}
             </p>
-          ) : data.lastScanMs === null ? (
-            <p className="text-slate-600">
-              Striff is listing this repository's documents. Any rules it has already read appear
-              here as soon as that lands — a few seconds, usually.
-            </p>
+          ) : data.lastScanMs === null && !data.lastAttempt ? (
+            <Listing
+              what="this repository's documents"
+              stale={listingStale}
+              onLookAgain={() => {
+                setListingStale(false);
+                load();
+              }}
+            />
           ) : (
             <p className="text-slate-600">
               Striff hasn't read a rule out of this repository yet. It reads a doc when a pull
@@ -578,8 +591,9 @@ export default function RulesTab({
           <table className="docs-rules rules-table">
             <thead>
               <tr>
-                {heading("rule", "The rule")}
                 {heading("source", "Where it came from")}
+                <th>The sentence in your docs</th>
+                {heading("rule", "The rule it became")}
                 {heading("outcome", "How it stands")}
               </tr>
             </thead>
@@ -591,14 +605,6 @@ export default function RulesTab({
                     row.status === "VIOLATED" ? "is-violated" : row.status === "PRE_EXISTING" ? "is-prior" : ""
                   }
                 >
-                  <td className="docs-rule-statement">
-                    <Clamped lines={4}>
-                      {withCode(row.statement, term)}
-                      {row.quote && (
-                        <span className="rules-quote">“{withCode(row.quote, term)}”</span>
-                      )}
-                    </Clamped>
-                  </td>
                   <td className="rules-source">
                     <span className="rules-source-where">
                     <button type="button" className="rules-source-link" onClick={() => onOpenDoc?.(row.doc.path)}>
@@ -624,6 +630,14 @@ export default function RulesTab({
                         ? `Read ${when(row.doc.lastExtractedMs)}${row.doc.lastExtractedPullNo ? ` on PR #${row.doc.lastExtractedPullNo}` : ""}`
                         : ""}
                     </span>
+                  </td>
+                  {/* The same four columns the documents view uses, in the same order: where it
+                      came from, what it said, what Striff read out of it, how it stands. */}
+                  <td className="docs-rule-quote">
+                    <Clamped lines={4}>{withCode(row.quote, term)}</Clamped>
+                  </td>
+                  <td className="docs-rule-statement">
+                    <Clamped lines={4}>{withCode(row.statement, term)}</Clamped>
                   </td>
                   <td>
                     <span
