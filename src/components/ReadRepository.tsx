@@ -183,8 +183,14 @@ export default function ReadRepository({
     );
   }
 
-  // Short, because it sits inside a row of counts. The sentence lives in the title.
-  const label = stopped ? "Try again" : waiting > 0 ? `Read ${waiting}` : "Read them";
+  // "Read 3" beside a count of documents read could be a count itself. It has to name what it
+  // does to what, in the fewest words that still say it: read documents, here, now. The sentence
+  // that explains why anyone would still lives in the title.
+  const label = stopped
+    ? "Try again"
+    : waiting > 0
+    ? `Read ${waiting} doc${waiting === 1 ? "" : "s"} now`
+    : "Read these docs now";
   const help = waiting > 0
     ? "Reads the documents Striff has not read yet and checks every rule it finds against your default branch. Takes a few minutes."
     : "Reads every document in this repository and checks every rule it finds against your default branch. Takes a few minutes.";
