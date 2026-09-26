@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { Clamped, mark, snippet, withCode, when } from "./docRules";
+import { Clamped, mark, snippet, useWatch, withCode, when } from "./docRules";
 
 /**
  * The documents Striff can read in one repository, and the rules it found in them.
@@ -347,18 +347,22 @@ export default function DocsTab({
   const openedAt = useRef(0);
   /** The same for the catalogue: switching repository twice must not land on the first one. */
   const loadedAt = useRef(0);
-  /**
-   * How many times this view has waited for a listing. A repository nobody has listed is listed
-   * because this page asked for it, which takes a few seconds; looking again a couple of times
-   * saves the reader refreshing, and stopping after that saves polling a repository whose listing
-   * genuinely failed.
-   */
-  const waitedForListing = useRef(0);
+
   /** What the view is showing right now, for the listing wait to look at before it reloads. */
   const catalogRef = useRef<Catalog | null>(null);
 
   const [owner, name] = repo.split("/");
   catalogRef.current = catalog;
+
+  // A listing this page asked for is queued work: watch until it lands, and stop as soon as there
+  // is anything to show or anything to say about why there is not.
+  useWatch(
+    !!catalog
+      && (catalog.documents || []).length === 0
+      && catalog.lastScanMs === null
+      && catalog.lastAttempt?.outcome !== "failed",
+    () => loadCatalog()
+  );
 
   useEffect(() => {
     if (openRepo && openRepo !== repo) setRepo(openRepo);
@@ -366,7 +370,6 @@ export default function DocsTab({
 
   useEffect(() => {
     if (!owner || !name) return;
-    waitedForListing.current = 0;
     loadCatalog();
   }, [repo]);
 
@@ -408,17 +411,6 @@ export default function DocsTab({
         return;
       }
       setCatalog(data);
-      // Only an empty view waits for a listing, and only while it stays empty. Reloading a view
-      // with documents in it took the page out from under whoever was reading it.
-      if ((data.documents || []).length === 0 && data.lastScanMs === null
-          && waitedForListing.current < 3) {
-        waitedForListing.current += 1;
-        window.setTimeout(() => {
-          if (!catalogRef.current || (catalogRef.current.documents || []).length === 0) {
-            loadCatalog();
-          }
-        }, 6000);
-      }
       const docs: Doc[] = data.documents || [];
       setExpanded(allFolders(buildTree(docs)));
       // Landing on an empty pane wastes the arrival: open what a reader would have opened first,

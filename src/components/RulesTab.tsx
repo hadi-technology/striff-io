@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { Clamped, mark, withCode, when } from "./docRules";
+import { Clamped, mark, useWatch, withCode, when } from "./docRules";
 import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
 
 /**
@@ -165,18 +165,27 @@ export default function RulesTab({
   const [query, setQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
   const [asking, setAsking] = useState(false);
-  /** Stops the watch when the view goes away or the repository changes under it. */
-  const watching = useRef<number | null>(null);
+
   // Document order to begin with: a repository's rules read as its documents do until someone
   // asks for something else.
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "source", dir: 1 });
-  /** How many times this view has waited for a listing it asked for; see DocsTab. */
-  const waitedForListing = useRef(0);
+
   /** What the page is showing right now, so a wait never reloads over someone reading it. */
   const dataRef = useRef<RepoRules | null>(null);
 
   const [owner, name] = repo.split("/");
   dataRef.current = data;
+
+  // Two kinds of waiting, one watcher. A listing this page asked for lands in seconds; a reading
+  // takes minutes, and is followed whoever asked for it — including someone at another desk.
+  useWatch(
+    !!data
+      && (data.documents || []).length === 0
+      && data.lastScanMs === null
+      && data.lastAttempt?.outcome !== "failed",
+    () => load()
+  );
+  useWatch(isRunning(data?.reading), () => load(), 5000, 20 * 60 * 1000);
 
   useEffect(() => {
     if (openRepo && openRepo !== repo) setRepo(openRepo);
@@ -190,7 +199,6 @@ export default function RulesTab({
 
   useEffect(() => {
     if (!owner || !name) return;
-    waitedForListing.current = 0;
     load();
   }, [repo]);
 
@@ -216,14 +224,6 @@ export default function RulesTab({
         return;
       }
       setData(body);
-      // Same as the documents view: only an empty page waits, and only while it stays empty.
-      if ((body.documents || []).length === 0 && body.lastScanMs === null
-          && waitedForListing.current < 3) {
-        waitedForListing.current += 1;
-        window.setTimeout(() => {
-          if (!dataRef.current || (dataRef.current.documents || []).length === 0) load();
-        }, 6000);
-      }
     } catch {
       setError("Couldn't load this repository's rules");
     } finally {
@@ -253,41 +253,12 @@ export default function RulesTab({
         return;
       }
       await load();
-      watch();
     } catch {
       setError("Couldn't ask Striff to read this repository.");
     } finally {
       setAsking(false);
     }
   }
-
-  /** Looks again every few seconds while a reading is under way, and stops when it is not. */
-  function watch() {
-    if (watching.current) window.clearInterval(watching.current);
-    let looks = 0;
-    watching.current = window.setInterval(() => {
-      // Twenty minutes of looking is longer than any reading should take; after that the run
-      // record says what happened and nothing is gained by asking again.
-      if (++looks > 240 || !isRunning(dataRef.current?.reading)) {
-        if (watching.current) window.clearInterval(watching.current);
-        watching.current = null;
-        return;
-      }
-      if (!document.hidden) load();
-    }, 5000);
-  }
-
-  // A reading someone else asked for, or one still going when this page was opened, is followed
-  // the same way: the page does not care who asked.
-  useEffect(() => {
-    if (isRunning(data?.reading) && !watching.current) watch();
-    return () => {
-      if (watching.current) {
-        window.clearInterval(watching.current);
-        watching.current = null;
-      }
-    };
-  }, [data?.reading?.state, repo]);
 
   /** Every rule, in document order, each carrying the document it was read from. */
   const rows = useMemo<Row[]>(() => {

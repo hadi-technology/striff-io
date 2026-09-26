@@ -6,7 +6,7 @@
  * calling the same status different things, which is the confusion the labels were rewritten to
  * end, reintroduced by copying.
  */
-import { createElement, useLayoutEffect, useRef, useState } from "react";
+import { createElement, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 /**
  * What the last pull request to judge a rule said about it.
@@ -158,4 +158,41 @@ export function Clamped({ lines = 3, children }: { lines?: number; children: any
       )}
     </div>
   );
+}
+
+/**
+ * Looks again, while there is something to wait for.
+ *
+ * Work that fills these pages — listing a repository, reading it — happens on a queue and finishes
+ * whenever it finishes. A page that asked for it and then sat still is a page someone has to
+ * refresh to find out anything, and a page that polls forever is a page that costs something for
+ * nobody.
+ *
+ * So: while {@code active}, look every few seconds; stop the moment it is not; give up after
+ * {@code untilMs} because work that has taken that long is not going to be answered by asking
+ * again; and never look while the tab is hidden, since nobody is reading it. The caller's job is
+ * to make {@code active} false once the thing arrives, and to make its own reload harmless — this
+ * only decides when to call it.
+ *
+ * @param active whether there is still something to wait for
+ * @param look what to do each time; the latest one given is always the one called
+ * @param everyMs how often to look
+ * @param untilMs how long to keep looking before giving up
+ */
+export function useWatch(active: boolean, look: () => void, everyMs = 5000, untilMs = 180000) {
+  const latest = useRef(look);
+  latest.current = look;
+
+  useEffect(() => {
+    if (!active) return;
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      if (Date.now() - startedAt > untilMs) {
+        window.clearInterval(timer);
+        return;
+      }
+      if (!document.hidden) latest.current();
+    }, everyMs);
+    return () => window.clearInterval(timer);
+  }, [active, everyMs, untilMs]);
 }
