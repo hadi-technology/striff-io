@@ -3131,3 +3131,29 @@ html[data-scheme="auto"] body { background: #fbfbfa; }
 .sb .bp-check-ev { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.6rem; margin-top: 0.7rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: var(--sb-bg-2); font-family: var(--sb-mono); font-size: 0.76rem; line-height: 1.55; color: var(--sb-text); overflow-wrap: anywhere; }
 .sb .bp-check-ev-k { color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.66rem; padding-top: 0.15rem; }
 .sb .sb-prose .bp-check code { background: var(--sb-surface); }
+
+.sb .bp-bar--muted { background: var(--sb-line); }
+
+/* Findings by repository: name, star bar, doc line versus code line */
+.sb .bp-stats--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sb .bp-repos, .sb .bp-figure ul.bp-repos { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 10px; }
+.sb .bp-repos > li, .sb .bp-figure ul.bp-repos > li { margin: 0; padding: 14px 16px 12px; border: 1px solid var(--sb-line); border-radius: 12px; background: var(--sb-surface, #fff); }
+.sb .bp-repos > li::before, .sb .bp-repos > li::marker { content: none; display: none; }
+.sb .bp-repo-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 38%); align-items: center; gap: 16px; text-decoration: none; color: inherit; margin-bottom: 10px; border: 0; }
+.sb .bp-repo-name { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; color: var(--sb-ink); }
+.sb .bp-repo-head:hover .bp-repo-name { color: var(--sb-accent); }
+.sb .bp-repo-stars { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.sb .bp-repo-stars i { display: block; height: 6px; border-radius: 999px; background: linear-gradient(90deg, var(--sb-accent), var(--sb-mint)); opacity: 0.85; min-width: 6px; }
+.sb .bp-repo-stars b { font-family: var(--bp-mono, ui-monospace, monospace); font-size: 12.5px; font-weight: 600; color: var(--sb-muted); white-space: nowrap; }
+.sb .bp-repo p { position: relative; display: block; margin: 0; padding-left: 54px; font-size: 14.5px; line-height: 1.55; color: var(--sb-ink); }
+.sb .bp-repo p + p { margin-top: 6px; }
+.sb .bp-repo p > span { position: absolute; left: 0; top: 4px; font-family: var(--bp-mono, ui-monospace, monospace); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+.sb .bp-repo-doc > span { color: var(--sb-muted); }
+.sb .bp-repo-code > span { color: var(--sb-danger); }
+.sb .bp-repo p code { display: inline; font-size: 0.9em; padding: 1px 5px; white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .sb .bp-stats--3 { grid-template-columns: 1fr; }
+  .sb .bp-repo-head { grid-template-columns: 1fr; gap: 8px; }
+  .sb .bp-repo p { padding-left: 0; padding-top: 18px; }
+  .sb .bp-repo p > span { top: 0; }
+}

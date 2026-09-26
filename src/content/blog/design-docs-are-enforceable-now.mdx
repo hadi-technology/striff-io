@@ -1,6 +1,6 @@
 ---
-title: "A README that sends you to the wrong class, and the pull request that never opened it"
-description: "Coding agents read your docs as context, and nothing in the merge path checks that the code still agrees with them. How Striff turns the sentences already in a repository into rules computed at both revisions of a pull request, with the ecChronos case end to end and the counts from 7,161 rules across 609 public pull requests."
+title: "Every claim in your architecture docs, checked on every pull request"
+description: "Design docs have a second reader now: coding agents build from them, and nothing in a pull request checks that the code still agrees with the prose. Striff turns the sentences already in a repository into rules and checks them at both revisions of every pull request. What that looks like on one real change, and how often it fires across 609 public ones."
 date: 2026-09-10
 category: "Product"
 cover: "docs-to-checks"
@@ -8,19 +8,22 @@ cover: "docs-to-checks"
 
 import RuleRows from "../../components/RuleRows.astro";
 import { ecchronosRules, baseSha, headSha } from "../../data/ecchronosRules";
-import { ruleShapes } from "../../data/ruleShapes";
 
-Ericsson's [ecChronos](https://github.com/Ericsson/ecchronos) schedules repairs for Apache Cassandra, and its `core.impl` module has the kind of README most teams only intend to write. It goes through the module class by class and says what each one does. Of `NodeWorker`, the background thread that runs for each Cassandra node, line 136 says:
+Your architecture docs have a second reader now. For twenty years a README or a design note was read by a person, who noticed when a sentence had stopped being true and asked. Today coding agents read `AGENTS.md`, `CLAUDE.md` and the architecture notes before they write anything, take every sentence as fact, and build from it. A decision written down once steers thousands of generated lines. A sentence that has quietly gone stale steers them too.
 
-> Calls `RepairScheduler.putConfigurations()` to keep jobs up to date
+Nothing in a pull request checks for that. The diff shows the code. The sentence lives in a different file, so the reviewer never sees the two side by side, and the merge goes through with the prose and the code disagreeing.
 
-Pull request [#1786](https://github.com/Ericsson/ecchronos/pull/1786), *"Add Repair History pre and post Job in Incremental path"*, changed 27 files (+1,235 −417). Part of it was a tidy refactor: a new class, `SchemaRefresher`, took over turning schema events into repair configurations. `NodeWorker` lost 150 lines, now holds a `SchemaRefresher`, and hands every event to it. It no longer references `RepairScheduler` at all. The call the README describes is still made, from line 158 of `SchemaRefresher.java`.
+Striff closes that gap. It reads the documents already in your repository, turns every sentence that makes a claim about the code into a rule, and checks each rule against the parsed code at the base and the head of every pull request. A language model does the translation from prose to rule. A program does the checking, and it can only report what it computed. There is no rule file to write and nothing to configure, because the rules are the ones your team already wrote down.
 
-The pull request was approved and merged on 8 September. The README was not in the diff, so nobody reading the diff had a reason to open it. At the time of writing, line 136 on `master` still credits `NodeWorker`, and so does the execution-flow sketch at line 156 of the same file.
+The result is a GitHub check run beside your tests with a table of the rules the change touched, each one quoting the sentence it came from and the line in the code that decided it. Here is what that looks like on one real pull request.
 
-That used to cost one confused engineer some time. It now costs more, because a design doc has a second reader. Coding agents read `AGENTS.md`, `CLAUDE.md`, READMEs and architecture notes as context before they write anything, so a decision written down once steers thousands of generated lines, and a constraint nobody wrote down does not exist for the agent writing your code. The same sentence also goes stale faster, because at agent volume the code changes constantly and nothing in the merge path compares it with the prose. The diff shows the code. The sentence is in a different file.
+## One change, one sentence, one verdict
 
-Striff checked 28 rules from ecChronos's documentation at both revisions of the pull request. Three of them:
+Ericsson's [ecChronos](https://github.com/Ericsson/ecchronos) schedules repairs for Apache Cassandra. Its `core.impl` README goes through the module class by class, and of `NodeWorker` it says: "Calls `RepairScheduler.putConfigurations()` to keep jobs up to date."
+
+Pull request [#1786](https://github.com/Ericsson/ecchronos/pull/1786) moved that call into a new class, `SchemaRefresher`. After the change `NodeWorker` no longer references `RepairScheduler` at all. The refactor was fine. The README was not in the diff, so nobody reading the diff had a reason to open it, and the sentence has been wrong since the merge on 8 September.
+
+Striff checked 28 rules from that repository's documentation at both revisions. Twenty-seven held. One did not:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Ericsson/ecchronos #1786 · documented rules</p>
@@ -28,12 +31,10 @@ Striff checked 28 rules from ecChronos's documentation at both revisions of the 
 <div class="bp-rules">
 <RuleRows rows={ecchronosRules} baseSha={baseSha} headSha={headSha} />
 </div>
-<p class="bp-figure-caption">On the left, the sentence as the maintainers wrote it, with the file and line it came from. In the middle, the rule it became, in plain English and as the formula that is evaluated. On the right, the verdict on this pull request, stated as what it is: whether the model of the code Striff checked, before the change and after it, satisfies the formula. The second row resolves a general term, "from utils", to the package it means; the third turns one sentence into one rule per class it names.</p>
+<p class="bp-figure-caption">Left, the sentence as the maintainers wrote it, with its file and line. Middle, the rule it became, in plain English and as the formula that is evaluated. Right, the verdict on this pull request: whether the parsed code satisfies the formula before the change and after it.</p>
 </div>
 
-## The violation, as facts you can check
-
-A finding is only worth something if you can check it without trusting us. This one is a sentence and four lookups in two public revisions:
+A finding is only worth something if you can check it without trusting us, so every verdict is built from facts you can look up in the two public commits:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">From the sentence to the verdict</p>
@@ -49,96 +50,78 @@ A finding is only worth something if you can check it without trusting us. This 
 <p class="bp-figure-caption">The rule came out of the prose. Everything under it was computed from the parsed code at each revision, which is why the finding can name the line that moved and cannot invent one that did not.</p>
 </div>
 
-Underneath, the rule is a claim about the code that is either true or false at a given revision. Two lookups settle it: the claim held at the base commit and fails at the head commit. Nothing about that is a matter of opinion, so anyone willing to open both commits can check it.
+The fix is one word in the README, and on the pull request that caused it that is a one-line follow-up commit, made while the author still remembers why the call moved. Left alone, the sentence keeps costing people time. The next contributor is sent to `NodeWorker` and reads a class that no longer does the job. A coding agent handed the same README has a worse option available: the quickest way to make the sentence true again is to give `NodeWorker` a scheduler and re-create the dependency the refactor just removed. A stale sentence is a set of instructions for undoing your last refactor.
 
-## A one-line fix, while it is still one line
+## What you get, and what you do not
 
-The fix is one word in a README: `NodeWorker` becomes `SchemaRefresher`. In the pull request that caused it, that is a one-line follow-up commit, made while the author still remembers why the call moved. Left alone, the sentence costs someone time.
+Every rule Striff reads gets one of four verdicts. It held, so nothing in this change breaks it. It was violated, so this change broke it. It was already broken before this change, which is reported but never blamed on the author in front of you. Or it was restored, broken before and true after. A rule the parser cannot answer, because the code it names is generated, or lives where a source parse cannot see it, is left out rather than shown as passing. Striff never reports a pass it did not compute.
 
-The next contributor looking for where repair configurations are scheduled is sent to `NodeWorker` by the README, spends a while reading a class that no longer does that, and finds `SchemaRefresher` only by giving up on the doc and reading the diff history. A coding agent handed the same README does something worse. It has an obvious way to make the sentence true again: give `NodeWorker` a scheduler and re-create the dependency the refactor had just removed. That is the path of least resistance for an agent that takes the doc at its word, and undoing it costs another round of review, more tokens, and another pull request to notice the regression a second time. A stale sentence like this one is a set of instructions for undoing your last refactor, and everyone who follows it before someone fixes it pays in wasted work.
+The mechanism is the reason the verdicts can be trusted. The model only proposes rules; a proposed rule that names a class the parsed code does not contain is dropped before evaluation, so the model cannot invent a violation by inventing a name. The program that evaluates the rules cannot add a finding. [How every claim traces back to your docs or your code](/blog/grounded-ai-findings) covers that in detail, and [the rule language and its limits](https://mfadhel.com/striff-io-ml-infrastructure/) are written up by the founder.
 
-## The same change, on the diagram
+## How often it fires
 
-The documented rules are the headline and the diagram is the context for them. Every pull request also gets a structural diff of the classes the change touched, what they gained and lost, and how they connect.
-
-<div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Ericsson/ecchronos #1786 · framed on NodeWorker</p>
-<div class="bp-striff-stage" style="height:24rem">
-<span class="bp-striff-tag">ecchronos · PR #1786</span>
-<img src="/examples/ecchronos-1786.svg#svgView(viewBox(6043,2391,1081,500))" alt="Striff structural diff of Ericsson/ecchronos PR #1786, framed on NodeWorker: its RepairScheduler field and calls removed, a SchemaRefresher field and constructor added" loading="lazy" style="width:max(100%, 51.9rem); aspect-ratio:1081/500; transform:translate(-50%, -50%);" />
-</div>
-<p class="bp-figure-caption">The real render for #1786, cropped to <code>NodeWorker</code>. The members it lost are marked, the <code>RepairScheduler</code> field among them, next to the <code>SchemaRefresher</code> it gained. The diagram shows what moved; the rule on the README says which of those moves your docs now disagree with.</p>
-</div>
-
-## More than one class calling another
-
-`NodeWorker` calling `RepairScheduler` is the simplest thing a document can say: one class, one reference. Documents also make claims about whole modules, about a word that stands for several packages at once, and about every class of a kind. The rule language has the quantifiers for those, and the same program answers them. Three more rules Striff read out of public repositories' own documents:
+Rarely, and that is the design. A check that fired on every pull request would be muted within a week. Across 609 public pull requests in 542 repositories, Striff read 7,161 rules out of those repositories' own documentation. 5,674 of them could be answered from the parsed code; the rest named things a source parse cannot see and were left out. Of the answered rules:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Three shapes of rule, three repositories</p>
-<div class="bp-rules">
-<RuleRows rows={ruleShapes} />
-</div>
-<p class="bp-figure-caption">Each row is Striff&rsquo;s own output on a public pull request, with the witness it cited. The first names the only modules a module may use; the second binds a word in the document, &ldquo;GUI&rdquo;, to the two namespaces it means, and shows the binding so a maintainer can correct it; the third quantifies over every class whose name ends in <code>Helper</code>.</p>
-</div>
-
-Apache Pinot's design note for its SQL DDL module says the module "depends only on" three things. Two of them are modules of the same repository and the third, `calcite-babel`, is an external library, so the rule is about which of Pinot's own modules it may use. Since the materialized-view work, the module's build has also pulled in `pinot-query-planner`, and `MaterializedViewSchemaInferer` imports from it. The sentence has been wrong ever since, and it still is. Striff reports it as already broken and never blames it on the pull request in front of it.
-
-SubtitleEdit's command-line reference says the `seconv` tool uses "no Avalonia / GUI runtime". There is no namespace called GUI. The rule works because the word is bound to the two namespaces that are the GUI, and it held: `seconv` references neither. MonoGame-Extended's coding guidelines ask for static helper classes; six of its seven are, and `PrimitivesHelper` is not.
-
-## How a sentence becomes a check
-
-Nobody at Ericsson wrote a rule for Striff. There is no rule file and no configuration. The rules come out of the prose already in the repository, in five steps, and only two of them use a language model:
-
-<div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Neurosymbolic, per pull request</p>
-<div class="bp-legend" style="margin-top:0;margin-bottom:0.6rem"><span class="bp-chip" style="--bp-chip-color:#2563eb">Computed</span><span class="bp-chip" style="--bp-chip-color:#059669">Language model</span></div>
-<div class="bp-flow" style="--bp-flow-cols: 5">
-<div class="bp-flow-step"><span class="bp-flow-num">1</span><p class="bp-flow-title">Parse</p><p class="bp-flow-desc">Both revisions become a compiler-grade model of the code.</p></div>
-<div class="bp-flow-step bp-flow-step--mint"><span class="bp-flow-num">2</span><p class="bp-flow-title">Read</p><p class="bp-flow-desc">A model reads your docs and proposes candidate rules.</p></div>
-<div class="bp-flow-step"><span class="bp-flow-num">3</span><p class="bp-flow-title">Ground and compile</p><p class="bp-flow-desc">Candidates naming anything not in the code are dropped. The rest become queries.</p></div>
-<div class="bp-flow-step"><span class="bp-flow-num">4</span><p class="bp-flow-title">Evaluate</p><p class="bp-flow-desc">Each query runs at both revisions. Only a break the change introduced counts against it.</p></div>
-<div class="bp-flow-step bp-flow-step--mint"><span class="bp-flow-num">5</span><p class="bp-flow-title">Narrate</p><p class="bp-flow-desc">A model phrases what was computed. It cannot add a finding.</p></div>
-</div>
-<p class="bp-figure-caption">The model proposes and the program decides. A proposed rule that names a class the parsed code does not contain never reaches evaluation, so the model cannot invent a violation by inventing a name. <a href="/blog/grounded-ai-findings">How every claim traces back to your docs or your code</a>.</p>
-</div>
-
-Every rule Striff reports gets one of four outcomes. It held, meaning nothing in this pull request breaks it. It was violated, meaning this change broke it. It was already broken in the code Striff checked, before this change, and that is never blamed on the change. Or it was restored: broken before, true after. Striff reports only what it can verify from the code, so a rule it cannot answer from a source parse is left out rather than shown as passing.
-
-## How often this fires
-
-Rarely. Across 609 public pull requests in 542 different repositories, Striff evaluated 7,161 rules read out of those repositories' own documentation:
-
-{/* TODO: 7,161 vs 5,674 gap; the remaining 1,487 need a named category or the headline count needs to be 5,674 */}
-<div class="bp-figure" data-reveal>
-<p class="bp-figure-title">7,161 documented-rule verdicts, 609 pull requests</p>
+<p class="bp-figure-title">7,161 rules read, 5,674 answered · 609 pull requests</p>
 <div class="bp-bars">
 <div class="bp-bar-row"><span class="bp-bar-label">Held</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:100%"></div></div><span class="bp-bar-value">5,519</span></div>
 <div class="bp-bar-row"><span class="bp-bar-label">Violated by the change</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:1.8%"></div></div><span class="bp-bar-value">97</span></div>
 <div class="bp-bar-row"><span class="bp-bar-label">Already broken</span><div class="bp-bar-track"><div class="bp-bar bp-bar--amber" style="width:1%"></div></div><span class="bp-bar-value">53</span></div>
 <div class="bp-bar-row"><span class="bp-bar-label">Restored</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:0.1%"></div></div><span class="bp-bar-value">5</span></div>
+<div class="bp-bar-row"><span class="bp-bar-label">Could not be answered</span><div class="bp-bar-track"><div class="bp-bar bp-bar--muted" style="width:27%"></div></div><span class="bp-bar-value">1,487</span></div>
 </div>
-<p class="bp-figure-caption">Roughly two percent accuse: 97 rules broken by the change under review, 53 already broken before it. Everything else held, which is what a correct document looks like. Accusations also concentrate: a single repository accounts for half of them, so the per-repository rate is far lower than the per-verdict rate suggests.</p>
+<p class="bp-figure-caption">Roughly two percent of answered rules accuse: 97 broken by the change under review, 53 already broken before it. Everything else held, which is what a correct document looks like. Accusations concentrate, too: a single repository accounts for half of them, so the rate per repository is far lower than the rate per rule.</p>
 </div>
 
-A check that fired on every pull request would be muted within a week, so a low rate is what we want. The 53 already-broken rows are the other quiet result: rules a repository's own documentation states that were already false in the code Striff checked, before the pull request. They are never blamed on the pull request in front of you, and they are never shown as a pass either. Whether the fix belongs in the code or in the sentence is the maintainer's call, and now the maintainer knows there is one to make.
+The 53 already-broken rules are the quiet second result. Each is a sentence in a repository's own documentation that was already false before the pull request. Whether the fix belongs in the code or in the sentence is the maintainer's call, and now the maintainer knows there is a call to make.
 
-## Writing docs that can be checked
+## Where the docs and the code disagree
 
-You do not have to change how you write to get value from this. ecChronos's README was written for people, not for us. Sentences of a certain shape get checked, though, and it is worth knowing which.
+The sweep was not small repositories. Nearly every one had over a thousand stars, and a third had over ten thousand. Five of the disagreements it found, each checked by hand against the default branch in September 2026, largest repository first:
 
-Name real things. `NodeWorker` is checkable, and "the worker" is checkable only if one class answers to it. Backticks help a reader and cost nothing.
+<div class="bp-figure" data-reveal>
+<div class="bp-stats bp-stats--3">
+<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">7.6M</div><div class="bp-stat-label">GitHub stars across the repositories scanned</div></div>
+<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">175</div><div class="bp-stat-label">of them with more than 10,000 stars</div></div>
+<div class="bp-stat bp-stat--danger"><div class="bp-stat-value">5</div><div class="bp-stat-label">below: what the document says, and what the code does</div></div>
+</div>
+<ul class="bp-repos">
+<li class="bp-repo">
+<a class="bp-repo-head" href="https://github.com/apache/dolphinscheduler/blob/dev/docs/docs/en/contribute/backend/spi/registry.md?plain=1#L20"><span class="bp-repo-name">Apache DolphinScheduler</span><span class="bp-repo-stars"><i style="width:97%"></i><b>&#9733; 14.5k</b></span></a>
+<p class="bp-repo-doc"><span>docs</span>The contributor guide says to implement <code>org.apache.dolphinscheduler.registry.api.RegistryFactory</code>.</p>
+<p class="bp-repo-code"><span>code</span>No type by that name is declared anywhere in the repository. The name survives only in the guide, in two languages.</p>
+</li>
+<li class="bp-repo">
+<a class="bp-repo-head" href="https://github.com/dotnet/BenchmarkDotNet/blob/master/docs/articles/configs/exporters.md?plain=1#L101"><span class="bp-repo-name">BenchmarkDotNet</span><span class="bp-repo-stars"><i style="width:94%"></i><b>&#9733; 11.5k</b></span></a>
+<p class="bp-repo-doc"><span>docs</span>The exporters page documents the properties of <code>ISummaryStyle</code>.</p>
+<p class="bp-repo-code"><span>code</span>The type is <code>SummaryStyle</code>, a class. There is no interface by the documented name.</p>
+</li>
+<li class="bp-repo">
+<a class="bp-repo-head" href="https://github.com/apache/pinot/blob/master/pinot-sql-ddl/DESIGN.md?plain=1#L97"><span class="bp-repo-name">Apache Pinot</span><span class="bp-repo-stars"><i style="width:88%"></i><b>&#9733; 6.1k</b></span></a>
+<p class="bp-repo-doc"><span>docs</span><code>DESIGN.md</code> says <code>pinot-sql-ddl</code> depends only on <code>pinot-spi</code>, <code>pinot-common</code> and <code>calcite-babel</code>.</p>
+<p class="bp-repo-code"><span>code</span>The module&rsquo;s build and <code>MaterializedViewSchemaInferer</code> also pull in <code>pinot-query-planner</code>.</p>
+</li>
+<li class="bp-repo">
+<a class="bp-repo-head" href="https://github.com/modelcontextprotocol/csharp-sdk/blob/c40ee044fd415c70da5176c749cb5ef02f2b59f6/.github/copilot-instructions.md#L258"><span class="bp-repo-name">MCP C# SDK</span><span class="bp-repo-stars"><i style="width:85%"></i><b>&#9733; 4.5k</b></span></a>
+<p class="bp-repo-doc"><span>docs</span>Line 258 of the Copilot instructions says to use <code>McpServerFactory</code>.</p>
+<p class="bp-repo-code"><span>code</span>Deleted in December 2025 by the same agent that wrote the line. The line is still on <code>main</code>; a fix is open.</p>
+</li>
+<li class="bp-repo">
+<a class="bp-repo-head" href="https://github.com/Ericsson/ecchronos/pull/1786"><span class="bp-repo-name">Ericsson ecChronos</span><span class="bp-repo-stars"><i style="width:36%"></i><b>&#9733; 37</b></span></a>
+<p class="bp-repo-doc"><span>docs</span>The <code>core.impl</code> README says <code>NodeWorker</code> calls <code>RepairScheduler.putConfigurations()</code>.</p>
+<p class="bp-repo-code"><span>code</span>The call moved to <code>SchemaRefresher</code> in #1786. The sentence did not move with it.</p>
+</li>
+</ul>
+<p class="bp-figure-caption">Each row links to the line in the document. The bar is the repository&rsquo;s star count on a log scale. These are disagreements between a repository&rsquo;s own documentation and its code, reported as such; whether the fix belongs in the sentence or in the code is the maintainer&rsquo;s call.</p>
+</div>
 
-Say where things live and what they use. "`ConnectionType` is in `utils`" and "`NodeWorker` calls `RepairScheduler`" are placement and dependency claims, which are the relations a parser can answer at both revisions.
+## Writing docs that get checked
 
-Say what must not happen. "The core never imports from plugins" is a rule the moment it is written down, and it is the kind of rule an agent in a hurry is most likely to break.
+You do not have to change how you write. ecChronos's README was written for people, and it produced 28 rules. Sentences of a certain shape get checked, though, and it helps to know which.
 
-Leave intent as prose. "We prefer composition" is not a claim about structure, and nothing will pretend it is one.
-
-Keep the agent files honest too. `AGENTS.md` and `.github/copilot-instructions.md` are read by the same process, so the layering and naming rules you give your agents are checked against the code they write.
+Name real things: `NodeWorker` is checkable, and "the worker" only is if one class answers to it. Say where things live and what they use: "`ConnectionType` is in `utils`" and "`NodeWorker` calls `RepairScheduler`" are the placement and dependency claims a parser can answer at both revisions. Say what must not happen: "the core never imports from plugins" is a rule the moment it is written down, and it is the kind an agent in a hurry is most likely to break. Leave intent as prose; "we prefer composition" is not a claim about structure and nothing will pretend it is. And keep the agent files honest, because `AGENTS.md` and `.github/copilot-instructions.md` are read by the same process, so the rules you give your agents are checked against the code they write.
 
 ## Where to start
 
-If your team is leaning into AI-assisted development, write the decisions down, because agents will read them. Then have something check every pull request against them, because agents and humans will also break them, cleanly and plausibly, a few lines at a time, in files nobody thought to open.
-
-[Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open your next pull request. Striff reads the docs you already have and checks every rule in them, with nothing to write and nothing to configure. For a public pull request in somebody else's repository, [the browser extension](/#extension) does the same in a tab beside Files changed.
+[Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open your next pull request. Striff reads the docs you already have and checks every rule in them, free on public repositories, with nothing to write and nothing to configure. For a public pull request in somebody else's repository, [the browser extension](/#extension) does the same in a tab beside Files changed.
