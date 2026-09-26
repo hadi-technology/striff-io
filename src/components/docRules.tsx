@@ -6,7 +6,7 @@
  * calling the same status different things, which is the confusion the labels were rewritten to
  * end, reintroduced by copying.
  */
-import { createElement } from "react";
+import { createElement, useLayoutEffect, useRef, useState } from "react";
 
 /**
  * What the last pull request to judge a rule said about it.
@@ -113,4 +113,49 @@ export function snippet(text: string, term?: string, radius = 45): string {
   const from = Math.max(0, at - radius);
   const to = Math.min(text.length, at + needle.length + radius);
   return `${from > 0 ? "…" : ""}${text.slice(from, to).trim()}${to < text.length ? "…" : ""}`;
+}
+
+/**
+ * A cell that stops after a few lines, and opens when there is more.
+ *
+ * A rule's sentence is a customer's own prose and can be a paragraph. Left alone, one long
+ * sentence sets the height of its row and pushes everything after it off the screen, so a table of
+ * twenty rules reads as a table of four. Clamped, every row is the same shape and the long ones
+ * say they have more.
+ *
+ * The toggle only appears where the text really is cut: measured after layout, against the clamped
+ * height, so a two-line sentence carries no affordance it does not need. On paper nothing is
+ * clamped -- a printed page has no way to expand anything.
+ *
+ * @param lines how many lines to show before cutting
+ * @param children the cell's content
+ */
+export function Clamped({ lines = 3, children }: { lines?: number; children: any }) {
+  const [open, setOpen] = useState(false);
+  const [cut, setCut] = useState(false);
+  const body = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const element = body.current;
+    if (!element || open) return;
+    // A couple of pixels of slack: sub-pixel line heights make an uncut cell look cut.
+    setCut(element.scrollHeight - element.clientHeight > 2);
+  }, [children, open, lines]);
+
+  return (
+    <div className="clamp-wrap">
+      <div
+        ref={body}
+        className={`clamp${open ? " is-open" : ""}`}
+        style={{ ["--clamp-lines" as any]: String(lines) }}
+      >
+        {children}
+      </div>
+      {(cut || open) && (
+        <button type="button" className="clamp-toggle" onClick={() => setOpen(!open)}>
+          {open ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
+  );
 }

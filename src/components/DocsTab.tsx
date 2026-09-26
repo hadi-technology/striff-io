@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { mark, snippet, withCode, when } from "./docRules";
+import { Clamped, mark, snippet, withCode, when } from "./docRules";
 
 /**
  * The documents Striff can read in one repository, and the rules it found in them.
@@ -69,6 +69,8 @@ interface Catalog {
   /** The commit that branch pointed at when the documents were last listed. */
   defaultBranchSha: string | null;
   lastScanMs: number | null;
+  /** What came of the last attempt to list this repository, null where none is recorded. */
+  lastAttempt: { atMs: number; outcome: string; reason: string | null; documents: number } | null;
   summary: Summary;
   documents: Doc[];
   exclusions: Exclusion[];
@@ -995,11 +997,31 @@ export default function DocsTab({
 
       {catalog && catalog.documents.length === 0 && !loading && (
         <div className="dashboard-empty">
-          <p className="text-slate-600">
-            {catalog.lastScanMs === null
-              ? "Striff is listing this repository's documents now. They appear here as soon as it has them — a few seconds, usually."
-              : "Striff found no document it can read in this repository. It looks for Markdown and text documents on the default branch."}
-          </p>
+          {catalog.lastAttempt?.outcome === "failed" ? (
+            <>
+              <p className="text-slate-600">
+                Striff could not read this repository to list its documents. Nothing about it is
+                known yet — this is not a repository with no documents.
+              </p>
+              {catalog.lastAttempt.reason && (
+                <p className="docs-attempt-reason">{catalog.lastAttempt.reason}</p>
+              )}
+              <button
+                type="button"
+                className="dashboard-button dashboard-button-secondary mt-4"
+                disabled={busy}
+                onClick={() => loadCatalog()}
+              >
+                Try again
+              </button>
+            </>
+          ) : (
+            <p className="text-slate-600">
+              {catalog.lastScanMs === null
+                ? "Striff is listing this repository's documents now. They appear here as soon as it has them — a few seconds, usually."
+                : "Striff found no document it can read in this repository. It looks for Markdown and text documents on the default branch."}
+            </p>
+          )}
         </div>
       )}
 
@@ -1188,8 +1210,12 @@ export default function DocsTab({
                           }
                         >
                           <td className="docs-rule-line">{rule.sourceLine ? `:${rule.sourceLine}` : ""}</td>
-                          <td className="docs-rule-quote">{withCode(rule.quote)}</td>
-                          <td className="docs-rule-statement">{withCode(rule.statement)}</td>
+                          <td className="docs-rule-quote">
+                            <Clamped lines={4}>{withCode(rule.quote)}</Clamped>
+                          </td>
+                          <td className="docs-rule-statement">
+                            <Clamped lines={4}>{withCode(rule.statement)}</Clamped>
+                          </td>
                           <td>
                             <span
                               className={`docs-outcome is-${docStanding(rule)}`}

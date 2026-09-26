@@ -14,10 +14,12 @@ const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
 const STRIFF_API_BASE = process.env.STRIFF_API_BASE_URL || "https://api.striff.io";
 
-// Valid for 30 days from issue, matching the installation token's lifetime:
+// Minted for this one request and spent immediately, so it lives in minutes, not days. It travels
+// as a query parameter, which means it lands in any access log along the way; a token that has
+// expired by the time a log is read is worth much less to whoever reads it.
 // v1.<expiresAtEpochSec>.<hex HMAC of "v1:<installation id>:<owner>/<repo>:<expiry>">. A token
 // minted for one repository is invalid for any other; striff-api answers an expired one with 401.
-const TOKEN_LIFETIME_SEC = 30 * 24 * 60 * 60;
+const TOKEN_LIFETIME_SEC = 10 * 60;
 
 function generateRepoToken(installationId, owner, repo) {
   const expiresAt = Math.floor(Date.now() / 1000) + TOKEN_LIFETIME_SEC;

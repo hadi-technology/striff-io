@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { mark, withCode, when } from "./docRules";
+import { Clamped, mark, withCode, when } from "./docRules";
 
 /**
  * Every rule Striff has read from one repository's documents, in one list.
@@ -58,6 +58,8 @@ interface RepoRules {
   /** The commit that branch pointed at when the documents were last listed. */
   defaultBranchSha: string | null;
   lastScanMs: number | null;
+  /** What came of the last attempt to list this repository, null where none is recorded. */
+  lastAttempt: { atMs: number; outcome: string; reason: string | null; documents: number } | null;
   summary: Summary;
   documents: { document: Doc; rules: Rule[] }[];
   truncated: boolean;
@@ -449,7 +451,13 @@ export default function RulesTab({
 
       {data && rows.length === 0 && !loading && !data.truncated && (
         <div className="dashboard-empty">
-          {data.lastScanMs === null ? (
+          {data.lastAttempt?.outcome === "failed" ? (
+            <p className="text-slate-600">
+              Striff could not read this repository to list its documents, so it cannot say what
+              rules it holds.{" "}
+              {data.lastAttempt.reason ? <span className="docs-attempt-reason">{data.lastAttempt.reason}</span> : null}
+            </p>
+          ) : data.lastScanMs === null ? (
             <p className="text-slate-600">
               Striff is listing this repository's documents. Any rules it has already read appear
               here as soon as that lands — a few seconds, usually.
@@ -532,10 +540,12 @@ export default function RulesTab({
                   }
                 >
                   <td className="docs-rule-statement">
-                    {withCode(row.statement, term)}
-                    {row.quote && (
-                      <span className="rules-quote">“{withCode(row.quote, term)}”</span>
-                    )}
+                    <Clamped lines={4}>
+                      {withCode(row.statement, term)}
+                      {row.quote && (
+                        <span className="rules-quote">“{withCode(row.quote, term)}”</span>
+                      )}
+                    </Clamped>
                   </td>
                   <td className="rules-source">
                     <span className="rules-source-where">

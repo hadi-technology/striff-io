@@ -6078,3 +6078,53 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   line-height: 1.6;
 }
 .dashboard-metric-waiting span { color: #57606a; font-weight: 600; }
+
+/* What went wrong with a listing, in the words of whatever failed. */
+.docs-attempt-reason {
+  margin-top: 0.4rem;
+  color: #8a5a1f;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.75rem;
+  word-break: break-word;
+}
+
+/* The per-document table: a line number is three characters, and the sentence and the rule are
+   what a reader is here for. table-layout is fixed, so without this every column took a quarter. */
+.docs-pane .docs-rules th:nth-child(1), .docs-pane .docs-rules td:nth-child(1) { width: 4.5rem; }
+.docs-pane .docs-rules th:nth-child(2), .docs-pane .docs-rules td:nth-child(2) { width: 34%; }
+.docs-pane .docs-rules th:nth-child(3), .docs-pane .docs-rules td:nth-child(3) { width: 34%; }
+.docs-pane .docs-rules th:nth-child(4), .docs-pane .docs-rules td:nth-child(4) { width: auto; }
+@media (max-width: 640px) {
+  .docs-pane .docs-rules th:nth-child(1), .docs-pane .docs-rules td:nth-child(1),
+  .docs-pane .docs-rules th:nth-child(2), .docs-pane .docs-rules td:nth-child(2),
+  .docs-pane .docs-rules th:nth-child(3), .docs-pane .docs-rules td:nth-child(3) { width: auto; }
+}
+
+/* A cell that stops after a few lines. One long sentence used to set the height of its row and
+   push the rest of the table off the screen. */
+.clamp-wrap { display: block; }
+.clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--clamp-lines, 3);
+  line-clamp: var(--clamp-lines, 3);
+  overflow: hidden;
+}
+.clamp.is-open {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+.clamp-toggle {
+  margin-top: 0.2rem;
+  color: #2563eb;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.clamp-toggle:hover { text-decoration: underline; }
+@media print {
+  /* Paper cannot expand anything, so nothing is cut on it. */
+  .clamp { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
+  .clamp-toggle { display: none; }
+}
