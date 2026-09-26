@@ -3131,3 +3131,5 @@ html[data-scheme="auto"] body { background: #fbfbfa; }
 .sb .bp-check-ev { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.6rem; margin-top: 0.7rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: var(--sb-bg-2); font-family: var(--sb-mono); font-size: 0.76rem; line-height: 1.55; color: var(--sb-text); overflow-wrap: anywhere; }
 .sb .bp-check-ev-k { color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.66rem; padding-top: 0.15rem; }
 .sb .sb-prose .bp-check code { background: var(--sb-surface); }
+
+.sb .bp-bar--muted { background: var(--sb-line); }
