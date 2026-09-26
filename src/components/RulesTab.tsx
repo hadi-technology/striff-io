@@ -460,7 +460,9 @@ export default function RulesTab({
           </p>
           {data && <RevisionLine catalog={data} />}
         </div>
-        {summary && rows.length > 0 && (
+        {/* Shown even with nothing in them. A repository whose documents are all unread is exactly
+            when someone needs the count of unread documents and the way to read them. */}
+        {summary && (
           <div className="docs-tally">
             {([
               ["all", counts.all, "rules", "", "Every rule read from this repository's docs."],
@@ -540,11 +542,24 @@ export default function RulesTab({
               }}
             />
           ) : (
-            <p className="text-slate-600">
-              Striff hasn't read a rule out of this repository yet. It reads a doc when a pull
-              request changes code that doc talks about; the documents view lists everything it can
-              read.
-            </p>
+            <>
+              <p className="text-slate-600">
+                Striff has these documents listed but has not read any of them yet. It reads a doc
+                the first time a pull request changes code that doc talks about, so a repository
+                nobody has opened a pull request against stays like this.
+              </p>
+              <p className="text-slate-600">
+                To see what it promises now, read them all: <b>Read {" "}
+                {Math.max(
+                  0,
+                  summary
+                    ? summary.documents - summary.retired - summary.screenedOut - summary.excluded
+                        - summary.read
+                    : 0
+                )}</b> above, beside the document count. It takes a few minutes and costs a model
+                call per document.
+              </p>
+            </>
           )}
         </div>
       )}

@@ -5,6 +5,9 @@ import BlogLink from "../components/BlogLink.astro";
 import RuleRows from "../components/RuleRows.astro";
 import { heroExampleRules, heroExampleRepo, heroExampleTally } from "../data/heroExampleRules";
 import MetricsTab from "../components/MetricsTab";
+import { Image } from "astro:assets";
+import dashRules from "../assets/dash-rules.webp";
+import dashDocs from "../assets/dash-docs.webp";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 
 // ---- Problem-section visualization: agents doing the work ----
@@ -215,6 +218,10 @@ const mgrSlides = [
   {
     title: "Your docs stay true, because a change that contradicts them is caught.",
     body: "An agent builds from what the docs say, so a sentence the code no longer matches is a defect that gets copied into the next change. Once every pull request is checked against the docs, the contradiction shows up on the change that made it, with the line quoted, while the fix is still one line."
+  },
+  {
+    title: "Every rule your documents state, in one list.",
+    body: "Striff reads your architecture docs, your ADRs and your agent instructions and writes down the rule each sentence states. The dashboard shows all of them together: the line they came from, the sentence itself, the rule it became, and whether the code on your default branch keeps it. Open a document to read its rules beside the rest of it."
   },
   {
     title: "See which repositories are drifting from their docs.",
@@ -728,6 +735,18 @@ const plans = [
                   )}
 
                   {i === 2 && (
+                    <div class="mgr-shots">
+                      <figure class="mgr-shot mgr-shot-back">
+                        <Image src={dashDocs} alt="The documents page: the repository's docs in a tree, and one document's rules line by line beside it." widths={[700, 1400]} sizes="(max-width: 900px) 90vw, 560px" loading="lazy" />
+                      </figure>
+                      <figure class="mgr-shot mgr-shot-front">
+                        <Image src={dashRules} alt="The rules page: every rule read from the repository's docs, with the line it came from, the sentence, the rule, and whether the code keeps it." widths={[750, 1500]} sizes="(max-width: 900px) 92vw, 640px" loading="lazy" />
+                      </figure>
+                      <span class="hcc-chip hcc-chip-example mgr-shot-chip">Illustrative</span>
+                    </div>
+                  )}
+
+                  {i === 3 && (
                     <div class="mgr-dash" data-metrics-preview inert>
                       <div class="mgr-dash-scale" data-metrics-preview-scale>
                         <div class="dashboard-shell">
