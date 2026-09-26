@@ -187,9 +187,9 @@ const mgrPrs = [
  * published post on this site. The cards say what goes wrong, not how old a doc is.
  */
 const teamFailures = [
-  { tone: "amber", title: "It follows a sentence that is no longer true", body: "The agent builds on a class, a call or a pattern the team already retired. If the build breaks it recovers, at a cost. If it doesn\u2019t, the old design comes back.", example: "The MCP C# SDK\u2019s Copilot instructions tell every agent to use a class Copilot itself deleted.", href: "/blog/architectural-findings-in-oss" },
+  { tone: "amber", title: "It follows a sentence that is no longer true", body: "The agent builds on a class, a call or a pattern the team already retired. If the build breaks it recovers, at a cost. If it doesn\u2019t, the old design comes back.", example: "The MCP C# SDK\u2019s Copilot instructions tell every agent to use a class Copilot itself deleted.", href: "/blog/design-docs-are-enforceable-now" },
   { tone: "danger", title: "It breaks a rule that is still true", body: "\u201cControllers go through the service layer.\u201d The agent takes the shortcut. The code compiles, the tests pass, the diff looks fine, and the document that forbade it is not in the diff. Merged.", example: "97 of 7,161 documented rules were broken by the pull request under review, in a sweep of public repositories.", href: "/blog/design-docs-are-enforceable-now" },
-  { tone: "brand", title: "It writes new docs from the wrong ones", body: "Asked to document the architecture, the agent reads the existing docs and repeats their mistakes with a fresh timestamp. The next agent now has two sentences telling it the same wrong thing.", example: "An agent-written architecture section in 2026 names a class removed in 2020.", href: "/blog/architectural-findings-in-oss" }
+  { tone: "brand", title: "It writes new docs from the wrong ones", body: "Asked to document the architecture, the agent reads the existing docs and repeats their mistakes with a fresh timestamp. The next agent now has two sentences telling it the same wrong thing.", example: "An agent-written architecture section in 2026 names a class removed in 2020.", href: "/blog/design-docs-are-enforceable-now" }
 ];
 /**
  * One agent-written pull request, and the two futures it has. Illustrative: the repository,
@@ -802,7 +802,7 @@ const plans = [
         </div>
 
         <div class="section-invite">
-          <BlogLink slug="architectural-findings-in-oss" kicker="What happens when an agent builds from a doc that is wrong" />
+          <BlogLink slug="design-docs-are-enforceable-now" kicker="What happens when an agent builds from a doc that is wrong" />
         </div>
       </div>
     </section>
