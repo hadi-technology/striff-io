@@ -1047,11 +1047,11 @@ export default function DocsTab({
             {catalog && (
               <ReadRepository
                 reading={catalog.reading}
-                waiting={Math.max(
-                  0,
-                  summary.documents - summary.retired - summary.screenedOut - summary.excluded
-                    - summary.read
-                )}
+                /* Documents nothing has read, which is the only work a reading does. The old
+                   sum subtracted the states it knew about and so counted documents a reading
+                   could not finish as waiting for ever, leaving the control offered on a
+                   repository where it had nothing left to achieve. */
+                waiting={summary.notRead}
                 read={summary.read}
                 busy={asking || busy}
                 onRead={readRepository}

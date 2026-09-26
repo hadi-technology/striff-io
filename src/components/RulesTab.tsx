@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { Clamped, mark, useWatch, withCode, when } from "./docRules";
+import { Clamped, ExtensionNote, mark, useWatch, withCode, when } from "./docRules";
 import Listing from "./Listing";
 import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
 
@@ -500,11 +500,11 @@ export default function RulesTab({
             {data && (
               <ReadRepository
                 reading={data.reading}
-                waiting={Math.max(
-                  0,
-                  summary.documents - summary.retired - summary.screenedOut - summary.excluded
-                    - summary.read
-                )}
+                /* Documents nothing has read, which is the only work a reading does. The old
+                   sum subtracted the states it knew about and so counted documents a reading
+                   could not finish as waiting for ever, leaving the control offered on a
+                   repository where it had nothing left to achieve. */
+                waiting={summary.notRead}
                 read={summary.read}
                 busy={asking || loading}
                 stale={watchedOut}
@@ -717,6 +717,8 @@ export default function RulesTab({
               </>
             )}
           </div>
+
+          {rows.length > 0 && <ExtensionNote />}
         </div>
       )}
     </div>

@@ -6439,3 +6439,20 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   line-height: 1.5;
 }
 .docs-rule-count b { color: #16202b; font-weight: 700; }
+
+/* The extension, at the foot of a list of rules: a note, not a banner. It sits below the table
+   so it is read after the thing someone came for, and never in front of it. */
+.extension-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.9rem 0 0;
+  border-top: 1px solid #f0f3f7;
+  padding-top: 0.85rem;
+  color: #6b7684;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.extension-note svg { flex: 0 0 auto; margin-top: 0.15rem; color: #97a2ae; }
+.extension-note a { color: #1d4ed8; font-weight: 600; }
+@media print { .extension-note { display: none; } }

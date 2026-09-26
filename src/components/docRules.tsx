@@ -207,3 +207,35 @@ export function useWatch(
     return () => window.clearInterval(timer);
   }, [active, everyMs, untilMs]);
 }
+
+/** Where the extension lives, in one place, because three parts of the dashboard point at it. */
+export const EXTENSION_URL =
+  "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
+
+/**
+ * The extension, mentioned where it is relevant rather than advertised.
+ *
+ * Someone reading this page is looking at rules away from the code they are about. The extension
+ * puts the same findings on the pull request, next to the diff, which is the one place they change
+ * anything. That makes this a useful sentence at the foot of a list of rules and an advertisement
+ * anywhere else, so it goes here and nowhere a reader has to get past it.
+ */
+export function ExtensionNote() {
+  return (
+    <p className="extension-note">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="4" />
+        <line x1="21.17" y1="8" x2="12" y2="8" />
+        <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
+        <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
+      </svg>
+      <span>
+        See these where the change is. The{" "}
+        <a href={EXTENSION_URL} target="_blank" rel="noopener noreferrer">browser extension</a>{" "}
+        puts a pull request's doc findings, and a diagram of what it changed, on the GitHub page
+        itself, so the code and what your docs say about it are side by side.
+      </span>
+    </p>
+  );
+}
