@@ -228,8 +228,12 @@ export const handler = async (event) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           error: "not_authorized",
-          message: "This GitHub account cannot see that repository through this installation. "
-            + "If it should, check that the Striff app still has access to it.",
+          // Naming the pair gives away nothing the caller did not just send, and without it a
+          // refusal is a dead end: the usual cause is a repository asked for under the wrong
+          // installation, which is invisible unless both are written down.
+          message: `GitHub does not list ${owner}/${repo} under installation ${installationId} for `
+            + "your account. If it should be there, check the Striff app's repository access; if "
+            + "the repository belongs to another account, switch to it in the account menu.",
         }),
       };
     }

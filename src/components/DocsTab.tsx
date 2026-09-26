@@ -374,10 +374,22 @@ export default function DocsTab({
     if (openRepo && openRepo !== repo) setRepo(openRepo);
   }, [openRepo]);
 
+  // A repository belongs to one account. Switching account while this view holds the last one's
+  // repository asks the API about a pair that does not exist — an installation and a repository
+  // from different accounts — which is refused, correctly, and reads as "no documents".
+  useEffect(() => {
+    if (repos.length === 0) return;
+    if (!repos.some((each) => each.full_name === repo)) setRepo(repos[0].full_name);
+  }, [installationId, repos.length]);
+
   useEffect(() => {
     if (!owner || !name) return;
+    // A repository and an installation from different accounts is a pair GitHub refuses, and the
+    // refusal reads as "this repository has nothing in it". Nothing is asked until the two agree;
+    // the effect above brings the view back to a repository this account has.
+    if (repos.length > 0 && !repos.some((each) => each.full_name === repo)) return;
     loadCatalog();
-  }, [repo]);
+  }, [repo, installationId, repos.length]);
 
   // Following another rule here while this view is already open: the catalogue is loaded, so only
   // the pane changes.

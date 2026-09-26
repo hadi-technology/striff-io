@@ -200,6 +200,14 @@ export default function RulesTab({
     if (openRepo && openRepo !== repo) setRepo(openRepo);
   }, [openRepo]);
 
+  // A repository belongs to one account. Switching account while this view holds the last one's
+  // repository asks the API about a pair that does not exist — an installation and a repository
+  // from different accounts — which is refused, correctly, and reads as "no documents".
+  useEffect(() => {
+    if (repos.length === 0) return;
+    if (!repos.some((each) => each.full_name === repo)) setRepo(repos[0].full_name);
+  }, [installationId, repos.length]);
+
   // Keyed on when it was asked for, not on what was asked for: following the same count twice has
   // to move the view both times.
   useEffect(() => {
@@ -208,8 +216,12 @@ export default function RulesTab({
 
   useEffect(() => {
     if (!owner || !name) return;
+    // A repository and an installation from different accounts is a pair GitHub refuses, and the
+    // refusal reads as "this repository has nothing in it". Nothing is asked until the two agree;
+    // the effect above brings the view back to a repository this account has.
+    if (repos.length > 0 && !repos.some((each) => each.full_name === repo)) return;
     load();
-  }, [repo]);
+  }, [repo, installationId, repos.length]);
 
   useEffect(() => {
     if (!exportOpen) return;
