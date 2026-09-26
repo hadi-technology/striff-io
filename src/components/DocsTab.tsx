@@ -399,8 +399,10 @@ export default function DocsTab({
       // A repository switched away from still answers; it just no longer has a view to paint.
       if (wanted !== loadedAt.current) return;
       if (!res.ok) {
-        setError(data.error || "Couldn't load this repository's documents");
-        setCatalog(null);
+        setError(data.message || data.error || "Couldn't load this repository's documents");
+        // What is on screen was true when it arrived. A refresh that failed is a reason to say so,
+        // not to take the documents away from whoever is reading them.
+        if (!catalogRef.current) setCatalog(null);
         return;
       }
       setCatalog(data);

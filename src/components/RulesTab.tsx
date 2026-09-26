@@ -202,8 +202,9 @@ export default function RulesTab({
       );
       const body = await res.json();
       if (!res.ok) {
-        setError(body.error || "Couldn't load this repository's rules");
-        setData(null);
+        setError(body.message || body.error || "Couldn't load this repository's rules");
+        // Same as the documents view: a failed refresh says so and leaves the rules where they are.
+        if (!dataRef.current) setData(null);
         return;
       }
       setData(body);
