@@ -3,6 +3,7 @@ import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
 import { Clamped, mark, snippet, useWatch, withCode, when } from "./docRules";
 import Listing from "./Listing";
+import ReadRepository, { type Reading } from "./ReadRepository";
 
 /**
  * The documents Striff can read in one repository, and the rules it found in them.
@@ -72,6 +73,8 @@ interface Catalog {
   lastScanMs: number | null;
   /** What came of the last attempt to list this repository, null where none is recorded. */
   lastAttempt: { atMs: number; outcome: string; reason: string | null; documents: number } | null;
+  /** Where the last whole-repository reading got to, null where none was asked for. */
+  reading: Reading | null;
   summary: Summary;
   documents: Doc[];
   exclusions: Exclusion[];
@@ -346,6 +349,7 @@ export default function DocsTab({
   const [indexing, setIndexing] = useState(false);
   // What a failed write or a failed document read said, shown where it happened.
   const [actionError, setActionError] = useState("");
+  const [asking, setAsking] = useState(false);
   /** Which document was asked for last; an older answer never paints over a newer one. */
   const openedAt = useRef(0);
   /** The same for the catalogue: switching repository twice must not land on the first one. */
@@ -359,6 +363,12 @@ export default function DocsTab({
 
   // A listing this page asked for is queued work: watch until it lands, and stop as soon as there
   // is anything to show or anything to say about why there is not.
+  useWatch(
+    catalog?.reading?.state === "queued" || catalog?.reading?.state === "running",
+    () => loadCatalog(),
+    5000,
+    20 * 60 * 1000
+  );
   useWatch(
     !!catalog
       && (catalog.documents || []).length === 0
@@ -505,6 +515,32 @@ export default function DocsTab({
     if (!ok) return;
     await loadCatalog();
     await openDoc(path);
+  }
+
+  /**
+   * Asks Striff to read every document here, the same request the rules view offers. A reader who
+   * opens the documents of a fresh repository sees a tree of "not read yet" and should not have to
+   * find another page to do something about it.
+   */
+  async function readRepository() {
+    setAsking(true);
+    setActionError("");
+    try {
+      const res = await fetch(
+        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
+        { method: "POST" }
+      );
+      if (!res.ok) {
+        const answer = await res.json().catch(() => ({}));
+        setActionError(answer.message || answer.error || "Couldn't ask Striff to read this repository.");
+        return;
+      }
+      await loadCatalog();
+    } catch {
+      setActionError("Couldn't ask Striff to read this repository.");
+    } finally {
+      setAsking(false);
+    }
   }
 
   /** Asks for a document a screen skipped to be read anyway, or leaves it to the screens again. */
@@ -998,6 +1034,19 @@ export default function DocsTab({
               <b>{summary.rules}</b>
               <i>rules</i>
             </button>
+            {catalog && (
+              <ReadRepository
+                reading={catalog.reading}
+                waiting={Math.max(
+                  0,
+                  summary.documents - summary.retired - summary.screenedOut - summary.excluded
+                    - summary.read
+                )}
+                read={summary.read}
+                busy={asking || busy}
+                onRead={readRepository}
+              />
+            )}
           </div>
         )}
       </div>
