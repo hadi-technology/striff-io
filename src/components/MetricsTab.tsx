@@ -409,12 +409,21 @@ export default function MetricsTab({
 
   // Config arrays of cards: adding a metric later is a one-entry addition here (plus the matching
   // backend field) rather than a rewrite of this component.
-  type MetricCard = { key: string; label: string; description: string; wide?: boolean; render: () => any };
+  type MetricCard = {
+    key: string;
+    label: string;
+    description: string;
+    wide?: boolean;
+    /** Whether this installation has anything to show here yet; a card without is not drawn. */
+    has?: boolean;
+    render: () => any;
+  };
 
   // Documented rules lead the tab: every flag on it comes from one.
   const RULE_CARDS: MetricCard[] = [
     {
       key: "docViolated",
+      has: hasDocData,
       label: "Documented rules broken",
       description:
         "Rules from your own documentation that a pull request broke: true before the change, false after it. The check quotes the sentence and the line it came from. Rules already broken before a PR are counted separately and never charged to it.",
@@ -432,6 +441,7 @@ export default function MetricsTab({
     },
     {
       key: "docHeld",
+      has: hasDocData,
       label: "Documented rules held",
       description:
         "Share of documented-rule checks where the pull request kept the rule: nothing in it broke the rule. Checked is held plus broken plus already broken; rules Striff could not answer are left out rather than counted as a pass.",
@@ -450,6 +460,7 @@ export default function MetricsTab({
     },
     {
       key: "docPreExisting",
+      has: hasDocData,
       label: "Documented rules already broken",
       description:
         "Rules your documentation states that were already broken in the code Striff checked, not by the pull request that checked them. Reported so they are never mistaken for a pass, and never charged to that pull request.",
@@ -496,6 +507,7 @@ export default function MetricsTab({
     },
     {
       key: "coverage",
+      has: windowWebhooksReceived > 0,
       label: "Coverage",
       description:
         "Share of GitHub PR-check webhook events (opened, updated, reopened) that completed analysis, over the last 6 months. Below 100% may mean PRs were skipped -- check billing status or repo connection.",
@@ -519,6 +531,7 @@ export default function MetricsTab({
     },
     {
       key: "repoTrend",
+      has: orderedRepoKeys.length > 0,
       label: "Most-flagged repos over time",
       description:
         "Every repo that has been among a month's most-flagged at any point in the last 6 months, tracked month by month. A flag is a documented rule one of the repo's pull requests broke. A repo can show a lower or zero count in months it wasn't in that month's own top list.",
@@ -583,6 +596,7 @@ export default function MetricsTab({
     },
     {
       key: "recentFlagged",
+      has: hasDocData && rulePrs.length > 0,
       label: "PRs that broke a rule",
       description:
         "This month's recent pull requests that broke at least one documented rule, the most rules broken first -- click through to see each rule and the sentence it came from.",
@@ -632,16 +646,42 @@ export default function MetricsTab({
     </MetricCardShell>
   );
 
+  const shown = (cards: MetricCard[]) => cards.filter((card) => card.has !== false);
+  const waiting = (cards: MetricCard[]) => cards.filter((card) => card.has === false);
+
   return (
     <div>
       <div className="dashboard-metric-window">
         <span className="dashboard-metric-window-title">Last {months.length} month{months.length === 1 ? "" : "s"}</span>
         <span className="dashboard-metric-window-range">{rangeLabel}</span>
       </div>
-      <p className="dashboard-metric-section-title is-first">Documented rules</p>
-      <div className="dashboard-metric-grid">{RULE_CARDS.map(renderCard)}</div>
-      <p className="dashboard-metric-section-title">Pull requests</p>
-      <div className="dashboard-metric-grid">{ACTIVITY_CARDS.map(renderCard)}</div>
+      {shown(RULE_CARDS).length > 0 && (
+        <>
+          <p className="dashboard-metric-section-title is-first">Documented rules</p>
+          <div className="dashboard-metric-grid">{shown(RULE_CARDS).map(renderCard)}</div>
+        </>
+      )}
+      {shown(ACTIVITY_CARDS).length > 0 && (
+        <>
+          <p className="dashboard-metric-section-title">Pull requests</p>
+          <div className="dashboard-metric-grid">{shown(ACTIVITY_CARDS).map(renderCard)}</div>
+        </>
+      )}
+      {/* An installation this young has more empty panels than numbers, and a grid of "no data
+          yet" tells a reader nothing they cannot see from the ones that are missing. The names go
+          on one line instead. */}
+      {waiting([...RULE_CARDS, ...ACTIVITY_CARDS]).length > 0 && (
+        <p className="dashboard-metric-waiting">
+          Waiting for data:{" "}
+          {waiting([...RULE_CARDS, ...ACTIVITY_CARDS]).map((card, i, all) => (
+            <span key={card.key} title={card.description}>
+              {card.label}
+              {i < all.length - 1 ? ", " : ""}
+            </span>
+          ))}
+          . These appear once Striff has analysed pull requests that produce them.
+        </p>
+      )}
     </div>
   );
 }
