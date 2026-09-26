@@ -1,6 +1,6 @@
 ---
-title: "AI didn't make engineering discipline obsolete. It made it the whole job."
-description: "Design doc, then plan, then the agent builds it piece by piece: the companies that make coding agents now tell you to work this way. We surveyed 335 open-source repositories: 63% already hand their agents docs to work from, and only 8% of those check that the code still matches."
+title: "63% of repositories hand their agents docs to build from. 8% of those check the code still matches."
+description: "Design doc, then plan, then the agent builds it task by task: the companies that make coding agents now tell you to work this way. We surveyed 335 open-source repositories whose docs describe their architecture. 63% already give their agents docs to work from, and only 8% of those run anything that checks the code against them."
 date: 2026-09-15
 category: "Data & research"
 cover: "survey"
@@ -8,9 +8,11 @@ cover: "survey"
 
 *First published in September 2025. Rewritten in September 2026 with our own data: a survey of 335 open-source repositories.*
 
-Here is how a feature gets built at a growing number of companies now. Someone writes a design doc: what the feature does, where it lives, what it must not touch. The architecture doc already says how the system fits together. Then an agent turns the design into an implementation plan, a list of small, checkable tasks, and works through it one task at a time. The next feature starts the same way, from the same documents.
+We looked at 335 active open-source repositories whose own documentation describes their architecture. Sixty-three percent of them give their coding agents documents to build from. Of those, 8% run any tool that checks the code against an architecture rule. The rest of this post is where those numbers come from and why I think they matter.
 
-This isn't a fringe workflow. It's what the companies that build coding agents now tell you to do:
+Start with how a feature gets built at a growing number of companies. Someone writes a design doc: what the feature does, where it lives, what it must not touch. The architecture doc already says how the system fits together. An agent turns the design into an implementation plan, a list of small, checkable tasks, and works through it one task at a time. The next feature starts the same way, from the same documents.
+
+The companies that build coding agents now tell you to work this way:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">What the toolmakers now tell you</p>
@@ -35,7 +37,7 @@ Birgitta Böckeler put it most plainly on [martinfowler.com](https://martinfowle
 
 ## The docs became the program
 
-Look at what that changes. For twenty years a design doc had one reader, the next engineer, and it was allowed to go stale because that engineer could ask someone. Now its main reader is an agent that implements whatever it says, every time, and asks nobody. The documents in your repository have become the instructions your code is built from.
+For twenty years a design doc had one reader, the next engineer, and it could go stale because that engineer could ask someone. Now its main reader is an agent that implements whatever it says, every time, and asks nobody. The documents in your repository are the instructions your code is built from.
 
 The adoption curve is steep:
 
@@ -52,20 +54,20 @@ The adoption curve is steep:
 
 ## Every practice got more load-bearing
 
-There's a comforting story that goes with all this: *AI writes cleaner code than most humans, so the old disciplines matter less now.* I think it has it exactly backwards. Almost no engineering best practice exists to help you *write* code. They exist to help you *change* code later, safely, without holding the whole system in your head:
+There's a comforting story that goes with all this: AI writes cleaner code than most humans, so the old disciplines matter less now. I think it has it backwards. Almost no engineering practice exists to help you write code. They exist so you can change code later, safely, without holding the whole system in your head:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">What each practice is really for</p>
+<p class="bp-figure-title">What each practice is for</p>
 <div class="bp-flow" style="--bp-flow-cols: 4">
-<div class="bp-flow-step"><span class="bp-flow-num">1</span><p class="bp-flow-title">Tests</p><p class="bp-flow-desc">Not proof of correctness. Confidence to change something six months from now without fear.</p></div>
+<div class="bp-flow-step"><span class="bp-flow-num">1</span><p class="bp-flow-title">Tests</p><p class="bp-flow-desc">Confidence to change something six months from now without fear.</p></div>
 <div class="bp-flow-step"><span class="bp-flow-num">2</span><p class="bp-flow-title">Readable code &amp; naming</p><p class="bp-flow-desc">Cheap onboarding for the next reader, who is now as likely to be an agent as a person.</p></div>
-<div class="bp-flow-step"><span class="bp-flow-num">3</span><p class="bp-flow-title">Small PRs</p><p class="bp-flow-desc">Units of change a human can actually hold in their head and meaningfully judge.</p></div>
+<div class="bp-flow-step"><span class="bp-flow-num">3</span><p class="bp-flow-title">Small PRs</p><p class="bp-flow-desc">Units of change a human can hold in their head and judge.</p></div>
 <div class="bp-flow-step"><span class="bp-flow-num">4</span><p class="bp-flow-title">Docs &amp; ADRs</p><p class="bp-flow-desc">Shared memory, and now the instructions agents build from.</p></div>
 </div>
-<p class="bp-figure-caption">The common denominator: every practice manages the cost and risk of <em>future change</em>. None of them is about typing speed.</p>
+<p class="bp-figure-caption">Every practice manages the cost and risk of <em>future change</em>. None of them is about typing speed.</p>
 </div>
 
-What AI changed is the **volume of change**. If best practices are the machinery for managing change, and AI multiplied change, every one of them became more load-bearing, not less. The industry data agrees:
+What AI changed is the volume of change. If these practices are the machinery for managing change, and AI multiplied change, every one of them now carries more weight. The industry data agrees:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">What the industry data shows</p>
@@ -78,11 +80,11 @@ What AI changed is the **volume of change**. If best practices are the machinery
 <p class="bp-figure-caption">Sources: <a href="https://github.blog/news-insights/octoverse/octoverse-a-new-developer-joins-github-every-second-as-ai-leads-typescript-to-1/" target="_blank" rel="noopener">GitHub Octoverse 2025</a>; <a href="https://www.faros.ai/blog/ai-software-engineering" target="_blank" rel="noopener">Faros AI, <em>The AI Productivity Paradox</em></a> (a vendor study; correlations across teams); <a href="https://www.gitclear.com/the_ai_code_quality_maintainability_gap" target="_blank" rel="noopener">GitClear, June 2026</a>. And <a href="https://services.google.com/fh/files/misc/2025_state_of_ai_assisted_software_development.pdf" target="_blank" rel="noopener">Google's 2025 DORA report</a>: AI adoption "now improves software delivery throughput… However, it still increases delivery instability."</p>
 </div>
 
-GitClear's connectivity number is the one I keep coming back to. In their words: "New code is less and less woven into the existing codebase." Refactoring, the work that keeps a codebase's shape coherent, has collapsed to under 4% of changed lines. That isn't a story about bad code line by line. It's a story about *system-level* properties degrading while everyone's attention stays at the line level.
+GitClear's connectivity number is the one I keep coming back to. In their words: "New code is less and less woven into the existing codebase." Refactoring, the work that keeps a codebase's shape coherent, has fallen to under 4% of changed lines. Line by line the code may be fine. The properties degrading are system-level ones, while everyone's attention stays at the line level.
 
 ## So we measured it ourselves
 
-When I first wrote this post, every number in it was somebody else's. So this time we looked at the repositories this matters most for: 335 active open-source projects whose own documentation describes their architecture. For each one we read the last 30 merged pull requests, and the files, build and config on the default branch.
+When I first wrote this post, every number in it was somebody else's. This time we looked at the repositories this matters most for: 335 active open-source projects whose own documentation describes their architecture. For each one we read the last 30 merged pull requests, and the files, build and config on the default branch.
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">335 repositories that wrote their architecture down</p>
@@ -95,16 +97,16 @@ When I first wrote this post, every number in it was somebody else's. So this ti
 <p class="bp-figure-caption">Our survey, September 2026. Active public repositories in Java, Python, C# and TypeScript whose docs state architectural rules; not a random sample of GitHub. AI involvement means a co-author trailer naming an AI tool, a pull request opened by a coding agent, or a "Generated with" footer; that is a floor, since tab completion and chat-assisted edits leave no trace. Architecture checks means ArchUnit, import-linter, dependency-cruiser, NetArchTest and similar, detected from default-branch build, config and CI files, with every hit checked by hand.</p>
 </div>
 
-Put those together. In repositories that went to the trouble of writing down their architecture, AI agents are already in roughly one pull request in three. Repos with an AGENTS.md or CLAUDE.md see even more: 38% of their merged pull requests involve an agent, against 18% in repos without one. Nearly two-thirds hand their agents documents to build from. And of those, 92% run nothing that checks an architecture rule. The agents are building from the docs, and nothing checks that the code still matches them.
+Put those together. In repositories that went to the trouble of writing down their architecture, AI agents are already in roughly one pull request in three. Repos with an AGENTS.md or CLAUDE.md see more: 38% of their merged pull requests involve an agent, against 18% in repos without one. Nearly two-thirds hand their agents documents to build from, and of those, 92% run nothing that checks an architecture rule. The agents are building from the docs, and in those repositories nothing checks that the code still matches them.
 
 ## The practices that scale themselves, and the one that doesn't
 
-Most of the classic practices have a guardian that scales automatically. Style has linters. Correctness has tests and CI. Even readability has help now, since coding assistants are genuinely good at naming and idiom. Crank the volume up and these hold the line, because the enforcement is mechanical and per-file.
+Most of the classic practices have a guardian that scales on its own. Style has linters. Correctness has tests and CI. Even readability has help now, since coding assistants are good at naming and idiom. Crank the volume up and these hold, because the enforcement is mechanical and per-file.
 
-But look at what's left unguarded:
+What's left unguarded:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">Every practice has a guardian. Except one.</p>
+<p class="bp-figure-title">Every practice has a guardian, except one</p>
 <div class="bp-compare-scroll">
 <table class="bp-compare">
 <thead><tr><th>Practice</th><th>Who enforces it</th><th>Holds as volume grows?</th></tr></thead>
@@ -120,18 +122,18 @@ But look at what's left unguarded:
 </tbody>
 </table>
 </div>
-<p class="bp-figure-caption">The unguarded rows share a property: they're <strong>global</strong>. You cannot check them by looking at one file, one diff, or one PR. They exist only in the relationships <em>between</em> components, which is exactly what per-file tooling can't see.</p>
+<p class="bp-figure-caption">The unguarded rows are all global. You cannot check them by looking at one file, one diff, or one PR. They exist only in the relationships <em>between</em> components, which per-file tooling can't see.</p>
 </div>
 
-The practice with no guardian is **architecture**: what your docs say the system is, which component depends on which, whether boundaries hold, whether the shape is drifting. In a docs-first workflow that is also the practice the agents lean on hardest, because the architecture doc is what they read before they touch anything.
+The practice with no guardian is architecture: what your docs say the system is, which component depends on which, whether boundaries hold, whether the shape is drifting. In a docs-first workflow that is also the practice the agents lean on hardest, because the architecture doc is what they read before they touch anything.
 
 ## When the docs are the program, drift is a bug
 
 A stale doc used to cost a confused new hire an afternoon. Now it costs every agent run that reads it, and agents do what the docs say. ETH Zurich's study of AGENTS.md files found that "instructions in the context files are well followed by coding agents." An engineer who documented a 108,000-line codebase for agents reported what happens when those instructions go stale:
 
-<div class="bp-callout bp-callout--amber">"Outdated context documents caused agents to generate code that conflicted with recent refactors." And: "Agents trust documentation, and out-of-date specs can mislead sessions and lead to silent failures." <br><em>— <a href="https://arxiv.org/abs/2602.20478" target="_blank" rel="noopener">Codified Context</a>, arXiv 2602.20478</em></div>
+<div class="bp-callout bp-callout--amber">"Outdated context documents caused agents to generate code that conflicted with recent refactors." And: "Agents trust documentation, and out-of-date specs can mislead sessions and lead to silent failures." <br><em>Source: <a href="https://arxiv.org/abs/2602.20478" target="_blank" rel="noopener">Codified Context</a>, arXiv 2602.20478</em></div>
 
-Böckeler saw it in her own tests: given notes describing classes that already existed, the agent "took them as a new specification and generated them all over again, creating duplicates." And keeping the instructions current measurably matters: in a study of AI IDE rule files, compliance rose "from 49.14% to 72.13%" after the rules were updated ([arXiv 2606.12231](https://arxiv.org/abs/2606.12231)). Meanwhile, in a sample of 100 context files, 24% had been generated once and never reviewed again ([arXiv 2606.15828](https://arxiv.org/abs/2606.15828)).
+Böckeler saw it in her own tests: given notes describing classes that already existed, the agent "took them as a new specification and generated them all over again, creating duplicates." Keeping the instructions current measurably matters: in a study of AI IDE rule files, compliance rose "from 49.14% to 72.13%" after the rules were updated ([arXiv 2606.12231](https://arxiv.org/abs/2606.12231)). Meanwhile, in a sample of 100 context files, 24% had been generated once and never reviewed again ([arXiv 2606.15828](https://arxiv.org/abs/2606.15828)).
 
 And the docs are drifting faster than anyone is watching them:
 
@@ -147,10 +149,10 @@ And the docs are drifting faster than anyone is watching them:
 </tbody>
 </table>
 </div>
-<p class="bp-figure-caption">Sources: Octoverse 2025; Faros AI; <a href="https://linearb.io/resources/software-engineering-benchmarks-report" target="_blank" rel="noopener">LinearB 2026 benchmarks</a> (8.1M pull requests; a vendor study); our survey above. Writing stopped being the bottleneck. <em>Noticing what the writing did to the system</em> still is.</p>
+<p class="bp-figure-caption">Sources: Octoverse 2025; Faros AI; <a href="https://linearb.io/resources/software-engineering-benchmarks-report" target="_blank" rel="noopener">LinearB 2026 benchmarks</a> (8.1M pull requests; a vendor study); our survey above. Writing stopped being the bottleneck. Noticing what the writing did to the system still is.</p>
 </div>
 
-The mechanism is simple. A diff shows you lines. It does not show you that those lines made a sentence in your own README false, or created the first-ever edge from your core into a plugin. That information lives in the relationship between this change and everything around it: other files, other documents, every change before it. It is structurally absent from the thing your reviewers are reading. Here is a real one:
+The mechanism is simple. A diff shows you lines. It does not show you that those lines made a sentence in your own README false, or created the first edge from your core into a plugin. That information lives in the relationship between this change and everything around it: other files, other documents, every change before it. It is absent from the thing your reviewers are reading. Here is a real one:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">The same pull request, two representations</p>
@@ -195,22 +197,16 @@ The mechanism is simple. A diff shows you lines. It does not show you that those
 <p class="bp-figure-caption">Ericsson/ecchronos <a href="https://github.com/Ericsson/ecchronos/pull/1786">#1786</a>, a real pull request. The call moved to a new class, <code>SchemaRefresher</code>; the sentence on the right did not move with it. It sits in a file the diff does not contain, so no amount of careful diff-reading surfaces it, and as of September 2026 it is still on <code>master</code>. The next agent asked to work on <code>NodeWorker</code> reads that sentence first. <a href="/blog/design-docs-are-enforceable-now">The whole story</a>.</p>
 </div>
 
-This is not a story about careless review. That pull request was reviewed and approved by people who are good at their jobs. The information simply was not in front of them.
+The reviewers of that pull request were not careless. They approved a clean refactor, and the sentence it made false was in a file they had no reason to open.
 
 ## The bill comes due quietly
 
-The failure mode isn't dramatic. Nothing crashes. The docs drift one clean-looking PR at a time, the agents keep building from them, and the codebase accumulates coupling, cycles and duplicated responsibilities until the symptoms surface as things nobody connects back to architecture: builds got slow, onboarding takes months, every estimate has a fudge factor.
+Nothing crashes. The docs drift one clean-looking PR at a time, the agents keep building from them, and the codebase accumulates coupling and duplicated responsibilities until the symptoms show up as things nobody connects back to architecture: builds got slow, onboarding takes months.
 
-<div class="bp-callout bp-callout--amber"><strong>Teams that ship faster while their structural oversight stays flat aren't being efficient. They're borrowing.</strong> The loan comes due as a system that technically passes every check while becoming harder to change every week, and by the time it's obvious, the cheap moment to fix it is hundreds of merges in the past.</div>
+<div class="bp-callout bp-callout--amber">A team that ships faster while its structural oversight stays flat is borrowing. The loan comes due as a system that passes every check while becoming harder to change every week, and by the time it's obvious, the cheap moment to fix it is hundreds of merges in the past.</div>
 
-## So what do you actually do?
+## What to do
 
-Keep every practice you already have, and keep writing the design docs, specs and plans: that is the right way to work with agents. But be honest about the gap. If the docs are what your agents build from, the docs have to stay true, and in 92% of the repositories that hand their agents docs, nothing checks that they do.
+Keep every practice you already have, and keep writing the design docs, specs and plans. That is the right way to work with agents. But if the docs are what your agents build from, the docs have to stay true, and in 92% of the repositories that hand their agents docs, nothing checks that they do.
 
-Closing that gap doesn't mean hiring architects to trace dependencies by hand, and it certainly doesn't mean slowing your team down to pre-AI speed. It means giving the one unguarded practice the same thing every other practice already has: **an automatic, per-PR guardian.**
-
-That's what Striff is. It reads the architecture your docs already describe, turns every checkable sentence into a rule, and evaluates each one at both revisions of every pull request. A rule can be as plain as where a class lives or as sharp as *"the domain module must not depend on infrastructure"*: if your team wrote it down, the pull request that breaks it is told which sentence it broke, quoted from the file it lives in. Every pull request also gets a diagram of what changed.
-
-The bar is deliberately high, and the consequence is that it is quiet. That is the same bargain your linter makes: you trust it because it does not shout. Your linter guards style, your CI guards correctness, and the documents your agents build from finally get a guardian of their own, at whatever speed your team ships.
-
-[Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open your next pull request.
+Give that one unguarded practice what every other practice already has: an automatic check on every pull request. If your team has an ArchUnit or import-linter setup, run it in CI. If the rules live in prose, that is what we built [Striff](https://github.com/apps/striff-app/installations/new) for: it reads the sentences already in your docs, turns the checkable ones into rules, and evaluates each at both revisions of every pull request, quoting the sentence a change broke.
