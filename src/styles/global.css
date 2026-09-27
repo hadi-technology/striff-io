@@ -6125,7 +6125,12 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   gap: 0.85rem;
   margin-top: 1.5rem;
 }
-.check-foot > * { flex: 1 1 22rem; margin: 0; }
+/* The blog card is the offer and takes the room; the source link is a footnote and takes what
+   it needs. Both stretched to half the row made a one-line link look like a second call to
+   action. */
+.check-foot > * { margin: 0; }
+.check-foot .oss-link { flex: 0 0 auto; align-self: center; margin-top: 0; }
+.check-foot > :not(.oss-link) { flex: 1 1 22rem; }
 
 /* Full screen keeps the frame's own chrome, so the controls stay reachable. */
 .ghcheck-diagram:fullscreen { height: 100vh; border-radius: 0; border: 0; background: #fff; }

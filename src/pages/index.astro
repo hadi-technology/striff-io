@@ -369,103 +369,6 @@ const plans = [
       </div>
     </section>
 
-    <!-- ==================== HOW IT IS COMPUTED, AND WHAT COMES OUT ==================== -->
-    <!-- The pipeline and the artifact it produces, side by side: the mechanism answers
-         where a number came from, the check answers what you actually get. -->
-    <section id="pipeline" class="pipeline-section scroll-mt-24 pb-20 pt-20">
-      <div class="mx-auto max-w-[90rem] px-6">
-        <!-- The five steps run across, because they are a sequence and a reader follows a
-             sequence left to right. Underneath, the two things the sequence produces sit side by
-             side: what a reviewer is handed, and what one rule of it actually compiled to. -->
-        <div class="compute-stack">
-          <div data-reveal>
-            <div class="compute-intro compute-intro-wide">
-              <h2 class="text-balance">Every verdict is computed, not generated.</h2>
-              <p class="section-subcopy mt-4">
-                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> The language model only reads the prose and explains the results, and nothing is needed beyond the documents your repository already has.
-              </p>
-            </div>
-            <p class="compute-label"><span>01</span> How a finding is produced</p>
-            <ol class="pipeline-flow is-across">
-              {pipeline.map((step, i) => (
-                <li class={`pipe-step pipe-${step.kind}`} data-pipe-step={i + 1}>
-                  <span class="pipe-rail" aria-hidden="true"><span class="pipe-dot"></span></span>
-                  <div class="pipe-body">
-                    <p class="pipe-head">
-                      <span class="pipe-num">{String(i + 1).padStart(2, "0")}</span>
-                      <span class="pipe-name">{step.name}</span>
-                      <span class="pipe-kind">{step.kind === "neural" ? "Language model" : "Deterministic"}</span>
-                    </p>
-                    <p class="pipe-text">{step.body}</p>
-                    {/* What this step produced, appearing as the sequence reaches it. Small,
-                        under the paragraph that describes the step, so the description and its
-                        result are one thing rather than a card somewhere else on the page. */}
-                    <p class="pipe-out"><span>{step.out}</span></p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          <BlogLink slug="grounded-ai-findings" kicker="How we keep the model honest" class="compute-invite" />
-        </div>
-      </div>
-
-      <script is:inline>
-        // Walks the five steps, revealing what each one produced. Plain DOM: the page is
-        // static and this is the only thing on it that needs a clock.
-        (function () {
-          var flow = document.querySelector(".pipeline-flow.is-across");
-          if (!flow) return;
-          var steps = Array.prototype.slice.call(flow.querySelectorAll("[data-pipe-step]"));
-          var LAST = steps.length;
-          var still = window.matchMedia("(prefers-reduced-motion: reduce)");
-          var timer = null;
-          var at = 0;
-
-          function show(stage) {
-            at = stage;
-            steps.forEach(function (li, i) {
-              li.classList.toggle("is-on", i + 1 === stage);
-              li.classList.toggle("is-done", i + 1 <= stage);
-            });
-          }
-          function stop() { if (timer) { window.clearInterval(timer); timer = null; } }
-          function run() {
-            stop();
-            timer = window.setInterval(function () {
-              if (at >= LAST) { stop(); return; }
-              show(at + 1);
-            }, 1400);
-          }
-
-          steps.forEach(function (li, i) {
-            li.setAttribute("tabindex", "0");
-            li.setAttribute("role", "button");
-            li.setAttribute("aria-label", "Show what step " + (i + 1) + " produced");
-            function pick() { stop(); show(i + 1); }
-            li.addEventListener("click", pick);
-            li.addEventListener("keydown", function (e) {
-              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
-            });
-          });
-
-          // Asked for less motion, or no observer to tell us when it is on screen: everything at
-          // once, which is the content without the sequence.
-          if (still.matches || !("IntersectionObserver" in window)) { show(LAST); return; }
-          show(0);
-          var watch = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-              if (!entry.isIntersecting) return;
-              watch.disconnect();
-              run();
-            });
-          }, { threshold: 0.4 });
-          watch.observe(flow);
-        })();
-      </script>
-    </section>
-
     <!-- ==================== THE DIAGRAM ==================== -->
     <!-- The structural diff, kept exactly as it was but no longer opening the page. The
          rules are what nobody else does; this is what the same check draws beside them, and
@@ -679,6 +582,103 @@ const plans = [
       </div>
     </section>
 
+    <!-- ==================== HOW IT IS COMPUTED, AND WHAT COMES OUT ==================== -->
+    <!-- The pipeline and the artifact it produces, side by side: the mechanism answers
+         where a number came from, the check answers what you actually get. -->
+    <section id="pipeline" class="pipeline-section scroll-mt-24 pb-20 pt-20">
+      <div class="mx-auto max-w-[90rem] px-6">
+        <!-- The five steps run across, because they are a sequence and a reader follows a
+             sequence left to right. Underneath, the two things the sequence produces sit side by
+             side: what a reviewer is handed, and what one rule of it actually compiled to. -->
+        <div class="compute-stack">
+          <div data-reveal>
+            <div class="compute-intro compute-intro-wide">
+              <h2 class="text-balance">Every verdict is computed, not generated.</h2>
+              <p class="section-subcopy mt-4">
+                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> The language model only reads the prose and explains the results, and nothing is needed beyond the documents your repository already has.
+              </p>
+            </div>
+            <p class="compute-label"><span>01</span> How a finding is produced</p>
+            <ol class="pipeline-flow is-across">
+              {pipeline.map((step, i) => (
+                <li class={`pipe-step pipe-${step.kind}`} data-pipe-step={i + 1}>
+                  <span class="pipe-rail" aria-hidden="true"><span class="pipe-dot"></span></span>
+                  <div class="pipe-body">
+                    <p class="pipe-head">
+                      <span class="pipe-num">{String(i + 1).padStart(2, "0")}</span>
+                      <span class="pipe-name">{step.name}</span>
+                      <span class="pipe-kind">{step.kind === "neural" ? "Language model" : "Deterministic"}</span>
+                    </p>
+                    <p class="pipe-text">{step.body}</p>
+                    {/* What this step produced, appearing as the sequence reaches it. Small,
+                        under the paragraph that describes the step, so the description and its
+                        result are one thing rather than a card somewhere else on the page. */}
+                    <p class="pipe-out"><span>{step.out}</span></p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <BlogLink slug="grounded-ai-findings" kicker="How we keep the model honest" class="compute-invite" />
+        </div>
+      </div>
+
+      <script is:inline>
+        // Walks the five steps, revealing what each one produced. Plain DOM: the page is
+        // static and this is the only thing on it that needs a clock.
+        (function () {
+          var flow = document.querySelector(".pipeline-flow.is-across");
+          if (!flow) return;
+          var steps = Array.prototype.slice.call(flow.querySelectorAll("[data-pipe-step]"));
+          var LAST = steps.length;
+          var still = window.matchMedia("(prefers-reduced-motion: reduce)");
+          var timer = null;
+          var at = 0;
+
+          function show(stage) {
+            at = stage;
+            steps.forEach(function (li, i) {
+              li.classList.toggle("is-on", i + 1 === stage);
+              li.classList.toggle("is-done", i + 1 <= stage);
+            });
+          }
+          function stop() { if (timer) { window.clearInterval(timer); timer = null; } }
+          function run() {
+            stop();
+            timer = window.setInterval(function () {
+              if (at >= LAST) { stop(); return; }
+              show(at + 1);
+            }, 1400);
+          }
+
+          steps.forEach(function (li, i) {
+            li.setAttribute("tabindex", "0");
+            li.setAttribute("role", "button");
+            li.setAttribute("aria-label", "Show what step " + (i + 1) + " produced");
+            function pick() { stop(); show(i + 1); }
+            li.addEventListener("click", pick);
+            li.addEventListener("keydown", function (e) {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
+            });
+          });
+
+          // Asked for less motion, or no observer to tell us when it is on screen: everything at
+          // once, which is the content without the sequence.
+          if (still.matches || !("IntersectionObserver" in window)) { show(LAST); return; }
+          show(0);
+          var watch = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (!entry.isIntersecting) return;
+              watch.disconnect();
+              run();
+            });
+          }, { threshold: 0.4 });
+          watch.observe(flow);
+        })();
+      </script>
+    </section>
+
     <!-- ==================== FOR TEAMS ==================== -->
     <!-- The one section on the page for the lead rather than the reviewer. It sells the
          dashboard and nothing else: the three views, each a door into the demo, which is the
@@ -734,70 +734,6 @@ const plans = [
               </div>
             </article>
           ))}
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== ADOPTION / CTA ==================== -->
-    <section class="bg-slate-50 pb-20 pt-16">
-      <div class="mx-auto max-w-[90rem] px-6">
-        <div class="max-w-3xl" data-reveal>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Get started</p>
-          <h2 class="mt-3 text-balance">Start with public repos. Scale to your team.</h2>
-          <p class="section-subcopy mt-4">
-            Nothing to learn and no workflow to change: Striff shows up as one more check on the PRs your team already opens. Start free on public repos, add private repos when you're ready.
-          </p>
-        </div>
-          <div class="mt-10 grid gap-5 lg:grid-cols-3">
-            {plans.map((plan) => (
-              <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-md" data-reveal>
-                <div class="flex items-center gap-3">
-                  <span class="icon-badge icon-badge-blue" aria-hidden="true">
-                    {plan.icon === "globe" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18"/><path d="M12 3a15 15 0 0 0 0 18"/></svg>
-                    )}
-                    {plan.icon === "team" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 4.13a3 3 0 0 1 0 5.74"/></svg>
-                    )}
-                    {plan.icon === "gear" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1.8 1.8 0 1 1-3.6 0v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a1.8 1.8 0 1 1 0-3.6h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1.8 1.8 0 1 1 3.6 0v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1.8 1.8 0 1 1 0 3.6h-.2a1 1 0 0 0-.9.6Z"/></svg>
-                    )}
-                  </span>
-                  <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">{plan.eyebrow}</p>
-                  <div class="ml-auto text-right">
-                    {plan.price && <span class="text-lg font-extrabold text-blue-600">{plan.price}</span>}
-                    <span class="block text-xs text-slate-400">{plan.priceDetail}</span>
-                  </div>
-                </div>
-                <p class="mt-3 text-base font-semibold text-slate-900">{plan.title}</p>
-                <p class="mt-2 text-sm leading-7 text-slate-600">{plan.body}</p>
-                {plan.eyebrow === "Starter" && (
-                  <p class="mt-3 text-xs text-slate-400">
-                    <a href="/pricing" class="text-blue-600 hover:underline">Team $59/mo · Scale $149/mo →</a>
-                  </p>
-                )}
-              </article>
-            ))}
-          </div>
-          <div class="mt-10 flex flex-wrap gap-3">
-            <a class="btn-primary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
-              <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
-              </svg>
-              Get started
-            </a>
-            <a class="btn-secondary" href="/pricing">Team pricing</a>
-            <a class="btn-chrome" href="#extension">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="4" />
-                <line x1="21.17" y1="8" x2="12" y2="8" />
-                <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
-                <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
-              </svg>
-              Browser extension
-            </a>
-          </div>
         </div>
       </div>
     </section>
@@ -866,6 +802,70 @@ const plans = [
                 allowfullscreen
               ></iframe>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ADOPTION / CTA ==================== -->
+    <section class="bg-slate-50 pb-20 pt-16">
+      <div class="mx-auto max-w-[90rem] px-6">
+        <div class="max-w-3xl" data-reveal>
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Get started</p>
+          <h2 class="mt-3 text-balance">Start with public repos. Scale to your team.</h2>
+          <p class="section-subcopy mt-4">
+            Nothing to learn and no workflow to change: Striff shows up as one more check on the PRs your team already opens. Start free on public repos, add private repos when you're ready.
+          </p>
+        </div>
+          <div class="mt-10 grid gap-5 lg:grid-cols-3">
+            {plans.map((plan) => (
+              <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-md" data-reveal>
+                <div class="flex items-center gap-3">
+                  <span class="icon-badge icon-badge-blue" aria-hidden="true">
+                    {plan.icon === "globe" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18"/><path d="M12 3a15 15 0 0 0 0 18"/></svg>
+                    )}
+                    {plan.icon === "team" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 4.13a3 3 0 0 1 0 5.74"/></svg>
+                    )}
+                    {plan.icon === "gear" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1.8 1.8 0 1 1-3.6 0v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a1.8 1.8 0 1 1 0-3.6h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1.8 1.8 0 1 1 3.6 0v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1.8 1.8 0 1 1 0 3.6h-.2a1 1 0 0 0-.9.6Z"/></svg>
+                    )}
+                  </span>
+                  <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">{plan.eyebrow}</p>
+                  <div class="ml-auto text-right">
+                    {plan.price && <span class="text-lg font-extrabold text-blue-600">{plan.price}</span>}
+                    <span class="block text-xs text-slate-400">{plan.priceDetail}</span>
+                  </div>
+                </div>
+                <p class="mt-3 text-base font-semibold text-slate-900">{plan.title}</p>
+                <p class="mt-2 text-sm leading-7 text-slate-600">{plan.body}</p>
+                {plan.eyebrow === "Starter" && (
+                  <p class="mt-3 text-xs text-slate-400">
+                    <a href="/pricing" class="text-blue-600 hover:underline">Team $59/mo · Scale $149/mo →</a>
+                  </p>
+                )}
+              </article>
+            ))}
+          </div>
+          <div class="mt-10 flex flex-wrap gap-3">
+            <a class="btn-primary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
+              <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+              </svg>
+              Get started
+            </a>
+            <a class="btn-secondary" href="/pricing">Team pricing</a>
+            <a class="btn-chrome" href="#extension">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="4" />
+                <line x1="21.17" y1="8" x2="12" y2="8" />
+                <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
+                <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
+              </svg>
+              Browser extension
+            </a>
           </div>
         </div>
       </div>
