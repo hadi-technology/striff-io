@@ -250,7 +250,7 @@ const plans = [
             <span aria-hidden="true">Your <span class="h1-rot" data-h1-rot><span class="h1-rot-word is-on">architecture docs</span><span class="h1-rot-word">design docs</span><span class="h1-rot-word">AGENTS.md</span></span>,<br /> <span class="hero-h1-accent">enforced on every pull request</span>.</span>
           </h1>
           <p class="section-subcopy hero-subcopy mx-auto">
-            Striff reads the documents already in your repository, turns the sentences that make claims about the code into rules, and checks every pull request against them. <strong>When a change contradicts what your team wrote down, it says so before the merge, and quotes the line.</strong>
+            Striff turns the sentences in the docs you already have into logical rules, and checks each one against a formal model of your code before and after every pull request. Not a language model&rsquo;s opinion: formal model checking. <strong>When a change contradicts what your team wrote down, Striff says so before the merge, and quotes the line.</strong>
           </p>
           <div class="flex flex-wrap justify-center gap-3 pt-2">
             <a class="btn-primary btn-primary-lg" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
@@ -261,15 +261,9 @@ const plans = [
             </a>
             <a class="btn-secondary btn-secondary-lg" href="#pipeline">How it works</a>
           </div>
-          <p class="hero-microproof">
-            <span>Free on public repos</span>
-            <span>Nothing to configure</span>
-            <span>One check beside your CI</span>
-          </p>
         </div>
 
         <div class="hero-check-wrap" data-reveal>
-          <p class="hero-check-lede">A language model reads your docs and turns their sentences into rules. Each rule is a logical formula, checked against a formal model of your code before and after the pull request. Here is what that looks like:</p>
           <div class="hero-check-card">
             <header class="hcc-head">
               <span class="hcc-mark"><img src="/icon.svg" alt="" width="20" height="20" /></span>
@@ -278,7 +272,6 @@ const plans = [
                 <i>{heroExampleRepo}</i>
               </span>
               <span class="hcc-spacer"></span>
-              <span class="hcc-chip hcc-chip-example">Example</span>
               <span class="hcc-chip hcc-chip-muted">Java</span>
             </header>
 
@@ -286,7 +279,7 @@ const plans = [
               <span class="hcc-banner-dot" aria-hidden="true"></span>
               <p class="hcc-banner-text">
                 <strong>One of the {heroExampleTally.broken + heroExampleTally.held} rules Striff checked in this repository&rsquo;s own docs no longer holds.</strong>
-                <span>Nothing was configured. Striff read the repository&rsquo;s documents, turned their sentences into rules, and checked them against both revisions.</span>
+                <span>Nothing was configured.</span>
               </p>
               <span class="hcc-tally">
                 <span class="hcc-tally-item hcc-tally-violated"><b>{heroExampleTally.broken}</b><i>broken</i></span>
@@ -294,7 +287,7 @@ const plans = [
               </span>
             </div>
 
-            <RuleRows rows={heroExampleRules} logicNote />
+            <RuleRows rows={heroExampleRules} />
           </div>
           <p class="hero-check-more">Three of the {heroExampleTally.broken + heroExampleTally.held} rules this repository&rsquo;s docs state. <a href="/demo">The dashboard lists all of them &rarr;</a></p>
           <div class="hero-langs" aria-label="Supported languages">
@@ -635,7 +628,6 @@ const plans = [
                   </div>
                 )}
                 <div class="teams-panel-fade" aria-hidden="true"></div>
-                <span class="hcc-chip hcc-chip-example teams-panel-chip">Example</span>
               </div>
               <div class="teams-panel-body">
                 <p class="teams-panel-eyebrow">{panel.eyebrow}</p>
