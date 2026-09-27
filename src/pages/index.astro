@@ -136,6 +136,47 @@ const diagramHeldRules = [
   { statement: "`IncrementalRepairTask` depends on `RepairTask`", quote: "`VnodeRepairTask` / `IncrementalRepairTask` \u2014 Concrete `RepairTask` subclasses for vnode and incremental repair respectively.", doc: "core.impl/README.md", line: 65, inDiagram: false }
 ];
 
+/**
+ * Six of the twenty-four rules from a real Striff check: catatafishen/agentbridge #1102, run on
+ * 2026-09-27 against commit 32538d6. The rule text, the document, the line and the quoted sentence
+ * are copied from the check's own output, and the three columns below are the three the check
+ * posts. Nothing here is written for the website.
+ *
+ * https://github.com/catatafishen/agentbridge/runs/108628049213
+ */
+const realCheckRules = [
+  {
+    rule: "`FileTool` has a `getGitFileStatus` method",
+    doc: "AGENTS.md#L338",
+    quote: "Append git status annotation (tracked/untracked/staged) using FileTool.getGitFileStatus()",
+  },
+  {
+    rule: "`McpProtocolHandler` has a `truncateIfNeeded` method",
+    doc: "AGENTS.md#L373",
+    quote: "The truncateIfNeeded() in McpProtocolHandler provides a safety net, but tools should self-limit",
+  },
+  {
+    rule: "`ConversationService` depends on `ConversationWriter`",
+    doc: "docs/CONVERSATION-PERSISTENCE.md",
+    quote: "ConversationService (serialized async write queue) depends on ConversationWriter (synchronized SQLite writes)",
+  },
+  {
+    rule: "`FileTool` depends on `AgentEditSession`",
+    doc: "docs/INLINE-DIFF-REVIEW.md#L379",
+    quote: "FileTool.writeFile (all variants), FileTool.createFile, FileTool.deleteFile call AgentEditSession.ensureStarted()",
+  },
+  {
+    rule: "`McpHttpServer` depends on `McpProtocolHandler`",
+    doc: "docs/MCP-ARCHITECTURE.md",
+    quote: "McpHttpServer 127.0.0.1:port depends on McpProtocolHandler JSON-RPC handler",
+  },
+  {
+    rule: "`GitCommitTool` depends on `GitTool`",
+    doc: "docs/bugs/COMMIT-NOT-FOUND-IN-LOG-BUG.md",
+    quote: "GitCommitTool.java calls showNewCommitInLog(root) after a successful commit",
+  },
+];
+
 const reportRules = [
   {
     verdict: "violated",
@@ -267,14 +308,20 @@ const plans = [
 
         <div class="hero-check-wrap" data-reveal>
           <div class="hero-check-card">
-            <header class="hcc-head">
-              <span class="hcc-mark"><img src="/icon.svg" alt="" width="20" height="20" /></span>
-              <span class="hcc-headings">
-                <b>Striff / architectural-review</b>
-                <i>{heroExampleRepo}</i>
+            <!-- Styled as the check it is, and in the same clothes as the real one further down
+                 the page, so a reader meets one idea twice rather than two designs once. The
+                 branch and the pull request number are the part that was missing: without them
+                 the card was a table of rules with no occasion. -->
+            <header class="hcc-head ghcheck-head">
+              <span class="ghcheck-mark"><img src="/icon.svg" alt="" width="18" height="18" /></span>
+              <span class="ghcheck-title">
+                <b>Striff</b>
+                <i>{heroExampleRepo} &middot; #418 &middot; feat/csv-export</i>
               </span>
-              <span class="hcc-spacer"></span>
-              <span class="hcc-chip hcc-chip-muted">Java</span>
+              <span class="ghcheck-state is-bad">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.06 1.06L6.94 8 4.97 9.97a.75.75 0 1 0 1.06 1.06L8 9.06l1.97 1.97a.75.75 0 0 0 1.06-1.06L9.06 8l1.97-1.97a.75.75 0 0 0-1.06-1.06L8 6.94Z"/></svg>
+                1 rule broken
+              </span>
             </header>
 
             <div class="hcc-banner">
@@ -502,183 +549,89 @@ const plans = [
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="diagram-intro max-w-3xl" data-reveal>
           <p class="examples-kicker">One real check</p>
-          <h2 class="mt-3 text-balance">This is the whole thing, on a pull request you can open.</h2>
+          <h2 class="mt-3 text-balance">This is a check Striff posted, on a pull request you can open.</h2>
           <p class="section-subcopy mt-4">
-            Everything above, on one change to a public repository: a summary of what moved, the documented rules it was checked against, the one it broke, and a diagram of the classes it touched. <strong>Nothing here was configured. Striff read the repository&rsquo;s own documents.</strong>
+            Not a mock-up of one. Striff is installed on this repository, it read the documents already in it, and it checked every rule it found against a 43-file change. <strong>Twenty-four rules, from five documents nobody wrote for us, and the change kept all of them.</strong>
           </p>
           <p class="diagram-source">
-            <a class="diagram-source-pr" href="https://github.com/Ericsson/ecchronos/pull/1786" target="_blank" rel="noopener noreferrer">
+            <a class="diagram-source-pr" href="https://github.com/catatafishen/agentbridge/pull/1102" target="_blank" rel="noopener noreferrer">
               <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-              Ericsson/ecchronos #1786
+              catatafishen/agentbridge #1102
             </a>
-            <span>Open the pull request and read the change for yourself.</span>
+            <a class="diagram-source-run" href="https://github.com/catatafishen/agentbridge/runs/108628049213" target="_blank" rel="noopener noreferrer">Open the check itself &rarr;</a>
           </p>
         </div>
 
-        <!-- The check, in the order it is read: what moved, what it was checked against, what it
-             broke, and then the diagram, which is the last thing in the check itself. Splitting
-             the summary into one section and the diagram into another asked a reader to believe
-             they came from the same run. -->
+        <!-- The check as GitHub renders it: the summary, the rules table in the three columns the
+             check actually posts, and the diagram, which the check embeds at the end of the same
+             comment. Split across two sections it asked a reader to believe they were one run. -->
         <div class="check-report" data-reveal>
-          <div class="hero-stage-shell report-stage-shell">
-            <div class="ghc ghc-solo" data-report-top>
-              <section class="ghc-pane">
-                <div class="ghc-md">
-                  <h3>Review Summary</h3>
-                  <p>This PR moves repair-history setup into the incremental path. <code>NodeWorker</code> stops referencing <code>RepairScheduler</code> and the table lookups it used, and now depends on <code>SchemaRefresher</code>. <code>RepairHistory</code> drops a public <code>newSession</code> overload that 11 components reach for.</p>
-
-                  <div class="ghc-stack">
-                    <section>
-                      <h3>Top Review Items</h3>
-                      <ul>
-                        <li><strong>📄 Doc conflict</strong>: <code>NodeWorker</code> no longer depends on <code>RepairScheduler</code>, which <code>core.impl/README.md</code> line 136 says it calls. It did at the base revision.</li>
-                      </ul>
-                    </section>
-
-                    <section>
-                      <h3 class="ghc-h3-lead">Documented Rules <span class="ghc-h3-meta">63 rules checked &middot; 62 held &middot; 1 violated</span></h3>
-                      <ul class="rulelist">
-                        {reportRules.map((r) => (
-                          <li class={`rulerow rulerow-${r.verdict}`}>
-                            <span class="rulerow-main">
-                              <InlineCodeText class="rulerow-quote" text={r.quote} />
-                              <InlineCodeText class="rulerow-stmt" text={r.statement} />
-                            </span>
-                            <span class="rulerow-side">
-                              <span class={`rulerow-verdict rulerow-verdict-${r.verdict}`}>{r.label}</span>
-                              <span class="rulerow-src">{r.doc}<b>:{r.line}</b></span>
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p class="rulelist-more">4 of 63 shown</p>
-                    </section>
-                  </div>
-                  <p>And the check carries a diagram of the change itself, which is the rest of this card.</p>
-                </div>
-              </section>
-            </div>
-          </div>
-        </div>
-
-        <p class="check-seam" data-reveal>
-          <span class="check-seam-rule" aria-hidden="true"></span>
-          <span class="check-seam-text">and the same check draws the change</span>
-          <span class="check-seam-rule" aria-hidden="true"></span>
-        </p>
-
-        <div class="relative z-10 mx-auto w-full max-w-[90rem]" data-reveal>
-          <div class="hero-stage-shell" data-hero-stage>
-            <div class="hero-stage-head">
-              <div class="hero-stage-context">
-                <span class="hero-context-chip">Ericsson/ecchronos</span>
-                <span class="hero-context-chip hero-context-chip-muted">PR #1786</span>
-                <span class="hero-context-chip hero-context-chip-muted">Java</span>
-                <span class="hero-context-chip hero-context-chip-danger">1 rule broken</span>
-              </div>
-              <div class="hero-stage-actions">
-                <div class="hero-stage-badge">Striff / architectural-review</div>
-              </div>
+          <div class="ghcheck">
+            <div class="ghcheck-head">
+              <span class="ghcheck-mark"><img src="/icon.svg" alt="" width="18" height="18" /></span>
+              <span class="ghcheck-title">
+                <b>Striff</b>
+                <i>catatafishen/agentbridge &middot; #1102 &middot; fix/issues-1074-and-later</i>
+              </span>
+              <span class="ghcheck-state">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+                Successful
+              </span>
             </div>
 
-            <div class="hero-diagram-wrap">
-              <!-- Striff's focused diagram of the pull request: the classes it touched around
-                   RepairGroup and only the relationships among them. Desktop shows the whole
-                   diagram in the band left of the findings overlay (~416px); tablets start at the
-                   RepairGroup chain; phones get a crop centred on RepairGroup that pans sideways.
-                   Each crop is a view fragment on the image URL, and the stage CSS keeps each image
-                   box at its fragment's aspect: re-tune both together. -->
-              <div
-                class="github-diff-stage example-diff-stage hero-diagram-stage is-static"
-              >
-                <div class="hero-diagram-scroll">
-                  <picture>
-                    <source media="(max-width: 767.98px)" srcset="/examples/ecchronos-1786-focused.svg#svgView(viewBox(440,440,1250,605))" />
-                    <img
-                      src="/examples/ecchronos-1786-focused.svg#svgView(viewBox(-12,-22,2428,1230))"
-                      alt="Striff's focused diagram of Ericsson/ecchronos PR #1786: IncrementalRepairJob leading to RepairGroup and on to IncrementalRepairTask and VnodeRepairTask, beside NodeWorkerManager, with added members in green, removed ones in red and changed ones in blue"
-                      class="github-diff-graphic github-diff-image"
-                      loading="eager"
-                      draggable="false"
-                    />
-                  </picture>
-                </div>
-                <script is:inline>
-                  // Phones: open the sideways-panning crop centred on RepairGroup (x 834-1250 in the
-                  // render; the crop starts at x 440 and is 1250 wide).
-                  (function () {
-                    var sc = document.currentScript.previousElementSibling;
-                    if (!sc || window.innerWidth >= 768) return;
-                    var img = sc.querySelector("img");
-                    var place = function () { sc.scrollLeft = (1042 - 440) * (img.clientWidth / 1250) - sc.clientWidth / 2; };
-                    place();
-                    img.addEventListener("load", place);
-                  })();
-                </script>
+            <div class="ghcheck-body">
+              <h3 class="ghcheck-h">Review Summary</h3>
+              <p class="ghcheck-p">Reviewed 50 components and 64 relationships across the current structural diff.</p>
 
-                <div class="hero-diagram-tag">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="m8 7 3 9M16 7l-3 9M8.5 6h7"/></svg>
-                  Architecture diagram of this PR
-                </div>
+              <h3 class="ghcheck-h">Documented Rules</h3>
+              <p class="ghcheck-note">Rules read from this repository&rsquo;s own docs and checked against the dependency graph this PR produces.</p>
 
-                <!-- Findings overlay. Open on desktop, where it sits beside the diagram; collapsed
-                     below 1280px, where it would otherwise cover the diagram. The class is set by the inline script below rather than rendered,
-                     so there is no open-then-collapse flash on a phone. -->
-                <div class="hero-findings-overlay" data-findings-overlay>
-                  <button class="hero-findings-toggle" type="button" data-findings-toggle>
-                    <span class="hero-findings-badge">1 broken &middot; 7 held</span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hero-findings-chevron"><path d="M6 9l6 6 6-6"/></svg>
-                  </button>
-                  <div class="hero-findings-panel">
-                    <div class="hero-findings-list">
-                      <div class="ai-finding ai-finding-danger">
-                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>Rule</span>
-                        <div>
-                          <strong>The README no longer matches the code</strong>
-                          <p><code>core.impl/README.md</code> says <code>NodeWorker</code> calls <code>RepairScheduler</code>. After this PR, it doesn&rsquo;t.</p>
-                        </div>
-                      </div>
-                      <p class="hero-findings-sub">Held on this change <span>{diagramHeldRules.length}</span></p>
-                      <ul class="rulelist hero-rulelist">
-                        {diagramHeldRules.filter((r) => r.inDiagram).map((r) => (
-                          <li class="rulerow rulerow-held">
-                            <span class="rulerow-main">
-                              <InlineCodeText class="rulerow-quote" text={r.quote} />
-                              <InlineCodeText class="rulerow-stmt" text={r.statement} />
-                            </span>
-                            <span class="rulerow-side">
-                              <span class="rulerow-verdict rulerow-verdict-held">Held</span>
-                              <span class="rulerow-src">{r.doc}<b>:{r.line}</b></span>
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p class="hero-findings-more">+ {diagramHeldRules.filter((r) => !r.inDiagram).length} more held</p>
-                    </div>
-                  </div>
-                </div>
-                <script is:inline>
-                  // Runs inline, mid-parse, so the overlay is painted once in its final state.
-                  (function () {
-                    var el = document.currentScript.previousElementSibling;
-                    if (el && window.innerWidth >= 1280) el.classList.add("is-open");
-                  })();
-                </script>
+              <div class="ghcheck-table-wrap">
+                <table class="ghcheck-table">
+                  <thead><tr><th>Rule</th><th>Source</th><th>This PR</th></tr></thead>
+                  <tbody>
+                    {realCheckRules.map((r) => (
+                      <tr>
+                        <td class="ghcheck-rule"><InlineCodeText text={r.rule} /></td>
+                        <td class="ghcheck-src"><code>{r.doc}</code><span>{r.quote}</span></td>
+                        <td class="ghcheck-verdict"><span class="ghcheck-holds">&#10003; holds</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+              <p class="ghcheck-more">{24 - realCheckRules.length} more rules checked, all held.</p>
+
+              <!-- The diagram is not a second section. The check embeds it here, at the end of the
+                   same comment, and it is wide because a real architecture is wide. -->
+              <figure class="ghcheck-figure">
+                <div class="ghcheck-diagram">
+                  <img src="/examples/agentbridge-1102-diagram.svg" alt="Striff's diagram of catatafishen/agentbridge pull request 1102: the classes the change touched and how they connect, with added members in green, removed in red and changed in blue" loading="lazy" draggable="false" />
+                </div>
+                <figcaption>
+                  The architecture diff, embedded in the same check. Drag to pan.
+                  <a href="/examples/agentbridge-1102-diagram.svg" target="_blank" rel="noopener noreferrer">Open the full diagram &rarr;</a>
+                </figcaption>
+              </figure>
+
+              <p class="ghcheck-foot">
+                <img src="/icon.svg" alt="" width="14" height="14" />
+                <span><b>Striff</b> maps how this pull request changes the architecture and checks it against the rules written in the repository&rsquo;s own docs.</span>
+              </p>
             </div>
           </div>
         </div>
 
         <!-- The two links the intro used to stack. One is about the engine that drew the picture
-             directly above it; the other is the write-up of this exact run. Side by side under
-             the thing they are both about, rather than queued before it. -->
+             directly above it; the other is the long-form account of how a sentence becomes a
+             checked rule. Side by side under the check, not queued in front of it. -->
         <div class="check-foot" data-reveal>
           <a class="oss-link" href="https://github.com/hadi-technology/striff-lib" target="_blank" rel="noopener noreferrer">
             <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
             <span>The diagram engine is open source: <b>striff-lib</b> on GitHub</span>
             <em>MIT</em>
           </a>
-          <BlogLink slug="design-docs-are-enforceable-now" kicker="This run, written up" />
+          <BlogLink slug="design-docs-are-enforceable-now" kicker="One sentence, one pull request, one verdict" />
         </div>
       </div>
     </section>
