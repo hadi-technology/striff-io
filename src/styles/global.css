@@ -2730,107 +2730,9 @@
   border-radius: 0.7rem;
 }
 
-/* The three steps, under the heading: the product before the proof of it.
-   Chevrons between the items rather than around them, so the row reads as one
-   sentence broken into three rather than three separate badges. */
-.hero-steps {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 0.4rem 0.2rem;
-  margin: 0;
-  padding: 0.5rem 0 0;
-  list-style: none;
-}
-.hero-steps li {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  border: 1px solid rgba(30, 58, 138, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  padding: 0.4rem 0.9rem 0.4rem 0.45rem;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-.hero-steps li + li::before {
-  content: "";
-  width: 0.55rem;
-  height: 0.55rem;
-  margin: 0 0.35rem 0 -0.15rem;
-  border-right: 2px solid rgba(37, 99, 235, 0.45);
-  border-bottom: 2px solid rgba(37, 99, 235, 0.45);
-  transform: rotate(-45deg);
-  flex: 0 0 auto;
-}
-.hero-step-num {
-  display: grid;
-  place-items: center;
-  width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 999px;
-  background: #1d4ed8;
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-.hero-step-text {
-  color: #16202b;
-  font-size: 0.9rem;
-  font-weight: 650;
-  letter-spacing: -0.005em;
-}
-@media (max-width: 720px) {
-  /* Stacked, the chevron between pills would point across a gap at nothing, so it goes. */
-  .hero-steps { flex-direction: column; align-items: stretch; gap: 0.4rem; }
-  .hero-steps li { justify-content: flex-start; }
-  .hero-steps li + li::before { display: none; }
-}
-
-/* The hero's card shows one rule and no formula, so its rows want less air than the
-   three-row, fully typeset version in the flagship post. */
-.hcc-table.is-compact .hcc-row { align-items: center; }
-
-/* One rule with its formula, inside the pipeline column. The table it borrows is a three-column
-   grid built for a full-width hero; in a column this narrow those three columns squeeze the rule
-   to one word per line. So it takes the stacked form the same table uses on a phone, at every
-   width, because the column is always this narrow. */
-.compute-formula .hcc-thead { display: none; }
-.compute-formula .hcc-row {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.6rem;
-  padding: 1rem 1.05rem;
-}
-.compute-formula .hcc-rule {
-  padding: 0.55rem 0.7rem;
-  border-radius: 0.45rem;
-  background: #f6f8fa;
-  border: 1px solid #eef2f6;
-}
-.compute-formula .hcc-verdict-cell { justify-content: flex-start; align-items: flex-start; }
-.compute-formula .hcc-status-sat { flex-direction: row; flex-wrap: wrap; gap: 0.2rem 0.75rem; }
-
-.compute-formula {
-  margin: 1.5rem 0 0;
-  border: 1px solid var(--line);
-  border-radius: 0.9rem;
-  background: #fff;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-}
-.compute-formula figcaption {
-  border-bottom: 1px solid #eef2f7;
-  background: #fbfcfe;
-  padding: 0.55rem 1rem;
-  color: #57606a;
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-/* ---- the card ---- */
+/* Without the formula under each rule, the three cells of a row are short enough to sit on one
+   baseline instead of hanging from the top of a tall cell. */
+.hcc-table.is-compact .hcc-row { align-items: center; }/* ---- the card ---- */
 /* Two shadows doing different jobs: a tight one that seats the card on the page and
    a wide one, tinted toward the brand, that lifts it off the gradient. One flat
    shadow reads as a box; this reads as an object. */
@@ -3394,14 +3296,58 @@
    question and neither answered it.
    ========================================================================== */
 
-.compute-split {
-  display: grid;
-  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
-  gap: 2.5rem 3.25rem;
-  align-items: start;
-}
+/* ── The computed section, laid out as a sequence over two outcomes ──────────
+   Five steps across, because they happen in an order and an order reads left to
+   right. Then the two things that order produces, side by side. */
+.compute-stack { display: block; }
+.compute-intro-wide { max-width: 62rem; }
 
-.compute-label {
+.pipeline-flow.is-across {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0 1.5rem;
+  max-width: none;
+}
+.pipeline-flow.is-across .pipe-step {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.7rem;
+  padding-bottom: 0;
+}
+/* The rail turns on its side: a dot at the head of each step and a line running to
+   the next one, drawn per step so nothing has to be measured. */
+.pipeline-flow.is-across .pipe-rail {
+  justify-content: flex-start;
+  padding-top: 0;
+  height: 0.72rem;
+}
+.pipeline-flow.is-across .pipe-rail::before {
+  top: 50%;
+  bottom: auto;
+  left: 1.1rem;
+  right: -1.5rem;
+  width: auto;
+  height: 2px;
+  transform: translateY(-1px);
+  background: linear-gradient(90deg, #dbe3ec, #e8edf3);
+}
+.pipeline-flow.is-across > .pipe-step:last-child .pipe-rail::before { display: none; }
+.pipeline-flow.is-across .pipe-body { grid-template-columns: minmax(0, 1fr); gap: 0.35rem; }
+/* The kind chip goes under the name rather than after it. Beside it, a name that wrapped
+   ("Ground and compile") pushed its chip to a second line and its body half a line lower than
+   the rest, so five steps that happen in sequence read as five steps at five heights. */
+.pipeline-flow.is-across .pipe-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.3rem 0.5rem;
+  align-items: baseline;
+}
+.pipeline-flow.is-across .pipe-kind { grid-column: 2; justify-self: start; }
+.pipeline-flow.is-across .pipe-text { font-size: 0.82rem; line-height: 1.6; }@media (max-width: 1180px) {
+  .pipeline-flow.is-across { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.6rem 1.75rem; }
+  .pipeline-flow.is-across .pipe-rail::before { display: none; }}
+@media (max-width: 640px) {
+  .pipeline-flow.is-across { grid-template-columns: minmax(0, 1fr); gap: 1.35rem; }
+}.compute-label {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -3427,36 +3373,13 @@
   font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.66rem;
   letter-spacing: 0;
-}
-
-/* In half a column the steps stop sitting head-beside-body: the body needs the
-   full track or the mono terms in it wrap every three words. */
-.compute-col .pipe-body {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.4rem;
-}
-
-.compute-col .pipe-text { font-size: 0.885rem; line-height: 1.68; }
-.compute-col .pipe-step { padding-bottom: 1.35rem; }
-.compute-col .pipeline-flow { max-width: none; }
-
-/* The check is on its own here rather than in a mocked Checks tab: the rail of
+}/* The check is on its own here rather than in a mocked Checks tab: the rail of
    build/test/lint rows was chrome establishing "this sits beside your CI", and
    the section above already said that twice. */
 .ghc-solo { grid-template-columns: minmax(0, 1fr); }
-.ghc-solo .ghc-pane { border-left: 0; }
+.ghc-solo .ghc-pane { border-left: 0; }@media (max-width: 1180px) {}
 
-.compute-col-report .report-stage-shell { margin-top: 0; }
-
-@media (max-width: 1180px) {
-  .compute-split { grid-template-columns: minmax(0, 1fr); gap: 3rem; }
-  .compute-col .pipeline-flow { max-width: 62rem; }
-  .compute-col .pipe-body { grid-template-columns: 13.5rem minmax(0, 1fr); gap: 0 1.75rem; }
-}
-
-@media (max-width: 860px) {
-  .compute-col .pipe-body { grid-template-columns: minmax(0, 1fr); gap: 0.45rem; }
-}
+@media (max-width: 860px) {}
 
 /* ---- report pane, condensed ----
    The review items and the documented rules stack at full width. Type comes down
@@ -3481,21 +3404,7 @@
 .ghc-md h3 { font-size: 13.5px; }
 .ghc-h3-meta { font-size: 11.5px; }
 
-.ghc-md code { font-size: 11px; }
-
-/* One line per stage now, so the head and body stack rather than sharing a row. */
-.compute-col .pipe-text { font-size: 0.875rem; line-height: 1.66; }
-.compute-col .pipe-step { padding-bottom: 1.15rem; }
-
-/* The two halves have different natural heights: the pipeline is five short
-   stages, the report is a long artifact. Aligning them to the top of the row
-   rather than letting the report drift down keeps the two column labels on one
-   line, which is what makes the pairing legible. */
-.compute-split { align-items: stretch; }
-.compute-col { display: flex; flex-direction: column; }
-.compute-col-report .report-stage-shell { margin-top: 0; }
-
-/* ---- documented rules in the check report ----
+.ghc-md code { font-size: 11px; }/* ---- documented rules in the check report ----
    The hero card set the pattern: the sentence in serif because a person wrote it,
    the rule it became in mono, and a citation that goes to the line. This is the
    same idea at report density, since these rows are the point of the report. */
@@ -3610,10 +3519,7 @@
 
 /* Heading and intro now open the left column; the pipeline label follows them. */
 .compute-intro { margin-bottom: 2.25rem; }
-.compute-intro .section-subcopy { max-width: none; }
-.compute-split { align-items: start; }
-
-/* ============================================================================
+.compute-intro .section-subcopy { max-width: none; }/* ============================================================================
    FLOATING CARDS — MORE LIFT
    Every card that stands in for a product surface gets the same three-layer
    shadow: a crisp contact shadow, a mid-range one for the edge, and a long,
@@ -3646,17 +3552,7 @@
     box-shadow: var(--lift-shadow-hover);
     transform: translateY(-2px);
   }
-}
-
-/* ---- mini diagram closing the check report ----
-   The report column is shorter than the pipeline beside it. Rather than pad it, the
-   column stretches to the row and the diagram takes up the remainder, so the two
-   halves end on the same line at any desktop width without a hard-coded height. */
-.compute-split { align-items: stretch; }
-.compute-col-report { display: flex; flex-direction: column; }
-.compute-col-report .report-stage-shell { flex: 1 1 auto; display: flex; flex-direction: column; }
-.compute-col-report .ghc-solo { flex: 1 1 auto; display: flex; flex-direction: column; }
-.ghc-solo .ghc-pane { flex: 1 1 auto; display: flex; flex-direction: column; }
+}.ghc-solo .ghc-pane { flex: 1 1 auto; display: flex; flex-direction: column; }
 .ghc-solo .ghc-md { flex: 1 1 auto; display: flex; flex-direction: column; }
 
 
@@ -3864,22 +3760,7 @@
 .gs-item:nth-child(3n + 2)::after { animation-delay: 1.1s; }
 .gs-item:nth-child(3n)::after { animation-delay: 2.2s; }
 @keyframes gs-sweep { 0%, 55% { transform: translateX(-100%); } 85%, 100% { transform: translateX(100%); } }
-@media (prefers-reduced-motion: reduce) { .gs-item::after { animation: none; display: none; } }
-
-/* ---- report: the frame is light now that the dark metadata bar above it is gone ---- */
-.compute-col-report .report-stage-shell {
-  background: #ffffff;
-  border-color: #cbd5e1;
-}
-.compute-col-report .report-stage-shell::before { display: none; }
-.compute-col-report .ghc-solo .ghc-md { padding-top: 16px; }
-
-/* The report no longer carries a diagram to fill out its column, so it ends at its own
-   height instead of stretching a white panel to meet the pipeline beside it. */
-.compute-split { align-items: start; }
-
-
-/* FAQ emphasis: bold carries the answer, italics the qualification. */
+@media (prefers-reduced-motion: reduce) { .gs-item::after { animation: none; display: none; } }/* FAQ emphasis: bold carries the answer, italics the qualification. */
 .faq-a strong { font-weight: 650; color: var(--ink); }
 .faq-a em { font-style: italic; color: var(--ink-soft); }
 
@@ -3948,15 +3829,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .gs-item-icon svg, .gs-agent-mark { animation: none !important; }
-}
-
-/* The report column gives back a little width to the pipeline beside it. Two columns only
-   above the 1180px break; below it the pipeline and the report stack. */
-.compute-col-report { max-width: 46rem; width: 100%; }
-@media (min-width: 1181px) {
-  .compute-split { grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); }
-  .compute-col-report { justify-self: end; }
-}
+}@media (min-width: 1181px) {}
 
 /* Pre-existing: already broken before this PR. Amber, so it reads as inherited debt
    rather than as either a pass or something this change did. */
@@ -5894,3 +5767,199 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   color: var(--ink-muted);
 }
 .hero-check-more a { font-weight: 700; color: #1d4ed8; }
+
+/* ─── One finding, assembled a stage at a time ──────────────────────────────
+   Parts are laid out at full height from the start and only their opacity and a
+   small lift animate, so nothing below the card jumps as each one lands. */
+.compute-build { margin-top: 2.5rem; }
+.rule-build {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+}
+.rule-build-caption {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  border-bottom: 1px solid #eef2f7;
+  background: #fbfcfe;
+  padding: 0.6rem 1.1rem;
+  color: #57606a;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rule-build-replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.2rem 0.6rem;
+  color: #1d4ed8;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.rule-build-replay:hover { background: #f6f8fa; }
+
+.rule-build-body { margin: 0; padding: 0.4rem 0; list-style: none; }
+.rb-part {
+  display: grid;
+  grid-template-columns: 10.5rem minmax(0, 1fr);
+  gap: 0 1.5rem;
+  align-items: start;
+  padding: 0.85rem 1.25rem;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 420ms ease, transform 420ms cubic-bezier(0.22, 0.75, 0.2, 1);
+}
+.rb-part + .rb-part { border-top: 1px dashed #eef2f7; }
+.rb-tag {
+  color: #8a95a1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-top: 0.1rem;
+}
+
+/* A part is shown once the stage has reached it. The attribute selectors are written out
+   rather than generated because there are five of them and they never change. */
+.rule-build[data-stage="1"] .rb-part[data-at="1"],
+.rule-build[data-stage="2"] .rb-part[data-at="1"], .rule-build[data-stage="2"] .rb-part[data-at="2"],
+.rule-build[data-stage="3"] .rb-part[data-at="1"], .rule-build[data-stage="3"] .rb-part[data-at="2"], .rule-build[data-stage="3"] .rb-part[data-at="3"],
+.rule-build[data-stage="4"] .rb-part[data-at="1"], .rule-build[data-stage="4"] .rb-part[data-at="2"], .rule-build[data-stage="4"] .rb-part[data-at="3"], .rule-build[data-stage="4"] .rb-part[data-at="4"],
+.rule-build[data-stage="5"] .rb-part {
+  opacity: 1;
+  transform: none;
+}
+/* The part that just arrived is the answer to "what did this step do", so it is marked. */
+.rule-build[data-stage="1"] .rb-part[data-at="1"] .rb-tag,
+.rule-build[data-stage="2"] .rb-part[data-at="2"] .rb-tag,
+.rule-build[data-stage="3"] .rb-part[data-at="3"] .rb-tag,
+.rule-build[data-stage="4"] .rb-part[data-at="4"] .rb-tag,
+.rule-build[data-stage="5"] .rb-part[data-at="5"] .rb-tag { color: #1d4ed8; }
+
+.rb-model { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.82rem; color: #57606a; }
+.rb-model-line b {
+  display: inline-block;
+  min-width: 4.6rem;
+  color: #16202b;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.rb-quote-text { display: block; color: #16202b; font-size: 0.95rem; line-height: 1.6; }
+.rb-src {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+  color: #8a95a1;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.74rem;
+}
+.rb-src b { color: #1d4ed8; }
+.rb-rule-text { display: block; color: #16202b; font-size: 0.95rem; font-weight: 600; line-height: 1.55; }
+.rb-formula {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.45rem;
+  margin-top: 0.5rem;
+  border-top: 1px dashed #e6ebf1;
+  padding-top: 0.5rem;
+}
+.rb-formula-line { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.3rem; }
+.rb-sat { display: flex; flex-wrap: wrap; gap: 0.35rem 1.5rem; }
+.rb-verdict { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.8rem; }
+.rb-verdict-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid #f3c7cd;
+  border-radius: 999px;
+  background: #fdecee;
+  padding: 0.2rem 0.65rem;
+  color: #9f1f33;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.rb-witness { color: #9f1f33; font-size: 0.82rem; line-height: 1.5; }
+.rb-witness .github-inline-code { border: 0; background: #fdeced; color: #7f1d2d; }
+
+/* The step that is driving the build. */
+.pipeline-flow.is-across .pipe-step { cursor: pointer; }
+.pipeline-flow.is-across .pipe-step .pipe-name { transition: color 160ms ease; }
+.pipeline-flow.is-across .pipe-step.is-on .pipe-name { color: #1d4ed8; }
+.pipeline-flow.is-across .pipe-step.is-on .pipe-dot { box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16); }
+.pipeline-flow.is-across .pipe-step:not(.is-done) .pipe-text { color: #8a95a1; }
+
+@media (max-width: 720px) {
+  .rb-part { grid-template-columns: minmax(0, 1fr); gap: 0.3rem; }
+}
+/* Asked for less motion: the whole finding, at once, with nothing sliding. */
+@media (prefers-reduced-motion: reduce) {
+  .rb-part { opacity: 1; transform: none; transition: none; }
+}
+
+/* ─── One real check, read top to bottom ────────────────────────────────────
+   The summary, the rules and the diagram came from one run on one pull request
+   and used to sit in two sections, which asked a reader to take that on trust. */
+.diagram-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 1.1rem 0 0;
+  color: #6b7684;
+  font-size: 0.85rem;
+}
+.diagram-source-pr {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: #fff;
+  padding: 0.35rem 0.7rem;
+  color: #16202b;
+  font-weight: 700;
+  font-size: 0.84rem;
+}
+.diagram-source-pr:hover { background: #f6f8fa; text-decoration: none; }
+
+.check-report { margin-top: 1.75rem; }
+
+/* The join between the two halves of the same check. */
+.check-seam {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 1.4rem auto;
+  max-width: 90rem;
+  color: #8a95a1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.check-seam-rule { flex: 1 1 auto; height: 1px; background: linear-gradient(90deg, transparent, #dbe3ec, transparent); }
+.check-seam-text { flex: 0 0 auto; }
+
+/* Two links, side by side, under what they are both about. */
+.check-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+}
+.check-foot > * { flex: 1 1 22rem; margin: 0; }

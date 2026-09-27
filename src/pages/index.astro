@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import InlineCodeText from "../components/InlineCodeText.astro";
 import BlogLink from "../components/BlogLink.astro";
 import RuleRows from "../components/RuleRows.astro";
+import RuleBuild from "../components/RuleBuild.astro";
 import { heroExampleRules, heroExampleRepo, heroExampleTally } from "../data/heroExampleRules";
 import MetricsTab from "../components/MetricsTab";
 import { Image } from "astro:assets";
@@ -253,23 +254,6 @@ const plans = [
             Your docs already state the rules. Striff checks every pull request against them, and <strong>when a change contradicts one, it quotes the sentence, before the merge.</strong>
           </p>
 
-          <!-- The product in six words, taken from the column headings of the card below, which
-               were the clearest thing on the page and the least prominent. Read before the card
-               they also work as its legend. -->
-          <ol class="hero-steps" aria-label="How a rule is checked">
-            <li>
-              <span class="hero-step-num" aria-hidden="true">1</span>
-              <span class="hero-step-text">A sentence in your docs</span>
-            </li>
-            <li>
-              <span class="hero-step-num" aria-hidden="true">2</span>
-              <span class="hero-step-text">becomes a rule</span>
-            </li>
-            <li>
-              <span class="hero-step-num" aria-hidden="true">3</span>
-              <span class="hero-step-text">checked on every pull request</span>
-            </li>
-          </ol>
           <div class="flex flex-wrap justify-center gap-3 pt-2">
             <a class="btn-primary btn-primary-lg" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
               <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -305,9 +289,9 @@ const plans = [
               </span>
             </div>
 
-            <RuleRows rows={heroExampleRules.slice(0, 1)} compact />
+            <RuleRows rows={heroExampleRules} compact />
           </div>
-          <p class="hero-check-more">One of the {heroExampleTally.broken + heroExampleTally.held} rules this repository&rsquo;s docs state. <a href="/demo">The dashboard lists all of them &rarr;</a></p>
+          <p class="hero-check-more">Three of the {heroExampleTally.broken + heroExampleTally.held} rules this repository&rsquo;s docs state. <a href="/demo">The dashboard lists all of them &rarr;</a></p>
           <div class="hero-langs" aria-label="Supported languages">
             <span class="hero-langs-label">Works with</span>
             {heroLanguages.map((lang) => (
@@ -400,20 +384,21 @@ const plans = [
          where a number came from, the check answers what you actually get. -->
     <section id="pipeline" class="pipeline-section scroll-mt-24 pb-20 pt-20">
       <div class="mx-auto max-w-[90rem] px-6">
-        <!-- The heading lives in the left column rather than above both, so the report
-             starts level with the top of the section instead of below a paragraph. -->
-        <div class="compute-split">
-          <div class="compute-col" data-reveal>
-            <div class="compute-intro">
+        <!-- The five steps run across, because they are a sequence and a reader follows a
+             sequence left to right. Underneath, the two things the sequence produces sit side by
+             side: what a reviewer is handed, and what one rule of it actually compiled to. -->
+        <div class="compute-stack">
+          <div data-reveal>
+            <div class="compute-intro compute-intro-wide">
               <h2 class="text-balance">Every verdict is computed, not generated.</h2>
               <p class="section-subcopy mt-4">
                 Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> The language model only reads the prose and explains the results, and nothing is needed beyond the documents your repository already has.
               </p>
             </div>
             <p class="compute-label"><span>01</span> How a finding is produced</p>
-            <ol class="pipeline-flow">
+            <ol class="pipeline-flow is-across">
               {pipeline.map((step, i) => (
-                <li class={`pipe-step pipe-${step.kind}`}>
+                <li class={`pipe-step pipe-${step.kind}`} data-pipe-step={i + 1}>
                   <span class="pipe-rail" aria-hidden="true"><span class="pipe-dot"></span></span>
                   <div class="pipe-body">
                     <p class="pipe-head">
@@ -426,60 +411,87 @@ const plans = [
                 </li>
               ))}
             </ol>
-            <!-- The formula, where the sentence it proves is: "does the model satisfy the
-                 formula?" is a claim, and this is the claim's evidence. It used to sit in the
-                 hero, in front of a reader who had not yet been told a formula was involved. -->
-            <figure class="compute-formula">
-              <figcaption>What one rule compiles to</figcaption>
-              <RuleRows rows={heroExampleRules.slice(0, 1)} />
-            </figure>
-            <BlogLink slug="grounded-ai-findings" kicker="How we keep the model honest" class="compute-invite" />
           </div>
 
-          <div class="compute-col compute-col-report" id="report" data-reveal>
-            <p class="compute-label"><span>02</span> What your reviewer sees</p>
-            <div class="hero-stage-shell report-stage-shell">
-              <div class="ghc ghc-solo" data-report-top>
-                <section class="ghc-pane">
-                  <div class="ghc-md">
-                    <h3>Review Summary</h3>
-                    <p>This PR moves repair-history setup into the incremental path. <code>NodeWorker</code> stops referencing <code>RepairScheduler</code> and the table lookups it used, and now depends on <code>SchemaRefresher</code>. <code>RepairHistory</code> drops a public <code>newSession</code> overload that 11 components reach for.</p>
-
-                    <div class="ghc-stack">
-                      <section>
-                        <h3>Top Review Items</h3>
-                        <ul>
-                          <li><strong>📄 Doc conflict</strong>: <code>NodeWorker</code> no longer depends on <code>RepairScheduler</code>, which <code>core.impl/README.md</code> line 136 says it calls. It did at the base revision.</li>
-                        </ul>
-                      </section>
-
-                      <section>
-                        <h3 class="ghc-h3-lead">Documented Rules <span class="ghc-h3-meta">63 rules checked &middot; 62 held &middot; 1 violated</span></h3>
-                        <ul class="rulelist">
-                          {reportRules.map((r) => (
-                            <li class={`rulerow rulerow-${r.verdict}`}>
-                              <span class="rulerow-main">
-                                <InlineCodeText class="rulerow-quote" text={r.quote} />
-                                <InlineCodeText class="rulerow-stmt" text={r.statement} />
-                              </span>
-                              <span class="rulerow-side">
-                                <span class={`rulerow-verdict rulerow-verdict-${r.verdict}`}>{r.label}</span>
-                                <span class="rulerow-src">{r.doc}<b>:{r.line}</b></span>
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                        <p class="rulelist-more">4 of 63 shown</p>
-                      </section>
-                    </div>
-                    <p>The check also carries the architecture diagram of this change, <a href="#diagram">shown below</a>.</p>
-                  </div>
-                </section>
-              </div>
-            </div>
+          <!-- The same five steps again, but doing their work: each one adds the part of the
+               finding it is responsible for, so the sequence above stops being a list to
+               memorise and becomes something a reader watches happen. -->
+          <div class="compute-build" data-reveal>
+            <RuleBuild rule={heroExampleRules[0]} />
+            <BlogLink slug="grounded-ai-findings" kicker="How we keep the model honest" class="compute-invite" />
           </div>
         </div>
       </div>
+
+      <script is:inline>
+        // Drives the staged finding from the five steps above it. Plain DOM, no framework: the
+        // page is static and this is the only thing on it that needs a clock.
+        (function () {
+          var build = document.querySelector("[data-rule-build]");
+          var flow = document.querySelector(".pipeline-flow.is-across");
+          if (!build || !flow) return;
+          var steps = Array.prototype.slice.call(flow.querySelectorAll("[data-pipe-step]"));
+          var LAST = steps.length;
+          var still = window.matchMedia("(prefers-reduced-motion: reduce)");
+          var replay = build.querySelector("[data-rule-replay]");
+          var timer = null;
+          var steering = false;
+
+          function show(stage) {
+            build.setAttribute("data-stage", String(stage));
+            steps.forEach(function (li, i) {
+              li.classList.toggle("is-on", i + 1 === stage);
+              li.classList.toggle("is-done", i + 1 <= stage);
+            });
+            if (replay) replay.hidden = stage < LAST;
+          }
+
+          function stop() {
+            if (timer) { window.clearInterval(timer); timer = null; }
+          }
+
+          function run() {
+            stop();
+            if (still.matches) { show(LAST); return; }
+            timer = window.setInterval(function () {
+              var at = Number(build.getAttribute("data-stage") || 0);
+              if (at >= LAST) { stop(); return; }
+              show(at + 1);
+            }, 1500);
+          }
+
+          steps.forEach(function (li, i) {
+            li.setAttribute("tabindex", "0");
+            li.setAttribute("role", "button");
+            li.setAttribute("aria-label", "Show the finding after step " + (i + 1));
+            function pick() { steering = true; stop(); show(i + 1); }
+            li.addEventListener("click", pick);
+            li.addEventListener("keydown", function (e) {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
+            });
+          });
+
+          if (replay) {
+            replay.addEventListener("click", function () { steering = false; show(0); run(); });
+          }
+
+          if (still.matches) { show(LAST); return; }
+          show(0);
+          // Starts when it is actually on screen, so a reader who lands further down the page
+          // does not arrive to a finished animation.
+          if (!("IntersectionObserver" in window)) { show(LAST); return; }
+          var seen = false;
+          var watch = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (!entry.isIntersecting || seen || steering) return;
+              seen = true;
+              run();
+              watch.disconnect();
+            });
+          }, { threshold: 0.35 });
+          watch.observe(build);
+        })();
+      </script>
     </section>
 
     <!-- ==================== THE DIAGRAM ==================== -->
@@ -489,20 +501,73 @@ const plans = [
     <section id="diagram" class="diagram-section scroll-mt-24 pb-16 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="diagram-intro max-w-3xl" data-reveal>
-          <p class="examples-kicker">The diagram</p>
-          <h2 class="mt-3 text-balance">Every pull request gets a structural diff diagram.</h2>
+          <p class="examples-kicker">One real check</p>
+          <h2 class="mt-3 text-balance">This is the whole thing, on a pull request you can open.</h2>
           <p class="section-subcopy mt-4">
-            The classes a change touched, what each one gained and lost, and how they connect at both revisions, so you can see the shape of a change you didn&rsquo;t write. <strong>Green was added, red was removed and blue changed.</strong>
+            Everything above, on one change to a public repository: a summary of what moved, the documented rules it was checked against, the one it broke, and a diagram of the classes it touched. <strong>Nothing here was configured. Striff read the repository&rsquo;s own documents.</strong>
           </p>
-          <a class="oss-link" href="https://github.com/hadi-technology/striff-lib" target="_blank" rel="noopener noreferrer">
-            <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-            <span>The diagram engine is open source: <b>striff-lib</b> on GitHub</span>
-            <em>MIT</em>
-          </a>
-          <BlogLink slug="design-docs-are-enforceable-now" kicker="One sentence, one pull request, one verdict" class="mt-6" />
+          <p class="diagram-source">
+            <a class="diagram-source-pr" href="https://github.com/Ericsson/ecchronos/pull/1786" target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+              Ericsson/ecchronos #1786
+            </a>
+            <span>Open the pull request and read the change for yourself.</span>
+          </p>
         </div>
 
-        <div class="relative z-10 mx-auto mt-4 w-full max-w-[90rem]" data-reveal>
+        <!-- The check, in the order it is read: what moved, what it was checked against, what it
+             broke, and then the diagram, which is the last thing in the check itself. Splitting
+             the summary into one section and the diagram into another asked a reader to believe
+             they came from the same run. -->
+        <div class="check-report" data-reveal>
+          <div class="hero-stage-shell report-stage-shell">
+            <div class="ghc ghc-solo" data-report-top>
+              <section class="ghc-pane">
+                <div class="ghc-md">
+                  <h3>Review Summary</h3>
+                  <p>This PR moves repair-history setup into the incremental path. <code>NodeWorker</code> stops referencing <code>RepairScheduler</code> and the table lookups it used, and now depends on <code>SchemaRefresher</code>. <code>RepairHistory</code> drops a public <code>newSession</code> overload that 11 components reach for.</p>
+
+                  <div class="ghc-stack">
+                    <section>
+                      <h3>Top Review Items</h3>
+                      <ul>
+                        <li><strong>📄 Doc conflict</strong>: <code>NodeWorker</code> no longer depends on <code>RepairScheduler</code>, which <code>core.impl/README.md</code> line 136 says it calls. It did at the base revision.</li>
+                      </ul>
+                    </section>
+
+                    <section>
+                      <h3 class="ghc-h3-lead">Documented Rules <span class="ghc-h3-meta">63 rules checked &middot; 62 held &middot; 1 violated</span></h3>
+                      <ul class="rulelist">
+                        {reportRules.map((r) => (
+                          <li class={`rulerow rulerow-${r.verdict}`}>
+                            <span class="rulerow-main">
+                              <InlineCodeText class="rulerow-quote" text={r.quote} />
+                              <InlineCodeText class="rulerow-stmt" text={r.statement} />
+                            </span>
+                            <span class="rulerow-side">
+                              <span class={`rulerow-verdict rulerow-verdict-${r.verdict}`}>{r.label}</span>
+                              <span class="rulerow-src">{r.doc}<b>:{r.line}</b></span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p class="rulelist-more">4 of 63 shown</p>
+                    </section>
+                  </div>
+                  <p>And the check carries a diagram of the change itself, which is the rest of this card.</p>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <p class="check-seam" data-reveal>
+          <span class="check-seam-rule" aria-hidden="true"></span>
+          <span class="check-seam-text">and the same check draws the change</span>
+          <span class="check-seam-rule" aria-hidden="true"></span>
+        </p>
+
+        <div class="relative z-10 mx-auto w-full max-w-[90rem]" data-reveal>
           <div class="hero-stage-shell" data-hero-stage>
             <div class="hero-stage-head">
               <div class="hero-stage-context">
@@ -603,6 +668,18 @@ const plans = [
             </div>
           </div>
         </div>
+
+        <!-- The two links the intro used to stack. One is about the engine that drew the picture
+             directly above it; the other is the write-up of this exact run. Side by side under
+             the thing they are both about, rather than queued before it. -->
+        <div class="check-foot" data-reveal>
+          <a class="oss-link" href="https://github.com/hadi-technology/striff-lib" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            <span>The diagram engine is open source: <b>striff-lib</b> on GitHub</span>
+            <em>MIT</em>
+          </a>
+          <BlogLink slug="design-docs-are-enforceable-now" kicker="This run, written up" />
+        </div>
       </div>
     </section>
 
@@ -617,7 +694,7 @@ const plans = [
             <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For teams</p>
             <h2 class="mt-3 text-balance">Every rule your docs state, and which repositories still keep them.</h2>
             <p class="section-subcopy mt-4">
-              The check reads one pull request at a time. The dashboard is the same reading of your documents, added up across the organisation: each sentence that makes a claim about the code, the rule it became, whether the default branch keeps it, and which repositories and pull requests broke one this month. <strong>It is where a lead finds out the layering rule has been optional since March, while it is still a fix and not a rewrite.</strong>
+              The check reads one pull request at a time. The dashboard is the same reading of your documents, added up across the organisation: each sentence that makes a claim about the code, the rule it became, whether the default branch keeps it, and which repositories and pull requests broke one this month.
             </p>
           </div>
           <div class="teams-head-actions">

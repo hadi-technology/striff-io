@@ -1,0 +1,98 @@
+---
+/**
+ * One finding, assembled a stage at a time.
+ *
+ * The five steps above this are a sequence, and a list of five paragraphs asks a reader to hold
+ * the sequence in their head and imagine the result. This shows it instead: parse produces a
+ * model, reading produces a sentence, compiling produces a formula, evaluation produces two
+ * facts, and only then is there a verdict to narrate. Each stage adds its own part and nothing
+ * else moves, so what a step contributes is the thing that just appeared.
+ *
+ * It advances on its own once it is on screen, and any step can be clicked to go straight there,
+ * which stops the timer -- someone who has started steering does not want to be overtaken.
+ * Without JavaScript, or where the reader has asked for less motion, every part is simply
+ * present: the content is the point and the animation is a way of reading it.
+ */
+import InlineCodeText from "./InlineCodeText.astro";
+import { tex } from "../lib/tex";
+import "katex/dist/katex.min.css";
+
+interface Props {
+  /** The rule to build, in the shape of the homepage's example rows. */
+  rule: any;
+}
+
+const { rule } = Astro.props;
+
+const phi = tex(String.raw`\varphi \coloneqq`);
+const satBefore = tex(String.raw`\mathcal{M}_{\mathrm{before}} \htmlClass{sat}{\models} \varphi`);
+const satAfter = tex(String.raw`\mathcal{M}_{\mathrm{after}} \htmlClass{unsat}{\nvDash} \varphi`);
+---
+
+<div class="rule-build" data-rule-build data-stage="0">
+  <p class="rule-build-caption">
+    <span class="rule-build-caption-text">One finding, as the five steps produce it</span>
+    <button type="button" class="rule-build-replay" data-rule-replay hidden>
+      <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2.5 8a5.5 5.5 0 1 0 1.7-4" /><path d="M2.2 2.5v3.2h3.2" />
+      </svg>
+      Replay
+    </button>
+  </p>
+
+  <ol class="rule-build-body">
+    <li class="rb-part" data-at="1">
+      <span class="rb-tag">Parse</span>
+      <span class="rb-model">
+        <span class="rb-model-line"><b>M<sub>before</sub></b> 1,284 types · 8,902 references</span>
+        <span class="rb-model-line"><b>M<sub>after</sub></b> 1,284 types · 8,903 references</span>
+      </span>
+    </li>
+
+    <li class="rb-part" data-at="2">
+      <span class="rb-tag">Read</span>
+      <span class="rb-quote">
+        <InlineCodeText class="rb-quote-text" text={rule.quote} />
+        <span class="rb-src">
+          <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914Z"/></svg>
+          {rule.doc}<b>:{rule.line}</b>
+        </span>
+      </span>
+    </li>
+
+    <li class="rb-part" data-at="3">
+      <span class="rb-tag">Ground and compile</span>
+      <span class="rb-rule">
+        <InlineCodeText class="rb-rule-text" text={rule.statement} />
+        <span class="rb-formula" aria-hidden="true">
+          <span class="rb-formula-label" set:html={phi} />
+          {rule.logic.map((line: string[]) => (
+            <span class="rb-formula-line">
+              {line.map((chunk, j) => (<>{j > 0 && " "}<span set:html={tex(chunk)} /></>))}
+            </span>
+          ))}
+        </span>
+      </span>
+    </li>
+
+    <li class="rb-part" data-at="4">
+      <span class="rb-tag">Evaluate</span>
+      <span class="rb-sat">
+        <span class="rb-sat-fact" set:html={satBefore} />
+        <span class="rb-sat-fact" set:html={satAfter} />
+        <span class="sr-only">The rule held at the base revision and does not hold after the change.</span>
+      </span>
+    </li>
+
+    <li class="rb-part" data-at="5">
+      <span class="rb-tag">Narrate</span>
+      <span class="rb-verdict">
+        <span class="rb-verdict-pill">
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.06 1.06L6.94 8 4.97 9.97a.75.75 0 1 0 1.06 1.06L8 9.06l1.97 1.97a.75.75 0 0 0 1.06-1.06L9.06 8l1.97-1.97a.75.75 0 0 0-1.06-1.06L8 6.94Z"/></svg>
+          {rule.verdictLabel}
+        </span>
+        <InlineCodeText class="rb-witness" text={rule.witness} />
+      </span>
+    </li>
+  </ol>
+</div>
