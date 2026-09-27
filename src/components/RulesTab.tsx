@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { Clamped, mark, useWatch, withCode, when } from "./docRules";
+import { Clamped, ExtensionNote, mark, useWatch, withCode, when } from "./docRules";
 import Listing from "./Listing";
 import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
 
@@ -146,6 +146,7 @@ export default function RulesTab({
   onOpenDoc,
   onRepoChange,
   showFilter,
+  sample,
 }: {
   installationId: number;
   repos: { full_name: string }[];
@@ -157,6 +158,15 @@ export default function RulesTab({
   onRepoChange?: (fullName: string) => void;
   /** Which rules to show, where a reader followed a count here; `at` is when they asked. */
   showFilter?: { value: string; at: number } | null;
+  /**
+   * A fixed answer to show instead of asking the API, for the public demo.
+   *
+   * The demo has to be the real view or it is worth nothing: a drawing of a dashboard proves only
+   * that someone can draw. So it runs this component, with the same table, the same sorting, the
+   * same search and the same export, and hands it the shape the API sends rather than a session.
+   * Nothing here writes, so the controls that would are not offered.
+   */
+  sample?: any;
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [data, setData] = useState<RepoRules | null>(null);
@@ -215,6 +225,10 @@ export default function RulesTab({
   }, [showFilter?.at]);
 
   useEffect(() => {
+    if (sample) {
+      setData(sample);
+      return;
+    }
     if (!owner || !name) return;
     // A repository and an installation from different accounts is a pair GitHub refuses, and the
     // refusal reads as "this repository has nothing in it". Nothing is asked until the two agree;
@@ -231,6 +245,11 @@ export default function RulesTab({
   }, [exportOpen]);
 
   async function load() {
+    if (sample) {
+      setData(sample);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -262,6 +281,7 @@ export default function RulesTab({
    */
   /** @return false where the request was refused, so the control stops saying it is asking */
   async function readRepository(): Promise<boolean> {
+    if (sample) return false;
     setAsking(true);
     setError("");
     try {
@@ -496,15 +516,17 @@ export default function RulesTab({
               </b>
               <i>docs read</i>
             </span>
-            {/* Beside the count it changes: this is how the unread ones get read. */}
-            {data && (
+            {/* Beside the count it changes: this is how the unread ones get read. The demo has
+                nothing to read and no account to read it for, and a control that looks like an
+                offer and declines is worse than no control. */}
+            {data && !sample && (
               <ReadRepository
                 reading={data.reading}
-                waiting={Math.max(
-                  0,
-                  summary.documents - summary.retired - summary.screenedOut - summary.excluded
-                    - summary.read
-                )}
+                /* Documents nothing has read, which is the only work a reading does. The old
+                   sum subtracted the states it knew about and so counted documents a reading
+                   could not finish as waiting for ever, leaving the control offered on a
+                   repository where it had nothing left to achieve. */
+                waiting={summary.notRead}
                 read={summary.read}
                 busy={asking || loading}
                 stale={watchedOut}
@@ -552,15 +574,10 @@ export default function RulesTab({
                 nobody has opened a pull request against stays like this.
               </p>
               <p className="text-slate-600">
-                To see what it promises now, read them all: <b>Read {" "}
-                {Math.max(
-                  0,
-                  summary
-                    ? summary.documents - summary.retired - summary.screenedOut - summary.excluded
-                        - summary.read
-                    : 0
-                )}</b> above, beside the document count. It takes a few minutes and costs a model
-                call per document.
+                To see what this repository promises without waiting for a pull request, use
+                <b> Read {summary ? summary.notRead : 0} doc{summary && summary.notRead === 1 ? "" : "s"} now</b>,
+                above beside the document count. It takes a few minutes, and you can leave the
+                page while it runs.
               </p>
             </>
           )}
@@ -717,6 +734,8 @@ export default function RulesTab({
               </>
             )}
           </div>
+
+          {rows.length > 0 && <ExtensionNote />}
         </div>
       )}
     </div>

@@ -1,0 +1,61 @@
+---
+/**
+ * The dashboard, open to anyone.
+ *
+ * Every route into Striff used to end at the same door: install a GitHub App on your repositories.
+ * That is a fair ask of someone who is convinced and a large one of someone who has read an
+ * article and wants to know whether the screenshots are real. This page is the answer to "what
+ * does it actually look like" -- the real views, on an invented repository, with nothing to sign
+ * and nothing to install.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Demo from "../components/Demo";
+
+const githubInstallUrl = "https://github.com/apps/striff-app/installations/new";
+---
+<BaseLayout
+  title="See the dashboard | Striff"
+  description="The Striff dashboard on an example repository: every rule read from its docs, the sentence each came from, whether the code still keeps it, and which repositories are drifting month over month. No sign-in, nothing to install."
+  canonical="https://striff.io/demo"
+>
+  <main class="demo-page text-slate-900">
+    <section class="mx-auto max-w-[95rem] px-6 pt-14 pb-6 md:pt-20">
+      <div class="max-w-3xl">
+        <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600" data-reveal>The dashboard</p>
+        <h1 class="mt-3 text-4xl font-extrabold tracking-tight text-slate-950 md:text-5xl" data-reveal>
+          Every rule your documents state, and whether the code still keeps it.
+        </h1>
+        <p class="section-subcopy mt-4" data-reveal>
+          This is the dashboard itself, running on an invented repository called
+          <code class="github-inline-code">acme/checkout-service</code>. Its documents, rules,
+          pull request numbers and monthly counts are made up; the three views, the tables and the
+          way a long sentence folds into a row are exactly what you get on your own. Nothing to
+          sign in to, nothing to install.
+        </p>
+      </div>
+    </section>
+
+    <section class="mx-auto max-w-[95rem] px-6 pb-12">
+      <Demo client:load />
+    </section>
+
+    <section class="mx-auto max-w-[95rem] px-6 pb-20">
+      <div class="demo-cta" data-reveal>
+        <div>
+          <p class="demo-cta-title">See this for your own repositories.</p>
+          <p class="demo-cta-sub">
+            Striff reads the documents already in your repository, turns the sentences that make
+            claims about the code into rules, and checks every pull request against them. Free on
+            public repositories, with nothing to write and nothing to configure.
+          </p>
+        </div>
+        <div class="demo-cta-actions">
+          <a class="btn-primary" href={githubInstallUrl} target="_blank" rel="noopener noreferrer">
+            Install the GitHub App
+          </a>
+          <a class="btn-secondary" href="/pricing">See pricing</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

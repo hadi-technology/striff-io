@@ -2730,34 +2730,9 @@
   border-radius: 0.7rem;
 }
 
-.hero-microproof {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 0.55rem 1.4rem;
-  padding-top: 0.6rem;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #64748b;
-}
-
-.hero-microproof span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.hero-microproof span::before {
-  content: "";
-  width: 0.3rem;
-  height: 0.3rem;
-  border-radius: 999px;
-  background: #34d399;
-  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18);
-}
-
-/* ---- the card ---- */
+/* Without the formula under each rule, the three cells of a row are short enough to sit on one
+   baseline instead of hanging from the top of a tall cell. */
+.hcc-table.is-compact .hcc-row { align-items: center; }/* ---- the card ---- */
 /* Two shadows doing different jobs: a tight one that seats the card on the page and
    a wide one, tinted toward the brand, that lifts it off the gradient. One flat
    shadow reads as a box; this reads as an object. */
@@ -3015,8 +2990,6 @@
 .hcc-verdict-cell { flex-direction: column; align-items: flex-end; gap: 0.45rem; }
 
 
-
-
 /* The rule in plain English is the cell's content now, not a caption under a formula. */
 .hcc-rule-text.hcc-rule-reading {
   font-family: "Inter", system-ui, sans-serif;
@@ -3083,7 +3056,9 @@
   position: relative;
   z-index: 1;
   max-width: 68rem;
-  margin: 2.25rem auto 0;
+  /* Tight enough that the first rule row clears the fold on a 1440x800 laptop. The card is the
+     proof; a reader who has to scroll to reach any of it has been shown a lid. */
+  margin: 1.75rem auto 0;
 }
 
 @media (min-width: 1280px) {
@@ -3092,7 +3067,11 @@
 
 @media (max-width: 640px) {
   .hero-section { padding-top: 1.75rem; }
-  .hero-copy h1 { font-size: clamp(2rem, 8.5vw, 2.6rem); }
+  /* The rotating word cannot wrap -- it is one nowrap box whose width animates -- so "Your" plus
+     the longest of the three has to fit a phone on one line, or the line runs off the screen and
+     takes the comma with it onto a line of its own. The size is set by the widest word, not by
+     what looks generous on the shortest. */
+  .hero-copy h1 { font-size: clamp(1.55rem, 6.5vw, 2.2rem); }
   .hero-check-wrap { margin-top: 1.75rem; }
 }
 
@@ -3120,59 +3099,6 @@
 /* The line number is part of the citation, so it sits tight against the path
    rather than inheriting the icon gap. */
 .hcc-quote-src b { margin-left: -0.3rem; }
-
-/* ============================================================================
-   FOR ENGINEERING MANAGERS
-   Three outcomes on the left, the org dashboard on the right. The dashboard is
-   the only artifact on the site that exists solely for this reader, so it gets
-   the larger half and a real frame rather than a rotating tab.
-   ========================================================================== */
-
-.mgr-split {
-  display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-  gap: 2.5rem 3rem;
-  align-items: start;
-}
-
-.mgr-points { display: flex; flex-direction: column; gap: 1.75rem; }
-
-.mgr-point {
-  display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr);
-  gap: 0 1rem;
-  align-items: start;
-}
-
-/* Numbered because these are three separate outcomes a reader can weigh, not a
-   sequence: the numeral is a handle for referring to one, nothing more. */
-.mgr-point-num {
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--brand);
-  padding-top: 0.3rem;
-  letter-spacing: 0.02em;
-}
-
-.mgr-point h3 {
-  font-size: 1.06rem;
-  font-weight: 700;
-  line-height: 1.4;
-  color: var(--ink);
-  letter-spacing: -0.014em;
-}
-
-.mgr-point p {
-  margin-top: 0.5rem;
-  font-size: 0.94rem;
-  line-height: 1.72;
-  color: var(--ink-muted);
-}
-
-@media (max-width: 1024px) {
-  .mgr-split { grid-template-columns: minmax(0, 1fr); }
-}
 
 /* ============================================================================
    HERO CARD — DEPTH
@@ -3370,14 +3296,58 @@
    question and neither answered it.
    ========================================================================== */
 
-.compute-split {
-  display: grid;
-  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
-  gap: 2.5rem 3.25rem;
-  align-items: start;
-}
+/* ── The computed section, laid out as a sequence over two outcomes ──────────
+   Five steps across, because they happen in an order and an order reads left to
+   right. Then the two things that order produces, side by side. */
+.compute-stack { display: block; }
+.compute-intro-wide { max-width: 62rem; }
 
-.compute-label {
+.pipeline-flow.is-across {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0 1.5rem;
+  max-width: none;
+}
+.pipeline-flow.is-across .pipe-step {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.7rem;
+  padding-bottom: 0;
+}
+/* The rail turns on its side: a dot at the head of each step and a line running to
+   the next one, drawn per step so nothing has to be measured. */
+.pipeline-flow.is-across .pipe-rail {
+  justify-content: flex-start;
+  padding-top: 0;
+  height: 0.72rem;
+}
+.pipeline-flow.is-across .pipe-rail::before {
+  top: 50%;
+  bottom: auto;
+  left: 1.1rem;
+  right: -1.5rem;
+  width: auto;
+  height: 2px;
+  transform: translateY(-1px);
+  background: linear-gradient(90deg, #dbe3ec, #e8edf3);
+}
+.pipeline-flow.is-across > .pipe-step:last-child .pipe-rail::before { display: none; }
+.pipeline-flow.is-across .pipe-body { grid-template-columns: minmax(0, 1fr); gap: 0.35rem; }
+/* The kind chip goes under the name rather than after it. Beside it, a name that wrapped
+   ("Ground and compile") pushed its chip to a second line and its body half a line lower than
+   the rest, so five steps that happen in sequence read as five steps at five heights. */
+.pipeline-flow.is-across .pipe-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.3rem 0.5rem;
+  align-items: baseline;
+}
+.pipeline-flow.is-across .pipe-kind { grid-column: 2; justify-self: start; }
+.pipeline-flow.is-across .pipe-text { font-size: 0.82rem; line-height: 1.6; }@media (max-width: 1180px) {
+  .pipeline-flow.is-across { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.6rem 1.75rem; }
+  .pipeline-flow.is-across .pipe-rail::before { display: none; }}
+@media (max-width: 640px) {
+  .pipeline-flow.is-across { grid-template-columns: minmax(0, 1fr); gap: 1.35rem; }
+}.compute-label {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -3403,36 +3373,13 @@
   font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.66rem;
   letter-spacing: 0;
-}
-
-/* In half a column the steps stop sitting head-beside-body: the body needs the
-   full track or the mono terms in it wrap every three words. */
-.compute-col .pipe-body {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.4rem;
-}
-
-.compute-col .pipe-text { font-size: 0.885rem; line-height: 1.68; }
-.compute-col .pipe-step { padding-bottom: 1.35rem; }
-.compute-col .pipeline-flow { max-width: none; }
-
-/* The check is on its own here rather than in a mocked Checks tab: the rail of
+}/* The check is on its own here rather than in a mocked Checks tab: the rail of
    build/test/lint rows was chrome establishing "this sits beside your CI", and
    the section above already said that twice. */
 .ghc-solo { grid-template-columns: minmax(0, 1fr); }
-.ghc-solo .ghc-pane { border-left: 0; }
+.ghc-solo .ghc-pane { border-left: 0; }@media (max-width: 1180px) {}
 
-.compute-col-report .report-stage-shell { margin-top: 0; }
-
-@media (max-width: 1180px) {
-  .compute-split { grid-template-columns: minmax(0, 1fr); gap: 3rem; }
-  .compute-col .pipeline-flow { max-width: 62rem; }
-  .compute-col .pipe-body { grid-template-columns: 13.5rem minmax(0, 1fr); gap: 0 1.75rem; }
-}
-
-@media (max-width: 860px) {
-  .compute-col .pipe-body { grid-template-columns: minmax(0, 1fr); gap: 0.45rem; }
-}
+@media (max-width: 860px) {}
 
 /* ---- report pane, condensed ----
    The review items and the documented rules stack at full width. Type comes down
@@ -3457,21 +3404,7 @@
 .ghc-md h3 { font-size: 13.5px; }
 .ghc-h3-meta { font-size: 11.5px; }
 
-.ghc-md code { font-size: 11px; }
-
-/* One line per stage now, so the head and body stack rather than sharing a row. */
-.compute-col .pipe-text { font-size: 0.875rem; line-height: 1.66; }
-.compute-col .pipe-step { padding-bottom: 1.15rem; }
-
-/* The two halves have different natural heights: the pipeline is five short
-   stages, the report is a long artifact. Aligning them to the top of the row
-   rather than letting the report drift down keeps the two column labels on one
-   line, which is what makes the pairing legible. */
-.compute-split { align-items: stretch; }
-.compute-col { display: flex; flex-direction: column; }
-.compute-col-report .report-stage-shell { margin-top: 0; }
-
-/* ---- documented rules in the check report ----
+.ghc-md code { font-size: 11px; }/* ---- documented rules in the check report ----
    The hero card set the pattern: the sentence in serif because a person wrote it,
    the rule it became in mono, and a citation that goes to the line. This is the
    same idea at report density, since these rows are the point of the report. */
@@ -3586,10 +3519,7 @@
 
 /* Heading and intro now open the left column; the pipeline label follows them. */
 .compute-intro { margin-bottom: 2.25rem; }
-.compute-intro .section-subcopy { max-width: none; }
-.compute-split { align-items: start; }
-
-/* ============================================================================
+.compute-intro .section-subcopy { max-width: none; }/* ============================================================================
    FLOATING CARDS — MORE LIFT
    Every card that stands in for a product surface gets the same three-layer
    shadow: a crisp contact shadow, a mid-range one for the edge, and a long,
@@ -3622,116 +3552,8 @@
     box-shadow: var(--lift-shadow-hover);
     transform: translateY(-2px);
   }
-}
-
-/* ---- mini diagram closing the check report ----
-   The report column is shorter than the pipeline beside it. Rather than pad it, the
-   column stretches to the row and the diagram takes up the remainder, so the two
-   halves end on the same line at any desktop width without a hard-coded height. */
-.compute-split { align-items: stretch; }
-.compute-col-report { display: flex; flex-direction: column; }
-.compute-col-report .report-stage-shell { flex: 1 1 auto; display: flex; flex-direction: column; }
-.compute-col-report .ghc-solo { flex: 1 1 auto; display: flex; flex-direction: column; }
-.ghc-solo .ghc-pane { flex: 1 1 auto; display: flex; flex-direction: column; }
+}.ghc-solo .ghc-pane { flex: 1 1 auto; display: flex; flex-direction: column; }
 .ghc-solo .ghc-md { flex: 1 1 auto; display: flex; flex-direction: column; }
-
-/* ============================================================================
-   FOR ENGINEERING MANAGERS — CAROUSEL
-   One raised card, three slides, native scroll snap for the swipe. Each slide is
-   copy on the left and one small illustration on the right, all in the page's
-   existing light, hairline, blue-accent vocabulary.
-   ========================================================================== */
-
-.mgr-carousel { margin-top: 2.5rem; }
-
-.mgr-arrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: #ffffff;
-  color: var(--ink);
-  cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-}
-
-.mgr-arrow:hover:not(:disabled) { border-color: rgba(37, 99, 235, 0.35); box-shadow: 0 6px 16px -8px rgba(30, 58, 138, 0.4); }
-.mgr-arrow:disabled { opacity: 0.35; cursor: default; }
-
-/* The track is the card: its own shadow sits outside its overflow, so the lift
-   survives the horizontal scroll that clips everything inside it. */
-.mgr-track {
-  position: relative;
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  border-radius: 1.35rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background:
-    radial-gradient(ellipse 55% 70% at 100% 0%, rgba(37, 99, 235, 0.07), transparent 60%),
-    #ffffff;
-  box-shadow: var(--lift-shadow);
-}
-
-.mgr-track::-webkit-scrollbar { display: none; }
-
-.mgr-slide {
-  flex: 0 0 100%;
-  scroll-snap-align: start;
-  display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-  gap: 2.75rem;
-  align-items: center;
-  padding: 2.75rem 2.75rem 2.75rem 3rem;
-}
-
-.mgr-slide-num {
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--brand);
-}
-
-.mgr-slide-copy h3 {
-  margin-top: 0.85rem;
-  font-size: clamp(1.45rem, 2.4vw, 1.95rem);
-  font-weight: 800;
-  line-height: 1.12;
-  letter-spacing: -0.03em;
-  color: var(--ink);
-  text-wrap: balance;
-}
-
-.mgr-slide-copy p {
-  margin-top: 0.95rem;
-  max-width: 30rem;
-  font-size: 0.98rem;
-  line-height: 1.72;
-  color: var(--ink-muted);
-}
-
-.mgr-art {
-  border-radius: 1rem;
-  border: 1px solid #e3e9f0;
-  background:
-    radial-gradient(circle at 1px 1px, rgba(30, 58, 138, 0.06) 1px, transparent 0) 0 0 / 16px 16px,
-    linear-gradient(180deg, #f8fafd, #f2f6fb);
-  padding: 1.35rem;
-  min-height: 19rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-@media (max-width: 900px) {
-  .mgr-slide { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; padding: 1.6rem 1.25rem 1.5rem; }
-  .mgr-art { min-height: 0; padding: 1rem; }
-}
 
 
 /* ---- hero quote on phones: code chips small enough that a call fits on a line ---- */
@@ -3864,12 +3686,6 @@
 }
 
 
-/* ---- carousel: a slide is exactly one track wide ----
-   Flex items default to min-width:auto, so a slide with a long line in it refused to
-   shrink below that line and came out 25px wider than the track on a phone: every
-   slide clipped on the right and the snap points drifted off the slide edges. */
-.mgr-slide, .mgr-slide > * { min-width: 0; }
-
 /* ============================================================================
    HERO CARD — CONTRAST
    The first pass went calm and ended up faint: grey-on-white text, hairlines that
@@ -3944,443 +3760,7 @@
 .gs-item:nth-child(3n + 2)::after { animation-delay: 1.1s; }
 .gs-item:nth-child(3n)::after { animation-delay: 2.2s; }
 @keyframes gs-sweep { 0%, 55% { transform: translateX(-100%); } 85%, 100% { transform: translateX(100%); } }
-@media (prefers-reduced-motion: reduce) { .gs-item::after { animation: none; display: none; } }
-
-/* ---- report: the frame is light now that the dark metadata bar above it is gone ---- */
-.compute-col-report .report-stage-shell {
-  background: #ffffff;
-  border-color: #cbd5e1;
-}
-.compute-col-report .report-stage-shell::before { display: none; }
-.compute-col-report .ghc-solo .ghc-md { padding-top: 16px; }
-
-/* The report no longer carries a diagram to fill out its column, so it ends at its own
-   height instead of stretching a white panel to meet the pipeline beside it. */
-.compute-split { align-items: start; }
-
-/* ============================================================================
-   FOR ENGINEERING MANAGERS — POINTS LEFT, ILLUSTRATION RIGHT
-   The three numbered outcomes keep their place on the left and double as the
-   carousel's tabs; the right column is only the illustration for the active one.
-   ========================================================================== */
-.mgr-split.mgr-carousel { margin-top: 2.5rem; align-items: center; }
-
-.mgr-points { display: flex; flex-direction: column; gap: 0.6rem; }
-
-.mgr-point {
-  display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr);
-  gap: 0 1rem;
-  align-items: start;
-  width: 100%;
-  padding: 1.1rem 1.2rem 1.15rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid transparent;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-}
-
-.mgr-point:hover { background: rgba(255, 255, 255, 0.55); }
-
-.mgr-point.is-active {
-  background: #ffffff;
-  border-color: rgba(37, 99, 235, 0.22);
-  box-shadow: 0 14px 34px -18px rgba(30, 58, 138, 0.45);
-}
-
-.mgr-point .mgr-point-num {
-  padding-top: 0.2rem;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #94a3b8;
-  transition: color 0.25s ease;
-}
-
-.mgr-point.is-active .mgr-point-num { color: var(--brand); }
-
-.mgr-point-body { display: flex; flex-direction: column; gap: 0.45rem; min-width: 0; }
-
-.mgr-point-title {
-  font-size: 1.06rem;
-  font-weight: 700;
-  line-height: 1.4;
-  letter-spacing: -0.014em;
-  color: #334155;
-  transition: color 0.25s ease;
-}
-
-.mgr-point.is-active .mgr-point-title { color: var(--ink); }
-
-.mgr-point-text {
-  font-size: 0.93rem;
-  line-height: 1.7;
-  color: #64748b;
-}
-
-.mgr-point.is-active .mgr-point-text { color: var(--ink-muted); }
-
-/* the right column: one illustration per slide, no copy of its own */
-.mgr-carousel .mgr-slide {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0;
-  padding: 1.35rem;
-}
-
-.mgr-carousel .mgr-art { min-height: 21rem; }
-
-.mgr-controls {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.45rem;
-  margin-top: 0.9rem;
-}
-
-@media (max-width: 1024px) {
-  .mgr-split.mgr-carousel { grid-template-columns: minmax(0, 1fr); align-items: start; }
-}
-
-@media (max-width: 900px) {
-  .mgr-carousel .mgr-slide { padding: 0.85rem; }
-  .mgr-carousel .mgr-art { min-height: 0; }
-  .mgr-controls { display: none; }
-}
-
-/* ==========================================================================
-   Slide 2: the README sentence a change made untrue, and the check that said so.
-   Drawn in GitHub's vocabulary rather than ours: the README as its Preview renders
-   it, with the cited sentence marked, and the check run's
-   Documented Rules table as GitHub renders that markdown (the columns, wording
-   and footnote are the check's own). Primer's light palette and GitHub's
-   system type stack, so the slide reads as the place the team already works.
-   ========================================================================== */
-/* Every flex level gives up its min-content width, so a long identifier or the
-   table can never push the art past the slide. */
-.mgr-art > .ghr,
-.ghr,
-.ghr-card { min-width: 0; }
-
-.ghr,
-.ghl {
-  --gh-fg: #1f2328;
-  --gh-muted: #59636e;
-  --gh-border: #d1d9e0;
-  --gh-subtle: #f6f8fa;
-  --gh-accent: #0969da;
-  --gh-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
-  --gh-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  font-family: var(--gh-sans);
-  color: var(--gh-fg);
-}
-
-/* GitHub's 6px radius and hairline border, not the site's softer card. */
-.ghr-card {
-  position: relative;
-  border: 1px solid var(--gh-border);
-  border-radius: 6px;
-  background: #ffffff;
-  overflow: hidden;
-}
-
-.ghr-blob {
-  margin-right: 2.75rem;
-  box-shadow: 0 1px 0 rgba(31, 35, 40, 0.04), 0 10px 26px -14px rgba(66, 74, 83, 0.22);
-}
-
-/* The check sits in front of the file it cites, overlapping its empty tail. */
-.ghr-check {
-  z-index: 1;
-  margin: -1.9rem 0 0 2.75rem;
-  box-shadow:
-    0 1px 0 rgba(31, 35, 40, 0.04),
-    0 8px 16px -8px rgba(31, 35, 40, 0.16),
-    0 28px 56px -22px rgba(31, 35, 40, 0.38);
-}
-
-.ghr-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-height: 2.6rem;
-  padding: 0.45rem 0.8rem;
-  border-bottom: 1px solid var(--gh-border);
-  background: var(--gh-subtle);
-  font-size: 0.8rem;
-  line-height: 1.4;
-}
-
-.ghr-crumbs { display: flex; align-items: center; gap: 0.3rem; min-width: 0; white-space: nowrap; overflow: hidden; }
-.ghr-crumbs span { color: var(--gh-accent); }
-.ghr-crumbs i { font-style: normal; color: var(--gh-muted); }
-.ghr-crumbs b { font-weight: 600; color: var(--gh-fg); }
-
-.ghr-seg {
-  margin-left: auto;
-  flex: 0 0 auto;
-  display: inline-flex;
-  padding: 2px;
-  border: 1px solid var(--gh-border);
-  border-radius: 6px;
-  background: #eff2f5;
-  font-size: 0.72rem;
-  font-weight: 500;
-}
-
-.ghr-seg span { padding: 0.08rem 0.6rem; border-radius: 4px; color: var(--gh-muted); }
-.ghr-seg .is-on { background: #ffffff; color: var(--gh-fg); font-weight: 600; box-shadow: 0 0 0 1px var(--gh-border); }
-
-/* The README as GitHub's Preview renders it. The bottom padding is the strip the
-   check card covers, so no line of the document is hidden behind it. */
-.ghr-preview {
-  padding: 0.85rem 1.1rem 2.5rem;
-  font-size: 0.84rem;
-  line-height: 1.5;
-  color: var(--gh-fg);
-}
-
-.ghr-preview p { margin: 0 0 0.45rem; }
-.ghr-preview strong { font-weight: 600; }
-
-.ghr-preview code {
-  padding: 0.15em 0.4em;
-  border-radius: 6px;
-  background: rgba(129, 139, 152, 0.12);
-  font-family: var(--gh-mono);
-  font-size: 85%;
-}
-
-.ghr-preview ul { margin: 0; padding-left: 1.9em; list-style: disc; }
-.ghr-preview li { padding: 0.12rem 0; }
-.ghr-preview li::marker { color: var(--gh-fg); }
-
-/* The cited sentence, marked the way a reader would mark a printout: a highlighter
-   stroke and its line number, and nothing GitHub itself would add. */
-.ghr-preview li.is-hl {
-  position: relative;
-  display: list-item;
-  margin: 0.1rem 0 0.1rem -0.5rem;
-  padding: 0.28rem 3.4rem 0.28rem 0.5rem;
-  border-radius: 6px;
-  background: #fff8c5;
-  box-shadow: inset 0 0 0 1px rgba(212, 167, 44, 0.45);
-  list-style-position: inside;
-}
-
-.ghr-preview li.is-hl em {
-  position: absolute;
-  right: 0.55rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-style: normal;
-  font-family: var(--gh-mono);
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: #9a6700;
-}
-
-.ghr-app { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 4px; background: #ffffff; box-shadow: 0 0 0 1px var(--gh-border); }
-.ghr-check-name { display: flex; align-items: baseline; gap: 0.55rem; min-width: 0; }
-.ghr-check-name b { flex: 0 0 auto; font-size: 0.82rem; font-weight: 600; }
-.ghr-check-name span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; color: var(--gh-muted); }
-.ghr-pr { margin-left: auto; flex: 0 0 auto; font-size: 0.72rem; color: var(--gh-muted); }
-
-.ghr-md { padding: 0.85rem 0.95rem 0.9rem; font-size: 0.8rem; line-height: 1.5; }
-.ghr-md .ghr-h { margin: 0 0 0.65rem; font-size: 0.92rem; font-weight: 600; color: var(--gh-fg); }
-.ghr-table-wrap { overflow-x: auto; }
-
-.ghr-md table { width: 100%; border-collapse: collapse; border-spacing: 0; font-size: 0.76rem; }
-.ghr-md th,
-.ghr-md td { padding: 0.38rem 0.7rem; border: 1px solid var(--gh-border); text-align: left; vertical-align: top; }
-.ghr-md th { font-weight: 600; background: #ffffff; }
-.ghr-md tbody tr:nth-child(2n) { background: var(--gh-subtle); }
-
-/* The one row the slide is about gets a highlighter pass, the only mark on the
-   screenshot that GitHub did not draw. */
-.ghr-md tr.is-focus td { background: #fff1f0; }
-.ghr-md tr.is-focus td:first-child { box-shadow: inset 2px 0 0 #d1242f; }
-
-.ghr-md code {
-  padding: 0.1em 0.38em;
-  border-radius: 6px;
-  background: rgba(129, 139, 152, 0.12);
-  font-family: var(--gh-mono);
-  font-size: 88%;
-}
-
-.ghr-a, .ghr-a code { color: var(--gh-accent); }
-.ghr-out { white-space: nowrap; }
-
-@media (max-width: 560px) {
-  .ghr-blob { margin-right: 0.9rem; }
-  .ghr-check { margin-left: 0.9rem; }
-  .ghr-crumbs span:first-child, .ghr-crumbs i:first-of-type { display: none; }
-  .ghr-pr, .ghr-seg { display: none; }
-  .ghr-preview { padding-inline: 0.85rem; font-size: 0.8rem; }
-  .ghr-preview li.is-hl { padding-right: 0.5rem; }
-  .ghr-preview li.is-hl em { display: none; }
-  .ghr-md th, .ghr-md td { padding: 0.34rem 0.5rem; }
-  /* Rule and verdict are the point; the link to the document is already the file above. */
-  .ghr-md th:nth-child(2), .ghr-md td:nth-child(2) { display: none; }
-  .ghr-out { white-space: normal; }
-}
-
-/* ==========================================================================
-   Slide 1: a pull request list as GitHub draws it. Authors, reviews and labels
-   change from row to row; the Striff chip is the one thing identical on every row,
-   which is the whole point of the slide, down to the approved row it still fails.
-   ========================================================================== */
-.ghl {
-  min-width: 0;
-  border: 1px solid var(--gh-border);
-  border-radius: 6px;
-  background: #ffffff;
-  overflow: hidden;
-  box-shadow:
-    0 1px 0 rgba(31, 35, 40, 0.04),
-    0 8px 16px -8px rgba(31, 35, 40, 0.14),
-    0 26px 52px -24px rgba(31, 35, 40, 0.32);
-}
-
-.ghl-head {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.7rem 1rem;
-  border-bottom: 1px solid var(--gh-border);
-  background: var(--gh-subtle);
-  font-size: 0.8rem;
-  line-height: 1.4;
-}
-
-.ghl-open, .ghl-closed { display: inline-flex; align-items: center; gap: 0.35rem; }
-.ghl-open { font-weight: 600; }
-.ghl-closed { color: var(--gh-muted); }
-.ghl-filters { margin-left: auto; display: flex; gap: 1rem; font-size: 0.76rem; color: var(--gh-muted); }
-
-.ghl-filters span::after {
-  content: "";
-  display: inline-block;
-  margin-left: 0.3rem;
-  border: 4px solid transparent;
-  border-top-color: currentColor;
-  border-bottom-width: 0;
-  vertical-align: 2px;
-}
-
-.ghl-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  column-gap: 0.7rem;
-  align-items: start;
-  padding: 0.75rem 1rem;
-}
-
-.ghl-row + .ghl-row { border-top: 1px solid var(--gh-border); }
-.ghl-row.is-flag { background: #fff8f7; box-shadow: inset 2px 0 0 #d1242f; }
-
-.ghl-icon { display: inline-flex; padding-top: 0.1rem; color: #1a7f37; }
-.ghl-main { min-width: 0; }
-.ghl-title { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
-
-.ghl-title b {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.86rem;
-  font-weight: 600;
-  color: var(--gh-fg);
-}
-
-.ghl-label {
-  flex: 0 0 auto;
-  padding: 0 0.5rem;
-  border: 1px solid transparent;
-  border-radius: 2em;
-  font-size: 0.66rem;
-  font-weight: 500;
-  line-height: 1.55;
-}
-
-.ghl-label-dependencies { background: #ddf4ff; border-color: #b6e3ff; color: #0550ae; }
-.ghl-label-agent { background: #fbefff; border-color: #ecd8ff; color: #8250df; }
-
-.ghl-main i {
-  display: block;
-  margin-top: 0.2rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-style: normal;
-  font-size: 0.72rem;
-  color: var(--gh-muted);
-}
-
-.ghl-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-top: 0.05rem;
-  padding: 0.16rem 0.6rem 0.16rem 0.3rem;
-  border: 1px solid var(--gh-border);
-  border-radius: 2em;
-  background: #ffffff;
-  font-size: 0.7rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.ghl-check img { width: 14px; height: 14px; border-radius: 3px; }
-.ghl-check-held { color: #1a7f37; }
-.ghl-check-violated { border-color: #ffcecb; background: #ffebe9; color: #d1242f; }
-
-@media (max-width: 560px) {
-  .ghl-filters, .ghl-label, .ghl-icon { display: none; }
-  .ghl-row { grid-template-columns: minmax(0, 1fr) auto; padding: 0.7rem 0.8rem; }
-}
-
-/* ==========================================================================
-   Slide 3: the real dashboard component on the sample workspace, rendered at its
-   natural width and scaled down to the slide like a screenshot (setupPreviewScale).
-   It bleeds to the art frame's edges; a fade says the page continues.
-   ========================================================================== */
-.mgr-dash {
-  position: relative;
-  height: 24rem;
-  margin: -1.35rem;
-  border-radius: inherit;
-  overflow: hidden;
-  background: #f8fafc;
-}
-
-.mgr-dash-scale {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 900px;
-  padding: 1.25rem;
-  transform-origin: top left;
-  pointer-events: none;
-}
-
-.mgr-dash-fade {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 26%;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0), rgba(248, 250, 252, 0.97) 82%);
-  pointer-events: none;
-}
-
-@media (max-width: 900px) {
-  .mgr-dash { margin: -1rem; height: 20rem; }
-}
-
-/* FAQ emphasis: bold carries the answer, italics the qualification. */
+@media (prefers-reduced-motion: reduce) { .gs-item::after { animation: none; display: none; } }/* FAQ emphasis: bold carries the answer, italics the qualification. */
 .faq-a strong { font-weight: 650; color: var(--ink); }
 .faq-a em { font-style: italic; color: var(--ink-soft); }
 
@@ -4449,15 +3829,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .gs-item-icon svg, .gs-agent-mark { animation: none !important; }
-}
-
-/* The report column gives back a little width to the pipeline beside it. Two columns only
-   above the 1180px break; below it the pipeline and the report stack. */
-.compute-col-report { max-width: 46rem; width: 100%; }
-@media (min-width: 1181px) {
-  .compute-split { grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); }
-  .compute-col-report { justify-self: end; }
-}
+}@media (min-width: 1181px) {}
 
 /* Pre-existing: already broken before this PR. Amber, so it reads as inherited debt
    rather than as either a pass or something this change did. */
@@ -4596,34 +3968,6 @@
 .hcc-witness { display: block; margin-top: 0.1rem; font-size: 0.8rem; line-height: 1.5; color: #9f1f33; }
 .hcc-witness .github-inline-code { border: 0; background: #fdeced; color: #7f1d2d; font-size: 0.92em; padding: 0.04em 0.3em; border-radius: 0.26rem; }
 
-/* The hero card is an illustrative example, and says so. */
-.hcc-chip-example { color: #92400e; background: #fef3c7; border-color: #fcd34d; font-weight: 700; }
-
-/* One line above the hero card: what the formalism in it is for, before the reader meets it. */
-.hero-check-lede { max-width: 54rem; margin: 0 auto 1rem; text-align: center; font-size: 0.95rem; line-height: 1.6; color: #475569; }
-@media (max-width: 820px) { .hero-check-lede { text-align: left; font-size: 0.9rem; } }
-
-/* ---- the logic behind the verdicts, once ----
-   One expandable note under the rows: how a sentence becomes a formula and how a verdict is
-   decided, with the violated row's formula typeset. The rows themselves stay in English. */
-.hcc-proof { border-top: 1px solid #edf1f5; background: #fcfdfe; }
-.hcc-proof summary { display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1.5rem; cursor: pointer; list-style: none; }
-.hcc-proof summary::-webkit-details-marker { display: none; }
-.hcc-proof-kicker { font-size: 0.625rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #6d28d9; }
-.hcc-proof-q { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
-.hcc-proof-chev { margin-left: auto; flex: 0 0 auto; width: 0.95rem; height: 0.95rem; color: #94a3b8; transition: transform 0.2s ease; }
-.hcc-proof[open] .hcc-proof-chev { transform: rotate(180deg); }
-.hcc-proof-body { padding: 0 1.5rem 1.15rem; max-width: 64rem; font-size: 0.86rem; line-height: 1.62; color: #475569; }
-.hcc-proof-body p + p { margin-top: 0.6rem; }
-.hcc-proof .lg-q { color: #6d28d9; }
-.hcc-proof .sat { color: #17794a; }
-.hcc-proof .unsat { color: #c9313f; }
-
-@media (max-width: 820px) {
-  .hcc-proof summary { flex-wrap: wrap; row-gap: 0.2rem; padding: 0.85rem 1.05rem; }
-  .hcc-proof-body { padding: 0 1.05rem 1rem; }
-}
-
 @media (max-width: 820px) {
   .hcc-table .hcc-verdict-cell { align-items: flex-start; }
   .hcc-status-sat { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0; }
@@ -4752,7 +4096,6 @@
   .blog-invite:hover, .blog-invite:hover .blog-invite-go { transform: none; }
 }
 
-.section-invite { display: flex; justify-content: center; margin-top: 2.5rem; }
 .compute-invite { margin-top: 1.75rem; }
 
 /* The diagram section's intro sits centred over the full-width stage below it. */
@@ -5665,219 +5008,6 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   font-family: "IBM Plex Mono", monospace;
 }
 
-/* ============================================================================
-   FOR TEAMS — PROOF BAND AND THE SAME-WEEK TABLE
-   Four numbers a team lead can check, each a link to where it comes from, then
-   the same four moments in a week laid out twice. Same vocabulary as the rest of
-   the page: white cards, hairlines, one accent line per card in its tone.
-   ========================================================================== */
-.team-intro {
-  display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  gap: 2rem 3.5rem;
-  align-items: start;
-}
-.team-proof {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.85rem;
-}
-@media (max-width: 1024px) {
-  .team-intro { grid-template-columns: minmax(0, 1fr); }
-  .team-proof { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-.team-stat {
-  --tone: var(--brand);
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  padding: 1.05rem 1.2rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  color: inherit;
-  text-decoration: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-.team-stat::before {
-  content: "";
-  display: block;
-  width: 1.75rem;
-  height: 3px;
-  border-radius: 3px;
-  background: var(--tone);
-  margin-bottom: 0.2rem;
-}
-.team-stat:hover { border-color: color-mix(in srgb, var(--tone) 40%, transparent); box-shadow: 0 10px 24px -14px rgba(30, 58, 138, 0.35); transform: translateY(-1px); }
-.team-stat-brand { --tone: #2563eb; }
-.team-stat-amber { --tone: #d97706; }
-.team-stat-danger { --tone: #dc2626; }
-.team-stat-value {
-  font-size: clamp(1.85rem, 1.4rem + 1.2vw, 2.5rem);
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.035em;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.team-stat-title {
-  font-size: 1.08rem;
-  font-weight: 800;
-  line-height: 1.3;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-  text-wrap: balance;
-}
-.team-stat-label { font-size: 0.9rem; line-height: 1.55; color: var(--ink-muted); }
-.team-stat-cite {
-  margin-top: auto;
-  padding-top: 0.75rem;
-  border-top: 1px dashed rgba(15, 23, 42, 0.1);
-  font-size: 0.84rem;
-  line-height: 1.5;
-  font-weight: 600;
-  color: var(--tone);
-}
-@media (max-width: 760px) { .team-proof { grid-template-columns: minmax(0, 1fr); } }
-
-/* The PR list on slide one is invented, and says so the same way the hero does. */
-.ghl-example { margin-left: 0.75rem; }
-
-/* ---- One agent pull request, two futures ----
-   The pull request at the top is the shared premise: an agent-written change, a diff
-   line, and the sentence it contradicts. Below it the page forks. The left path is red
-   and gets darker down the timeline; the right path is the product, and ends early. */
-.fork-pr {
-  margin-top: 1rem;
-  border-radius: 1.1rem;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  background: #ffffff;
-  box-shadow: var(--lift-shadow);
-  overflow: hidden;
-}
-.fork-pr-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 1rem;
-  padding: 0.9rem 1.25rem;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-  background: linear-gradient(180deg, #f8fafd, #f2f6fb);
-}
-.fork-pr-title { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 1rem; color: var(--ink); }
-.fork-pr-title svg { color: #1a7f37; }
-.fork-pr-meta { font-size: 0.8rem; color: var(--ink-muted); }
-.fork-pr-head .hcc-chip { margin-left: auto; }
-.fork-pr-diff,
-.fork-pr-doc {
-  padding: 0.85rem 1.25rem;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.82rem;
-}
-.fork-pr-file { display: block; margin-bottom: 0.4rem; font-size: 0.72rem; color: var(--ink-muted); }
-.fork-pr-line { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); color: var(--ink); line-height: 1.7; }
-.fork-pr-line span:first-child { color: #9aa4b2; text-align: right; padding-right: 0.9rem; }
-.fork-pr-line.is-add { background: #e6ffec; color: #116329; margin: 0 -1.25rem; padding: 0 1.25rem; }
-.fork-pr-doc {
-  display: grid;
-  gap: 0.2rem;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(220, 38, 38, 0.035);
-}
-.fork-pr-quote { font-family: inherit; font-size: 0.92rem; font-style: italic; color: var(--ink); font-family: ui-serif, Georgia, serif; }
-
-.fork-split {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.25rem;
-  margin-top: 1.25rem;
-}
-.fork-path {
-  --tone: #dc2626;
-  padding: 1.25rem 1.4rem 1.4rem;
-  border-radius: 1.1rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: #ffffff;
-}
-.fork-path-with { --tone: #2563eb; background: linear-gradient(180deg, rgba(37, 99, 235, 0.06), rgba(37, 99, 235, 0.02)); border-color: rgba(37, 99, 235, 0.22); }
-.fork-path-without { background: linear-gradient(180deg, #ffffff, rgba(220, 38, 38, 0.04)); }
-.fork-path-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--tone);
-}
-.fork-check {
-  display: grid;
-  gap: 0.15rem;
-  margin: 0.9rem 0 0.4rem;
-  padding: 0.75rem 0.9rem;
-  border-radius: 0.7rem;
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  background: #fff5f5;
-  font-size: 0.86rem;
-}
-.fork-check-flag { font-weight: 800; color: #b91c1c; }
-.fork-check-rule { color: var(--ink); }
-.fork-check-rule code { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.86em; background: #ffffff; border: 1px solid #f1d4d4; border-radius: 4px; padding: 0 0.3em; }
-.fork-check-src { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.7rem; color: var(--ink-muted); }
-.fork-steps { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.15rem; }
-.fork-steps li {
-  position: relative;
-  display: grid;
-  grid-template-columns: 8.5rem minmax(0, 1fr);
-  gap: 0 1rem;
-  padding: 0.55rem 0 0.55rem 1.35rem;
-  font-size: 0.92rem;
-  line-height: 1.55;
-}
-.fork-steps li::before {
-  content: "";
-  position: absolute;
-  left: 0.3rem;
-  top: 0.95rem;
-  bottom: -0.65rem;
-  width: 1px;
-  background: color-mix(in srgb, var(--tone) 35%, transparent);
-}
-.fork-steps li:last-child::before { display: none; }
-.fork-steps li::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.85rem;
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: inset 0 0 0 2px var(--tone);
-}
-/* The left path gets worse as it goes: the last two dots fill in. */
-.fork-path-without .fork-steps li:nth-child(n+3)::after { background: var(--tone); box-shadow: none; }
-.fork-path-without .fork-steps li:last-child .fork-text { color: #991b1b; font-weight: 600; }
-.fork-path-with .fork-steps li:last-child::after { background: var(--tone); box-shadow: none; }
-.fork-path-with .fork-steps li:last-child .fork-text { color: var(--brand); font-weight: 700; }
-.fork-when {
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.02em;
-  color: var(--ink-muted);
-  padding-top: 0.2rem;
-}
-.fork-text { color: var(--ink-muted); }
-.fork-path-with .fork-text { color: var(--ink); }
-@media (max-width: 900px) {
-  .fork-split { grid-template-columns: minmax(0, 1fr); }
-  .fork-steps li { grid-template-columns: minmax(0, 1fr); gap: 0.1rem; }
-}
-
 /* The versions of one document Striff holds rules for. A document is not one text: a pull request
    reads the text on its own branch, and each reading is its own set of rules. */
 .docs-versions {
@@ -6370,66 +5500,6 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .repo-card:hover .repo-card-gh { color: #6b7684; }
 .repo-card-gh:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
 
-/* ─── The dashboard, in the for-teams carousel ──────────────────────────────
-   Two pages of the product, photographed rather than redrawn: the rules list in
-   front, the documents view behind it. The back one is there for depth and is
-   cropped by the frame, so nothing important is read from it. */
-.mgr-shots {
-  position: relative;
-  display: block;
-  width: 100%;
-  min-height: 21rem;
-  padding: 0.4rem 0 1.6rem 0;
-}
-.mgr-shot {
-  margin: 0;
-  border-radius: 0.7rem;
-  overflow: hidden;
-  background: #fff;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-}
-.mgr-shot img { display: block; width: 100%; height: auto; }
-.mgr-shot-back {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 58%;
-  max-height: 8.5rem;
-  transform: rotate(1.2deg);
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
-  opacity: 0.9;
-}
-.mgr-shot-front {
-  position: relative;
-  z-index: 2;
-  width: 92%;
-  margin-top: 2.4rem;
-  max-height: 19rem;
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18);
-}
-/* Both are cropped by their frame, so the cut edge is softened rather than sliced. */
-.mgr-shot::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2.2rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff);
-  pointer-events: none;
-}
-.mgr-shot { position: relative; }
-.mgr-shot-chip {
-  position: absolute;
-  right: 0.2rem;
-  bottom: 0.3rem;
-  z-index: 3;
-}
-@media (max-width: 900px) {
-  .mgr-shots { min-height: 0; padding-bottom: 1.4rem; }
-  .mgr-shot-back { display: none; }
-  .mgr-shot-front { width: 100%; margin-top: 0; max-height: none; }
-}
 
 /* How many rules came out of the open document, including none. */
 .docs-rule-count {
@@ -6439,3 +5509,670 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   line-height: 1.5;
 }
 .docs-rule-count b { color: #16202b; font-weight: 700; }
+
+/* The extension, at the foot of a list of rules: a note, not a banner. It sits below the table
+   so it is read after the thing someone came for, and never in front of it. */
+.extension-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.9rem 0 0;
+  border-top: 1px solid #f0f3f7;
+  padding-top: 0.85rem;
+  color: #6b7684;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.extension-note svg { flex: 0 0 auto; margin-top: 0.15rem; color: #97a2ae; }
+.extension-note a { color: #1d4ed8; font-weight: 600; }
+@media print { .extension-note { display: none; } }
+
+/* ─── The public demo ───────────────────────────────────────────────────────
+   The dashboard's own views, dropped into a marketing page. They were built to
+   sit inside the app shell, so the frame here gives them the surface and the
+   padding that shell would, and nothing else. */
+.demo-page { background: linear-gradient(180deg, #fbfcfe 0%, #f4f7fb 100%); }
+.demo {
+  border: 1px solid var(--line);
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+.demo-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  border-bottom: 1px solid #eef2f7;
+  background: #fbfcfe;
+  padding: 0.7rem 1.1rem;
+}
+.demo-tabs { display: inline-flex; gap: 0.25rem; }
+.demo-tab {
+  border: 1px solid transparent;
+  border-radius: 0.55rem;
+  padding: 0.35rem 0.8rem;
+  color: #57606a;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.demo-tab:hover { background: #eef2f7; color: #16202b; }
+.demo-tab.is-on { border-color: #d8e1ec; background: #fff; color: #16202b; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05); }
+.demo-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0 auto;
+  color: #6b7684;
+  font-size: 0.78rem;
+}
+.demo-chip {
+  border: 1px solid #e8d9a8;
+  border-radius: 999px;
+  background: #fdf6e3;
+  padding: 0.1rem 0.5rem;
+  color: #7a5c12;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+/* The tabs paint their own top padding; the shell's page padding would double it. */
+.demo-stage { padding: 0.35rem 1.1rem 1.1rem; }
+.demo-stage .docs-tab, .demo-stage .rules-tab { margin-top: 0; }
+
+.demo-cta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.25rem 2rem;
+  border: 1px solid var(--line);
+  border-radius: 1.1rem;
+  background: #fff;
+  padding: 1.5rem 1.75rem;
+}
+.demo-cta-title { margin: 0; color: #0f172a; font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; }
+.demo-cta-sub { margin: 0.4rem 0 0; max-width: 46rem; color: #57606a; font-size: 0.9rem; line-height: 1.6; }
+.demo-cta-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-left: auto; }
+@media (max-width: 720px) {
+  .demo-note { margin-left: 0; }
+  .demo-cta-actions { margin-left: 0; }
+  .demo-stage { padding: 0.35rem 0.6rem 0.8rem; }
+}
+
+/* ============================================================================
+   FOR TEAMS
+   The one section for the lead rather than the reviewer: the dashboard's three
+   views as three cards, each a door into the demo's matching tab. The metrics
+   card is the live component scaled to fit (setupPreviewScale); the other two
+   are photographed, because their tables are too tall to scale and stay legible.
+   ========================================================================== */
+.teams-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.5rem 3rem;
+  align-items: end;
+}
+.teams-head-copy { max-width: 50rem; }
+.teams-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding-bottom: 0.25rem;
+}
+.teams-head-note {
+  flex-basis: 100%;
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+@media (max-width: 1024px) {
+  .teams-head { grid-template-columns: minmax(0, 1fr); align-items: start; }
+}
+
+.teams-panels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+@media (max-width: 1024px) {
+  .teams-panels { grid-template-columns: minmax(0, 1fr); max-width: 40rem; }
+}
+
+.teams-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow: var(--lift-shadow);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.teams-panel:hover {
+  border-color: rgba(37, 99, 235, 0.32);
+  box-shadow: 0 22px 44px -22px rgba(30, 58, 138, 0.4);
+  transform: translateY(-2px);
+}
+.teams-panel:focus-within { border-color: rgba(37, 99, 235, 0.5); }
+
+/* The art is a window onto the view: the top-left corner of it, cropped on the
+   right and faded at the bottom, so it reads as a page that continues. */
+.teams-panel-art {
+  position: relative;
+  height: 15rem;
+  overflow: hidden;
+  border-bottom: 1px solid #e8edf3;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(30, 58, 138, 0.06) 1px, transparent 0) 0 0 / 16px 16px,
+    linear-gradient(180deg, #f8fafd, #f2f6fb);
+}
+.teams-panel-shot {
+  position: absolute;
+  top: 1.1rem;
+  left: 1.1rem;
+  width: calc(100% - 1.1rem);
+  margin: 0;
+  overflow: hidden;
+  border-radius: 0.6rem 0 0 0;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-right: 0;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.14);
+}
+.teams-panel-shot img { display: block; width: 100%; height: auto; }
+.teams-panel-live {
+  position: absolute;
+  inset: 1.1rem 0 0 1.1rem;
+  overflow: hidden;
+  border-radius: 0.6rem 0 0 0;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-right: 0;
+  background: #f8fafc;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.14);
+}
+.teams-panel-live-scale {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 900px;
+  padding: 1rem;
+  transform-origin: top left;
+  pointer-events: none;
+}
+.teams-panel-fade {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 30%;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0), rgba(248, 250, 252, 0.96) 85%);
+  pointer-events: none;
+}
+.teams-panel-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1.15rem 1.35rem 1.3rem;
+}
+.teams-panel-eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+.teams-panel-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.teams-panel-text {
+  margin: 0;
+  font-size: 0.93rem;
+  line-height: 1.65;
+  color: var(--ink-muted);
+}
+/* The link is the whole card: its ::after covers the article, and the preview
+   inside is inert, so nothing else in the card competes for the click. */
+.teams-panel-cta {
+  margin-top: auto;
+  padding-top: 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+.teams-panel-cta::after { content: ""; position: absolute; inset: 0; }
+.teams-panel-cta:hover { text-decoration: underline; }
+.teams-panel-cta:focus-visible { outline: none; }
+@media (max-width: 640px) {
+  .teams-panel-art { height: 12.5rem; }
+}
+
+/* Under the hero card: the example is one rule of many, and the many are one click away. */
+.hero-check-more {
+  margin: 0.9rem 0 0;
+  text-align: center;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.hero-check-more a { font-weight: 700; color: #1d4ed8; }
+
+/* The step driving the build.
+
+   Three states, and they have to be told apart at a glance or the sequence below reads as five
+   paragraphs that happen to change colour. Waiting is dimmed. Done is full contrast with a filled
+   dot and a filled rail behind it. Running is lifted onto its own panel, so the eye lands on it
+   from anywhere on the page. */
+.pipeline-flow.is-across .pipe-step {
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 0.7rem;
+  padding: 0.7rem 0.75rem 0.85rem;
+  margin: -0.7rem -0.75rem -0.85rem;
+  transition: background 260ms ease, border-color 260ms ease, box-shadow 260ms ease,
+    transform 260ms cubic-bezier(0.22, 0.75, 0.2, 1);
+}
+.pipeline-flow.is-across .pipe-name,
+.pipeline-flow.is-across .pipe-text,
+.pipeline-flow.is-across .pipe-num,
+.pipeline-flow.is-across .pipe-kind { transition: color 220ms ease, opacity 220ms ease; }
+
+/* Waiting its turn. */
+.pipeline-flow.is-across .pipe-step:not(.is-done) .pipe-text { color: #9aa4af; }
+.pipeline-flow.is-across .pipe-step:not(.is-done) .pipe-name { color: #6b7684; }
+.pipeline-flow.is-across .pipe-step:not(.is-done) .pipe-kind { opacity: 0.55; }
+
+/* Run already. */
+.pipeline-flow.is-across .pipe-step.is-done .pipe-dot { background: #2563eb; border-color: #2563eb; }
+.pipeline-flow.is-across .pipe-step.is-done .pipe-rail::before {
+  background: linear-gradient(90deg, #93b4e6, #bcd0ee);
+}
+
+/* Running now. */
+.pipeline-flow.is-across .pipe-step.is-on {
+  border-color: #cfdcf3;
+  background: #f7faff;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.09);
+  transform: translateY(-2px);
+}
+.pipeline-flow.is-across .pipe-step.is-on .pipe-name { color: #1d4ed8; }
+.pipeline-flow.is-across .pipe-step.is-on .pipe-num { color: #1d4ed8; }
+.pipeline-flow.is-across .pipe-step.is-on .pipe-text { color: #424b55; }
+.pipeline-flow.is-across .pipe-step.is-on .pipe-dot {
+  background: #2563eb;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.18);
+}
+.pipeline-flow.is-across .pipe-step:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .pipeline-flow.is-across .pipe-step { transition: none; }
+  .pipeline-flow.is-across .pipe-step.is-on { transform: none; }
+}
+
+@media (max-width: 720px) {
+  .rb-part { grid-template-columns: minmax(0, 1fr); gap: 0.35rem; padding-left: 1.4rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-part > :not(.rb-tag) { opacity: 1; transform: none; transition: none; }
+  .rb-part .rb-tag { opacity: 1; }
+}
+
+/* ─── A real check, rendered the way GitHub renders it ──────────────────────
+   The three columns are the three the check posts, so the page and the product
+   cannot drift apart. The diagram is inside the card because the check embeds
+   it inside the same comment. */
+.ghcheck {
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+}
+.ghcheck-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-bottom: 1px solid #eef2f7;
+  background: #fbfcfe;
+  padding: 0.75rem 1.1rem;
+}
+.ghcheck-mark {
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: #fff;
+  flex: 0 0 auto;
+}
+.ghcheck-title { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.ghcheck-title b { color: #16202b; font-size: 0.9rem; font-weight: 700; }
+.ghcheck-title i {
+  color: #6b7684;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.74rem;
+  font-style: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ghcheck-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  border: 1px solid #b7e0c4;
+  border-radius: 999px;
+  background: #e7f6ec;
+  padding: 0.2rem 0.65rem;
+  color: #17632f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.ghcheck-body { padding: 1.1rem 1.25rem 1.25rem; }
+.ghcheck-h {
+  margin: 0;
+  color: #16202b;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.008em;
+}
+.ghcheck-h + .ghcheck-p, .ghcheck-h + .ghcheck-note { margin-top: 0.35rem; }
+.ghcheck-p { margin: 0 0 1.35rem; color: #424b55; font-size: 0.9rem; line-height: 1.6; }
+.ghcheck-note { margin: 0 0 0.85rem; color: #8a95a1; font-size: 0.82rem; font-style: italic; line-height: 1.55; }
+
+.ghcheck-table-wrap { overflow-x: auto; border: 1px solid #eef2f7; border-radius: 0.6rem; }
+.ghcheck-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.ghcheck-table thead th {
+  border-bottom: 1px solid #eef2f7;
+  background: #fbfcfe;
+  padding: 0.55rem 0.85rem;
+  color: #6b7684;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+.ghcheck-table tbody tr + tr td { border-top: 1px solid #f3f6fa; }
+.ghcheck-table td { padding: 0.7rem 0.85rem; vertical-align: top; }
+.ghcheck-table tbody tr:hover { background: #fcfdfe; }
+.ghcheck-rule { color: #16202b; font-weight: 600; line-height: 1.5; min-width: 15rem; }
+.ghcheck-rule .github-inline-code {
+  border: 1px solid #e6ebf1;
+  border-radius: 0.3rem;
+  background: #f6f8fa;
+  padding: 0.05em 0.32em;
+  font-size: 0.9em;
+}
+.ghcheck-src { min-width: 14rem; }
+.ghcheck-src code {
+  display: inline-block;
+  color: #1d4ed8;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+}
+/* The quoted sentence is what the check puts in the link's tooltip. On a page nobody hovers,
+   it is the most convincing thing in the row, so it is shown. */
+.ghcheck-src span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 0.2rem;
+  color: #8a95a1;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+.ghcheck-verdict { white-space: nowrap; }
+.ghcheck-holds {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid #b7e0c4;
+  border-radius: 999px;
+  background: #e7f6ec;
+  padding: 0.12rem 0.55rem;
+  color: #17632f;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.ghcheck-more { margin: 0.7rem 0 0; color: #8a95a1; font-size: 0.8rem; }
+
+.ghcheck-figure { margin: 1.35rem 0 0; }
+.ghcheck-diagram {
+  border: 1px solid #eef2f7;
+  border-radius: 0.6rem;
+  background: #fff;
+  overflow: auto;
+  max-height: 26rem;
+  overscroll-behavior: contain;
+}
+.ghcheck-diagram img { display: block; max-width: none; height: 26rem; width: auto; }
+.ghcheck-figure figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.6rem;
+  margin-top: 0.5rem;
+  color: #8a95a1;
+  font-size: 0.78rem;
+}
+.ghcheck-figure figcaption a { color: #1d4ed8; font-weight: 600; }
+.ghcheck-foot {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 1.25rem 0 0;
+  border-top: 1px solid #eef2f7;
+  padding-top: 0.85rem;
+  color: #8a95a1;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.ghcheck-foot img { margin-top: 0.15rem; flex: 0 0 auto; }
+.ghcheck-foot b { color: #424b55; }
+
+.diagram-source-run { color: #1d4ed8; font-weight: 600; font-size: 0.85rem; }
+@media (max-width: 720px) {
+  .ghcheck-diagram { max-height: 18rem; }
+  .ghcheck-diagram img { height: 18rem; }
+}
+
+/* The hero card wears the same check header as the real one below it. */
+.hcc-head.ghcheck-head { border-radius: 0; }
+.ghcheck-state.is-bad {
+  border-color: #f3c7cd;
+  background: #fdecee;
+  color: #9f1f33;
+}
+
+/* The diagram inside the check: a window onto it, not a picture of it. */
+.ghcheck-diagram {
+  position: relative;
+  border: 1px solid #d8e0ea;
+  border-radius: 0.6rem;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(30, 58, 138, 0.055) 1px, transparent 0) 0 0 / 18px 18px,
+    #fff;
+  overflow: hidden;
+  height: 36rem;
+  cursor: grab;
+  touch-action: none;
+}
+.ghcheck-diagram.is-grabbing { cursor: grabbing; }
+/* Laid out at the diagram's own size and moved by transform, so panning reveals more diagram
+   rather than the edge of a cropped file. */
+.ghcheck-diagram img {
+  display: block;
+  width: 12796px;
+  height: 3793px;
+  max-width: none;
+  transform-origin: 0 0;
+  will-change: transform;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.ghcheck-zoom {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+.ghcheck-zoom button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0.3rem 0.55rem;
+  background: transparent;
+  color: #424b55;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.ghcheck-zoom button + button { border-left: 1px solid #eef2f7; }
+.ghcheck-zoom button:hover { background: #f6f8fa; color: #16202b; }
+@media (max-width: 720px) { .ghcheck-diagram { height: 24rem; } }
+
+/* What a step produced, under the paragraph that describes it. It holds its height from the
+   start, so the row of five never reflows as each one lands; only the line itself fades in. */
+.pipe-out {
+  margin: 0.6rem 0 0;
+  min-height: 2.6rem;
+}
+.pipe-out span {
+  display: inline-block;
+  border: 1px solid #e2e9f3;
+  border-radius: 0.45rem;
+  background: #f7faff;
+  padding: 0.3rem 0.55rem;
+  color: #1d4ed8;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 320ms ease, transform 320ms cubic-bezier(0.22, 0.75, 0.2, 1);
+}
+.pipeline-flow.is-across .pipe-step.is-done .pipe-out span { opacity: 1; transform: none; }
+.pipeline-flow.is-across .pipe-step.is-on .pipe-out span {
+  border-color: #b9cdf0;
+  background: #eef4ff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pipe-out span { opacity: 1; transform: none; transition: none; }
+}
+
+.diagram-source-label { color: #6b7684; font-size: 0.85rem; }
+
+/* ─── The check section's own frame ─────────────────────────────────────────
+   A check comment is read, not scanned across a hall. GitHub gives its own
+   about sixty rems; this keeps the table's three columns comfortable without
+   running the full width of the page. */
+.check-report,
+.check-foot,
+.diagram-intro {
+  max-width: 76rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.check-report { margin-top: 1.75rem; }
+
+.diagram-source-pr {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: #fff;
+  padding: 0.3rem 0.65rem;
+  color: #16202b;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.diagram-source-pr:hover { background: #f6f8fa; text-decoration: none; }
+
+/* Two links, side by side, under what they are both about. */
+.check-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+}
+/* The blog card is the offer and takes the room; the source link is a footnote and takes what
+   it needs. Both stretched to half the row made a one-line link look like a second call to
+   action. */
+.check-foot > * { margin: 0; }
+.check-foot .oss-link { flex: 0 0 auto; align-self: center; margin-top: 0; }
+.check-foot > :not(.oss-link) { flex: 1 1 22rem; }
+
+/* Full screen keeps the frame's own chrome, so the controls stay reachable. */
+.ghcheck-diagram:fullscreen { height: 100vh; border-radius: 0; border: 0; background: #fff; }
+.ghcheck-figure { margin-top: 1.35rem; }
+
+/* The legend, on the diagram rather than under it. */
+.ghcheck-legend {
+  position: absolute;
+  left: 0.6rem;
+  top: 0.6rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.55rem;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(6px);
+  padding: 0.28rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #57606a;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+.ghcheck-legend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.ghcheck-legend span::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 0.15rem;
+}
+.ghcheck-legend .is-add::before { background: #aef0c1; border: 1px solid #62c483; }
+.ghcheck-legend .is-del::before { background: #ffc7ce; border: 1px solid #e88b96; }
+.ghcheck-legend .is-mod::before { background: #bfdcff; border: 1px solid #7aaeeb; }
+.ghcheck-legend em {
+  padding-left: 0.4rem;
+  border-left: 1px solid #e6ebf1;
+  color: #8a95a1;
+  font-style: normal;
+  font-weight: 500;
+}
+@media (max-width: 720px) { .ghcheck-legend em { display: none; } }

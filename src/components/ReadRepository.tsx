@@ -29,10 +29,16 @@ import { useEffect, useRef, useState } from "react";
  * all again would be a button whose only use is spending money on an answer Striff mostly has, so
  * it goes away once its job is done.
  *
- * A reading is expensive to serve -- a parse of the repository and a model call for every document
- * whose rules are not already held -- so the API rate-limits it. The button says when the next one
- * is allowed rather than letting someone click into a refusal. What it costs us is our problem and
- * is not said out loud: the reader is told how long it takes, which is what they can act on.
+ * There is one gate, and it is the count beside the button: documents nothing has read. A reading
+ * is expensive to serve -- a parse of the repository and a model call for every document whose
+ * rules are not already held -- and what buys that is rules that do not yet exist. There used to be
+ * a second gate, a four-hour interval since the branch was last judged, and it produced a
+ * contradiction anyone could see: the page offered to read three documents and the run answered
+ * that the rules already carried a recent reading. Both were true; neither was about those three
+ * documents, and merges move that clock without a reader touching anything.
+ *
+ * What it costs us is our problem and is not said out loud: the reader is told how long it takes,
+ * which is what they can act on.
  *
  * The count beside "Reading" is how many documents the run has to get through, not how many are
  * left. The catalogue only hears what a run read once the whole run is finished, so a number
@@ -48,7 +54,6 @@ export interface Reading {
   finishedAtMs: number;
   rulesJudged: number;
   reason: string | null;
-  canAskAgainAtMs: number;
 }
 
 /** A run that has not stopped is one worth watching. */
@@ -67,13 +72,6 @@ function since(ms: number): string {
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.round(seconds / 60);
   return minutes < 60 ? `${minutes} min` : `${Math.round(minutes / 60)}h`;
-}
-
-function until(ms: number): string {
-  const minutes = Math.max(0, Math.round((ms - Date.now()) / 60000));
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  return `${hours}h ${minutes % 60}m`;
 }
 
 export default function ReadRepository({
@@ -185,11 +183,14 @@ export default function ReadRepository({
     );
   }
 
-  const blockedUntil = reading?.canAskAgainAtMs && reading.canAskAgainAtMs > Date.now()
-    ? reading.canAskAgainAtMs
-    : 0;
-  // Short, because it sits inside a row of counts. The sentence lives in the title.
-  const label = stopped ? "Try again" : waiting > 0 ? `Read ${waiting}` : "Read them";
+  // "Read 3" beside a count of documents read could be a count itself. It has to name what it
+  // does to what, in the fewest words that still say it: read documents, here, now. The sentence
+  // that explains why anyone would still lives in the title.
+  const label = stopped
+    ? "Try again"
+    : waiting > 0
+    ? `Read ${waiting} doc${waiting === 1 ? "" : "s"} now`
+    : "Read these docs now";
   const help = waiting > 0
     ? "Reads the documents Striff has not read yet and checks every rule it finds against your default branch. Takes a few minutes."
     : "Reads every document in this repository and checks every rule it finds against your default branch. Takes a few minutes.";
@@ -199,10 +200,8 @@ export default function ReadRepository({
       <button
         type="button"
         className={`read-repo-button${stopped ? " is-bad" : ""}`}
-        disabled={!!busy || blockedUntil > 0}
-        title={blockedUntil > 0
-          ? `Striff read this repository recently. Another reading can be asked for in ${until(blockedUntil)}.`
-          : help}
+        disabled={!!busy}
+        title={help}
         onClick={async () => {
           setAsked(true);
           try {
@@ -231,9 +230,6 @@ export default function ReadRepository({
         <span className="read-repo-note is-bad">
           The last reading stopped: {reading!.reason || "no reason recorded"}
         </span>
-      )}
-      {blockedUntil > 0 && !stopped && !justFinished && (
-        <span className="read-repo-note">Another can be asked for in {until(blockedUntil)}</span>
       )}
     </span>
   );

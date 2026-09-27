@@ -2,6 +2,7 @@ import { createElement, useState, useEffect, useRef } from "react";
 import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab from "./DocsTab";
 import RulesTab from "./RulesTab";
+import { EXTENSION_URL } from "./docRules";
 
 const OAUTH_CLIENT_ID =
   typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_GITHUB_OAUTH_CLIENT_ID
@@ -458,6 +459,11 @@ function DashBar({
                   <p className="bar-menu-who">{user.login}</p>
                   <a className="bar-menu-item" href="https://github.com/apps/striff-app/installations/new" target="_blank" rel="noopener noreferrer" role="menuitem">
                     Add an account
+                  </a>
+                  {/* Findable without being sold: someone who wants the findings on the pull
+                      request itself looks here, and nobody else has to get past it. */}
+                  <a className="bar-menu-item" href={EXTENSION_URL} target="_blank" rel="noopener noreferrer" role="menuitem">
+                    Browser extension
                   </a>
                   <button type="button" className="bar-menu-item" onClick={onSignOut} role="menuitem">
                     Sign out
@@ -1223,7 +1229,7 @@ function FaqSection() {
     },
     {
       q: "What is the browser extension?",
-      a: "The <a href=\"https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> shows <b>interactive architectural diagrams</b> directly on GitHub, with the repository\u2019s own <b>documented rules checked</b> and listed beside it, one click away. You can switch between code and architecture views, focus on specific components, and <b>post subdiagrams as PR comments</b> for your team. There\u2019s a walkthrough video <a href=\"/#extension\" class=\"font-semibold text-blue-600 hover:underline\">on the homepage</a>.",
+      a: `The <a href="${EXTENSION_URL}" target=\"_blank\" rel=\"noopener noreferrer\" class=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> shows <b>interactive architectural diagrams</b> directly on GitHub, with the repository\u2019s own <b>documented rules checked</b> and listed beside it, one click away. You can switch between code and architecture views, focus on specific components, and <b>post subdiagrams as PR comments</b> for your team. There\u2019s a walkthrough video <a href=\"/#extension\" class=\"font-semibold text-blue-600 hover:underline\">on the homepage</a>.`,
     },
   ];
 

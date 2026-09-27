@@ -5,8 +5,7 @@
  * time); and the verdict on this pull request with the two satisfaction facts it rests on,
  * M_before and M_after, either of which may fail: a rule already broken at the base revision
  * shows M_before failing too, which is what separates a regression from a standing violation. An optional witness line names what the change did. With
- * `logicNote`, a small expandable note says why the verdicts are rigorous. The homepage hero
- * uses an illustrative example with the note; the flagship blog post shows the real
+ * The homepage hero uses an illustrative example of this; the flagship blog post shows the real
  * ecChronos run.
  */
 import InlineCodeText from "./InlineCodeText.astro";
@@ -17,10 +16,18 @@ interface Props {
   rows: any[];
   baseSha?: string;
   headSha?: string;
-  logicNote?: boolean;
+  /**
+   * Drops the formula and the two satisfaction facts, leaving sentence, rule and verdict.
+   *
+   * The hero uses this. A first-order-logic formula is the strongest thing on the page for a
+   * reader who has decided to care and a wall for one who has not, and the hero's whole job is
+   * the second reader. The formula keeps its place where the claim it proves is made: the
+   * pipeline section below, and the flagship post.
+   */
+  compact?: boolean;
 }
 
-const { rows, baseSha, headSha, logicNote = false } = Astro.props;
+const { rows, baseSha, headSha, compact = false } = Astro.props;
 const phiLabel = (i: number) => tex(String.raw`\varphi_{${i + 1}} \coloneqq`);
 const satBefore = (i: number, holds = true) =>
   tex(holds
@@ -30,12 +37,9 @@ const satAfter = (i: number, holds: boolean) =>
   tex(holds
     ? String.raw`\mathcal{M}_{\mathrm{after}} \htmlClass{sat}{\models} \varphi_{${i + 1}}`
     : String.raw`\mathcal{M}_{\mathrm{after}} \htmlClass{unsat}{\nvDash} \varphi_{${i + 1}}`);
-const phi = tex(String.raw`\varphi`);
-const model = tex(String.raw`\mathcal{M}`);
-const brokeFacts = tex(String.raw`\mathcal{M}_{\mathrm{before}} \htmlClass{sat}{\models} \varphi \text{ and } \mathcal{M}_{\mathrm{after}} \htmlClass{unsat}{\nvDash} \varphi`);
 ---
 
-<div class="hcc-table">
+<div class={`hcc-table${compact ? " is-compact" : ""}`}>
   <div class="hcc-thead" aria-hidden="true">
     <span>The sentence in your docs</span>
     <span>The rule it became</span>
@@ -57,7 +61,7 @@ const brokeFacts = tex(String.raw`\mathcal{M}_{\mathrm{before}} \htmlClass{sat}{
             <InlineCodeText class="hcc-rule-text hcc-rule-reading" text={row.statement} />
             {row.craft && <span class="hcc-craft">{row.craft}</span>}
           </span>
-          {row.logic && (
+          {!compact && row.logic && (
             <span class="hcc-formula" aria-hidden="true">
               <span class="hcc-formula-label" set:html={phiLabel(i)} />
               {row.logic.map((line: string[]) => (
@@ -86,10 +90,12 @@ const brokeFacts = tex(String.raw`\mathcal{M}_{\mathrm{before}} \htmlClass{sat}{
             )}
             {row.verdictLabel}
           </span>
+          {!compact && (
           <span class="hcc-status-sat" aria-hidden="true">
             <span title={baseSha ? `base ${baseSha}` : undefined} set:html={satBefore(i, row.base !== false)} />
             <span title={headSha ? `head ${headSha}` : undefined} set:html={satAfter(i, row.head)} />
           </span>
+          )}
           <span class="sr-only">{row.base === false
             ? (row.head ? "The rule was broken before this pull request and holds after it." : "The rule was already broken before this pull request and is still broken after it.")
             : (row.head ? "The rule held before this pull request and still holds after it." : "The rule held before this pull request and is broken after it.")}</span>
@@ -98,16 +104,3 @@ const brokeFacts = tex(String.raw`\mathcal{M}_{\mathrm{before}} \htmlClass{sat}{
     </div>
   ))}
 </div>
-{logicNote && (
-  <details class="hcc-proof">
-    <summary>
-      <span class="hcc-proof-kicker">Neurosymbolic &middot; formal model checking</span>
-      <span class="hcc-proof-q">Why this is rigorous</span>
-      <svg class="hcc-proof-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-    </summary>
-    <div class="hcc-proof-body">
-      <p>A language model reads each sentence in your docs and proposes the rule it states. The rule is compiled into a formula <span set:html={phi} /> in first-order logic, and a parser turns the code before and after the pull request into finite models <span set:html={model} /> of its types, members and references. Every verdict is formal model checking in the logical sense: does the model satisfy the formula?</p>
-      <p>A rule is broken by the pull request when <span set:html={brokeFacts} />, and held when nothing in the pull request breaks it. The language model reads and proposes; the program decides.</p>
-    </div>
-  </details>
-)}

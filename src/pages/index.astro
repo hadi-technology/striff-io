@@ -84,150 +84,106 @@ const pipeline = [
   {
     kind: "symbolic",
     name: "Parse",
-    body: "The code before and after the pull request becomes a structural model of types, members, references and packages \u2014 resolved the way a compiler would, not by matching text."
+    body: "The code before and after the pull request becomes a structural model of types, members, references and packages \u2014 resolved the way a compiler would, not by matching text.",
+    out: "1,284 types \u00b7 8,902 references"
   },
   {
     kind: "neural",
     name: "Read",
-    body: "Your documents go to a language model, which proposes candidate rules from prose. The only step that reads English."
+    body: "Your documents go to a language model, which proposes candidate rules from prose. The only step that reads English.",
+    out: "\u201cNever import from legacy/ in new code\u201d \u00b7 AGENTS.md:18"
   },
   {
     kind: "symbolic",
     name: "Ground and compile",
-    body: "A proposed rule that names a class or package your code does not contain is dropped. The rest become formulas over the model."
+    body: "A proposed rule that names a class or package your code does not contain is dropped. The rest become formulas over the model.",
+    out: "Nothing in checkout depends on legacy"
   },
   {
     kind: "symbolic",
     name: "Evaluate",
-    body: "Each formula is checked against the model of the code before and after the change. A rule is held when nothing in the pull request breaks it, and only a violation the change introduced is attributed to it."
+    body: "Each formula is checked against the model of the code before and after the change. A rule is held when nothing in the pull request breaks it, and only a violation the change introduced is attributed to it.",
+    out: "held before \u00b7 fails after"
   },
   {
     kind: "neural",
     name: "Narrate",
-    body: "The model ranks and explains what the evaluation already found. It cannot originate a finding, rename one, or turn \u201ccould not answer\u201d into a pass."
+    body: "The model ranks and explains what the evaluation already found. It cannot originate a finding, rename one, or turn \u201ccould not answer\u201d into a pass.",
+    out: "Broken by this pull request"
   }
 ];
 
 
 /**
- * The four documented rules the check report shows, all from the current run on
- * Ericsson/ecchronos #1786 (the run the homepage tallies count), and different from the
- * hero's rows so the two do not repeat.
+ * Six of the twenty-four rules from a real Striff check: catatafishen/agentbridge #1102, run on
+ * 2026-09-27 against commit 32538d6. The rule text, the document, the line and the quoted sentence
+ * are copied from the check's own output, and the three columns below are the three the check
+ * posts. Nothing here is written for the website.
  *
- * This replaced a fabricated apache/fineract mockup: neither REFACTORING.md nor
- * ARCHITECTURE.md exists in that repository, so the rules it showed, and the doc
- * conflict it led on, were about documents that were never there.
+ * https://github.com/catatafishen/agentbridge/runs/108628049213
  */
-/**
- * The held rules in the diagram section's findings panel: every rule the current run on
- * Ericsson/ecchronos #1786 checked that names a class the pull request touched, apart from
- * the one it broke, which leads the panel. The panel lists the ones about classes the
- * diagram draws (inDiagram) and counts the rest. Quotes are the documents' own sentences,
- * with markdown emphasis and link syntax rendered as text.
- */
-const diagramHeldRules = [
-  { statement: "`RepairGroup` depends on `VnodeRepairTask`", quote: "When the RepairGroup is executed it will generate one `VnodeRepairTask` per token range to repair.", doc: "docs/ARCHITECTURE.md", line: 287, inDiagram: true },
-  { statement: "`RepairGroup` depends on `IncrementalRepairTask`", quote: "When the RepairGroup is executed it will generate one `IncrementalRepairTask`.", doc: "docs/ARCHITECTURE.md", line: 287, inDiagram: true },
-  { statement: "`NodeWorkerManager` depends on `NodeWorker`", quote: "Maintains a dedicated `NodeWorker` background thread per Cassandra node.", doc: "core.impl/README.md", line: 131, inDiagram: true },
-  { statement: "`TableRepairJob` depends on `RepairGroup`", quote: "On each scheduling cycle, yields `RepairGroup` tasks (one per replica set)", doc: "core.impl/README.md", line: 50, inDiagram: false },
-  { statement: "`RepairGroup` depends on `RepairTask`", quote: "It acquires the distributed lock then lazily creates and yields `RepairTask` instances via an inner `RepairTaskIterator`.", doc: "core.impl/README.md", line: 58, inDiagram: false },
-  { statement: "`VnodeRepairTask` depends on `RepairTask`", quote: "`VnodeRepairTask` / `IncrementalRepairTask` \u2014 Concrete `RepairTask` subclasses for vnode and incremental repair respectively.", doc: "core.impl/README.md", line: 65, inDiagram: false },
-  { statement: "`IncrementalRepairTask` depends on `RepairTask`", quote: "`VnodeRepairTask` / `IncrementalRepairTask` \u2014 Concrete `RepairTask` subclasses for vnode and incremental repair respectively.", doc: "core.impl/README.md", line: 65, inDiagram: false }
-];
-
-const reportRules = [
+const realCheckRules = [
   {
-    verdict: "violated",
-    label: "Violated",
-    quote: "Calls `RepairScheduler.putConfigurations()` to keep jobs up to date",
-    statement: "`NodeWorker` depends on `RepairScheduler`",
-    doc: "core.impl/README.md",
-    line: 136
+    rule: "`FileTool` has a `getGitFileStatus` method",
+    doc: "AGENTS.md#L338",
+    quote: "Append git status annotation (tracked/untracked/staged) using FileTool.getGitFileStatus()",
   },
   {
-    verdict: "held",
-    label: "Held",
-    quote: "Maintains a dedicated `NodeWorker` background thread per Cassandra node.",
-    statement: "`NodeWorkerManager` depends on `NodeWorker`",
-    doc: "core.impl/README.md",
-    line: 131
+    rule: "`McpProtocolHandler` has a `truncateIfNeeded` method",
+    doc: "AGENTS.md#L373",
+    quote: "The truncateIfNeeded() in McpProtocolHandler provides a safety net, but tools should self-limit",
   },
   {
-    verdict: "held",
-    label: "Held",
-    quote: "On each scheduling cycle, yields `RepairGroup` tasks (one per replica set)",
-    statement: "`TableRepairJob` depends on `RepairGroup`",
-    doc: "core.impl/README.md",
-    line: 50
+    rule: "`ConversationService` depends on `ConversationWriter`",
+    doc: "docs/CONVERSATION-PERSISTENCE.md",
+    quote: "ConversationService (serialized async write queue) depends on ConversationWriter (synchronized SQLite writes)",
   },
   {
-    verdict: "held",
-    label: "Held",
-    quote: "It acquires the distributed lock then lazily creates and yields `RepairTask` instances via an inner `RepairTaskIterator`.",
-    statement: "`RepairGroup` depends on `RepairTask`",
-    doc: "core.impl/README.md",
-    line: 58
+    rule: "`FileTool` depends on `AgentEditSession`",
+    doc: "docs/INLINE-DIFF-REVIEW.md#L379",
+    quote: "FileTool.writeFile (all variants), FileTool.createFile, FileTool.deleteFile call AgentEditSession.ensureStarted()",
+  },
+  {
+    rule: "`McpHttpServer` depends on `McpProtocolHandler`",
+    doc: "docs/MCP-ARCHITECTURE.md",
+    quote: "McpHttpServer 127.0.0.1:port depends on McpProtocolHandler JSON-RPC handler",
+  },
+  {
+    rule: "`GitCommitTool` depends on `GitTool`",
+    doc: "docs/bugs/COMMIT-NOT-FOUND-IN-LOG-BUG.md",
+    quote: "GitCommitTool.java calls showNewCommitInLog(root) after a successful commit",
   },
 ];
 
 /**
- * For-managers carousel. Slide one is an illustration: the repository, titles and
- * authors are invented. Every row got the same check; only the one that broke a rule
- * needs a senior's attention, which is the slide's point. Slide two quotes
- * the real lines 133-137 of ecchronos core.impl/README.md at head 0288412016 and the
- * check table as the check writes it. Slide three is the real dashboard
- * component on the sample workspace /dashboard previews, labelled as an example.
+ * For-teams: the dashboard's three views, one panel each, every panel a door into the demo's
+ * matching tab. The rules and documents panels are photographed; the metrics panel is the live
+ * component on the example workspace.
  */
-const mgrPrs = [
-  { num: 421, title: "Bump jackson-databind from 2.17.1 to 2.18.2", who: "dependabot[bot]", when: "12 minutes ago", review: "Approved", label: "dependencies", verdict: "held" },
-  { num: 420, title: "Add incremental repair history", who: "kchen", when: "2 hours ago", review: "Approved", verdict: "held" },
-  { num: 419, title: "Fix typo in scheduler log line", who: "sam-new-hire", when: "4 hours ago", review: "Approved", verdict: "held" },
-  { num: 418, title: "Refactor NodeWorker lifecycle", who: "coding-agent[bot]", when: "yesterday", review: "Review required", label: "agent", verdict: "violated" }
-];
-
-/**
- * For-teams: the three ways an agent strays from the docs, each with a real case from a
- * published post on this site. The cards say what goes wrong, not how old a doc is.
- */
-const teamFailures = [
-  { tone: "amber", title: "It follows a sentence that is no longer true", body: "The agent builds on a class, a call or a pattern the team already retired. If the build breaks it recovers, at a cost. If it doesn\u2019t, the old design comes back.", example: "The MCP C# SDK\u2019s Copilot instructions tell every agent to use a class Copilot itself deleted.", href: "/blog/design-docs-are-enforceable-now" },
-  { tone: "danger", title: "It breaks a rule that is still true", body: "\u201cControllers go through the service layer.\u201d The agent takes the shortcut. The code compiles, the tests pass, the diff looks fine, and the document that forbade it is not in the diff. Merged.", example: "97 of 7,161 documented rules were broken by the pull request under review, in a sweep of public repositories.", href: "/blog/design-docs-are-enforceable-now" },
-  { tone: "brand", title: "It writes new docs from the wrong ones", body: "Asked to document the architecture, the agent reads the existing docs and repeats their mistakes with a fresh timestamp. The next agent now has two sentences telling it the same wrong thing.", example: "An agent-written architecture section in 2026 names a class removed in 2020.", href: "/blog/design-docs-are-enforceable-now" }
-];
-/**
- * One agent-written pull request, and the two futures it has. Illustrative: the repository,
- * the file and the timeline are invented; the check row is worded the way the check writes it.
- */
-const forkWithout = [
-  { when: "40 minutes later", text: "Approved and merged. The diff was clean, the tests passed, and ARCHITECTURE.md was not in the diff." },
-  { when: "Next week", text: "Two more agent pull requests copy the shortcut. It is now the pattern in that module." },
-  { when: "Next quarter", text: "The service layer is optional. The architecture doc describes a system that no longer exists, and the agents are still reading it." },
-  { when: "Next year", text: "Every change costs more than it should, and nobody can point to the pull request where it started." }
-];
-const forkWith = [
-  { when: "Before review", text: "The check posts: rule broken by this pull request, quoting the sentence and the line." },
-  { when: "10 minutes later", text: "The author routes the call through OrderService. A one-line fix, while it is still one line." },
-  { when: "Merged", text: "The doc is still true. The layering holds. The next agent reads a document that matches the code." },
-  { when: "Your senior engineer", text: "Never had to look." }
-];
-const mgrSlides = [
+const teamsPanels = [
   {
-    title: "Your senior engineers stop being the bottleneck.",
-    body: "Architecture review waits on the few people who know the system, and agent-written pull requests have made that queue longer. Striff checks every pull request against what those people already wrote down. They are pulled in when a rule breaks, not to re-check the ninety-eight percent that held."
+    view: "rules",
+    eyebrow: "Rules",
+    title: "Every rule, and whether the code still keeps it",
+    body: "One row per sentence Striff turned into a rule: the document and line it came from, the rule it became, and the verdict on your default branch. Sort by what is broken, search by a class name, export the table.",
+    cta: "Open the rules"
   },
   {
-    title: "Your docs stay true, because a change that contradicts them is caught.",
-    body: "An agent builds from what the docs say, so a sentence the code no longer matches is a defect that gets copied into the next change. Once every pull request is checked against the docs, the contradiction shows up on the change that made it, with the line quoted, while the fix is still one line."
+    view: "docs",
+    eyebrow: "Documents",
+    title: "Which documents the code still agrees with",
+    body: "Your architecture docs, ADRs and agent instructions, each with its rules beside the text that stated them. A document with a broken rule is a document your agents are being misled by.",
+    cta: "Open the documents"
   },
   {
-    title: "Every rule your documents state, in one list.",
-    body: "Striff reads your architecture docs, your ADRs and your agent instructions and writes down the rule each sentence states. The dashboard shows all of them together: the line they came from, the sentence itself, the rule it became, and whether the code on your default branch keeps it. Open a document to read its rules beside the rest of it."
-  },
-  {
-    title: "See which repositories are drifting from their docs.",
-    body: "The dashboard shows, month over month, which repositories and pull requests break your documented rules: held, broken and already broken, the share of pull requests that broke none, and the repositories flagged most. You know where to spend fix-up time before it becomes a rewrite."
+    view: "metrics",
+    eyebrow: "Metrics",
+    title: "Which repositories are drifting, month over month",
+    body: "Rules broken, held and already broken, the share of pull requests that broke none, and the repositories and pull requests flagged most. Where the fix-up time should go this quarter.",
+    cta: "Open the metrics"
   }
-]
+];
+
 
 const plans = [
   {
@@ -279,8 +235,9 @@ const plans = [
             <span aria-hidden="true">Your <span class="h1-rot" data-h1-rot><span class="h1-rot-word is-on">architecture docs</span><span class="h1-rot-word">design docs</span><span class="h1-rot-word">AGENTS.md</span></span>,<br /> <span class="hero-h1-accent">enforced on every pull request</span>.</span>
           </h1>
           <p class="section-subcopy hero-subcopy mx-auto">
-            Striff reads the documents already in your repository, turns the sentences that make claims about the code into rules, and checks every pull request against them. <strong>When a change contradicts what your team wrote down, it says so before the merge, and quotes the line.</strong>
+            Your docs already state the rules. Striff checks every pull request against them, and <strong>when a change contradicts one, it quotes the sentence, before the merge.</strong>
           </p>
+
           <div class="flex flex-wrap justify-center gap-3 pt-2">
             <a class="btn-primary btn-primary-lg" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
               <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -290,32 +247,31 @@ const plans = [
             </a>
             <a class="btn-secondary btn-secondary-lg" href="#pipeline">How it works</a>
           </div>
-          <p class="hero-microproof">
-            <span>Free on public repos</span>
-            <span>Nothing to configure</span>
-            <span>One check beside your CI</span>
-          </p>
         </div>
 
         <div class="hero-check-wrap" data-reveal>
-          <p class="hero-check-lede">A language model reads your docs and turns their sentences into rules. Each rule is a logical formula, checked against a formal model of your code before and after the pull request. Here is what that looks like:</p>
           <div class="hero-check-card">
-            <header class="hcc-head">
-              <span class="hcc-mark"><img src="/icon.svg" alt="" width="20" height="20" /></span>
-              <span class="hcc-headings">
-                <b>Striff / architectural-review</b>
-                <i>{heroExampleRepo}</i>
+            <!-- Styled as the check it is, and in the same clothes as the real one further down
+                 the page, so a reader meets one idea twice rather than two designs once. The
+                 branch and the pull request number are the part that was missing: without them
+                 the card was a table of rules with no occasion. -->
+            <header class="hcc-head ghcheck-head">
+              <span class="ghcheck-mark"><img src="/icon.svg" alt="" width="18" height="18" /></span>
+              <span class="ghcheck-title">
+                <b>Striff</b>
+                <i>{heroExampleRepo} &middot; #418 &middot; feat/csv-export</i>
               </span>
-              <span class="hcc-spacer"></span>
-              <span class="hcc-chip hcc-chip-example">Example</span>
-              <span class="hcc-chip hcc-chip-muted">Java</span>
+              <span class="ghcheck-state is-bad">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.06 1.06L6.94 8 4.97 9.97a.75.75 0 1 0 1.06 1.06L8 9.06l1.97 1.97a.75.75 0 0 0 1.06-1.06L9.06 8l1.97-1.97a.75.75 0 0 0-1.06-1.06L8 6.94Z"/></svg>
+                1 rule broken
+              </span>
             </header>
 
             <div class="hcc-banner">
               <span class="hcc-banner-dot" aria-hidden="true"></span>
               <p class="hcc-banner-text">
                 <strong>One of the {heroExampleTally.broken + heroExampleTally.held} rules Striff checked in this repository&rsquo;s own docs no longer holds.</strong>
-                <span>Nothing was configured. Striff read the repository&rsquo;s documents, turned their sentences into rules, and checked them against both revisions.</span>
+                <span>Nothing was configured.</span>
               </p>
               <span class="hcc-tally">
                 <span class="hcc-tally-item hcc-tally-violated"><b>{heroExampleTally.broken}</b><i>broken</i></span>
@@ -323,8 +279,9 @@ const plans = [
               </span>
             </div>
 
-            <RuleRows rows={heroExampleRules} logicNote />
+            <RuleRows rows={heroExampleRules} compact />
           </div>
+          <p class="hero-check-more">Three of the {heroExampleTally.broken + heroExampleTally.held} rules this repository&rsquo;s docs state. <a href="/demo">The dashboard lists all of them &rarr;</a></p>
           <div class="hero-langs" aria-label="Supported languages">
             <span class="hero-langs-label">Works with</span>
             {heroLanguages.map((lang) => (
@@ -362,7 +319,6 @@ const plans = [
               <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="gs-gemini" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f8df9" /><stop offset="55%" stop-color="#9b72cb" /><stop offset="100%" stop-color="#d96570" /></linearGradient></defs></svg>
               <div class="gs-head">
                 <span class="gs-live"><span class="gs-live-dot"></span><span class="gs-live-repo">5 agents</span> working on acme-corp</span>
-                <span class="hcc-chip hcc-chip-example">Illustrative</span>
                 <span class="gs-head-tag">last hour</span>
               </div>
               <div class="gs-body">
@@ -413,25 +369,239 @@ const plans = [
       </div>
     </section>
 
+    <!-- ==================== THE DIAGRAM ==================== -->
+    <!-- The structural diff, kept exactly as it was but no longer opening the page. The
+         rules are what nobody else does; this is what the same check draws beside them, and
+         it earns a full stage of its own here rather than competing with the headline. -->
+    <section id="diagram" class="diagram-section scroll-mt-24 pb-16 pt-16">
+      <div class="mx-auto max-w-[90rem] px-6">
+        <div class="diagram-intro max-w-3xl" data-reveal>
+          <p class="examples-kicker">The check</p>
+          <h2 class="mt-3 text-balance">What Striff posts on a pull request.</h2>
+          <p class="section-subcopy mt-4">
+            One check, beside your CI. It says what the change moved, lists every rule your own documents state about the code it touched, says whether each one still holds and quotes the sentence it came from, and draws the classes involved.
+          </p>
+          <p class="diagram-source">
+            <span class="diagram-source-label">Below is one, unedited, from a public repository:</span>
+            <a class="diagram-source-pr" href="https://github.com/catatafishen/agentbridge/pull/1102" target="_blank" rel="noopener noreferrer">
+              catatafishen/agentbridge #1102
+            </a>
+            <a class="diagram-source-run" href="https://github.com/catatafishen/agentbridge/runs/108628049213" target="_blank" rel="noopener noreferrer">Open the check itself &rarr;</a>
+          </p>
+        </div>
+
+        <!-- The check as GitHub renders it: the summary, the rules table in the three columns the
+             check actually posts, and the diagram, which the check embeds at the end of the same
+             comment. Split across two sections it asked a reader to believe they were one run. -->
+        <div class="check-report" data-reveal>
+          <div class="ghcheck">
+            <div class="ghcheck-head">
+              <span class="ghcheck-mark"><img src="/icon.svg" alt="" width="18" height="18" /></span>
+              <span class="ghcheck-title">
+                <b>Striff</b>
+                <i>catatafishen/agentbridge &middot; #1102 &middot; fix/issues-1074-and-later</i>
+              </span>
+              <span class="ghcheck-state">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+                Successful
+              </span>
+            </div>
+
+            <div class="ghcheck-body">
+              <h3 class="ghcheck-h">Review Summary</h3>
+              <p class="ghcheck-p">Reviewed 50 components and 64 relationships across the current structural diff.</p>
+
+              <h3 class="ghcheck-h">Documented Rules</h3>
+              <p class="ghcheck-note">Rules read from this repository&rsquo;s own docs and checked against the dependency graph this PR produces.</p>
+
+              <div class="ghcheck-table-wrap">
+                <table class="ghcheck-table">
+                  <thead><tr><th>Rule</th><th>Source</th><th>This PR</th></tr></thead>
+                  <tbody>
+                    {realCheckRules.map((r) => (
+                      <tr>
+                        <td class="ghcheck-rule"><InlineCodeText text={r.rule} /></td>
+                        <td class="ghcheck-src"><code>{r.doc}</code><span>{r.quote}</span></td>
+                        <td class="ghcheck-verdict"><span class="ghcheck-holds">&#10003; holds</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p class="ghcheck-more">{24 - realCheckRules.length} more rules checked, all held.</p>
+
+              <!-- The diagram is not a second section. The check embeds it here, at the end of the
+                   same comment, and it is wide because a real architecture is wide. -->
+              <figure class="ghcheck-figure">
+                <!-- The whole diagram, opened on the git tools. Cropping the SVG instead meant
+                     panning ran off the edge of the file into white; a window onto the real thing
+                     has more diagram in every direction, which is what a reader expects when a
+                     caption invites them to drag. The whole diagram is a click away and the
+                     frame pans and zooms, which is what the extension does on GitHub itself. -->
+                <div
+                  class="ghcheck-diagram"
+                  data-panzoom
+                  data-focus-x="9640"
+                  data-focus-y="1480"
+                  data-focus-w="1760"
+                  data-focus-h="820"
+                >
+                  <img src="/examples/agentbridge-1102-diagram.svg" width="12796" height="3793" alt="Striff's diagram of catatafishen/agentbridge pull request 1102: the fifty classes the change touched and how they connect, opened on the git tools, with added members in green, removed in red and changed in blue" loading="lazy" draggable="false" data-panzoom-img />
+                  <!-- What the colours mean, at the moment of looking at them. As prose under
+                       the frame this was a sentence nobody read on the way past; as three chips
+                       on the diagram it answers the question the diagram raises. -->
+                  <p class="ghcheck-legend">
+                    <span class="is-add">added</span>
+                    <span class="is-del">removed</span>
+                    <span class="is-mod">changed</span>
+                    <em>one box, one class</em>
+                  </p>
+                  <div class="ghcheck-zoom" role="group" aria-label="Zoom the diagram">
+                    <button type="button" data-panzoom-out aria-label="Zoom out">&minus;</button>
+                    <button type="button" data-panzoom-reset>Reset</button>
+                    <button type="button" data-panzoom-in aria-label="Zoom in">+</button>
+                    <button type="button" data-panzoom-max aria-label="Maximize the diagram" title="Maximize">
+                      <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 2.5H2.5V6" /><path d="M10 2.5h3.5V6" /><path d="M6 13.5H2.5V10" /><path d="M10 13.5h3.5V10" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </figure>
+
+              <p class="ghcheck-foot">
+                <img src="/icon.svg" alt="" width="14" height="14" />
+                <span><b>Striff</b> maps how this pull request changes the architecture and checks it against the rules written in the repository&rsquo;s own docs.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <script is:inline>
+        // Pan and zoom for the diagram inside the check. The extension does this on GitHub; here
+        // it is the difference between a picture of a diagram and a diagram.
+        (function () {
+          var frame = document.querySelector("[data-panzoom]");
+          if (!frame) return;
+          var img = frame.querySelector("[data-panzoom-img]");
+          // The image is laid out at the diagram's own size, so one unit of scale is one SVG
+          // unit. Home is whatever scale and offset puts the focus region in the frame; from
+          // there every direction has more diagram in it rather than more nothing.
+          var FX = +frame.dataset.focusX, FY = +frame.dataset.focusY;
+          var FW = +frame.dataset.focusW, FH = +frame.dataset.focusH;
+          var k = 1, tx = 0, ty = 0, dragging = false, lastX = 0, lastY = 0;
+
+          function apply() {
+            img.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + k + ")";
+          }
+          function zoom(next, ox, oy) {
+            next = Math.min(2.5, Math.max(0.06, next));
+            var box = frame.getBoundingClientRect();
+            var cx = (ox === undefined ? box.width / 2 : ox) - tx;
+            var cy = (oy === undefined ? box.height / 2 : oy) - ty;
+            tx -= cx * (next / k - 1);
+            ty -= cy * (next / k - 1);
+            k = next;
+            apply();
+          }
+          function fit() {
+            var box = frame.getBoundingClientRect();
+            if (!box.width || !box.height) return;
+            k = Math.min(box.width / FW, box.height / FH);
+            tx = -FX * k + (box.width - FW * k) / 2;
+            ty = -FY * k + (box.height - FH * k) / 2;
+            apply();
+          }
+
+          frame.addEventListener("pointerdown", function (e) {
+            if (e.target.closest(".ghcheck-zoom")) return;
+            dragging = true; lastX = e.clientX; lastY = e.clientY;
+            frame.setPointerCapture(e.pointerId);
+            frame.classList.add("is-grabbing");
+          });
+          frame.addEventListener("pointermove", function (e) {
+            if (!dragging) return;
+            tx += e.clientX - lastX; ty += e.clientY - lastY;
+            lastX = e.clientX; lastY = e.clientY;
+            apply();
+          });
+          function release(e) {
+            if (!dragging) return;
+            dragging = false;
+            frame.classList.remove("is-grabbing");
+            try { frame.releasePointerCapture(e.pointerId); } catch (err) {}
+          }
+          frame.addEventListener("pointerup", release);
+          frame.addEventListener("pointercancel", release);
+          // Ctrl/meta-free wheel still scrolls the page unless the pointer is over the frame and
+          // the reader means to zoom, which is what the deliberate preventDefault is for.
+          frame.addEventListener("wheel", function (e) {
+            e.preventDefault();
+            var box = frame.getBoundingClientRect();
+            zoom(k * (e.deltaY < 0 ? 1.12 : 1 / 1.12), e.clientX - box.left, e.clientY - box.top);
+          }, { passive: false });
+
+          var inBtn = frame.querySelector("[data-panzoom-in]");
+          var outBtn = frame.querySelector("[data-panzoom-out]");
+          var resetBtn = frame.querySelector("[data-panzoom-reset]");
+          if (inBtn) inBtn.addEventListener("click", function () { zoom(k * 1.25); });
+          if (outBtn) outBtn.addEventListener("click", function () { zoom(k / 1.25); });
+          if (resetBtn) resetBtn.addEventListener("click", fit);
+          var maxBtn = frame.querySelector("[data-panzoom-max]");
+          if (maxBtn) {
+            maxBtn.addEventListener("click", function () {
+              if (document.fullscreenElement) { document.exitFullscreen(); return; }
+              if (frame.requestFullscreen) {
+                frame.requestFullscreen().then(fit).catch(function () {
+                  window.open("/examples/agentbridge-1102-diagram.svg", "_blank", "noopener");
+                });
+              } else {
+                window.open("/examples/agentbridge-1102-diagram.svg", "_blank", "noopener");
+              }
+            });
+            document.addEventListener("fullscreenchange", function () { window.setTimeout(fit, 60); });
+          }
+          // The image is lazy, so its box may be zero until it loads; fit again when it is there.
+          fit();
+          if (!img.complete) img.addEventListener("load", fit, { once: true });
+          window.addEventListener("resize", fit);
+        })();
+        </script>
+
+        <!-- The two links the intro used to stack. One is about the engine that drew the picture
+             directly above it; the other is the long-form account of how a sentence becomes a
+             checked rule. Side by side under the check, not queued in front of it. -->
+        <div class="check-foot" data-reveal>
+          <a class="oss-link" href="https://github.com/hadi-technology/striff-lib" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            <span>The diagram engine is open source: <b>striff-lib</b> on GitHub</span>
+            <em>MIT</em>
+          </a>
+          <BlogLink slug="design-docs-are-enforceable-now" kicker="One sentence, one pull request, one verdict" />
+        </div>
+      </div>
+    </section>
+
     <!-- ==================== HOW IT IS COMPUTED, AND WHAT COMES OUT ==================== -->
     <!-- The pipeline and the artifact it produces, side by side: the mechanism answers
          where a number came from, the check answers what you actually get. -->
     <section id="pipeline" class="pipeline-section scroll-mt-24 pb-20 pt-20">
       <div class="mx-auto max-w-[90rem] px-6">
-        <!-- The heading lives in the left column rather than above both, so the report
-             starts level with the top of the section instead of below a paragraph. -->
-        <div class="compute-split">
-          <div class="compute-col" data-reveal>
-            <div class="compute-intro">
+        <!-- The five steps run across, because they are a sequence and a reader follows a
+             sequence left to right. Underneath, the two things the sequence produces sit side by
+             side: what a reviewer is handed, and what one rule of it actually compiled to. -->
+        <div class="compute-stack">
+          <div data-reveal>
+            <div class="compute-intro compute-intro-wide">
               <h2 class="text-balance">Every verdict is computed, not generated.</h2>
               <p class="section-subcopy mt-4">
                 Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> The language model only reads the prose and explains the results, and nothing is needed beyond the documents your repository already has.
               </p>
             </div>
             <p class="compute-label"><span>01</span> How a finding is produced</p>
-            <ol class="pipeline-flow">
+            <ol class="pipeline-flow is-across">
               {pipeline.map((step, i) => (
-                <li class={`pipe-step pipe-${step.kind}`}>
+                <li class={`pipe-step pipe-${step.kind}`} data-pipe-step={i + 1}>
                   <span class="pipe-rail" aria-hidden="true"><span class="pipe-dot"></span></span>
                   <div class="pipe-body">
                     <p class="pipe-head">
@@ -440,452 +610,130 @@ const plans = [
                       <span class="pipe-kind">{step.kind === "neural" ? "Language model" : "Deterministic"}</span>
                     </p>
                     <p class="pipe-text">{step.body}</p>
+                    {/* What this step produced, appearing as the sequence reaches it. Small,
+                        under the paragraph that describes the step, so the description and its
+                        result are one thing rather than a card somewhere else on the page. */}
+                    <p class="pipe-out"><span>{step.out}</span></p>
                   </div>
                 </li>
               ))}
             </ol>
-            <BlogLink slug="grounded-ai-findings" kicker="How we keep the model honest" class="compute-invite" />
           </div>
 
-          <div class="compute-col compute-col-report" id="report" data-reveal>
-            <p class="compute-label"><span>02</span> What your reviewer sees</p>
-            <div class="hero-stage-shell report-stage-shell">
-              <div class="ghc ghc-solo" data-report-top>
-                <section class="ghc-pane">
-                  <div class="ghc-md">
-                    <h3>Review Summary</h3>
-                    <p>This PR moves repair-history setup into the incremental path. <code>NodeWorker</code> stops referencing <code>RepairScheduler</code> and the table lookups it used, and now depends on <code>SchemaRefresher</code>. <code>RepairHistory</code> drops a public <code>newSession</code> overload that 11 components reach for.</p>
-
-                    <div class="ghc-stack">
-                      <section>
-                        <h3>Top Review Items</h3>
-                        <ul>
-                          <li><strong>📄 Doc conflict</strong>: <code>NodeWorker</code> no longer depends on <code>RepairScheduler</code>, which <code>core.impl/README.md</code> line 136 says it calls. It did at the base revision.</li>
-                        </ul>
-                      </section>
-
-                      <section>
-                        <h3 class="ghc-h3-lead">Documented Rules <span class="ghc-h3-meta">63 rules checked &middot; 62 held &middot; 1 violated</span></h3>
-                        <ul class="rulelist">
-                          {reportRules.map((r) => (
-                            <li class={`rulerow rulerow-${r.verdict}`}>
-                              <span class="rulerow-main">
-                                <InlineCodeText class="rulerow-quote" text={r.quote} />
-                                <InlineCodeText class="rulerow-stmt" text={r.statement} />
-                              </span>
-                              <span class="rulerow-side">
-                                <span class={`rulerow-verdict rulerow-verdict-${r.verdict}`}>{r.label}</span>
-                                <span class="rulerow-src">{r.doc}<b>:{r.line}</b></span>
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                        <p class="rulelist-more">4 of 63 shown</p>
-                      </section>
-                    </div>
-                    <p>The check also carries the architecture diagram of this change, <a href="#diagram">shown below</a>.</p>
-                  </div>
-                </section>
-              </div>
-            </div>
-          </div>
+          <BlogLink slug="grounded-ai-findings" kicker="How we keep the model honest" class="compute-invite" />
         </div>
       </div>
+
+      <script is:inline>
+        // Walks the five steps, revealing what each one produced. Plain DOM: the page is
+        // static and this is the only thing on it that needs a clock.
+        (function () {
+          var flow = document.querySelector(".pipeline-flow.is-across");
+          if (!flow) return;
+          var steps = Array.prototype.slice.call(flow.querySelectorAll("[data-pipe-step]"));
+          var LAST = steps.length;
+          var still = window.matchMedia("(prefers-reduced-motion: reduce)");
+          var timer = null;
+          var at = 0;
+
+          function show(stage) {
+            at = stage;
+            steps.forEach(function (li, i) {
+              li.classList.toggle("is-on", i + 1 === stage);
+              li.classList.toggle("is-done", i + 1 <= stage);
+            });
+          }
+          function stop() { if (timer) { window.clearInterval(timer); timer = null; } }
+          function run() {
+            stop();
+            timer = window.setInterval(function () {
+              if (at >= LAST) { stop(); return; }
+              show(at + 1);
+            }, 1400);
+          }
+
+          steps.forEach(function (li, i) {
+            li.setAttribute("tabindex", "0");
+            li.setAttribute("role", "button");
+            li.setAttribute("aria-label", "Show what step " + (i + 1) + " produced");
+            function pick() { stop(); show(i + 1); }
+            li.addEventListener("click", pick);
+            li.addEventListener("keydown", function (e) {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
+            });
+          });
+
+          // Asked for less motion, or no observer to tell us when it is on screen: everything at
+          // once, which is the content without the sequence.
+          if (still.matches || !("IntersectionObserver" in window)) { show(LAST); return; }
+          show(0);
+          var watch = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (!entry.isIntersecting) return;
+              watch.disconnect();
+              run();
+            });
+          }, { threshold: 0.4 });
+          watch.observe(flow);
+        })();
+      </script>
     </section>
 
-    <!-- ==================== THE DIAGRAM ==================== -->
-    <!-- The structural diff, kept exactly as it was but no longer opening the page. The
-         rules are what nobody else does; this is what the same check draws beside them, and
-         it earns a full stage of its own here rather than competing with the headline. -->
-    <section id="diagram" class="diagram-section scroll-mt-24 pb-16 pt-16">
+    <!-- ==================== FOR TEAMS ==================== -->
+    <!-- The one section on the page for the lead rather than the reviewer. It sells the
+         dashboard and nothing else: the three views, each a door into the demo, which is the
+         real dashboard on an invented repository. The check itself is sold above. -->
+    <section id="teams" class="scroll-mt-24 bg-slate-100/60 pb-20 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
-        <div class="diagram-intro max-w-3xl" data-reveal>
-          <p class="examples-kicker">The diagram</p>
-          <h2 class="mt-3 text-balance">Every pull request gets a structural diff diagram.</h2>
-          <p class="section-subcopy mt-4">
-            The classes a change touched, what each one gained and lost, and how they connect at both revisions, so you can see the shape of a change you didn&rsquo;t write. <strong>Green was added, red was removed and blue changed.</strong>
-          </p>
-          <a class="oss-link" href="https://github.com/hadi-technology/striff-lib" target="_blank" rel="noopener noreferrer">
-            <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-            <span>The diagram engine is open source: <b>striff-lib</b> on GitHub</span>
-            <em>MIT</em>
-          </a>
-          <BlogLink slug="design-docs-are-enforceable-now" kicker="One sentence, one pull request, one verdict" class="mt-6" />
-        </div>
-
-        <div class="relative z-10 mx-auto mt-4 w-full max-w-[90rem]" data-reveal>
-          <div class="hero-stage-shell" data-hero-stage>
-            <div class="hero-stage-head">
-              <div class="hero-stage-context">
-                <span class="hero-context-chip">Ericsson/ecchronos</span>
-                <span class="hero-context-chip hero-context-chip-muted">PR #1786</span>
-                <span class="hero-context-chip hero-context-chip-muted">Java</span>
-                <span class="hero-context-chip hero-context-chip-danger">1 rule broken</span>
-              </div>
-              <div class="hero-stage-actions">
-                <div class="hero-stage-badge">Striff / architectural-review</div>
-              </div>
-            </div>
-
-            <div class="hero-diagram-wrap">
-              <!-- Striff's focused diagram of the pull request: the classes it touched around
-                   RepairGroup and only the relationships among them. Desktop shows the whole
-                   diagram in the band left of the findings overlay (~416px); tablets start at the
-                   RepairGroup chain; phones get a crop centred on RepairGroup that pans sideways.
-                   Each crop is a view fragment on the image URL, and the stage CSS keeps each image
-                   box at its fragment's aspect: re-tune both together. -->
-              <div
-                class="github-diff-stage example-diff-stage hero-diagram-stage is-static"
-              >
-                <div class="hero-diagram-scroll">
-                  <picture>
-                    <source media="(max-width: 767.98px)" srcset="/examples/ecchronos-1786-focused.svg#svgView(viewBox(440,440,1250,605))" />
-                    <img
-                      src="/examples/ecchronos-1786-focused.svg#svgView(viewBox(-12,-22,2428,1230))"
-                      alt="Striff's focused diagram of Ericsson/ecchronos PR #1786: IncrementalRepairJob leading to RepairGroup and on to IncrementalRepairTask and VnodeRepairTask, beside NodeWorkerManager, with added members in green, removed ones in red and changed ones in blue"
-                      class="github-diff-graphic github-diff-image"
-                      loading="eager"
-                      draggable="false"
-                    />
-                  </picture>
-                </div>
-                <script is:inline>
-                  // Phones: open the sideways-panning crop centred on RepairGroup (x 834-1250 in the
-                  // render; the crop starts at x 440 and is 1250 wide).
-                  (function () {
-                    var sc = document.currentScript.previousElementSibling;
-                    if (!sc || window.innerWidth >= 768) return;
-                    var img = sc.querySelector("img");
-                    var place = function () { sc.scrollLeft = (1042 - 440) * (img.clientWidth / 1250) - sc.clientWidth / 2; };
-                    place();
-                    img.addEventListener("load", place);
-                  })();
-                </script>
-
-                <div class="hero-diagram-tag">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="m8 7 3 9M16 7l-3 9M8.5 6h7"/></svg>
-                  Architecture diagram of this PR
-                </div>
-
-                <!-- Findings overlay. Open on desktop, where it sits beside the diagram; collapsed
-                     below 1280px, where it would otherwise cover the diagram. The class is set by the inline script below rather than rendered,
-                     so there is no open-then-collapse flash on a phone. -->
-                <div class="hero-findings-overlay" data-findings-overlay>
-                  <button class="hero-findings-toggle" type="button" data-findings-toggle>
-                    <span class="hero-findings-badge">1 broken &middot; 7 held</span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hero-findings-chevron"><path d="M6 9l6 6 6-6"/></svg>
-                  </button>
-                  <div class="hero-findings-panel">
-                    <div class="hero-findings-list">
-                      <div class="ai-finding ai-finding-danger">
-                        <span class="ai-finding-severity"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="ai-severity-icon"><path d="M8 1L1 14h14L8 1z"/><path d="M8 6v4M8 12h.01"/></svg>Rule</span>
-                        <div>
-                          <strong>The README no longer matches the code</strong>
-                          <p><code>core.impl/README.md</code> says <code>NodeWorker</code> calls <code>RepairScheduler</code>. After this PR, it doesn&rsquo;t.</p>
-                        </div>
-                      </div>
-                      <p class="hero-findings-sub">Held on this change <span>{diagramHeldRules.length}</span></p>
-                      <ul class="rulelist hero-rulelist">
-                        {diagramHeldRules.filter((r) => r.inDiagram).map((r) => (
-                          <li class="rulerow rulerow-held">
-                            <span class="rulerow-main">
-                              <InlineCodeText class="rulerow-quote" text={r.quote} />
-                              <InlineCodeText class="rulerow-stmt" text={r.statement} />
-                            </span>
-                            <span class="rulerow-side">
-                              <span class="rulerow-verdict rulerow-verdict-held">Held</span>
-                              <span class="rulerow-src">{r.doc}<b>:{r.line}</b></span>
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p class="hero-findings-more">+ {diagramHeldRules.filter((r) => !r.inDiagram).length} more held</p>
-                    </div>
-                  </div>
-                </div>
-                <script is:inline>
-                  // Runs inline, mid-parse, so the overlay is painted once in its final state.
-                  (function () {
-                    var el = document.currentScript.previousElementSibling;
-                    if (el && window.innerWidth >= 1280) el.classList.add("is-open");
-                  })();
-                </script>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== FOR ENGINEERING MANAGERS ==================== -->
-    <!-- The three outcomes stay on the left as they were; they are also the carousel's
-         tabs, so choosing one shows its illustration on the right. -->
-    <section id="how" class="scroll-mt-24 bg-slate-100/60 pb-20 pt-16">
-      <div class="mx-auto max-w-[90rem] px-6">
-        <div class="team-intro" data-reveal>
-          <div class="team-intro-copy">
+        <div class="teams-head" data-reveal>
+          <div class="teams-head-copy">
             <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For teams</p>
-            <h2 class="mt-3 text-balance">Agents do what your docs say. When the docs and the code disagree, nobody finds out.</h2>
+            <h2 class="mt-3 text-balance">Every rule your docs state, and which repositories still keep them.</h2>
             <p class="section-subcopy mt-4">
-              Your architecture docs, your ADRs and your <code class="github-inline-code">AGENTS.md</code> used to be read by the next engineer, who could ask when something looked off. Now they are read by every agent run, taken as fact, and built on. Nothing in the merge path compares them to the code. <strong>Striff does, on every pull request: when a change contradicts what your team wrote down, it says so before the merge and quotes the line.</strong>
+              The check reads one pull request at a time. The dashboard is the same reading of your documents, added up across the organisation: each sentence that makes a claim about the code, the rule it became, whether the default branch keeps it, and which repositories and pull requests broke one this month.
             </p>
           </div>
-
-          <!-- The three ways an agent strays from the docs, each with a real case. -->
-          <div class="team-proof">
-            {teamFailures.map((f) => (
-              <a class={`team-stat team-stat-${f.tone}`} href={f.href}>
-                <span class="team-stat-title">{f.title}</span>
-                <span class="team-stat-label">{f.body}</span>
-                <span class="team-stat-cite">{f.example} &rarr;</span>
-              </a>
-            ))}
-          </div>
-        </div>
-
-        <div class="mgr-split mgr-carousel mt-10" data-mgr-carousel aria-roledescription="carousel" aria-label="What changes for your team" data-reveal>
-          <div class="mgr-points" role="tablist" aria-label="Outcomes" aria-orientation="vertical">
-            {mgrSlides.map((slide, i) => (
-              <button
-                type="button"
-                class={`mgr-point ${i === 0 ? "is-active" : ""}`}
-                role="tab"
-                id={`mgr-tab-${i}`}
-                aria-controls={`mgr-slide-${i}`}
-                aria-selected={i === 0 ? "true" : "false"}
-                tabindex={i === 0 ? 0 : -1}
-                data-mgr-tab
-              >
-                <span class="mgr-point-num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
-                <span class="mgr-point-body">
-                  <span class="mgr-point-title">{slide.title}</span>
-                  <span class="mgr-point-text">{slide.body}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div class="mgr-stage-col">
-            <div class="mgr-track" data-mgr-track>
-              {mgrSlides.map((slide, i) => (
-                <article class="mgr-slide" id={`mgr-slide-${i}`} role="tabpanel" aria-labelledby={`mgr-tab-${i}`} aria-roledescription="slide" data-mgr-slide>
-                  <div class="mgr-art">
-                  {i === 0 && (
-                    <div class="ghl">
-                      <div class="ghl-head">
-                        <span class="ghl-open"><svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg>4 Open</span>
-                        <span class="ghl-closed"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>212 Closed</span>
-                        <span class="ghl-filters" aria-hidden="true"><span>Author</span><span>Label</span><span>Reviews</span></span>
-                        <span class="hcc-chip hcc-chip-example ghl-example">Illustrative</span>
-                      </div>
-                      {mgrPrs.map((pr) => (
-                        <div class={`ghl-row${pr.verdict === "violated" ? " is-flag" : ""}`}>
-                          <span class="ghl-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg></span>
-                          <span class="ghl-main">
-                            <span class="ghl-title"><b>{pr.title}</b>{pr.label && <span class={`ghl-label ghl-label-${pr.label}`}>{pr.label}</span>}</span>
-                            <i>#{pr.num} opened {pr.when} by {pr.who} &middot; {pr.review}</i>
-                          </span>
-                          <span class={`ghl-check ghl-check-${pr.verdict}`}>
-                            <img src="/icon.svg" alt="Striff" width="14" height="14" />
-                            {pr.verdict === "held" ? <Fragment set:html={`<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>Rules held`} /> : <Fragment set:html={`<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"/></svg>1 rule broken`} />}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {i === 1 && (
-                    <div class="ghr">
-                      <div class="ghr-card ghr-blob">
-                        <div class="ghr-bar">
-                          <span class="ghr-crumbs"><span>ecchronos</span><i>/</i><span>core.impl</span><i>/</i><b>README.md</b></span>
-                          <span class="ghr-seg" aria-hidden="true"><span class="is-on">Preview</span><span>Code</span><span>Blame</span></span>
-                        </div>
-                        <div class="ghr-preview">
-                          <p><strong><code>NodeWorker</code></strong> — A continuously-running background thread per node. It:</p>
-                          <ul>
-                            <li>Discovers all replicated tables for its node</li>
-                            <li>Fetches repair configurations per table</li>
-                            <li class="is-hl"><span>Calls <code>RepairScheduler.putConfigurations()</code> to keep jobs up to date</span><em>L136</em></li>
-                            <li>Loops on a configurable refresh interval</li>
-                          </ul>
-                        </div>
-                      </div>
-
-                      <div class="ghr-card ghr-check">
-                        <div class="ghr-bar">
-                          <img src="/icon.svg" alt="" class="ghr-app" width="20" height="20" />
-                          <span class="ghr-check-name"><b>Striff</b><span>📄 1 doc conflict (README.md)</span></span>
-                          <span class="ghr-pr">PR #1786</span>
-                        </div>
-                        <div class="ghr-md">
-                          <p class="ghr-h">Documented Rules</p>
-                          <div class="ghr-table-wrap">
-                            <table>
-                              <thead><tr><th>Rule</th><th>Source</th><th>This PR</th></tr></thead>
-                              <tbody>
-                                <tr class="is-focus"><td>NodeWorker depends on RepairScheduler</td><td><span class="ghr-a"><code>README.md</code></span></td><td class="ghr-out">❌ broken by this change</td></tr>
-                                <tr><td>NodeWorkerManager depends on NodeWorker</td><td><span class="ghr-a"><code>README.md</code></span></td><td class="ghr-out">✅ holds</td></tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {i === 2 && (
-                    <div class="mgr-shots">
-                      <figure class="mgr-shot mgr-shot-back">
-                        <Image src={dashDocs} alt="The documents page: the repository's docs in a tree, and one document's rules line by line beside it." widths={[700, 1400]} sizes="(max-width: 900px) 90vw, 560px" loading="lazy" />
-                      </figure>
-                      <figure class="mgr-shot mgr-shot-front">
-                        <Image src={dashRules} alt="The rules page: every rule read from the repository's docs, with the line it came from, the sentence, the rule, and whether the code keeps it." widths={[750, 1500]} sizes="(max-width: 900px) 92vw, 640px" loading="lazy" />
-                      </figure>
-                      <span class="hcc-chip hcc-chip-example mgr-shot-chip">Illustrative</span>
-                    </div>
-                  )}
-
-                  {i === 3 && (
-                    <div class="mgr-dash" data-metrics-preview inert>
-                      <div class="mgr-dash-scale" data-metrics-preview-scale>
-                        <div class="dashboard-shell">
-                          <div class="dashboard-account-bar">
-                            <div>
-                              <p class="dashboard-kicker">Striff account</p>
-                              <p class="text-lg font-bold">Acme Corp</p>
-                            </div>
-                            <span class="dashboard-plan-badge">Example workspace</span>
-                          </div>
-                          <div class="dashboard-installation-card">
-                            <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
-                          </div>
-                        </div>
-                      </div>
-                      <div class="mgr-dash-fade" aria-hidden="true"></div>
-                    </div>
-                  )}
-                </div>
-                </article>
-              ))}
-            </div>
-            <div class="mgr-controls">
-              <button type="button" class="mgr-arrow" data-mgr-prev aria-label="Previous">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-              </button>
-              <button type="button" class="mgr-arrow" data-mgr-next aria-label="Next">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-        <!-- One agent-written pull request, two futures. -->
-        <div class="fork mt-14" data-reveal>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">One agent pull request, two futures</p>
-          <div class="fork-pr">
-            <div class="fork-pr-head">
-              <span class="fork-pr-title"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg><b>Add CSV export for orders</b> <span class="ghl-label ghl-label-agent">agent</span></span>
-              <span class="fork-pr-meta">#418 opened by coding-agent[bot] &middot; 27 files &middot; +612 &minus;40</span>
-              <span class="hcc-chip hcc-chip-example">Illustrative</span>
-            </div>
-            <div class="fork-pr-diff">
-              <span class="fork-pr-file">src/api/OrderController.java</span>
-              <div class="fork-pr-line"><span>3</span><span>import com.acme.orders.service.OrderService;</span></div>
-              <div class="fork-pr-line is-add"><span>4</span><span>+ import com.acme.orders.data.OrderRepository;</span></div>
-              <div class="fork-pr-line is-add"><span>41</span><span>+ &nbsp;&nbsp;var rows = orderRepository.findForExport(range);</span></div>
-            </div>
-            <div class="fork-pr-doc">
-              <span class="fork-pr-file">ARCHITECTURE.md:42</span>
-              <span class="fork-pr-quote">&ldquo;Controllers never call repositories directly; everything goes through the service layer.&rdquo;</span>
-            </div>
-          </div>
-          <div class="fork-split">
-            <div class="fork-path fork-path-without">
-              <p class="fork-path-name">Without a check</p>
-              <ol class="fork-steps">
-                {forkWithout.map((st) => (<li><span class="fork-when">{st.when}</span><span class="fork-text">{st.text}</span></li>))}
-              </ol>
-            </div>
-            <div class="fork-path fork-path-with">
-              <p class="fork-path-name"><img src="/icon.svg" alt="" width="16" height="16" /> With Striff</p>
-              <div class="fork-check">
-                <span class="fork-check-flag">Rule broken by this PR</span>
-                <span class="fork-check-rule"><code>OrderController</code> depends on <code>OrderRepository</code></span>
-                <span class="fork-check-src">ARCHITECTURE.md:42 &middot; held before this change, fails after it</span>
-              </div>
-              <ol class="fork-steps">
-                {forkWith.map((st) => (<li><span class="fork-when">{st.when}</span><span class="fork-text">{st.text}</span></li>))}
-              </ol>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-invite">
-          <BlogLink slug="design-docs-are-enforceable-now" kicker="What happens when an agent builds from a doc that is wrong" />
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== ADOPTION / CTA ==================== -->
-    <section class="bg-slate-50 pb-20 pt-16">
-      <div class="mx-auto max-w-[90rem] px-6">
-        <div class="max-w-3xl" data-reveal>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Get started</p>
-          <h2 class="mt-3 text-balance">Start with public repos. Scale to your team.</h2>
-          <p class="section-subcopy mt-4">
-            Nothing to learn and no workflow to change: Striff shows up as one more check on the PRs your team already opens. Start free on public repos, add private repos when you're ready.
-          </p>
-        </div>
-          <div class="mt-10 grid gap-5 lg:grid-cols-3">
-            {plans.map((plan) => (
-              <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-md" data-reveal>
-                <div class="flex items-center gap-3">
-                  <span class="icon-badge icon-badge-blue" aria-hidden="true">
-                    {plan.icon === "globe" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18"/><path d="M12 3a15 15 0 0 0 0 18"/></svg>
-                    )}
-                    {plan.icon === "team" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 4.13a3 3 0 0 1 0 5.74"/></svg>
-                    )}
-                    {plan.icon === "gear" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1.8 1.8 0 1 1-3.6 0v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a1.8 1.8 0 1 1 0-3.6h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1.8 1.8 0 1 1 3.6 0v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1.8 1.8 0 1 1 0 3.6h-.2a1 1 0 0 0-.9.6Z"/></svg>
-                    )}
-                  </span>
-                  <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">{plan.eyebrow}</p>
-                  <div class="ml-auto text-right">
-                    {plan.price && <span class="text-lg font-extrabold text-blue-600">{plan.price}</span>}
-                    <span class="block text-xs text-slate-400">{plan.priceDetail}</span>
-                  </div>
-                </div>
-                <p class="mt-3 text-base font-semibold text-slate-900">{plan.title}</p>
-                <p class="mt-2 text-sm leading-7 text-slate-600">{plan.body}</p>
-                {plan.eyebrow === "Starter" && (
-                  <p class="mt-3 text-xs text-slate-400">
-                    <a href="/pricing" class="text-blue-600 hover:underline">Team $59/mo · Scale $149/mo →</a>
-                  </p>
-                )}
-              </article>
-            ))}
-          </div>
-          <div class="mt-10 flex flex-wrap gap-3">
-            <a class="btn-primary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
-              <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
-              </svg>
-              Get started
-            </a>
+          <div class="teams-head-actions">
+            <a class="btn-primary" href="/demo">Open the dashboard demo</a>
             <a class="btn-secondary" href="/pricing">Team pricing</a>
-            <a class="btn-chrome" href="#extension">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="4" />
-                <line x1="21.17" y1="8" x2="12" y2="8" />
-                <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
-                <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
-              </svg>
-              Browser extension
-            </a>
           </div>
+        </div>
+
+        <div class="teams-panels mt-10">
+          {teamsPanels.map((panel) => (
+            <article class="teams-panel" data-reveal>
+              <div class="teams-panel-art">
+                {panel.view === "rules" && (
+                  <figure class="teams-panel-shot">
+                    <Image src={dashRules} alt="The rules page: every rule read from the repository's docs, with the line it came from, the sentence, the rule, and whether the code keeps it." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 30vw" loading="lazy" />
+                  </figure>
+                )}
+                {panel.view === "docs" && (
+                  <figure class="teams-panel-shot">
+                    <Image src={dashDocs} alt="The documents page: the repository's docs in a tree, and one document's rules line by line beside it." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 30vw" loading="lazy" />
+                  </figure>
+                )}
+                {panel.view === "metrics" && (
+                  <div class="teams-panel-live" data-metrics-preview inert>
+                    <div class="teams-panel-live-scale" data-metrics-preview-scale>
+                      <div class="dashboard-shell">
+                        <div class="dashboard-installation-card">
+                          <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div class="teams-panel-fade" aria-hidden="true"></div>
+              </div>
+              <div class="teams-panel-body">
+                <p class="teams-panel-eyebrow">{panel.eyebrow}</p>
+                <h3 class="teams-panel-title">{panel.title}</h3>
+                <p class="teams-panel-text">{panel.body}</p>
+                <a class="teams-panel-cta" href={`/demo#${panel.view}`}>{panel.cta} &rarr;</a>
+              </div>
+            </article>
+          ))}
         </div>
       </div>
     </section>
@@ -954,6 +802,70 @@ const plans = [
                 allowfullscreen
               ></iframe>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ADOPTION / CTA ==================== -->
+    <section class="bg-slate-50 pb-20 pt-16">
+      <div class="mx-auto max-w-[90rem] px-6">
+        <div class="max-w-3xl" data-reveal>
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Get started</p>
+          <h2 class="mt-3 text-balance">Start with public repos. Scale to your team.</h2>
+          <p class="section-subcopy mt-4">
+            Nothing to learn and no workflow to change: Striff shows up as one more check on the PRs your team already opens. Start free on public repos, add private repos when you're ready.
+          </p>
+        </div>
+          <div class="mt-10 grid gap-5 lg:grid-cols-3">
+            {plans.map((plan) => (
+              <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-md" data-reveal>
+                <div class="flex items-center gap-3">
+                  <span class="icon-badge icon-badge-blue" aria-hidden="true">
+                    {plan.icon === "globe" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18"/><path d="M12 3a15 15 0 0 0 0 18"/></svg>
+                    )}
+                    {plan.icon === "team" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 4.13a3 3 0 0 1 0 5.74"/></svg>
+                    )}
+                    {plan.icon === "gear" && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1.8 1.8 0 1 1-3.6 0v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a1.8 1.8 0 1 1 0-3.6h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1.8 1.8 0 1 1 3.6 0v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1.8 1.8 0 1 1 0 3.6h-.2a1 1 0 0 0-.9.6Z"/></svg>
+                    )}
+                  </span>
+                  <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">{plan.eyebrow}</p>
+                  <div class="ml-auto text-right">
+                    {plan.price && <span class="text-lg font-extrabold text-blue-600">{plan.price}</span>}
+                    <span class="block text-xs text-slate-400">{plan.priceDetail}</span>
+                  </div>
+                </div>
+                <p class="mt-3 text-base font-semibold text-slate-900">{plan.title}</p>
+                <p class="mt-2 text-sm leading-7 text-slate-600">{plan.body}</p>
+                {plan.eyebrow === "Starter" && (
+                  <p class="mt-3 text-xs text-slate-400">
+                    <a href="/pricing" class="text-blue-600 hover:underline">Team $59/mo · Scale $149/mo →</a>
+                  </p>
+                )}
+              </article>
+            ))}
+          </div>
+          <div class="mt-10 flex flex-wrap gap-3">
+            <a class="btn-primary" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
+              <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+              </svg>
+              Get started
+            </a>
+            <a class="btn-secondary" href="/pricing">Team pricing</a>
+            <a class="btn-chrome" href="#extension">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="4" />
+                <line x1="21.17" y1="8" x2="12" y2="8" />
+                <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
+                <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
+              </svg>
+              Browser extension
+            </a>
           </div>
         </div>
       </div>
@@ -1048,91 +960,6 @@ const plans = [
   </main>
 
   <script is:inline>
-    // For-managers carousel: scroll snap does the swiping; tabs, arrows and keys drive the
-    // track. While a tab-driven scroll is in flight its in-between positions are ignored, so
-    // the tab the reader pressed stays selected instead of flickering back to the old one.
-    (function () {
-      var root = document.querySelector("[data-mgr-carousel]");
-      if (!root) return;
-      var track = root.querySelector("[data-mgr-track]");
-      var slides = Array.prototype.slice.call(root.querySelectorAll("[data-mgr-slide]"));
-      var tabs = Array.prototype.slice.call(root.querySelectorAll("[data-mgr-tab]"));
-      var prev = root.querySelector("[data-mgr-prev]");
-      var next = root.querySelector("[data-mgr-next]");
-      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      var current = 0;
-      var pending = -1;
-      var release = null;
-
-      function nearest() {
-        var x = track.scrollLeft, best = 0, bestD = Infinity;
-        slides.forEach(function (sl, k) {
-          var d = Math.abs(sl.offsetLeft - x);
-          if (d < bestD) { bestD = d; best = k; }
-        });
-        return best;
-      }
-
-      function mark(i) {
-        current = i;
-        tabs.forEach(function (t, k) {
-          var on = k === i;
-          t.classList.toggle("is-active", on);
-          t.setAttribute("aria-selected", on ? "true" : "false");
-          t.tabIndex = on ? 0 : -1;
-        });
-        slides.forEach(function (sl, k) {
-          if (k === i) sl.removeAttribute("inert"); else sl.setAttribute("inert", "");
-        });
-        if (prev) prev.disabled = i === 0;
-        if (next) next.disabled = i === slides.length - 1;
-      }
-
-      function settle() {
-        pending = -1;
-        if (release) { clearTimeout(release); release = null; }
-        var i = nearest();
-        if (i !== current) mark(i);
-      }
-
-      function go(i, focusTab) {
-        i = Math.max(0, Math.min(slides.length - 1, i));
-        pending = i;
-        mark(i);
-        track.scrollTo({ left: slides[i].offsetLeft, behavior: reduce ? "auto" : "smooth" });
-        if (release) clearTimeout(release);
-        release = setTimeout(settle, reduce ? 60 : 900);
-        if (focusTab) tabs[i].focus();
-      }
-
-      tabs.forEach(function (t, k) {
-        t.addEventListener("click", function () { go(k); });
-        t.addEventListener("keydown", function (e) {
-          if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); go(current + 1, true); }
-          if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); go(current - 1, true); }
-          if (e.key === "Home") { e.preventDefault(); go(0, true); }
-          if (e.key === "End") { e.preventDefault(); go(slides.length - 1, true); }
-        });
-      });
-      if (prev) prev.addEventListener("click", function () { go(current - 1); });
-      if (next) next.addEventListener("click", function () { go(current + 1); });
-
-      track.addEventListener("scroll", function () {
-        if (pending !== -1) {
-          if (Math.abs(track.scrollLeft - slides[pending].offsetLeft) < 2) settle();
-          return;
-        }
-        var i = nearest();
-        if (i !== current) mark(i);
-      }, { passive: true });
-      if ("onscrollend" in window) {
-        track.addEventListener("scrollend", settle);
-      }
-
-      mark(0);
-    })();
-
-
     // Findings overlay toggle
     (function () {
       var overlay = document.querySelector("[data-findings-overlay]");

@@ -34,17 +34,24 @@ export const heroExampleRules = [
   {
     verdict: "held",
     verdictLabel: "Held",
-    craft: "Vendor boundary",
-    quote: "Only the `billing` module talks to the Stripe SDK; everything else goes through `PaymentGateway`.",
+    craft: "Payments ADR",
+    quote: "Every payment provider implements `PaymentGateway`, and only the `billing` module talks to the Stripe SDK.",
     doc: "docs/adr/0007-payments.md",
     line: 12,
-    statement: "Only `billing` depends on `com.stripe`",
-    logic: [[
-      String.raw`\htmlClass{lg-q}{\forall}\, c, d.`,
-      String.raw`(\mathrm{refs}(c, d)`,
-      String.raw`\wedge\ \mathrm{in}(d, \mathtt{com.stripe}))`,
-      String.raw`\rightarrow\ \mathrm{in}(c, \mathtt{billing})`
-    ]],
+    statement: "Every class in `billing.providers` implements `PaymentGateway`, and only `billing` depends on `com.stripe`",
+    logic: [
+      [
+        String.raw`\htmlClass{lg-q}{\forall}\, c.`,
+        String.raw`\mathrm{in}(c, \mathtt{billing.providers})`,
+        String.raw`\rightarrow\ \mathrm{implements}(c, \mathtt{PaymentGateway})`
+      ],
+      [
+        String.raw`\wedge\ \htmlClass{lg-q}{\forall}\, c, d.`,
+        String.raw`(\mathrm{refs}(c, d)`,
+        String.raw`\wedge\ \mathrm{in}(d, \mathtt{com.stripe}))`,
+        String.raw`\rightarrow\ \mathrm{in}(c, \mathtt{billing})`
+      ]
+    ],
     base: true,
     head: true
   },

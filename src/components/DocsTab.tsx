@@ -319,6 +319,7 @@ export default function DocsTab({
   focusDoc,
   onRepoChange,
   onOpenRules,
+  sample,
 }: {
   installationId: number;
   repos: { full_name: string }[];
@@ -330,6 +331,12 @@ export default function DocsTab({
   onRepoChange?: (fullName: string) => void;
   /** Opens the rules on the rules this count counted. */
   onOpenRules?: (filter: string) => void;
+  /**
+   * Fixed answers to show instead of asking the API, for the public demo: the catalogue, and a
+   * function giving one document's rules. See the same prop on RulesTab. Writes are refused, so
+   * the demo can be explored and cannot be changed.
+   */
+  sample?: { catalog: any; doc: (path: string, version?: string | null) => any };
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
@@ -415,6 +422,18 @@ export default function DocsTab({
   }, [menuFor]);
 
   async function loadCatalog() {
+    if (sample) {
+      setCatalog(sample.catalog);
+      const docs: Doc[] = sample.catalog.documents || [];
+      setExpanded(allFolders(buildTree(docs)));
+      const first =
+        (focusDoc && docs.find((doc) => doc.path === focusDoc)) ||
+        docs.find((doc) => doc.brokenRules > 0) ||
+        docs.find((doc) => doc.state === "READ" && doc.ruleCount > 0);
+      if (first) openDoc(first.path);
+      setLoading(false);
+      return;
+    }
     const wanted = ++loadedAt.current;
     setLoading(true);
     setError("");
@@ -460,6 +479,10 @@ export default function DocsTab({
     setSelected(path);
     setDetail(null);
     setActionError("");
+    if (sample) {
+      setDetail(sample.doc(path, version));
+      return;
+    }
     // Two clicks in a row answer in whatever order the network likes. Only the document asked for
     // last may paint, or the pane shows one document's rules under another's name.
     const wanted = ++openedAt.current;
@@ -484,6 +507,10 @@ export default function DocsTab({
    * nothing, so a rejected token or a 500 looked exactly like a change that did not stick.
    */
   async function write(body: unknown, view: "" | "force-read", failed: string) {
+    if (sample) {
+      setActionError("This is an example repository, so nothing here can be changed.");
+      return false;
+    }
     setActionError("");
     setBusy(true);
     try {
@@ -524,6 +551,7 @@ export default function DocsTab({
    */
   /** @return false where the request was refused, so the control stops saying it is asking */
   async function readRepository(): Promise<boolean> {
+    if (sample) return false;
     setAsking(true);
     setActionError("");
     try {
@@ -986,10 +1014,18 @@ export default function DocsTab({
               GitHub
             </a>
           </div>
+          {/* The second sentence used to be there whatever the repository looked like, so a
+              repository with every document read was still told some were waiting. It is now the
+              count, or nothing. */}
           <p className="docs-lede">
-            Every doc Striff can read in this repository, and the rules it found in them. Striff
-            reads a doc when a pull request changes code the doc talks about, so some docs are still
-            waiting for that.
+            Every doc Striff can read in this repository, and the rules it found in them.
+            {summary && summary.notRead > 0 ? (
+              <>
+                {" "}Striff reads a doc the first time a pull request changes code that doc talks
+                about, so {summary.notRead} of these {summary.notRead === 1 ? "has" : "have"} not
+                been read yet.
+              </>
+            ) : null}
           </p>
           {catalog && <RevisionLine catalog={catalog} />}
         </div>
@@ -1044,14 +1080,14 @@ export default function DocsTab({
               <b>{summary.rules}</b>
               <i>rules</i>
             </button>
-            {catalog && (
+            {catalog && !sample && (
               <ReadRepository
                 reading={catalog.reading}
-                waiting={Math.max(
-                  0,
-                  summary.documents - summary.retired - summary.screenedOut - summary.excluded
-                    - summary.read
-                )}
+                /* Documents nothing has read, which is the only work a reading does. The old
+                   sum subtracted the states it knew about and so counted documents a reading
+                   could not finish as waiting for ever, leaving the control offered on a
+                   repository where it had nothing left to achieve. */
+                waiting={summary.notRead}
                 read={summary.read}
                 busy={asking || busy}
                 onRead={readRepository}
