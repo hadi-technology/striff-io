@@ -250,8 +250,26 @@ const plans = [
             <span aria-hidden="true">Your <span class="h1-rot" data-h1-rot><span class="h1-rot-word is-on">architecture docs</span><span class="h1-rot-word">design docs</span><span class="h1-rot-word">AGENTS.md</span></span>,<br /> <span class="hero-h1-accent">enforced on every pull request</span>.</span>
           </h1>
           <p class="section-subcopy hero-subcopy mx-auto">
-            Striff turns the sentences in the docs you already have into logical rules, and checks each one against a formal model of your code before and after every pull request. Not a language model&rsquo;s opinion: formal model checking. <strong>When a change contradicts what your team wrote down, Striff says so before the merge, and quotes the line.</strong>
+            Your docs already state the rules. Striff checks every pull request against them, and <strong>when a change contradicts one, it quotes the sentence, before the merge.</strong>
           </p>
+
+          <!-- The product in six words, taken from the column headings of the card below, which
+               were the clearest thing on the page and the least prominent. Read before the card
+               they also work as its legend. -->
+          <ol class="hero-steps" aria-label="How a rule is checked">
+            <li>
+              <span class="hero-step-num" aria-hidden="true">1</span>
+              <span class="hero-step-text">A sentence in your docs</span>
+            </li>
+            <li>
+              <span class="hero-step-num" aria-hidden="true">2</span>
+              <span class="hero-step-text">becomes a rule</span>
+            </li>
+            <li>
+              <span class="hero-step-num" aria-hidden="true">3</span>
+              <span class="hero-step-text">checked on every pull request</span>
+            </li>
+          </ol>
           <div class="flex flex-wrap justify-center gap-3 pt-2">
             <a class="btn-primary btn-primary-lg" href={githubAppUrl} target="_blank" rel="noopener noreferrer">
               <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -287,9 +305,9 @@ const plans = [
               </span>
             </div>
 
-            <RuleRows rows={heroExampleRules} />
+            <RuleRows rows={heroExampleRules.slice(0, 1)} compact />
           </div>
-          <p class="hero-check-more">Three of the {heroExampleTally.broken + heroExampleTally.held} rules this repository&rsquo;s docs state. <a href="/demo">The dashboard lists all of them &rarr;</a></p>
+          <p class="hero-check-more">One of the {heroExampleTally.broken + heroExampleTally.held} rules this repository&rsquo;s docs state. <a href="/demo">The dashboard lists all of them &rarr;</a></p>
           <div class="hero-langs" aria-label="Supported languages">
             <span class="hero-langs-label">Works with</span>
             {heroLanguages.map((lang) => (
@@ -408,6 +426,13 @@ const plans = [
                 </li>
               ))}
             </ol>
+            <!-- The formula, where the sentence it proves is: "does the model satisfy the
+                 formula?" is a claim, and this is the claim's evidence. It used to sit in the
+                 hero, in front of a reader who had not yet been told a formula was involved. -->
+            <figure class="compute-formula">
+              <figcaption>What one rule compiles to</figcaption>
+              <RuleRows rows={heroExampleRules.slice(0, 1)} />
+            </figure>
             <BlogLink slug="grounded-ai-findings" kicker="How we keep the model honest" class="compute-invite" />
           </div>
 

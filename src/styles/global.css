@@ -2730,6 +2730,106 @@
   border-radius: 0.7rem;
 }
 
+/* The three steps, under the heading: the product before the proof of it.
+   Chevrons between the items rather than around them, so the row reads as one
+   sentence broken into three rather than three separate badges. */
+.hero-steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem 0.2rem;
+  margin: 0;
+  padding: 0.5rem 0 0;
+  list-style: none;
+}
+.hero-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(30, 58, 138, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.4rem 0.9rem 0.4rem 0.45rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.hero-steps li + li::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  margin: 0 0.35rem 0 -0.15rem;
+  border-right: 2px solid rgba(37, 99, 235, 0.45);
+  border-bottom: 2px solid rgba(37, 99, 235, 0.45);
+  transform: rotate(-45deg);
+  flex: 0 0 auto;
+}
+.hero-step-num {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.hero-step-text {
+  color: #16202b;
+  font-size: 0.9rem;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+}
+@media (max-width: 720px) {
+  /* Stacked, the chevron between pills would point across a gap at nothing, so it goes. */
+  .hero-steps { flex-direction: column; align-items: stretch; gap: 0.4rem; }
+  .hero-steps li { justify-content: flex-start; }
+  .hero-steps li + li::before { display: none; }
+}
+
+/* The hero's card shows one rule and no formula, so its rows want less air than the
+   three-row, fully typeset version in the flagship post. */
+.hcc-table.is-compact .hcc-row { align-items: center; }
+
+/* One rule with its formula, inside the pipeline column. The table it borrows is a three-column
+   grid built for a full-width hero; in a column this narrow those three columns squeeze the rule
+   to one word per line. So it takes the stacked form the same table uses on a phone, at every
+   width, because the column is always this narrow. */
+.compute-formula .hcc-thead { display: none; }
+.compute-formula .hcc-row {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  padding: 1rem 1.05rem;
+}
+.compute-formula .hcc-rule {
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.45rem;
+  background: #f6f8fa;
+  border: 1px solid #eef2f6;
+}
+.compute-formula .hcc-verdict-cell { justify-content: flex-start; align-items: flex-start; }
+.compute-formula .hcc-status-sat { flex-direction: row; flex-wrap: wrap; gap: 0.2rem 0.75rem; }
+
+.compute-formula {
+  margin: 1.5rem 0 0;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+.compute-formula figcaption {
+  border-bottom: 1px solid #eef2f7;
+  background: #fbfcfe;
+  padding: 0.55rem 1rem;
+  color: #57606a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 /* ---- the card ---- */
 /* Two shadows doing different jobs: a tight one that seats the card on the page and
    a wide one, tinted toward the brand, that lifts it off the gradient. One flat
@@ -3054,7 +3154,9 @@
   position: relative;
   z-index: 1;
   max-width: 68rem;
-  margin: 2.25rem auto 0;
+  /* Tight enough that the first rule row clears the fold on a 1440x800 laptop. The card is the
+     proof; a reader who has to scroll to reach any of it has been shown a lid. */
+  margin: 1.75rem auto 0;
 }
 
 @media (min-width: 1280px) {

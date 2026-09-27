@@ -16,9 +16,18 @@ interface Props {
   rows: any[];
   baseSha?: string;
   headSha?: string;
+  /**
+   * Drops the formula and the two satisfaction facts, leaving sentence, rule and verdict.
+   *
+   * The hero uses this. A first-order-logic formula is the strongest thing on the page for a
+   * reader who has decided to care and a wall for one who has not, and the hero's whole job is
+   * the second reader. The formula keeps its place where the claim it proves is made: the
+   * pipeline section below, and the flagship post.
+   */
+  compact?: boolean;
 }
 
-const { rows, baseSha, headSha } = Astro.props;
+const { rows, baseSha, headSha, compact = false } = Astro.props;
 const phiLabel = (i: number) => tex(String.raw`\varphi_{${i + 1}} \coloneqq`);
 const satBefore = (i: number, holds = true) =>
   tex(holds
@@ -30,7 +39,7 @@ const satAfter = (i: number, holds: boolean) =>
     : String.raw`\mathcal{M}_{\mathrm{after}} \htmlClass{unsat}{\nvDash} \varphi_{${i + 1}}`);
 ---
 
-<div class="hcc-table">
+<div class={`hcc-table${compact ? " is-compact" : ""}`}>
   <div class="hcc-thead" aria-hidden="true">
     <span>The sentence in your docs</span>
     <span>The rule it became</span>
@@ -52,7 +61,7 @@ const satAfter = (i: number, holds: boolean) =>
             <InlineCodeText class="hcc-rule-text hcc-rule-reading" text={row.statement} />
             {row.craft && <span class="hcc-craft">{row.craft}</span>}
           </span>
-          {row.logic && (
+          {!compact && row.logic && (
             <span class="hcc-formula" aria-hidden="true">
               <span class="hcc-formula-label" set:html={phiLabel(i)} />
               {row.logic.map((line: string[]) => (
@@ -81,10 +90,12 @@ const satAfter = (i: number, holds: boolean) =>
             )}
             {row.verdictLabel}
           </span>
+          {!compact && (
           <span class="hcc-status-sat" aria-hidden="true">
             <span title={baseSha ? `base ${baseSha}` : undefined} set:html={satBefore(i, row.base !== false)} />
             <span title={headSha ? `head ${headSha}` : undefined} set:html={satAfter(i, row.head)} />
           </span>
+          )}
           <span class="sr-only">{row.base === false
             ? (row.head ? "The rule was broken before this pull request and holds after it." : "The rule was already broken before this pull request and is still broken after it.")
             : (row.head ? "The rule held before this pull request and still holds after it." : "The rule held before this pull request and is broken after it.")}</span>
