@@ -1,7 +1,7 @@
-// Shared fake dataset for marketing surfaces that preview the org metrics dashboard --
-// used by the engineering-manager carousel on the homepage and by
+// Shared fake dataset for the surfaces that show the org metrics dashboard without an
+// installation: the for-teams metrics panel on the homepage, the demo page's Metrics view, and
 // src/pages/screenshot-metrics.astro (kept for one-off screenshot capture). Centralized here so
-// both stay in sync instead of drifting copies of the same fixture.
+// they stay in sync instead of drifting copies of the same fixture.
 //
 // Kept internally consistent the way the API computes it: a flagged pull request is one that
 // broke at least one documented rule, clean pull requests are the rest, and a repo's flagged

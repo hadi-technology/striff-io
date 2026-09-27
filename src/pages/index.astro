@@ -171,63 +171,34 @@ const reportRules = [
 ];
 
 /**
- * For-managers carousel. Slide one is an illustration: the repository, titles and
- * authors are invented. Every row got the same check; only the one that broke a rule
- * needs a senior's attention, which is the slide's point. Slide two quotes
- * the real lines 133-137 of ecchronos core.impl/README.md at head 0288412016 and the
- * check table as the check writes it. Slide three is the real dashboard
- * component on the sample workspace /dashboard previews, labelled as an example.
+ * For-teams: the dashboard's three views, one panel each, every panel a door into the demo's
+ * matching tab. The rules and documents panels are photographed; the metrics panel is the live
+ * component on the example workspace.
  */
-const mgrPrs = [
-  { num: 421, title: "Bump jackson-databind from 2.17.1 to 2.18.2", who: "dependabot[bot]", when: "12 minutes ago", review: "Approved", label: "dependencies", verdict: "held" },
-  { num: 420, title: "Add incremental repair history", who: "kchen", when: "2 hours ago", review: "Approved", verdict: "held" },
-  { num: 419, title: "Fix typo in scheduler log line", who: "sam-new-hire", when: "4 hours ago", review: "Approved", verdict: "held" },
-  { num: 418, title: "Refactor NodeWorker lifecycle", who: "coding-agent[bot]", when: "yesterday", review: "Review required", label: "agent", verdict: "violated" }
+const teamsPanels = [
+  {
+    view: "rules",
+    eyebrow: "Rules",
+    title: "Every rule, and whether the code still keeps it",
+    body: "One row per sentence Striff turned into a rule: the document and line it came from, the rule it became, and the verdict on your default branch. Sort by what is broken, search by a class name, export the table.",
+    cta: "Open the rules"
+  },
+  {
+    view: "docs",
+    eyebrow: "Documents",
+    title: "Which documents the code still agrees with",
+    body: "Your architecture docs, ADRs and agent instructions, each with its rules beside the text that stated them. A document with a broken rule is a document your agents are being misled by.",
+    cta: "Open the documents"
+  },
+  {
+    view: "metrics",
+    eyebrow: "Metrics",
+    title: "Which repositories are drifting, month over month",
+    body: "Rules broken, held and already broken, the share of pull requests that broke none, and the repositories and pull requests flagged most. Where the fix-up time should go this quarter.",
+    cta: "Open the metrics"
+  }
 ];
 
-/**
- * For-teams: the three ways an agent strays from the docs, each with a real case from a
- * published post on this site. The cards say what goes wrong, not how old a doc is.
- */
-const teamFailures = [
-  { tone: "amber", title: "It follows a sentence that is no longer true", body: "The agent builds on a class, a call or a pattern the team already retired. If the build breaks it recovers, at a cost. If it doesn\u2019t, the old design comes back.", example: "The MCP C# SDK\u2019s Copilot instructions tell every agent to use a class Copilot itself deleted.", href: "/blog/design-docs-are-enforceable-now" },
-  { tone: "danger", title: "It breaks a rule that is still true", body: "\u201cControllers go through the service layer.\u201d The agent takes the shortcut. The code compiles, the tests pass, the diff looks fine, and the document that forbade it is not in the diff. Merged.", example: "97 of 7,161 documented rules were broken by the pull request under review, in a sweep of public repositories.", href: "/blog/design-docs-are-enforceable-now" },
-  { tone: "brand", title: "It writes new docs from the wrong ones", body: "Asked to document the architecture, the agent reads the existing docs and repeats their mistakes with a fresh timestamp. The next agent now has two sentences telling it the same wrong thing.", example: "An agent-written architecture section in 2026 names a class removed in 2020.", href: "/blog/design-docs-are-enforceable-now" }
-];
-/**
- * One agent-written pull request, and the two futures it has. Illustrative: the repository,
- * the file and the timeline are invented; the check row is worded the way the check writes it.
- */
-const forkWithout = [
-  { when: "40 minutes later", text: "Approved and merged. The diff was clean, the tests passed, and ARCHITECTURE.md was not in the diff." },
-  { when: "Next week", text: "Two more agent pull requests copy the shortcut. It is now the pattern in that module." },
-  { when: "Next quarter", text: "The service layer is optional. The architecture doc describes a system that no longer exists, and the agents are still reading it." },
-  { when: "Next year", text: "Every change costs more than it should, and nobody can point to the pull request where it started." }
-];
-const forkWith = [
-  { when: "Before review", text: "The check posts: rule broken by this pull request, quoting the sentence and the line." },
-  { when: "10 minutes later", text: "The author routes the call through OrderService. A one-line fix, while it is still one line." },
-  { when: "Merged", text: "The doc is still true. The layering holds. The next agent reads a document that matches the code." },
-  { when: "Your senior engineer", text: "Never had to look." }
-];
-const mgrSlides = [
-  {
-    title: "Your senior engineers stop being the bottleneck.",
-    body: "Architecture review waits on the few people who know the system, and agent-written pull requests have made that queue longer. Striff checks every pull request against what those people already wrote down. They are pulled in when a rule breaks, not to re-check the ninety-eight percent that held."
-  },
-  {
-    title: "Your docs stay true, because a change that contradicts them is caught.",
-    body: "An agent builds from what the docs say, so a sentence the code no longer matches is a defect that gets copied into the next change. Once every pull request is checked against the docs, the contradiction shows up on the change that made it, with the line quoted, while the fix is still one line."
-  },
-  {
-    title: "Every rule your documents state, in one list.",
-    body: "Striff reads your architecture docs, your ADRs and your agent instructions and writes down the rule each sentence states. The dashboard shows all of them together: the line they came from, the sentence itself, the rule it became, and whether the code on your default branch keeps it. Open a document to read its rules beside the rest of it."
-  },
-  {
-    title: "See which repositories are drifting from their docs.",
-    body: "The dashboard shows, month over month, which repositories and pull requests break your documented rules: held, broken and already broken, the share of pull requests that broke none, and the repositories flagged most. You know where to spend fix-up time before it becomes a rewrite."
-  }
-]
 
 const plans = [
   {
@@ -325,6 +296,7 @@ const plans = [
 
             <RuleRows rows={heroExampleRules} logicNote />
           </div>
+          <p class="hero-check-more">Three of the {heroExampleTally.broken + heroExampleTally.held} rules this repository&rsquo;s docs state. <a href="/demo">The dashboard lists all of them &rarr;</a></p>
           <div class="hero-langs" aria-label="Supported languages">
             <span class="hero-langs-label">Works with</span>
             {heroLanguages.map((lang) => (
@@ -362,7 +334,6 @@ const plans = [
               <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="gs-gemini" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f8df9" /><stop offset="55%" stop-color="#9b72cb" /><stop offset="100%" stop-color="#d96570" /></linearGradient></defs></svg>
               <div class="gs-head">
                 <span class="gs-live"><span class="gs-live-dot"></span><span class="gs-live-repo">5 agents</span> working on acme-corp</span>
-                <span class="hcc-chip hcc-chip-example">Illustrative</span>
                 <span class="gs-head-tag">last hour</span>
               </div>
               <div class="gs-body">
@@ -617,216 +588,63 @@ const plans = [
       </div>
     </section>
 
-    <!-- ==================== FOR ENGINEERING MANAGERS ==================== -->
-    <!-- The three outcomes stay on the left as they were; they are also the carousel's
-         tabs, so choosing one shows its illustration on the right. -->
-    <section id="how" class="scroll-mt-24 bg-slate-100/60 pb-20 pt-16">
+    <!-- ==================== FOR TEAMS ==================== -->
+    <!-- The one section on the page for the lead rather than the reviewer. It sells the
+         dashboard and nothing else: the three views, each a door into the demo, which is the
+         real dashboard on an invented repository. The check itself is sold above. -->
+    <section id="teams" class="scroll-mt-24 bg-slate-100/60 pb-20 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
-        <div class="team-intro" data-reveal>
-          <div class="team-intro-copy">
+        <div class="teams-head" data-reveal>
+          <div class="teams-head-copy">
             <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For teams</p>
-            <h2 class="mt-3 text-balance">Agents do what your docs say. When the docs and the code disagree, nobody finds out.</h2>
+            <h2 class="mt-3 text-balance">Every rule your docs state, and which repositories still keep them.</h2>
             <p class="section-subcopy mt-4">
-              Your architecture docs, your ADRs and your <code class="github-inline-code">AGENTS.md</code> used to be read by the next engineer, who could ask when something looked off. Now they are read by every agent run, taken as fact, and built on. Nothing in the merge path compares them to the code. <strong>Striff does, on every pull request: when a change contradicts what your team wrote down, it says so before the merge and quotes the line.</strong>
+              The check reads one pull request at a time. The dashboard is the same reading of your documents, added up across the organisation: each sentence that makes a claim about the code, the rule it became, whether the default branch keeps it, and which repositories and pull requests broke one this month. <strong>It is where a lead finds out the layering rule has been optional since March, while it is still a fix and not a rewrite.</strong>
             </p>
           </div>
-
-          <!-- The three ways an agent strays from the docs, each with a real case. -->
-          <div class="team-proof">
-            {teamFailures.map((f) => (
-              <a class={`team-stat team-stat-${f.tone}`} href={f.href}>
-                <span class="team-stat-title">{f.title}</span>
-                <span class="team-stat-label">{f.body}</span>
-                <span class="team-stat-cite">{f.example} &rarr;</span>
-              </a>
-            ))}
+          <div class="teams-head-actions">
+            <a class="btn-primary" href="/demo">Open the dashboard</a>
+            <a class="btn-secondary" href="/pricing">Team pricing</a>
+            <p class="teams-head-note">The real dashboard, on an invented repository. Nothing to sign in to.</p>
           </div>
         </div>
 
-        <div class="mgr-split mgr-carousel mt-10" data-mgr-carousel aria-roledescription="carousel" aria-label="What changes for your team" data-reveal>
-          <div class="mgr-points" role="tablist" aria-label="Outcomes" aria-orientation="vertical">
-            {mgrSlides.map((slide, i) => (
-              <button
-                type="button"
-                class={`mgr-point ${i === 0 ? "is-active" : ""}`}
-                role="tab"
-                id={`mgr-tab-${i}`}
-                aria-controls={`mgr-slide-${i}`}
-                aria-selected={i === 0 ? "true" : "false"}
-                tabindex={i === 0 ? 0 : -1}
-                data-mgr-tab
-              >
-                <span class="mgr-point-num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
-                <span class="mgr-point-body">
-                  <span class="mgr-point-title">{slide.title}</span>
-                  <span class="mgr-point-text">{slide.body}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div class="mgr-stage-col">
-            <div class="mgr-track" data-mgr-track>
-              {mgrSlides.map((slide, i) => (
-                <article class="mgr-slide" id={`mgr-slide-${i}`} role="tabpanel" aria-labelledby={`mgr-tab-${i}`} aria-roledescription="slide" data-mgr-slide>
-                  <div class="mgr-art">
-                  {i === 0 && (
-                    <div class="ghl">
-                      <div class="ghl-head">
-                        <span class="ghl-open"><svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg>4 Open</span>
-                        <span class="ghl-closed"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>212 Closed</span>
-                        <span class="ghl-filters" aria-hidden="true"><span>Author</span><span>Label</span><span>Reviews</span></span>
-                        <span class="hcc-chip hcc-chip-example ghl-example">Illustrative</span>
-                      </div>
-                      {mgrPrs.map((pr) => (
-                        <div class={`ghl-row${pr.verdict === "violated" ? " is-flag" : ""}`}>
-                          <span class="ghl-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg></span>
-                          <span class="ghl-main">
-                            <span class="ghl-title"><b>{pr.title}</b>{pr.label && <span class={`ghl-label ghl-label-${pr.label}`}>{pr.label}</span>}</span>
-                            <i>#{pr.num} opened {pr.when} by {pr.who} &middot; {pr.review}</i>
-                          </span>
-                          <span class={`ghl-check ghl-check-${pr.verdict}`}>
-                            <img src="/icon.svg" alt="Striff" width="14" height="14" />
-                            {pr.verdict === "held" ? <Fragment set:html={`<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>Rules held`} /> : <Fragment set:html={`<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"/></svg>1 rule broken`} />}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {i === 1 && (
-                    <div class="ghr">
-                      <div class="ghr-card ghr-blob">
-                        <div class="ghr-bar">
-                          <span class="ghr-crumbs"><span>ecchronos</span><i>/</i><span>core.impl</span><i>/</i><b>README.md</b></span>
-                          <span class="ghr-seg" aria-hidden="true"><span class="is-on">Preview</span><span>Code</span><span>Blame</span></span>
-                        </div>
-                        <div class="ghr-preview">
-                          <p><strong><code>NodeWorker</code></strong> — A continuously-running background thread per node. It:</p>
-                          <ul>
-                            <li>Discovers all replicated tables for its node</li>
-                            <li>Fetches repair configurations per table</li>
-                            <li class="is-hl"><span>Calls <code>RepairScheduler.putConfigurations()</code> to keep jobs up to date</span><em>L136</em></li>
-                            <li>Loops on a configurable refresh interval</li>
-                          </ul>
-                        </div>
-                      </div>
-
-                      <div class="ghr-card ghr-check">
-                        <div class="ghr-bar">
-                          <img src="/icon.svg" alt="" class="ghr-app" width="20" height="20" />
-                          <span class="ghr-check-name"><b>Striff</b><span>📄 1 doc conflict (README.md)</span></span>
-                          <span class="ghr-pr">PR #1786</span>
-                        </div>
-                        <div class="ghr-md">
-                          <p class="ghr-h">Documented Rules</p>
-                          <div class="ghr-table-wrap">
-                            <table>
-                              <thead><tr><th>Rule</th><th>Source</th><th>This PR</th></tr></thead>
-                              <tbody>
-                                <tr class="is-focus"><td>NodeWorker depends on RepairScheduler</td><td><span class="ghr-a"><code>README.md</code></span></td><td class="ghr-out">❌ broken by this change</td></tr>
-                                <tr><td>NodeWorkerManager depends on NodeWorker</td><td><span class="ghr-a"><code>README.md</code></span></td><td class="ghr-out">✅ holds</td></tr>
-                              </tbody>
-                            </table>
-                          </div>
+        <div class="teams-panels mt-10">
+          {teamsPanels.map((panel) => (
+            <article class="teams-panel" data-reveal>
+              <div class="teams-panel-art">
+                {panel.view === "rules" && (
+                  <figure class="teams-panel-shot">
+                    <Image src={dashRules} alt="The rules page: every rule read from the repository's docs, with the line it came from, the sentence, the rule, and whether the code keeps it." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 30vw" loading="lazy" />
+                  </figure>
+                )}
+                {panel.view === "docs" && (
+                  <figure class="teams-panel-shot">
+                    <Image src={dashDocs} alt="The documents page: the repository's docs in a tree, and one document's rules line by line beside it." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 30vw" loading="lazy" />
+                  </figure>
+                )}
+                {panel.view === "metrics" && (
+                  <div class="teams-panel-live" data-metrics-preview inert>
+                    <div class="teams-panel-live-scale" data-metrics-preview-scale>
+                      <div class="dashboard-shell">
+                        <div class="dashboard-installation-card">
+                          <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
                         </div>
                       </div>
                     </div>
-                  )}
-
-                  {i === 2 && (
-                    <div class="mgr-shots">
-                      <figure class="mgr-shot mgr-shot-back">
-                        <Image src={dashDocs} alt="The documents page: the repository's docs in a tree, and one document's rules line by line beside it." widths={[700, 1400]} sizes="(max-width: 900px) 90vw, 560px" loading="lazy" />
-                      </figure>
-                      <figure class="mgr-shot mgr-shot-front">
-                        <Image src={dashRules} alt="The rules page: every rule read from the repository's docs, with the line it came from, the sentence, the rule, and whether the code keeps it." widths={[750, 1500]} sizes="(max-width: 900px) 92vw, 640px" loading="lazy" />
-                      </figure>
-                      <span class="hcc-chip hcc-chip-example mgr-shot-chip">Illustrative</span>
-                      {/* Two of these slides sell the dashboard and, until now, nothing on the
-                          site led to it. A picture of a product answers "is it pretty"; the
-                          product answers "is it real". */}
-                      <a class="mgr-shot-open" href="/demo">Open the dashboard &rarr;</a>
-                    </div>
-                  )}
-
-                  {i === 3 && (
-                    <div class="mgr-dash" data-metrics-preview inert>
-                      <div class="mgr-dash-scale" data-metrics-preview-scale>
-                        <div class="dashboard-shell">
-                          <div class="dashboard-account-bar">
-                            <div>
-                              <p class="dashboard-kicker">Striff account</p>
-                              <p class="text-lg font-bold">Acme Corp</p>
-                            </div>
-                            <span class="dashboard-plan-badge">Example workspace</span>
-                          </div>
-                          <div class="dashboard-installation-card">
-                            <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
-                          </div>
-                        </div>
-                      </div>
-                      <div class="mgr-dash-fade" aria-hidden="true"></div>
-                      <a class="mgr-shot-open is-over" href="/demo">Open the dashboard &rarr;</a>
-                    </div>
-                  )}
-                </div>
-                </article>
-              ))}
-            </div>
-            <div class="mgr-controls">
-              <button type="button" class="mgr-arrow" data-mgr-prev aria-label="Previous">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-              </button>
-              <button type="button" class="mgr-arrow" data-mgr-next aria-label="Next">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-        <!-- One agent-written pull request, two futures. -->
-        <div class="fork mt-14" data-reveal>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">One agent pull request, two futures</p>
-          <div class="fork-pr">
-            <div class="fork-pr-head">
-              <span class="fork-pr-title"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg><b>Add CSV export for orders</b> <span class="ghl-label ghl-label-agent">agent</span></span>
-              <span class="fork-pr-meta">#418 opened by coding-agent[bot] &middot; 27 files &middot; +612 &minus;40</span>
-              <span class="hcc-chip hcc-chip-example">Illustrative</span>
-            </div>
-            <div class="fork-pr-diff">
-              <span class="fork-pr-file">src/api/OrderController.java</span>
-              <div class="fork-pr-line"><span>3</span><span>import com.acme.orders.service.OrderService;</span></div>
-              <div class="fork-pr-line is-add"><span>4</span><span>+ import com.acme.orders.data.OrderRepository;</span></div>
-              <div class="fork-pr-line is-add"><span>41</span><span>+ &nbsp;&nbsp;var rows = orderRepository.findForExport(range);</span></div>
-            </div>
-            <div class="fork-pr-doc">
-              <span class="fork-pr-file">ARCHITECTURE.md:42</span>
-              <span class="fork-pr-quote">&ldquo;Controllers never call repositories directly; everything goes through the service layer.&rdquo;</span>
-            </div>
-          </div>
-          <div class="fork-split">
-            <div class="fork-path fork-path-without">
-              <p class="fork-path-name">Without a check</p>
-              <ol class="fork-steps">
-                {forkWithout.map((st) => (<li><span class="fork-when">{st.when}</span><span class="fork-text">{st.text}</span></li>))}
-              </ol>
-            </div>
-            <div class="fork-path fork-path-with">
-              <p class="fork-path-name"><img src="/icon.svg" alt="" width="16" height="16" /> With Striff</p>
-              <div class="fork-check">
-                <span class="fork-check-flag">Rule broken by this PR</span>
-                <span class="fork-check-rule"><code>OrderController</code> depends on <code>OrderRepository</code></span>
-                <span class="fork-check-src">ARCHITECTURE.md:42 &middot; held before this change, fails after it</span>
+                  </div>
+                )}
+                <div class="teams-panel-fade" aria-hidden="true"></div>
+                <span class="hcc-chip hcc-chip-example teams-panel-chip">Example</span>
               </div>
-              <ol class="fork-steps">
-                {forkWith.map((st) => (<li><span class="fork-when">{st.when}</span><span class="fork-text">{st.text}</span></li>))}
-              </ol>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-invite">
-          <BlogLink slug="design-docs-are-enforceable-now" kicker="What happens when an agent builds from a doc that is wrong" />
+              <div class="teams-panel-body">
+                <p class="teams-panel-eyebrow">{panel.eyebrow}</p>
+                <h3 class="teams-panel-title">{panel.title}</h3>
+                <p class="teams-panel-text">{panel.body}</p>
+                <a class="teams-panel-cta" href={`/demo#${panel.view}`}>{panel.cta} &rarr;</a>
+              </div>
+            </article>
+          ))}
         </div>
       </div>
     </section>
@@ -1053,91 +871,6 @@ const plans = [
   </main>
 
   <script is:inline>
-    // For-managers carousel: scroll snap does the swiping; tabs, arrows and keys drive the
-    // track. While a tab-driven scroll is in flight its in-between positions are ignored, so
-    // the tab the reader pressed stays selected instead of flickering back to the old one.
-    (function () {
-      var root = document.querySelector("[data-mgr-carousel]");
-      if (!root) return;
-      var track = root.querySelector("[data-mgr-track]");
-      var slides = Array.prototype.slice.call(root.querySelectorAll("[data-mgr-slide]"));
-      var tabs = Array.prototype.slice.call(root.querySelectorAll("[data-mgr-tab]"));
-      var prev = root.querySelector("[data-mgr-prev]");
-      var next = root.querySelector("[data-mgr-next]");
-      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      var current = 0;
-      var pending = -1;
-      var release = null;
-
-      function nearest() {
-        var x = track.scrollLeft, best = 0, bestD = Infinity;
-        slides.forEach(function (sl, k) {
-          var d = Math.abs(sl.offsetLeft - x);
-          if (d < bestD) { bestD = d; best = k; }
-        });
-        return best;
-      }
-
-      function mark(i) {
-        current = i;
-        tabs.forEach(function (t, k) {
-          var on = k === i;
-          t.classList.toggle("is-active", on);
-          t.setAttribute("aria-selected", on ? "true" : "false");
-          t.tabIndex = on ? 0 : -1;
-        });
-        slides.forEach(function (sl, k) {
-          if (k === i) sl.removeAttribute("inert"); else sl.setAttribute("inert", "");
-        });
-        if (prev) prev.disabled = i === 0;
-        if (next) next.disabled = i === slides.length - 1;
-      }
-
-      function settle() {
-        pending = -1;
-        if (release) { clearTimeout(release); release = null; }
-        var i = nearest();
-        if (i !== current) mark(i);
-      }
-
-      function go(i, focusTab) {
-        i = Math.max(0, Math.min(slides.length - 1, i));
-        pending = i;
-        mark(i);
-        track.scrollTo({ left: slides[i].offsetLeft, behavior: reduce ? "auto" : "smooth" });
-        if (release) clearTimeout(release);
-        release = setTimeout(settle, reduce ? 60 : 900);
-        if (focusTab) tabs[i].focus();
-      }
-
-      tabs.forEach(function (t, k) {
-        t.addEventListener("click", function () { go(k); });
-        t.addEventListener("keydown", function (e) {
-          if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); go(current + 1, true); }
-          if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); go(current - 1, true); }
-          if (e.key === "Home") { e.preventDefault(); go(0, true); }
-          if (e.key === "End") { e.preventDefault(); go(slides.length - 1, true); }
-        });
-      });
-      if (prev) prev.addEventListener("click", function () { go(current - 1); });
-      if (next) next.addEventListener("click", function () { go(current + 1); });
-
-      track.addEventListener("scroll", function () {
-        if (pending !== -1) {
-          if (Math.abs(track.scrollLeft - slides[pending].offsetLeft) < 2) settle();
-          return;
-        }
-        var i = nearest();
-        if (i !== current) mark(i);
-      }, { passive: true });
-      if ("onscrollend" in window) {
-        track.addEventListener("scrollend", settle);
-      }
-
-      mark(0);
-    })();
-
-
     // Findings overlay toggle
     (function () {
       var overlay = document.querySelector("[data-findings-overlay]");
