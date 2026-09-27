@@ -5768,230 +5768,6 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 }
 .hero-check-more a { font-weight: 700; color: #1d4ed8; }
 
-/* ─── One finding, assembled a stage at a time ──────────────────────────────
-   One type scale, shared with the check card: sans for what Striff concluded,
-   mono only for identifiers and paths, serif only for the sentence quoted out
-   of a document. Every part sits in the same two-column grid, so the left edge
-   of the content never moves as parts arrive.
-
-   Parts hold their height from the start and only fade and lift, so nothing
-   below the card jumps. A rail down the left fills as the stages complete, and
-   the part that just landed keeps a tinted edge for a moment, which is the
-   thing that makes the transition legible rather than just sudden. */
-.compute-build { margin-top: 2.5rem; }
-.rule-build {
-  border: 1px solid var(--line);
-  border-radius: 0.9rem;
-  background: #fff;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
-  overflow: hidden;
-}
-.rule-build-caption {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0;
-  border-bottom: 1px solid #eef2f7;
-  background: #fbfcfe;
-  padding: 0.7rem 1.15rem;
-  color: #6b7684;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-.rule-build-replay {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-left: auto;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #fff;
-  padding: 0.2rem 0.65rem;
-  color: #1d4ed8;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: none;
-}
-.rule-build-replay:hover { background: #f6f8fa; }
-
-.rule-build-body { margin: 0; padding: 0; list-style: none; }
-.rb-part {
-  position: relative;
-  display: grid;
-  grid-template-columns: 11rem minmax(0, 1fr);
-  gap: 0 1.5rem;
-  align-items: start;
-  padding: 0.95rem 1.25rem 0.95rem 1.6rem;
-  transition: background 500ms ease;
-}
-.rb-part > :not(.rb-tag) {
-  opacity: 0;
-  transform: translateY(6px);
-  transition: opacity 400ms ease, transform 400ms cubic-bezier(0.22, 0.75, 0.2, 1);
-}
-.rb-part .rb-tag { opacity: 0.45; transition: opacity 300ms ease, color 300ms ease; }
-.rb-part + .rb-part { border-top: 1px solid #f3f6fa; }
-/* The rail: a full-height edge per part, tinted once its stage has run. */
-.rb-part::before {
-  content: "";
-  position: absolute;
-  left: 0.75rem;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: #e8edf3;
-  transition: background 400ms ease;
-}
-.rb-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: #8a95a1;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  padding-top: 0.15rem;
-  transition: color 300ms ease;
-}
-.rb-tag::before {
-  content: "";
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 999px;
-  background: #cbd4de;
-  flex: 0 0 auto;
-  transition: background 300ms ease, box-shadow 300ms ease;
-}
-
-/* Shown once the stage has reached it. */
-.rule-build[data-stage="1"] .rb-part[data-at="1"] > :not(.rb-tag),
-.rule-build[data-stage="2"] .rb-part[data-at="1"] > :not(.rb-tag), .rule-build[data-stage="2"] .rb-part[data-at="2"] > :not(.rb-tag),
-.rule-build[data-stage="3"] .rb-part[data-at="1"] > :not(.rb-tag), .rule-build[data-stage="3"] .rb-part[data-at="2"] > :not(.rb-tag), .rule-build[data-stage="3"] .rb-part[data-at="3"] > :not(.rb-tag),
-.rule-build[data-stage="4"] .rb-part[data-at="1"] > :not(.rb-tag), .rule-build[data-stage="4"] .rb-part[data-at="2"] > :not(.rb-tag), .rule-build[data-stage="4"] .rb-part[data-at="3"] > :not(.rb-tag), .rule-build[data-stage="4"] .rb-part[data-at="4"] > :not(.rb-tag),
-.rule-build[data-stage="5"] .rb-part > :not(.rb-tag) {
-  opacity: 1;
-  transform: none;
-}
-.rule-build[data-stage="1"] .rb-part[data-at="1"] .rb-tag,
-.rule-build[data-stage="2"] .rb-part[data-at="1"] .rb-tag, .rule-build[data-stage="2"] .rb-part[data-at="2"] .rb-tag,
-.rule-build[data-stage="3"] .rb-part[data-at="1"] .rb-tag, .rule-build[data-stage="3"] .rb-part[data-at="2"] .rb-tag, .rule-build[data-stage="3"] .rb-part[data-at="3"] .rb-tag,
-.rule-build[data-stage="4"] .rb-part[data-at="1"] .rb-tag, .rule-build[data-stage="4"] .rb-part[data-at="2"] .rb-tag, .rule-build[data-stage="4"] .rb-part[data-at="3"] .rb-tag, .rule-build[data-stage="4"] .rb-part[data-at="4"] .rb-tag,
-.rule-build[data-stage="5"] .rb-part .rb-tag { opacity: 1; }
-.rule-build[data-stage="1"] .rb-part[data-at="1"]::before,
-.rule-build[data-stage="2"] .rb-part[data-at="1"]::before, .rule-build[data-stage="2"] .rb-part[data-at="2"]::before,
-.rule-build[data-stage="3"] .rb-part[data-at="1"]::before, .rule-build[data-stage="3"] .rb-part[data-at="2"]::before, .rule-build[data-stage="3"] .rb-part[data-at="3"]::before,
-.rule-build[data-stage="4"] .rb-part[data-at="1"]::before, .rule-build[data-stage="4"] .rb-part[data-at="2"]::before, .rule-build[data-stage="4"] .rb-part[data-at="3"]::before, .rule-build[data-stage="4"] .rb-part[data-at="4"]::before,
-.rule-build[data-stage="5"] .rb-part::before { background: #bcd0ee; }
-
-/* The part that just arrived: tinted ground and a lit dot, for one beat. */
-.rule-build[data-stage="1"] .rb-part[data-at="1"],
-.rule-build[data-stage="2"] .rb-part[data-at="2"],
-.rule-build[data-stage="3"] .rb-part[data-at="3"],
-.rule-build[data-stage="4"] .rb-part[data-at="4"],
-.rule-build[data-stage="5"] .rb-part[data-at="5"] { background: #f7faff; }
-.rule-build[data-stage="1"] .rb-part[data-at="1"]::before,
-.rule-build[data-stage="2"] .rb-part[data-at="2"]::before,
-.rule-build[data-stage="3"] .rb-part[data-at="3"]::before,
-.rule-build[data-stage="4"] .rb-part[data-at="4"]::before,
-.rule-build[data-stage="5"] .rb-part[data-at="5"]::before { background: #2563eb; }
-.rule-build[data-stage="1"] .rb-part[data-at="1"] .rb-tag,
-.rule-build[data-stage="2"] .rb-part[data-at="2"] .rb-tag,
-.rule-build[data-stage="3"] .rb-part[data-at="3"] .rb-tag,
-.rule-build[data-stage="4"] .rb-part[data-at="4"] .rb-tag,
-.rule-build[data-stage="5"] .rb-part[data-at="5"] .rb-tag { color: #1d4ed8; }
-.rule-build[data-stage="1"] .rb-part[data-at="1"] .rb-tag::before,
-.rule-build[data-stage="2"] .rb-part[data-at="2"] .rb-tag::before,
-.rule-build[data-stage="3"] .rb-part[data-at="3"] .rb-tag::before,
-.rule-build[data-stage="4"] .rb-part[data-at="4"] .rb-tag::before,
-.rule-build[data-stage="5"] .rb-part[data-at="5"] .rb-tag::before {
-  background: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
-}
-
-/* Parse: two model readings, monospaced because they are counts to compare. */
-.rb-model { display: grid; gap: 0.25rem; }
-.rb-model-line {
-  display: grid;
-  grid-template-columns: 5.2rem minmax(0, 1fr);
-  gap: 0.6rem;
-  color: #424b55;
-  font-size: 0.84rem;
-}
-.rb-model-line b {
-  color: #16202b;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-
-/* Read: the only serif on the card, because it is the only thing quoted from a document. */
-.rb-quote-text {
-  display: block;
-  color: #16202b;
-  font-family: "Source Serif 4", Georgia, serif;
-  font-size: 1rem;
-  line-height: 1.55;
-}
-.rb-src {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-top: 0.4rem;
-  color: #8a95a1;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.75rem;
-}
-.rb-src b { color: #1d4ed8; font-weight: 600; }
-
-/* Ground and compile: the rule, then what it compiled to. */
-.rb-rule-text { display: block; color: #16202b; font-size: 0.92rem; font-weight: 600; line-height: 1.55; }
-.rb-rule-text .github-inline-code,
-.rb-quote-text .github-inline-code,
-.rb-witness .github-inline-code {
-  border: 1px solid #e6ebf1;
-  border-radius: 0.3rem;
-  background: #f6f8fa;
-  padding: 0.05em 0.32em;
-  font-size: 0.9em;
-}
-.rb-formula {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.2rem 0.45rem;
-  margin-top: 0.55rem;
-  border-top: 1px solid #f0f3f7;
-  padding-top: 0.55rem;
-}
-.rb-formula-line { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.3rem; }
-.rb-formula .lg-q { color: #6d28d9; }
-
-/* Evaluate: the two facts the verdict rests on, side by side. */
-.rb-sat { display: flex; flex-wrap: wrap; gap: 0.4rem 1.75rem; padding-top: 0.1rem; }
-.rb-sat .sat { color: #17632f; }
-.rb-sat .unsat { color: #9f1f33; }
-
-/* Narrate: the verdict, and the edge that caused it. */
-.rb-verdict { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.85rem; }
-.rb-verdict-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border: 1px solid #f3c7cd;
-  border-radius: 999px;
-  background: #fdecee;
-  padding: 0.18rem 0.65rem;
-  color: #9f1f33;
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-.rb-witness { color: #9f1f33; font-size: 0.82rem; line-height: 1.5; }
-.rb-witness .github-inline-code { border-color: #f6d7db; background: #fdeced; color: #7f1d2d; }
-
 /* The step driving the build.
 
    Three states, and they have to be told apart at a glance or the sequence below reads as five
@@ -6275,3 +6051,73 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .ghcheck-zoom button + button { border-left: 1px solid #eef2f7; }
 .ghcheck-zoom button:hover { background: #f6f8fa; color: #16202b; }
 @media (max-width: 720px) { .ghcheck-diagram { height: 18rem; } }
+
+/* What a step produced, under the paragraph that describes it. It holds its height from the
+   start, so the row of five never reflows as each one lands; only the line itself fades in. */
+.pipe-out {
+  margin: 0.6rem 0 0;
+  min-height: 2.6rem;
+}
+.pipe-out span {
+  display: inline-block;
+  border: 1px solid #e2e9f3;
+  border-radius: 0.45rem;
+  background: #f7faff;
+  padding: 0.3rem 0.55rem;
+  color: #1d4ed8;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 320ms ease, transform 320ms cubic-bezier(0.22, 0.75, 0.2, 1);
+}
+.pipeline-flow.is-across .pipe-step.is-done .pipe-out span { opacity: 1; transform: none; }
+.pipeline-flow.is-across .pipe-step.is-on .pipe-out span {
+  border-color: #b9cdf0;
+  background: #eef4ff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pipe-out span { opacity: 1; transform: none; transition: none; }
+}
+
+.diagram-source-label { color: #6b7684; font-size: 0.85rem; }
+
+/* ─── The check section's own frame ─────────────────────────────────────────
+   A check comment is read, not scanned across a hall. GitHub gives its own
+   about sixty rems; this keeps the table's three columns comfortable without
+   running the full width of the page. */
+.check-report,
+.check-foot,
+.diagram-intro {
+  max-width: 76rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.check-report { margin-top: 1.75rem; }
+
+.diagram-source-pr {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: #fff;
+  padding: 0.3rem 0.65rem;
+  color: #16202b;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.diagram-source-pr:hover { background: #f6f8fa; text-decoration: none; }
+
+/* Two links, side by side, under what they are both about. */
+.check-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+}
+.check-foot > * { flex: 1 1 22rem; margin: 0; }

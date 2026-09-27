@@ -3,7 +3,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import InlineCodeText from "../components/InlineCodeText.astro";
 import BlogLink from "../components/BlogLink.astro";
 import RuleRows from "../components/RuleRows.astro";
-import RuleBuild from "../components/RuleBuild.astro";
 import { heroExampleRules, heroExampleRepo, heroExampleTally } from "../data/heroExampleRules";
 import MetricsTab from "../components/MetricsTab";
 import { Image } from "astro:assets";
@@ -85,27 +84,32 @@ const pipeline = [
   {
     kind: "symbolic",
     name: "Parse",
-    body: "The code before and after the pull request becomes a structural model of types, members, references and packages \u2014 resolved the way a compiler would, not by matching text."
+    body: "The code before and after the pull request becomes a structural model of types, members, references and packages \u2014 resolved the way a compiler would, not by matching text.",
+    out: "1,284 types \u00b7 8,902 references"
   },
   {
     kind: "neural",
     name: "Read",
-    body: "Your documents go to a language model, which proposes candidate rules from prose. The only step that reads English."
+    body: "Your documents go to a language model, which proposes candidate rules from prose. The only step that reads English.",
+    out: "\u201cNever import from legacy/ in new code\u201d \u00b7 AGENTS.md:18"
   },
   {
     kind: "symbolic",
     name: "Ground and compile",
-    body: "A proposed rule that names a class or package your code does not contain is dropped. The rest become formulas over the model."
+    body: "A proposed rule that names a class or package your code does not contain is dropped. The rest become formulas over the model.",
+    out: "Nothing in checkout depends on legacy"
   },
   {
     kind: "symbolic",
     name: "Evaluate",
-    body: "Each formula is checked against the model of the code before and after the change. A rule is held when nothing in the pull request breaks it, and only a violation the change introduced is attributed to it."
+    body: "Each formula is checked against the model of the code before and after the change. A rule is held when nothing in the pull request breaks it, and only a violation the change introduced is attributed to it.",
+    out: "held before \u00b7 fails after"
   },
   {
     kind: "neural",
     name: "Narrate",
-    body: "The model ranks and explains what the evaluation already found. It cannot originate a finding, rename one, or turn \u201ccould not answer\u201d into a pass."
+    body: "The model ranks and explains what the evaluation already found. It cannot originate a finding, rename one, or turn \u201ccould not answer\u201d into a pass.",
+    out: "Broken by this pull request"
   }
 ];
 
@@ -393,89 +397,71 @@ const plans = [
                       <span class="pipe-kind">{step.kind === "neural" ? "Language model" : "Deterministic"}</span>
                     </p>
                     <p class="pipe-text">{step.body}</p>
+                    {/* What this step produced, appearing as the sequence reaches it. Small,
+                        under the paragraph that describes the step, so the description and its
+                        result are one thing rather than a card somewhere else on the page. */}
+                    <p class="pipe-out"><span>{step.out}</span></p>
                   </div>
                 </li>
               ))}
             </ol>
           </div>
 
-          <!-- The same five steps again, but doing their work: each one adds the part of the
-               finding it is responsible for, so the sequence above stops being a list to
-               memorise and becomes something a reader watches happen. -->
-          <div class="compute-build" data-reveal>
-            <RuleBuild rule={heroExampleRules[0]} />
-            <BlogLink slug="grounded-ai-findings" kicker="How we keep the model honest" class="compute-invite" />
-          </div>
+          <BlogLink slug="grounded-ai-findings" kicker="How we keep the model honest" class="compute-invite" />
         </div>
       </div>
 
       <script is:inline>
-        // Drives the staged finding from the five steps above it. Plain DOM, no framework: the
-        // page is static and this is the only thing on it that needs a clock.
+        // Walks the five steps, revealing what each one produced. Plain DOM: the page is
+        // static and this is the only thing on it that needs a clock.
         (function () {
-          var build = document.querySelector("[data-rule-build]");
           var flow = document.querySelector(".pipeline-flow.is-across");
-          if (!build || !flow) return;
+          if (!flow) return;
           var steps = Array.prototype.slice.call(flow.querySelectorAll("[data-pipe-step]"));
           var LAST = steps.length;
           var still = window.matchMedia("(prefers-reduced-motion: reduce)");
-          var replay = build.querySelector("[data-rule-replay]");
           var timer = null;
-          var steering = false;
+          var at = 0;
 
           function show(stage) {
-            build.setAttribute("data-stage", String(stage));
+            at = stage;
             steps.forEach(function (li, i) {
               li.classList.toggle("is-on", i + 1 === stage);
               li.classList.toggle("is-done", i + 1 <= stage);
             });
-            if (replay) replay.hidden = stage < LAST;
           }
-
-          function stop() {
-            if (timer) { window.clearInterval(timer); timer = null; }
-          }
-
+          function stop() { if (timer) { window.clearInterval(timer); timer = null; } }
           function run() {
             stop();
-            if (still.matches) { show(LAST); return; }
             timer = window.setInterval(function () {
-              var at = Number(build.getAttribute("data-stage") || 0);
               if (at >= LAST) { stop(); return; }
               show(at + 1);
-            }, 1500);
+            }, 1400);
           }
 
           steps.forEach(function (li, i) {
             li.setAttribute("tabindex", "0");
             li.setAttribute("role", "button");
-            li.setAttribute("aria-label", "Show the finding after step " + (i + 1));
-            function pick() { steering = true; stop(); show(i + 1); }
+            li.setAttribute("aria-label", "Show what step " + (i + 1) + " produced");
+            function pick() { stop(); show(i + 1); }
             li.addEventListener("click", pick);
             li.addEventListener("keydown", function (e) {
               if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
             });
           });
 
-          if (replay) {
-            replay.addEventListener("click", function () { steering = false; show(0); run(); });
-          }
-
-          if (still.matches) { show(LAST); return; }
+          // Asked for less motion, or no observer to tell us when it is on screen: everything at
+          // once, which is the content without the sequence.
+          if (still.matches || !("IntersectionObserver" in window)) { show(LAST); return; }
           show(0);
-          // Starts when it is actually on screen, so a reader who lands further down the page
-          // does not arrive to a finished animation.
-          if (!("IntersectionObserver" in window)) { show(LAST); return; }
-          var seen = false;
           var watch = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
-              if (!entry.isIntersecting || seen || steering) return;
-              seen = true;
-              run();
+              if (!entry.isIntersecting) return;
               watch.disconnect();
+              run();
             });
-          }, { threshold: 0.35 });
-          watch.observe(build);
+          }, { threshold: 0.4 });
+          watch.observe(flow);
         })();
       </script>
     </section>
@@ -487,12 +473,13 @@ const plans = [
     <section id="diagram" class="diagram-section scroll-mt-24 pb-16 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="diagram-intro max-w-3xl" data-reveal>
-          <p class="examples-kicker">One real check</p>
-          <h2 class="mt-3 text-balance">This is a check Striff posted, on a pull request you can open.</h2>
+          <p class="examples-kicker">The check</p>
+          <h2 class="mt-3 text-balance">What Striff posts on a pull request.</h2>
           <p class="section-subcopy mt-4">
-            Not a mock-up of one. Striff is installed on this repository, it read the documents already in it, and it checked every rule it found against a 43-file change. <strong>Twenty-four rules, from five documents nobody wrote for us, and the change kept all of them.</strong>
+            One check, beside your CI. It says what the change moved, lists every rule your own documents state about the code it touched, says whether each one still holds and quotes the sentence it came from, and draws the classes involved. <strong>It never blocks a merge unless you make the check required, and there is nothing to configure: the rules come from the documents your repository already has.</strong>
           </p>
           <p class="diagram-source">
+            <span class="diagram-source-label">Below is one, unedited, from a public repository:</span>
             <a class="diagram-source-pr" href="https://github.com/catatafishen/agentbridge/pull/1102" target="_blank" rel="noopener noreferrer">
               catatafishen/agentbridge #1102
             </a>
@@ -543,11 +530,11 @@ const plans = [
               <!-- The diagram is not a second section. The check embeds it here, at the end of the
                    same comment, and it is wide because a real architecture is wide. -->
               <figure class="ghcheck-figure">
-                <!-- Seven of the fifty components, opened on the git tools, because fifty at once
-                     is a wall rather than a picture. The whole diagram is a click away and the
+                <!-- Three of the fifty components. A class box carries its member list, so five
+                     across cannot be read at this size and fifty is a wall rather than a picture. The whole diagram is a click away and the
                      frame pans and zooms, which is what the extension does on GitHub itself. -->
                 <div class="ghcheck-diagram" data-panzoom>
-                  <img src="/examples/agentbridge-1102-git.svg" alt="Striff's diagram of catatafishen/agentbridge pull request 1102, opened on the git tools: GitShowTool, GitDiffTool, GitFetchTool, GitPushTool and GitStageTool beside GitToolsTest, with added members in green, removed in red and changed in blue" loading="lazy" draggable="false" data-panzoom-img />
+                  <img src="/examples/agentbridge-1102-git.svg" alt="Striff's diagram of catatafishen/agentbridge pull request 1102, three of the git tools: GitFetchTool, GitPushTool and GitStageTool, with added members in green, removed in red and changed in blue" loading="lazy" draggable="false" data-panzoom-img />
                   <div class="ghcheck-zoom" role="group" aria-label="Zoom the diagram">
                     <button type="button" data-panzoom-out aria-label="Zoom out">&minus;</button>
                     <button type="button" data-panzoom-reset>Reset</button>
@@ -555,7 +542,7 @@ const plans = [
                   </div>
                 </div>
                 <figcaption>
-                  Seven of the fifty components this change touched. Drag to pan, scroll to zoom.
+                  Three of the fifty components this change touched. Drag to pan, scroll to zoom.
                   <a href="/examples/agentbridge-1102-diagram.svg" target="_blank" rel="noopener noreferrer">Open all fifty &rarr;</a>
                 </figcaption>
               </figure>
@@ -578,7 +565,7 @@ const plans = [
           // The crop is 3000 by 2440 and the frame is a few hundred pixels tall, so "contain"
           // alone renders class boxes too small to read. It opens zoomed into the middle of the
           // cluster instead, which is where the change is, and Reset comes back here.
-          var HOME = 1.35;
+          var HOME = 1;
           var k = HOME, tx = 0, ty = 0, dragging = false, lastX = 0, lastY = 0;
 
           function apply() {
@@ -594,13 +581,9 @@ const plans = [
             k = next;
             apply();
           }
-          function fit() {
-            var box = frame.getBoundingClientRect();
-            k = HOME;
-            tx = (box.width - box.width * k) / 2;
-            ty = (box.height - box.height * k) / 2;
-            apply();
-          }
+          // At rest the whole crop is in view: a diagram with a corner cut off reads as broken
+          // rather than as something you are invited to explore.
+          function fit() { k = HOME; tx = 0; ty = 0; apply(); }
 
           frame.addEventListener("pointerdown", function (e) {
             if (e.target.closest(".ghcheck-zoom")) return;
@@ -669,9 +652,8 @@ const plans = [
             </p>
           </div>
           <div class="teams-head-actions">
-            <a class="btn-primary" href="/demo">Open the dashboard</a>
+            <a class="btn-primary" href="/demo">Open the dashboard demo</a>
             <a class="btn-secondary" href="/pricing">Team pricing</a>
-            <p class="teams-head-note">The real dashboard, on an invented repository. Nothing to sign in to.</p>
           </div>
         </div>
 
