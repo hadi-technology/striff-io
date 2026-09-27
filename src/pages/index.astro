@@ -111,6 +111,47 @@ const pipeline = [
 
 
 /**
+ * Six of the twenty-four rules from a real Striff check: catatafishen/agentbridge #1102, run on
+ * 2026-09-27 against commit 32538d6. The rule text, the document, the line and the quoted sentence
+ * are copied from the check's own output, and the three columns below are the three the check
+ * posts. Nothing here is written for the website.
+ *
+ * https://github.com/catatafishen/agentbridge/runs/108628049213
+ */
+const realCheckRules = [
+  {
+    rule: "`FileTool` has a `getGitFileStatus` method",
+    doc: "AGENTS.md#L338",
+    quote: "Append git status annotation (tracked/untracked/staged) using FileTool.getGitFileStatus()",
+  },
+  {
+    rule: "`McpProtocolHandler` has a `truncateIfNeeded` method",
+    doc: "AGENTS.md#L373",
+    quote: "The truncateIfNeeded() in McpProtocolHandler provides a safety net, but tools should self-limit",
+  },
+  {
+    rule: "`ConversationService` depends on `ConversationWriter`",
+    doc: "docs/CONVERSATION-PERSISTENCE.md",
+    quote: "ConversationService (serialized async write queue) depends on ConversationWriter (synchronized SQLite writes)",
+  },
+  {
+    rule: "`FileTool` depends on `AgentEditSession`",
+    doc: "docs/INLINE-DIFF-REVIEW.md#L379",
+    quote: "FileTool.writeFile (all variants), FileTool.createFile, FileTool.deleteFile call AgentEditSession.ensureStarted()",
+  },
+  {
+    rule: "`McpHttpServer` depends on `McpProtocolHandler`",
+    doc: "docs/MCP-ARCHITECTURE.md",
+    quote: "McpHttpServer 127.0.0.1:port depends on McpProtocolHandler JSON-RPC handler",
+  },
+  {
+    rule: "`GitCommitTool` depends on `GitTool`",
+    doc: "docs/bugs/COMMIT-NOT-FOUND-IN-LOG-BUG.md",
+    quote: "GitCommitTool.java calls showNewCommitInLog(root) after a successful commit",
+  },
+];
+
+/**
  * For-teams: the dashboard's three views, one panel each, every panel a door into the demo's
  * matching tab. The rules and documents panels are photographed; the metrics panel is the live
  * component on the example workspace.
