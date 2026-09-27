@@ -5825,11 +5825,14 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   gap: 0 1.5rem;
   align-items: start;
   padding: 0.95rem 1.25rem 0.95rem 1.6rem;
+  transition: background 500ms ease;
+}
+.rb-part > :not(.rb-tag) {
   opacity: 0;
   transform: translateY(6px);
-  transition: opacity 400ms ease, transform 400ms cubic-bezier(0.22, 0.75, 0.2, 1),
-    background 500ms ease;
+  transition: opacity 400ms ease, transform 400ms cubic-bezier(0.22, 0.75, 0.2, 1);
 }
+.rb-part .rb-tag { opacity: 0.45; transition: opacity 300ms ease, color 300ms ease; }
 .rb-part + .rb-part { border-top: 1px solid #f3f6fa; }
 /* The rail: a full-height edge per part, tinted once its stage has run. */
 .rb-part::before {
@@ -5865,14 +5868,19 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 }
 
 /* Shown once the stage has reached it. */
-.rule-build[data-stage="1"] .rb-part[data-at="1"],
-.rule-build[data-stage="2"] .rb-part[data-at="1"], .rule-build[data-stage="2"] .rb-part[data-at="2"],
-.rule-build[data-stage="3"] .rb-part[data-at="1"], .rule-build[data-stage="3"] .rb-part[data-at="2"], .rule-build[data-stage="3"] .rb-part[data-at="3"],
-.rule-build[data-stage="4"] .rb-part[data-at="1"], .rule-build[data-stage="4"] .rb-part[data-at="2"], .rule-build[data-stage="4"] .rb-part[data-at="3"], .rule-build[data-stage="4"] .rb-part[data-at="4"],
-.rule-build[data-stage="5"] .rb-part {
+.rule-build[data-stage="1"] .rb-part[data-at="1"] > :not(.rb-tag),
+.rule-build[data-stage="2"] .rb-part[data-at="1"] > :not(.rb-tag), .rule-build[data-stage="2"] .rb-part[data-at="2"] > :not(.rb-tag),
+.rule-build[data-stage="3"] .rb-part[data-at="1"] > :not(.rb-tag), .rule-build[data-stage="3"] .rb-part[data-at="2"] > :not(.rb-tag), .rule-build[data-stage="3"] .rb-part[data-at="3"] > :not(.rb-tag),
+.rule-build[data-stage="4"] .rb-part[data-at="1"] > :not(.rb-tag), .rule-build[data-stage="4"] .rb-part[data-at="2"] > :not(.rb-tag), .rule-build[data-stage="4"] .rb-part[data-at="3"] > :not(.rb-tag), .rule-build[data-stage="4"] .rb-part[data-at="4"] > :not(.rb-tag),
+.rule-build[data-stage="5"] .rb-part > :not(.rb-tag) {
   opacity: 1;
   transform: none;
 }
+.rule-build[data-stage="1"] .rb-part[data-at="1"] .rb-tag,
+.rule-build[data-stage="2"] .rb-part[data-at="1"] .rb-tag, .rule-build[data-stage="2"] .rb-part[data-at="2"] .rb-tag,
+.rule-build[data-stage="3"] .rb-part[data-at="1"] .rb-tag, .rule-build[data-stage="3"] .rb-part[data-at="2"] .rb-tag, .rule-build[data-stage="3"] .rb-part[data-at="3"] .rb-tag,
+.rule-build[data-stage="4"] .rb-part[data-at="1"] .rb-tag, .rule-build[data-stage="4"] .rb-part[data-at="2"] .rb-tag, .rule-build[data-stage="4"] .rb-part[data-at="3"] .rb-tag, .rule-build[data-stage="4"] .rb-part[data-at="4"] .rb-tag,
+.rule-build[data-stage="5"] .rb-part .rb-tag { opacity: 1; }
 .rule-build[data-stage="1"] .rb-part[data-at="1"]::before,
 .rule-build[data-stage="2"] .rb-part[data-at="1"]::before, .rule-build[data-stage="2"] .rb-part[data-at="2"]::before,
 .rule-build[data-stage="3"] .rb-part[data-at="1"]::before, .rule-build[data-stage="3"] .rb-part[data-at="2"]::before, .rule-build[data-stage="3"] .rb-part[data-at="3"]::before,
@@ -5984,20 +5992,64 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .rb-witness { color: #9f1f33; font-size: 0.82rem; line-height: 1.5; }
 .rb-witness .github-inline-code { border-color: #f6d7db; background: #fdeced; color: #7f1d2d; }
 
-/* The step driving the build. */
-.pipeline-flow.is-across .pipe-step { cursor: pointer; }
-.pipeline-flow.is-across .pipe-step .pipe-name,
-.pipeline-flow.is-across .pipe-step .pipe-text { transition: color 200ms ease; }
-.pipeline-flow.is-across .pipe-step.is-on .pipe-name { color: #1d4ed8; }
-.pipeline-flow.is-across .pipe-step.is-on .pipe-dot { box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16); }
+/* The step driving the build.
+
+   Three states, and they have to be told apart at a glance or the sequence below reads as five
+   paragraphs that happen to change colour. Waiting is dimmed. Done is full contrast with a filled
+   dot and a filled rail behind it. Running is lifted onto its own panel, so the eye lands on it
+   from anywhere on the page. */
+.pipeline-flow.is-across .pipe-step {
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 0.7rem;
+  padding: 0.7rem 0.75rem 0.85rem;
+  margin: -0.7rem -0.75rem -0.85rem;
+  transition: background 260ms ease, border-color 260ms ease, box-shadow 260ms ease,
+    transform 260ms cubic-bezier(0.22, 0.75, 0.2, 1);
+}
+.pipeline-flow.is-across .pipe-name,
+.pipeline-flow.is-across .pipe-text,
+.pipeline-flow.is-across .pipe-num,
+.pipeline-flow.is-across .pipe-kind { transition: color 220ms ease, opacity 220ms ease; }
+
+/* Waiting its turn. */
 .pipeline-flow.is-across .pipe-step:not(.is-done) .pipe-text { color: #9aa4af; }
-.pipeline-flow.is-across .pipe-step:focus-visible { outline: 2px solid #2563eb; outline-offset: 4px; border-radius: 0.5rem; }
+.pipeline-flow.is-across .pipe-step:not(.is-done) .pipe-name { color: #6b7684; }
+.pipeline-flow.is-across .pipe-step:not(.is-done) .pipe-kind { opacity: 0.55; }
+
+/* Run already. */
+.pipeline-flow.is-across .pipe-step.is-done .pipe-dot { background: #2563eb; border-color: #2563eb; }
+.pipeline-flow.is-across .pipe-step.is-done .pipe-rail::before {
+  background: linear-gradient(90deg, #93b4e6, #bcd0ee);
+}
+
+/* Running now. */
+.pipeline-flow.is-across .pipe-step.is-on {
+  border-color: #cfdcf3;
+  background: #f7faff;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.09);
+  transform: translateY(-2px);
+}
+.pipeline-flow.is-across .pipe-step.is-on .pipe-name { color: #1d4ed8; }
+.pipeline-flow.is-across .pipe-step.is-on .pipe-num { color: #1d4ed8; }
+.pipeline-flow.is-across .pipe-step.is-on .pipe-text { color: #424b55; }
+.pipeline-flow.is-across .pipe-step.is-on .pipe-dot {
+  background: #2563eb;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.18);
+}
+.pipeline-flow.is-across .pipe-step:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .pipeline-flow.is-across .pipe-step { transition: none; }
+  .pipeline-flow.is-across .pipe-step.is-on { transform: none; }
+}
 
 @media (max-width: 720px) {
   .rb-part { grid-template-columns: minmax(0, 1fr); gap: 0.35rem; padding-left: 1.4rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rb-part { opacity: 1; transform: none; transition: none; }
+  .rb-part > :not(.rb-tag) { opacity: 1; transform: none; transition: none; }
+  .rb-part .rb-tag { opacity: 1; }
 }
 
 /* ─── A real check, rendered the way GitHub renders it ──────────────────────
@@ -6172,3 +6224,54 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   background: #fdecee;
   color: #9f1f33;
 }
+
+/* The diagram inside the check: a window onto it, not a picture of it. */
+.ghcheck-diagram {
+  position: relative;
+  border: 1px solid #eef2f7;
+  border-radius: 0.6rem;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(30, 58, 138, 0.055) 1px, transparent 0) 0 0 / 18px 18px,
+    #fff;
+  overflow: hidden;
+  height: 28rem;
+  cursor: grab;
+  touch-action: none;
+}
+.ghcheck-diagram.is-grabbing { cursor: grabbing; }
+.ghcheck-diagram img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: 0 0;
+  will-change: transform;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.ghcheck-zoom {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+.ghcheck-zoom button {
+  min-width: 2rem;
+  padding: 0.3rem 0.55rem;
+  background: transparent;
+  color: #424b55;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.ghcheck-zoom button + button { border-left: 1px solid #eef2f7; }
+.ghcheck-zoom button:hover { background: #f6f8fa; color: #16202b; }
+@media (max-width: 720px) { .ghcheck-diagram { height: 18rem; } }
