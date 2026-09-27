@@ -6004,22 +6004,24 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 /* The diagram inside the check: a window onto it, not a picture of it. */
 .ghcheck-diagram {
   position: relative;
-  border: 1px solid #eef2f7;
+  border: 1px solid #d8e0ea;
   border-radius: 0.6rem;
   background:
     radial-gradient(circle at 1px 1px, rgba(30, 58, 138, 0.055) 1px, transparent 0) 0 0 / 18px 18px,
     #fff;
   overflow: hidden;
-  height: 28rem;
+  height: 36rem;
   cursor: grab;
   touch-action: none;
 }
 .ghcheck-diagram.is-grabbing { cursor: grabbing; }
+/* Laid out at the diagram's own size and moved by transform, so panning reveals more diagram
+   rather than the edge of a cropped file. */
 .ghcheck-diagram img {
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  width: 12796px;
+  height: 3793px;
+  max-width: none;
   transform-origin: 0 0;
   will-change: transform;
   user-select: none;
@@ -6040,6 +6042,9 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
 }
 .ghcheck-zoom button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 2rem;
   padding: 0.3rem 0.55rem;
   background: transparent;
@@ -6050,7 +6055,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 }
 .ghcheck-zoom button + button { border-left: 1px solid #eef2f7; }
 .ghcheck-zoom button:hover { background: #f6f8fa; color: #16202b; }
-@media (max-width: 720px) { .ghcheck-diagram { height: 18rem; } }
+@media (max-width: 720px) { .ghcheck-diagram { height: 24rem; } }
 
 /* What a step produced, under the paragraph that describes it. It holds its height from the
    start, so the row of five never reflows as each one lands; only the line itself fades in. */
@@ -6121,3 +6126,48 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   margin-top: 1.5rem;
 }
 .check-foot > * { flex: 1 1 22rem; margin: 0; }
+
+/* Full screen keeps the frame's own chrome, so the controls stay reachable. */
+.ghcheck-diagram:fullscreen { height: 100vh; border-radius: 0; border: 0; background: #fff; }
+.ghcheck-figure { margin-top: 1.35rem; }
+
+/* The legend, on the diagram rather than under it. */
+.ghcheck-legend {
+  position: absolute;
+  left: 0.6rem;
+  top: 0.6rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.55rem;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(6px);
+  padding: 0.28rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #57606a;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+.ghcheck-legend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.ghcheck-legend span::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 0.15rem;
+}
+.ghcheck-legend .is-add::before { background: #aef0c1; border: 1px solid #62c483; }
+.ghcheck-legend .is-del::before { background: #ffc7ce; border: 1px solid #e88b96; }
+.ghcheck-legend .is-mod::before { background: #bfdcff; border: 1px solid #7aaeeb; }
+.ghcheck-legend em {
+  padding-left: 0.4rem;
+  border-left: 1px solid #e6ebf1;
+  color: #8a95a1;
+  font-style: normal;
+  font-weight: 500;
+}
+@media (max-width: 720px) { .ghcheck-legend em { display: none; } }

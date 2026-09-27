@@ -476,7 +476,7 @@ const plans = [
           <p class="examples-kicker">The check</p>
           <h2 class="mt-3 text-balance">What Striff posts on a pull request.</h2>
           <p class="section-subcopy mt-4">
-            One check, beside your CI. It says what the change moved, lists every rule your own documents state about the code it touched, says whether each one still holds and quotes the sentence it came from, and draws the classes involved. <strong>It never blocks a merge unless you make the check required, and there is nothing to configure: the rules come from the documents your repository already has.</strong>
+            One check, beside your CI. It says what the change moved, lists every rule your own documents state about the code it touched, says whether each one still holds and quotes the sentence it came from, and draws the classes involved.
           </p>
           <p class="diagram-source">
             <span class="diagram-source-label">Below is one, unedited, from a public repository:</span>
@@ -530,21 +530,40 @@ const plans = [
               <!-- The diagram is not a second section. The check embeds it here, at the end of the
                    same comment, and it is wide because a real architecture is wide. -->
               <figure class="ghcheck-figure">
-                <!-- Three of the fifty components. A class box carries its member list, so five
-                     across cannot be read at this size and fifty is a wall rather than a picture. The whole diagram is a click away and the
+                <!-- The whole diagram, opened on the git tools. Cropping the SVG instead meant
+                     panning ran off the edge of the file into white; a window onto the real thing
+                     has more diagram in every direction, which is what a reader expects when a
+                     caption invites them to drag. The whole diagram is a click away and the
                      frame pans and zooms, which is what the extension does on GitHub itself. -->
-                <div class="ghcheck-diagram" data-panzoom>
-                  <img src="/examples/agentbridge-1102-git.svg" alt="Striff's diagram of catatafishen/agentbridge pull request 1102, three of the git tools: GitFetchTool, GitPushTool and GitStageTool, with added members in green, removed in red and changed in blue" loading="lazy" draggable="false" data-panzoom-img />
+                <div
+                  class="ghcheck-diagram"
+                  data-panzoom
+                  data-focus-x="9640"
+                  data-focus-y="1480"
+                  data-focus-w="1760"
+                  data-focus-h="820"
+                >
+                  <img src="/examples/agentbridge-1102-diagram.svg" width="12796" height="3793" alt="Striff's diagram of catatafishen/agentbridge pull request 1102: the fifty classes the change touched and how they connect, opened on the git tools, with added members in green, removed in red and changed in blue" loading="lazy" draggable="false" data-panzoom-img />
+                  <!-- What the colours mean, at the moment of looking at them. As prose under
+                       the frame this was a sentence nobody read on the way past; as three chips
+                       on the diagram it answers the question the diagram raises. -->
+                  <p class="ghcheck-legend">
+                    <span class="is-add">added</span>
+                    <span class="is-del">removed</span>
+                    <span class="is-mod">changed</span>
+                    <em>one box, one class</em>
+                  </p>
                   <div class="ghcheck-zoom" role="group" aria-label="Zoom the diagram">
                     <button type="button" data-panzoom-out aria-label="Zoom out">&minus;</button>
                     <button type="button" data-panzoom-reset>Reset</button>
                     <button type="button" data-panzoom-in aria-label="Zoom in">+</button>
+                    <button type="button" data-panzoom-max aria-label="Maximize the diagram" title="Maximize">
+                      <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 2.5H2.5V6" /><path d="M10 2.5h3.5V6" /><path d="M6 13.5H2.5V10" /><path d="M10 13.5h3.5V10" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
-                <figcaption>
-                  Three of the fifty components this change touched. Drag to pan, scroll to zoom.
-                  <a href="/examples/agentbridge-1102-diagram.svg" target="_blank" rel="noopener noreferrer">Open all fifty &rarr;</a>
-                </figcaption>
               </figure>
 
               <p class="ghcheck-foot">
@@ -562,17 +581,18 @@ const plans = [
           var frame = document.querySelector("[data-panzoom]");
           if (!frame) return;
           var img = frame.querySelector("[data-panzoom-img]");
-          // The crop is 3000 by 2440 and the frame is a few hundred pixels tall, so "contain"
-          // alone renders class boxes too small to read. It opens zoomed into the middle of the
-          // cluster instead, which is where the change is, and Reset comes back here.
-          var HOME = 1;
-          var k = HOME, tx = 0, ty = 0, dragging = false, lastX = 0, lastY = 0;
+          // The image is laid out at the diagram's own size, so one unit of scale is one SVG
+          // unit. Home is whatever scale and offset puts the focus region in the frame; from
+          // there every direction has more diagram in it rather than more nothing.
+          var FX = +frame.dataset.focusX, FY = +frame.dataset.focusY;
+          var FW = +frame.dataset.focusW, FH = +frame.dataset.focusH;
+          var k = 1, tx = 0, ty = 0, dragging = false, lastX = 0, lastY = 0;
 
           function apply() {
             img.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + k + ")";
           }
           function zoom(next, ox, oy) {
-            next = Math.min(8, Math.max(0.5, next));
+            next = Math.min(2.5, Math.max(0.06, next));
             var box = frame.getBoundingClientRect();
             var cx = (ox === undefined ? box.width / 2 : ox) - tx;
             var cy = (oy === undefined ? box.height / 2 : oy) - ty;
@@ -581,9 +601,14 @@ const plans = [
             k = next;
             apply();
           }
-          // At rest the whole crop is in view: a diagram with a corner cut off reads as broken
-          // rather than as something you are invited to explore.
-          function fit() { k = HOME; tx = 0; ty = 0; apply(); }
+          function fit() {
+            var box = frame.getBoundingClientRect();
+            if (!box.width || !box.height) return;
+            k = Math.min(box.width / FW, box.height / FH);
+            tx = -FX * k + (box.width - FW * k) / 2;
+            ty = -FY * k + (box.height - FH * k) / 2;
+            apply();
+          }
 
           frame.addEventListener("pointerdown", function (e) {
             if (e.target.closest(".ghcheck-zoom")) return;
@@ -619,7 +644,24 @@ const plans = [
           if (inBtn) inBtn.addEventListener("click", function () { zoom(k * 1.25); });
           if (outBtn) outBtn.addEventListener("click", function () { zoom(k / 1.25); });
           if (resetBtn) resetBtn.addEventListener("click", fit);
+          var maxBtn = frame.querySelector("[data-panzoom-max]");
+          if (maxBtn) {
+            maxBtn.addEventListener("click", function () {
+              if (document.fullscreenElement) { document.exitFullscreen(); return; }
+              if (frame.requestFullscreen) {
+                frame.requestFullscreen().then(fit).catch(function () {
+                  window.open("/examples/agentbridge-1102-diagram.svg", "_blank", "noopener");
+                });
+              } else {
+                window.open("/examples/agentbridge-1102-diagram.svg", "_blank", "noopener");
+              }
+            });
+            document.addEventListener("fullscreenchange", function () { window.setTimeout(fit, 60); });
+          }
+          // The image is lazy, so its box may be zero until it loads; fit again when it is there.
           fit();
+          if (!img.complete) img.addEventListener("load", fit, { once: true });
+          window.addEventListener("resize", fit);
         })();
         </script>
 
