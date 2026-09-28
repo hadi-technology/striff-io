@@ -16,6 +16,6 @@ yarn-error.log*
 pnpm-debug.log*
 .env
 
-# local-only preview of the documents view
+# local-only previews of the docs and rules view
 src/pages/docs-preview.astro
 src/pages/dash-preview.astro

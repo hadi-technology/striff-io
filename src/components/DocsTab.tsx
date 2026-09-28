@@ -1,12 +1,30 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
-import { issueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { Clamped, mark, snippet, useWatch, withCode, when } from "./docRules";
+import { mark, snippet, useWatch, withCode, when } from "./docRules";
+import RulesTable, {
+  pathStem,
+  standing,
+  STANDING_HELP,
+  STANDING_LABEL,
+  type Row,
+  type Rule,
+  type RuleFilter,
+} from "./RulesTable";
 import Listing from "./Listing";
-import ReadRepository, { type Reading } from "./ReadRepository";
+import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
 
 /**
- * The documents Striff can read in one repository, and the rules it found in them.
+ * One repository's documents, and the rules read from whichever of them is selected.
+ *
+ * This was two views. One listed every rule in the repository, flat, each naming the document it
+ * came from; the other drew the documents as a tree and showed one document's rules at a time. They
+ * were the same data cut two ways, and the tree already held the relationship the flat list was
+ * missing -- which document sits under which folder.
+ *
+ * So the tree is the only navigation, and what it selects is the scope of the rules beside it: the
+ * repository row shows every rule in it, a folder shows every rule from every document beneath it,
+ * and a document shows its own. The counts above follow the selection, and so does what an export
+ * writes out.
  *
  * Every eligible document is listed, including ones nothing has read yet: extraction is lazy, so a
  * document waits until a pull request changes code it names, and a view that showed only extracted
@@ -80,6 +98,13 @@ interface Catalog {
   exclusions: Exclusion[];
 }
 
+/** Every rule of the repository, grouped by the document it was read from. */
+interface RepoRules {
+  documents: { document: Doc; rules: Rule[] }[];
+  /** Whether the repository holds more rules than one answer carries. */
+  truncated: boolean;
+}
+
 /** One thing this repository has asked Striff not to read: a document, or a folder of them. */
 interface Exclusion {
   path: string;
@@ -100,18 +125,6 @@ function coveringFolder(path: string, exclusions: Exclusion[] | undefined): Excl
     if (path === rule.path || path.startsWith(`${rule.path}/`)) return rule;
   }
   return null;
-}
-
-interface Rule {
-  factId: string;
-  statement: string;
-  quote: string | null;
-  firstSeenMs: number;
-  sourceLine: number | null;
-  status: string | null;
-  pullNo: string | null;
-  judgedAtMs: number | null;
-  onDefaultBranch: string | null;
 }
 
 interface Detail {
@@ -146,16 +159,12 @@ const STATE_LABEL: Record<DocState, string> = {
 };
 
 /**
- * The line a document's state deserves, in the words the pipeline used.
+ * What state this document is in, in one sentence.
  *
  * @param doc the document
  * @param covering the folder rule that excludes it, where a folder rather than the document itself
  *     is what was excluded; naming it is the difference between a reader finding the rule and
  *     hunting for one that is not on this document at all
- */
-/**
- * What state this document is in, in one sentence.
- *
  * @param showingExtracted whether the rules on screen are the ones Striff checks against. Where
  *     they are not -- someone picked an older version from the chips -- this line says nothing
  *     about where the rules came from, because the note above it is already saying, and the two
@@ -203,33 +212,68 @@ function stateLine(doc: Doc, covering?: Exclusion | null, showingExtracted = tru
   }
 }
 
-
 /**
- * How a rule stands, in one answer: the default branch where anything has judged it there, the last
- * pull request where nothing has. Two statuses side by side asked a reader to work out for
- * themselves whether a rule is being kept; it is one repository and one branch, so it is one
- * question.
+ * Which documents the tree shows.
+ *
+ * These are facts about a document rather than about its rules, which is why they filter the tree
+ * and the standings filter the table. A folder's summary line leads here: every part of it is one
+ * of these, so "1 edited since read" is a sentence you can click.
  */
-type DocStanding = "holds" | "broken" | "unchecked" | "unclear";
+type DocFilter =
+  | "all"
+  | "broken"
+  | "notRead"
+  | "outdated"
+  | "skipped"
+  | "retired"
+  | "unreadable"
+  | "excluded"
+  | "forced";
 
-function docStanding(rule: { status: string | null; onDefaultBranch: string | null }): DocStanding {
-  if (rule.onDefaultBranch === "HOLDS") return "holds";
-  if (rule.onDefaultBranch === "BROKEN") return "broken";
-  if (rule.onDefaultBranch === "UNCLEAR") return "unclear";
-  if (rule.status === "MAINTAINED" || rule.status === "RESTORED") return "holds";
-  if (rule.status === "VIOLATED" || rule.status === "PRE_EXISTING") return "broken";
-  if (rule.status === "UNCLEAR") return "unclear";
-  return "unchecked";
-}
-
-const DOC_STANDING_LABEL: Record<DocStanding, string> = {
-  broken: "Broken",
-  holds: "Holds",
-  unchecked: "Not checked yet",
-  unclear: "Couldn't check",
+const DOC_FILTER_TEST: Record<DocFilter, (doc: Doc) => boolean> = {
+  all: () => true,
+  broken: (doc) => doc.brokenRules + doc.alreadyBrokenRules > 0,
+  notRead: (doc) => doc.state === "NOT_READ",
+  outdated: (doc) => doc.outdated && doc.state === "READ",
+  skipped: (doc) => doc.state === "SCREENED_OUT",
+  retired: (doc) => doc.state === "RETIRED",
+  unreadable: (doc) => doc.state === "UNREADABLE",
+  excluded: (doc) => doc.state === "EXCLUDED",
+  forced: (doc) => doc.forced,
 };
 
-/** One node of the document tree: a folder holding more, or a document. */
+/** The chips above the tree, in the order a reader looks for them. */
+const FILTER_CHIPS: { key: DocFilter; label: string; dot: string; always: boolean }[] = [
+  { key: "all", label: "All", dot: "", always: true },
+  { key: "broken", label: "Broken", dot: "broken", always: true },
+  { key: "notRead", label: "Not read", dot: "unread", always: true },
+  { key: "outdated", label: "Edited since", dot: "outdated", always: false },
+  { key: "unreadable", label: "Couldn't read", dot: "broken", always: false },
+  { key: "skipped", label: "Skipped", dot: "other", always: true },
+  { key: "retired", label: "Retired", dot: "other", always: false },
+  { key: "excluded", label: "Excluded", dot: "other", always: true },
+  { key: "forced", label: "Read anyway", dot: "other", always: false },
+];
+
+/**
+ * What a folder's own row cannot say.
+ *
+ * A row's badges are facts about one file. A folder has no single state, so they cannot move up to
+ * it -- but without them a folder's rule count is not trustworthy: fourteen rules under `docs/adr/`
+ * could be all of them, or fourteen plus whatever is in three documents nobody has read. A table of
+ * rules cannot say this, because a document with no rules has no row to say it in.
+ */
+const SUMMARY_PARTS: { key: DocFilter; label: string; help: string }[] = [
+  { key: "notRead", label: "not read", help: "Documents Striff hasn't read yet, so any rule in them is not counted here." },
+  { key: "outdated", label: "edited since read", help: "Documents edited on the default branch since Striff read them, so their rules come from an older version." },
+  { key: "unreadable", label: "couldn't read", help: "Documents Striff could not finish reading. That isn't counted as “no rules”." },
+  { key: "skipped", label: "skipped", help: "Documents a screen judged hold no rule that could be checked against code." },
+  { key: "retired", label: "retired", help: "Documents that say they are no longer current, so their rules aren't checked." },
+  { key: "excluded", label: "excluded", help: "Documents this repository asked Striff not to read." },
+  { key: "forced", label: "read anyway", help: "Documents a screen skipped that this repository asked Striff to read regardless." },
+];
+
+/** One node of the document tree: the repository, a folder holding more, or a document. */
 interface TreeNode {
   name: string;
   path: string;
@@ -242,16 +286,22 @@ interface TreeNode {
 /** Folders first, then documents, each alphabetically -- a file explorer's order. */
 function sortNodes(nodes: TreeNode[]): TreeNode[] {
   return nodes.sort((a, b) => {
-    const aFolder = a.children.length > 0;
-    const bFolder = b.children.length > 0;
+    const aFolder = !a.doc;
+    const bFolder = !b.doc;
     if (aFolder !== bFolder) return aFolder ? -1 : 1;
     return a.name.localeCompare(b.name);
   });
 }
 
-/** The documents as a tree of folders, with each folder carrying what is beneath it. */
-function buildTree(documents: Doc[]): TreeNode[] {
-  const root: TreeNode = { name: "", path: "", children: [], rules: 0, broken: 0 };
+/**
+ * The documents as a tree of folders, with each folder carrying what is beneath it.
+ *
+ * The root is returned rather than thrown away. The recursive arithmetic was always here; the
+ * repository itself was simply never given a row, which made "every rule in this repository" a
+ * special case instead of the thing you click first.
+ */
+function buildTree(documents: Doc[], repoName: string): TreeNode {
+  const root: TreeNode = { name: repoName, path: "", children: [], rules: 0, broken: 0 };
   for (const doc of documents) {
     const segments = doc.path.split("/");
     let node = root;
@@ -273,16 +323,14 @@ function buildTree(documents: Doc[]): TreeNode[] {
     node.broken = (node.doc?.brokenRules || 0) + node.children.reduce((sum, c) => sum + c.broken, 0);
     return node;
   };
-  return sortNodes(root.children.map(total));
+  return total(root);
 }
 
 /** Every folder that holds a document, so the tree opens showing what is in it. */
-function allFolders(nodes: TreeNode[], into: Set<string> = new Set()): Set<string> {
-  for (const node of nodes) {
-    if (node.children.length > 0) {
-      into.add(node.path);
-      allFolders(node.children, into);
-    }
+function allFolders(node: TreeNode, into: Set<string> = new Set()): Set<string> {
+  if (!node.doc) {
+    into.add(node.path);
+    for (const child of node.children) allFolders(child, into);
   }
   return into;
 }
@@ -316,6 +364,15 @@ const FileIcon = () =>
     createElement("path", { d: "M9 1.75v3.5h3.5" })
   );
 
+/** The repository's own row, at the head of its tree. */
+const RepoIcon = () =>
+  createElement(
+    "svg",
+    { viewBox: "0 0 16 16", width: 15, height: 15, fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
+    createElement("path", { d: "M3 12.75V2.75A1.25 1.25 0 0 1 4.25 1.5H13v10H4.25A1.25 1.25 0 0 0 3 12.75Z" }),
+    createElement("path", { d: "M3 12.75A1.25 1.25 0 0 0 4.25 14H13v-2.5" })
+  );
+
 const DotsIcon = () =>
   createElement(
     "svg",
@@ -325,76 +382,83 @@ const DotsIcon = () =>
     createElement("circle", { cx: 12.8, cy: 8, r: 1.3 })
   );
 
+const GitHubMark = () =>
+  createElement(
+    "svg",
+    { viewBox: "0 0 16 16", width: 13, height: 13, fill: "currentColor", "aria-hidden": true },
+    createElement("path", {
+      d: "M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z",
+    })
+  );
+
 export default function DocsTab({
   installationId,
   repos,
   openRepo,
-  focusDoc,
   onRepoChange,
-  onOpenRules,
   sample,
 }: {
   installationId: number;
   repos: { full_name: string }[];
   /** The repository a reader opened from the repositories list, if they came that way. */
   openRepo?: string | null;
-  /** The document to open on, where a reader followed a rule to where it was read from. */
-  focusDoc?: string | null;
-  /** Reports a repository picked here, so the shell and the other tab follow it. */
+  /** Reports a repository picked here, so the shell follows it. */
   onRepoChange?: (fullName: string) => void;
-  /** Opens the rules on the rules this count counted. */
-  onOpenRules?: (filter: string) => void;
   /**
-   * Fixed answers to show instead of asking the API, for the public demo: the catalogue, and a
-   * function giving one document's rules. See the same prop on RulesTab. Writes are refused, so
-   * the demo can be explored and cannot be changed.
+   * Fixed answers to show instead of asking the API, for the public demo: the catalogue, every
+   * rule in the repository, and a function giving one document's rules. Writes are refused, so the
+   * demo can be explored and cannot be changed.
    */
-  sample?: { catalog: any; doc: (path: string, version?: string | null) => any };
+  sample?: { catalog: any; rules: any; doc: (path: string, version?: string | null) => any };
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "broken" | "notRead" | "skipped" | "excluded">("all");
+  /** Every rule of the repository, for the scopes a single document's answer cannot serve. */
+  const [rulesIndex, setRulesIndex] = useState<RepoRules | null>(null);
+  const [rulesLoading, setRulesLoading] = useState(false);
+  /** What is selected: the empty path is the repository itself, which is where this opens. */
+  const [selected, setSelected] = useState<string>("");
+  const [filter, setFilter] = useState<DocFilter>("all");
+  /** Which of the selection's rules to list, followed from the counts above them. */
+  const [ruleFilter, setRuleFilter] = useState<RuleFilter>("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   /** Whether this page gave up waiting for a listing that had not arrived. */
   const [listingStale, setListingStale] = useState(false);
+  /** Whether this page gave up watching a reading that had not finished. */
+  const [watchedOut, setWatchedOut] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState<Set<string>>(new Set([""]));
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [ruleIndex, setRuleIndex] = useState<(Rule & { path: string })[]>([]);
-  const [indexing, setIndexing] = useState(false);
   // What a failed write or a failed document read said, shown where it happened.
   const [actionError, setActionError] = useState("");
   const [asking, setAsking] = useState(false);
   /** Which document was asked for last; an older answer never paints over a newer one. */
   const openedAt = useRef(0);
-  /** The same for the catalogue: switching repository twice must not land on the first one. */
+  /** The same for the catalogue and the rules: switching twice must not land on the first one. */
   const loadedAt = useRef(0);
+  const rulesAt = useRef(0);
 
   /** What the view is showing right now, for the listing wait to look at before it reloads. */
   const catalogRef = useRef<Catalog | null>(null);
 
   const [owner, name] = repo.split("/");
   catalogRef.current = catalog;
+  const branch = catalog?.defaultBranch || null;
 
   // A listing this page asked for is queued work: watch until it lands, and stop as soon as there
   // is anything to show or anything to say about why there is not.
-  useWatch(
-    catalog?.reading?.state === "queued" || catalog?.reading?.state === "running",
-    () => loadCatalog(),
-    5000,
-    20 * 60 * 1000
-  );
+  useWatch(isRunning(catalog?.reading), () => reload(), 5000, 20 * 60 * 1000,
+    () => setWatchedOut(true));
   useWatch(
     !!catalog
       && (catalog.documents || []).length === 0
       && catalog.lastScanMs === null
       && !catalog.lastAttempt,
-    () => loadCatalog(),
+    () => reload(),
     5000,
     180000,
     () => setListingStale(true)
@@ -418,14 +482,15 @@ export default function DocsTab({
     // refusal reads as "this repository has nothing in it". Nothing is asked until the two agree;
     // the effect above brings the view back to a repository this account has.
     if (repos.length > 0 && !repos.some((each) => each.full_name === repo)) return;
-    loadCatalog();
+    // A new repository is read from its root, as a fresh one is.
+    setSelected("");
+    setDetail(null);
+    setFilter("all");
+    setRuleFilter("all");
+    setRulesIndex(null);
+    setActionError("");
+    reload();
   }, [repo, installationId, repos.length]);
-
-  // Following another rule here while this view is already open: the catalogue is loaded, so only
-  // the pane changes.
-  useEffect(() => {
-    if (focusDoc && catalog && focusDoc !== selected) openDoc(focusDoc);
-  }, [focusDoc]);
 
   useEffect(() => {
     if (menuFor === null) return;
@@ -434,28 +499,22 @@ export default function DocsTab({
     return () => document.removeEventListener("click", close);
   }, [menuFor]);
 
+  /** Both answers this view is built from: what documents exist, and what rules they hold. */
+  async function reload() {
+    await loadCatalog();
+    await loadRules();
+  }
+
   async function loadCatalog() {
     if (sample) {
       setCatalog(sample.catalog);
-      const docs: Doc[] = sample.catalog.documents || [];
-      setExpanded(allFolders(buildTree(docs)));
-      const first =
-        (focusDoc && docs.find((doc) => doc.path === focusDoc)) ||
-        docs.find((doc) => doc.brokenRules > 0) ||
-        docs.find((doc) => doc.state === "READ" && doc.ruleCount > 0);
-      if (first) openDoc(first.path);
+      setExpanded(allFolders(buildTree(sample.catalog.documents || [], name)));
       setLoading(false);
       return;
     }
     const wanted = ++loadedAt.current;
     setLoading(true);
     setError("");
-    setDetail(null);
-    setSelected(null);
-    // The palette indexes one repository's rules; keeping them across a change searched the one
-    // before and opened documents this one does not have.
-    setRuleIndex([]);
-    setActionError("");
     try {
       const res = await fetch(
         `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
@@ -471,20 +530,39 @@ export default function DocsTab({
         return;
       }
       setCatalog(data);
-      const docs: Doc[] = data.documents || [];
-      setExpanded(allFolders(buildTree(docs)));
-      // Landing on an empty pane wastes the arrival: open what a reader would have opened first,
-      // which is the document they followed a rule to, then a document something is broken in,
-      // and otherwise one that has been read.
-      const first =
-        (focusDoc && docs.find((doc) => doc.path === focusDoc)) ||
-        docs.find((doc) => doc.brokenRules > 0) ||
-        docs.find((doc) => doc.state === "READ" && doc.ruleCount > 0);
-      if (first) openDoc(first.path);
+      setExpanded(allFolders(buildTree(data.documents || [], name)));
     } catch {
       if (wanted === loadedAt.current) setError("Couldn't load this repository's documents");
     } finally {
       if (wanted === loadedAt.current) setLoading(false);
+    }
+  }
+
+  /**
+   * Every rule in the repository, in one request.
+   *
+   * The repository row and every folder are rollups of this, and so is the search palette. One
+   * reading, not one per document: the palette used to ask for the first twenty-five read
+   * documents in turn, which was twenty-five round trips and searched none of the rest.
+   */
+  async function loadRules() {
+    if (sample) {
+      setRulesIndex(sample.rules);
+      return;
+    }
+    const wanted = ++rulesAt.current;
+    setRulesLoading(true);
+    try {
+      const res = await fetch(
+        `/.netlify/functions/doc-catalog-proxy?view=rules&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
+      );
+      if (!res.ok || wanted !== rulesAt.current) return;
+      setRulesIndex(await res.json());
+    } catch {
+      // The tree, the states and one document's rules all still work without this; the rollups
+      // say they are still loading rather than claiming a repository has no rules.
+    } finally {
+      if (wanted === rulesAt.current) setRulesLoading(false);
     }
   }
 
@@ -513,6 +591,19 @@ export default function DocsTab({
     } catch {
       if (wanted === openedAt.current) setActionError(`Couldn't open ${path}.`);
     }
+  }
+
+  /** Selects a node of the tree: the repository, a folder and everything under it, or a document. */
+  function select(path: string) {
+    if ((catalog?.documents || []).some((doc) => doc.path === path)) {
+      openDoc(path);
+      return;
+    }
+    setSelected(path);
+    setDetail(null);
+    setActionError("");
+    // A document that was asked for and has not answered must not paint over a folder.
+    openedAt.current += 1;
   }
 
   /**
@@ -549,18 +640,28 @@ export default function DocsTab({
     }
   }
 
+  /** Reloads both answers and comes back to whatever was being read. */
+  async function reloadKeeping(path: string) {
+    await reload();
+    // A path that named a document still names one: what a write changes is its state, not
+    // whether it exists, so the selection before the write decides which pane comes back.
+    if (allDocs.some((doc) => doc.path === path)) {
+      await openDoc(path);
+    } else {
+      setSelected(path);
+    }
+  }
+
   async function setExcluded(path: string, excluded: boolean) {
     const ok = await write({ paths: [path], folders: [], excluded },
       "", `Couldn't ${excluded ? "exclude" : "include"} ${path}.`);
     if (!ok) return;
-    await loadCatalog();
-    await openDoc(path);
+    await reloadKeeping(path);
   }
 
   /**
-   * Asks Striff to read every document here, the same request the rules view offers. A reader who
-   * opens the documents of a fresh repository sees a tree of "not read yet" and should not have to
-   * find another page to do something about it.
+   * Asks Striff to read every document here. A reader who opens a fresh repository sees a tree of
+   * "not read yet" and should not have to find another page to do something about it.
    */
   /** @return false where the request was refused, so the control stops saying it is asking */
   async function readRepository(): Promise<boolean> {
@@ -577,7 +678,8 @@ export default function DocsTab({
         setActionError(answer.message || answer.error || "Couldn't ask Striff to read this repository.");
         return false;
       }
-      await loadCatalog();
+      setWatchedOut(false);
+      await reload();
       return true;
     } catch {
       setActionError("Couldn't ask Striff to read this repository.");
@@ -592,100 +694,126 @@ export default function DocsTab({
     const ok = await write({ paths: [path], forced }, "force-read",
       `Couldn't ${forced ? "ask for" : "stop"} reading ${path}.`);
     if (!ok) return;
-    await loadCatalog();
-    await openDoc(path);
+    await reloadKeeping(path);
   }
 
   async function setFolderExcluded(folder: string, excluded: boolean) {
     const ok = await write({ paths: [], folders: [folder] , excluded },
       "", `Couldn't ${excluded ? "exclude" : "include"} ${folder}/.`);
     if (!ok) return;
-    // The button is usually in the open document's own menu, and reloading the catalogue opens
-    // whichever document the heuristic picks. Come back to the one being read.
-    const reading = selected;
-    await loadCatalog();
-    if (reading) await openDoc(reading);
+    // The button is usually in the open node's own menu, and reloading must come back to what was
+    // being read rather than to wherever the tree happens to start.
+    await reloadKeeping(selected);
   }
 
-  const documents = useMemo(() => {
-    const all = catalog?.documents || [];
-    switch (filter) {
-      case "broken":
-        return all.filter((doc) => doc.brokenRules + doc.alreadyBrokenRules > 0);
-      case "notRead":
-        return all.filter((doc) => doc.state === "NOT_READ");
-      case "skipped":
-        return all.filter((doc) => doc.state === "SCREENED_OUT");
-      case "excluded":
-        return all.filter((doc) => doc.state === "EXCLUDED");
-      default:
-        return all;
-    }
-  }, [catalog, filter]);
+  const allDocs = catalog?.documents || [];
+
+  const documents = useMemo(
+    () => allDocs.filter(DOC_FILTER_TEST[filter]),
+    [catalog, filter]
+  );
 
   /** What each filter would show, counted in documents, since documents are what it filters. */
   const filterCounts = useMemo(() => {
-    const all = catalog?.documents || [];
-    return {
-      all: all.length,
-      broken: all.filter((doc) => doc.brokenRules + doc.alreadyBrokenRules > 0).length,
-      notRead: all.filter((doc) => doc.state === "NOT_READ").length,
-      skipped: all.filter((doc) => doc.state === "SCREENED_OUT").length,
-      excluded: all.filter((doc) => doc.state === "EXCLUDED").length,
-    };
+    const counted = {} as Record<DocFilter, number>;
+    for (const chip of FILTER_CHIPS) counted[chip.key] = allDocs.filter(DOC_FILTER_TEST[chip.key]).length;
+    return counted;
   }, [catalog]);
 
-  const tree = useMemo(() => buildTree(documents), [documents]);
-  // The rules of the open document that are worth listing. A rule nothing has judged says nothing
-  // about the code, so it is not given a row -- but it was still extracted, and the count above the
-  // table says so rather than quietly losing it.
-  // Whether the rules on screen are the ones Striff checks pull requests against. Both the note
-  // and the state line under it depend on this, and they used to work it out separately: the note
-  // compared hashes, the line assumed the answer was always yes, and a reader who picked an older
-  // version was told both that these rules came from the September reading and that they were not
-  // the ones Striff uses.
-  const showingExtracted =
-    !detail?.showing ||
-    !detail.document.extractedContentHash ||
-    detail.showing.startsWith(detail.document.extractedContentHash);
-  /** The version being shown, where the catalogue lists it, for its date and pull request. */
-  const shownVersion = (detail?.versions || []).find(
-    (v: any) => detail?.showing && v.contentHash === detail.showing
-  );
+  const tree = useMemo(() => buildTree(documents, name), [documents, name]);
 
-  const shownRules = useMemo(
-    () => (detail?.rules || []).filter((rule) => docStanding(rule) !== "unclear"),
-    [detail]
-  );
+  /* ─── What is selected, and what it scopes ──────────────────────── */
+
+  const selectedDoc = allDocs.find((doc) => doc.path === selected) || null;
+  const scopeKind: "root" | "folder" | "doc" =
+    selected === "" ? "root" : selectedDoc ? "doc" : "folder";
+
+  /** The documents the selection covers: one, a folder's worth, or the repository's. */
+  const scopeDocs = useMemo(() => {
+    if (scopeKind === "doc") return selectedDoc ? [selectedDoc] : [];
+    if (scopeKind === "root") return allDocs;
+    return allDocs.filter((doc) => doc.path.startsWith(`${selected}/`));
+  }, [catalog, selected, scopeKind]);
 
   /**
-   * Opens the palette, and indexes the rules the first time.
+   * The rules the selection covers.
    *
-   * One reading of the whole repository, not one per document: this used to ask for the first
-   * twenty-five read documents in turn, which was twenty-five round trips and searched none of the
-   * rest. What the repository-wide read leaves out, it says, and the rules page shows the same list
-   * in full.
+   * A document's own rules come from its own answer, not from the repository-wide one, because
+   * that answer is the only one that knows about versions: pick an older reading from the chips
+   * and these are its rules.
    */
-  async function openPalette() {
+  const scopeRows = useMemo<Row[]>(() => {
+    if (scopeKind === "doc") {
+      if (!detail) return [];
+      return detail.rules
+        .filter((rule) => standing(rule) !== "unclear")
+        .map((rule) => ({ ...rule, doc: detail.document }));
+    }
+    const under = scopeKind === "root" ? null : `${selected}/`;
+    const rows: Row[] = [];
+    for (const group of rulesIndex?.documents || []) {
+      if (under && !group.document.path.startsWith(under)) continue;
+      for (const rule of group.rules) {
+        // A rule Striff could not judge says nothing about the code, and a list of things that
+        // said nothing is not worth a reader's attention or a place in the counts. It is still
+        // stored, and the next pull request that touches the code it names judges it again.
+        if (standing(rule) === "unclear") continue;
+        rows.push({ ...rule, doc: group.document });
+      }
+    }
+    return rows.sort((a, b) =>
+      a.doc.path === b.doc.path
+        ? (a.sourceLine || 0) - (b.sourceLine || 0)
+        : a.doc.path.localeCompare(b.doc.path)
+    );
+  }, [scopeKind, selected, detail, rulesIndex]);
+
+  /** How many documents the listed rules actually came from. */
+  const scopeRuleDocs = useMemo(
+    () => new Set(scopeRows.map((row) => row.doc.path)).size,
+    [scopeRows]
+  );
+
+  const scopeCounts = useMemo(
+    () => ({
+      all: scopeRows.length,
+      broken: scopeRows.filter((row) => standing(row) === "broken").length,
+      holds: scopeRows.filter((row) => standing(row) === "holds").length,
+      unchecked: scopeRows.filter((row) => standing(row) === "unchecked").length,
+    }),
+    [scopeRows]
+  );
+
+  /** What the selection is called, in the export, on paper and in the pane's own heading. */
+  const scopeLabel =
+    scopeKind === "root" ? repo : scopeKind === "folder" ? `${selected}/` : selected;
+  const scopeFileStem =
+    scopeKind === "root" ? `${owner}-${name}` : `${owner}-${name}-${pathStem(selected)}`;
+
+  /** The states of the documents under a folder, which the folder's own row cannot carry. */
+  const scopeSummary = useMemo(
+    () =>
+      SUMMARY_PARTS.map((part) => ({
+        ...part,
+        count: scopeDocs.filter(DOC_FILTER_TEST[part.key]).length,
+      })).filter((part) => part.count > 0),
+    [scopeDocs]
+  );
+
+  /* ─── The search palette ────────────────────────────────────────── */
+
+  const ruleIndex = useMemo(
+    () =>
+      (rulesIndex?.documents || []).flatMap((group) =>
+        group.rules.map((rule) => ({ ...rule, path: group.document.path }))
+      ),
+    [rulesIndex]
+  );
+
+  function openPalette() {
     setPaletteOpen(true);
     setQuery("");
-    if (ruleIndex.length > 0 || indexing || !catalog) return;
-    if (!catalog.documents.some((doc) => doc.ruleCount > 0)) return;
-    setIndexing(true);
-    try {
-      const res = await fetch(
-        `/.netlify/functions/doc-catalog-proxy?view=rules&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
-      );
-      if (!res.ok) return;
-      const body: { documents: { document: Doc; rules: Rule[] }[] } = await res.json();
-      setRuleIndex(
-        (body.documents || []).flatMap((group) =>
-          group.rules.map((rule) => ({ ...rule, path: group.document.path }))
-        )
-      );
-    } finally {
-      setIndexing(false);
-    }
+    if (!rulesIndex && !rulesLoading) loadRules();
   }
 
   useEffect(() => {
@@ -698,10 +826,10 @@ export default function DocsTab({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [catalog, ruleIndex.length, indexing]);
+  }, [rulesIndex, rulesLoading]);
 
   const term = query.trim().toLowerCase();
-  const docHits = (catalog?.documents || [])
+  const docHits = allDocs
     .filter((doc) => term !== "" && doc.path.toLowerCase().includes(term))
     .slice(0, 6);
   const ruleHits = ruleIndex
@@ -713,7 +841,6 @@ export default function DocsTab({
     )
     .slice(0, 8);
 
-  /** The matched run of a result, marked, so a reader sees why it matched. */
   /** The matched runs of a palette result, marked, so a reader sees why it matched. */
   function marked(text: string) {
     return mark(text, term);
@@ -731,7 +858,7 @@ export default function DocsTab({
     });
   }
 
-  /** The ⋯ menu a document or folder carries, in the tree and in the open document's header. */
+  /** The ⋯ menu a document or folder carries, in the tree and in the selection's own header. */
   function rowMenu(path: string, doc?: Doc, folder?: boolean, where: string = "tree") {
     // The same document has a menu in the tree and another in its open header; they are told
     // apart by where they are, so opening one does not open the other.
@@ -810,7 +937,7 @@ export default function DocsTab({
             )}
             <a
               role="menuitem"
-              href={`https://github.com/${owner}/${name}/${folder ? "tree" : "blob"}/HEAD/${path}`}
+              href={githubUrl(path, !!folder)}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -820,6 +947,13 @@ export default function DocsTab({
         )}
       </span>
     );
+  }
+
+  /** Where a path lives on GitHub, at the branch this page is a view of. */
+  function githubUrl(path: string, folder: boolean): string {
+    const base = `https://github.com/${owner}/${name}`;
+    if (!path) return branch ? `${base}/tree/${branch}` : base;
+    return `${base}/${folder ? "tree" : "blob"}/${branch || "HEAD"}/${path}`;
   }
 
   /** The badges a document's state earns, in the tree. */
@@ -844,50 +978,17 @@ export default function DocsTab({
     );
   }
 
-  /** The tree itself: folders that open and close, documents that open in the pane. */
-  function renderNodes(nodes: TreeNode[], depth: number): any[] {
-    return nodes.flatMap((node) => {
-      const indent = { paddingLeft: 8 + depth * 14 };
-      if (node.children.length > 0) {
-        const open = expanded.has(node.path);
-        const excludedFolder = coveringFolder(node.path, catalog?.exclusions);
-        const rows: any[] = [
-          <div
-            key={node.path}
-            className={`docs-row is-folder${excludedFolder ? " is-dim" : ""}`}
-            style={indent}
-          >
-            <button
-              type="button"
-              className="docs-row-main"
-              aria-expanded={open}
-              onClick={() => toggleFolder(node.path)}
-            >
-              <span className="docs-chev">{open ? <ChevronDown /> : <ChevronRight />}</span>
-              <FolderIcon />
-              <span className="docs-row-name">{node.name}</span>
-            </button>
-            <span className="docs-row-meta">
-              {excludedFolder && (
-                <span
-                  className="docs-badge is-excluded"
-                  title={`Excluded${excludedFolder.excludedBy ? ` by ${excludedFolder.excludedBy}` : ""}${
-                    excludedFolder.reason ? `: ${excludedFolder.reason}` : ""
-                  }${excludedFolder.path === node.path ? "" : ` with ${excludedFolder.path}/`}`}
-                >
-                  Excluded
-                </span>
-              )}
-              {node.broken > 0 && <span className="docs-dot" title={`${node.broken} broken`} />}
-              {node.rules > 0 && <span className="docs-count">{node.rules}</span>}
-              {rowMenu(node.path, undefined, true)}
-            </span>
-          </div>,
-        ];
-        if (open) rows.push(...renderNodes(node.children, depth + 1));
-        return rows;
-      }
-      const doc = node.doc as Doc;
+  /**
+   * The tree: the repository, then its folders and documents.
+   *
+   * A folder's chevron opens it and its name selects it, which is the one thing that makes a
+   * folder a scope rather than a container -- a row that only expanded could never answer "what
+   * does everything under here promise".
+   */
+  function renderNode(node: TreeNode, depth: number): any[] {
+    const indent = { paddingLeft: 8 + depth * 14 };
+    if (node.doc) {
+      const doc = node.doc;
       return [
         <div
           key={node.path}
@@ -896,26 +997,125 @@ export default function DocsTab({
           }`}
           style={indent}
         >
+          <span className="docs-chev" />
           <button type="button" className="docs-row-main" onClick={() => openDoc(doc.path)}>
-            <span className="docs-chev" />
             <FileIcon />
             <span className="docs-row-name">{node.name}</span>
           </button>
           <span className="docs-row-meta">
             {rowBadges(doc)}
-            {doc.ruleCount > 0 && <span className="docs-count">{doc.ruleCount}</span>}
+            {doc.ruleCount > 0 && (
+              <span
+                className="docs-count"
+                title={`${doc.ruleCount} rule${doc.ruleCount === 1 ? "" : "s"} read from this doc`}
+              >
+                {doc.ruleCount}
+              </span>
+            )}
             {rowMenu(doc.path, doc)}
           </span>
         </div>,
       ];
-    });
+    }
+
+    const isRoot = node.path === "";
+    const open = expanded.has(node.path);
+    const excludedFolder = isRoot ? null : coveringFolder(node.path, catalog?.exclusions);
+    const rows: any[] = [
+      <div
+        key={node.path || "__root__"}
+        className={`docs-row is-folder${isRoot ? " is-root" : ""}${
+          selected === node.path ? " is-open" : ""
+        }${excludedFolder ? " is-dim" : ""}`}
+        style={indent}
+      >
+        <button
+          type="button"
+          className="docs-chev docs-chev-button"
+          aria-expanded={open}
+          aria-label={`${open ? "Collapse" : "Expand"} ${isRoot ? name : node.name}`}
+          onClick={() => toggleFolder(node.path)}
+        >
+          {open ? <ChevronDown /> : <ChevronRight />}
+        </button>
+        <button
+          type="button"
+          className="docs-row-main"
+          title={
+            isRoot
+              ? "Every rule in this repository"
+              : `Every rule under ${node.path}/`
+          }
+          onClick={() => select(node.path)}
+        >
+          {isRoot ? <RepoIcon /> : <FolderIcon />}
+          <span className="docs-row-name">{node.name}</span>
+        </button>
+        <span className="docs-row-meta">
+          {excludedFolder && (
+            <span
+              className="docs-badge is-excluded"
+              title={`Excluded${excludedFolder.excludedBy ? ` by ${excludedFolder.excludedBy}` : ""}${
+                excludedFolder.reason ? `: ${excludedFolder.reason}` : ""
+              }${excludedFolder.path === node.path ? "" : ` with ${excludedFolder.path}/`}`}
+            >
+              Excluded
+            </span>
+          )}
+          {node.broken > 0 && <span className="docs-dot" title={`${node.broken} broken`} />}
+          {node.rules > 0 && (
+            <span
+              className="docs-count"
+              title={`${node.rules} rule${node.rules === 1 ? "" : "s"} read from the docs ${
+                isRoot ? "in this repository" : `under ${node.path}/`
+              }`}
+            >
+              {node.rules}
+            </span>
+          )}
+          {/* The repository is not a folder anyone can exclude, so it carries no menu; its
+              header has the link to GitHub the folders' menus carry. */}
+          {!isRoot && rowMenu(node.path, undefined, true)}
+        </span>
+      </div>,
+    ];
+    if (open) rows.push(...node.children.flatMap((child) => renderNode(child, depth + 1)));
+    return rows;
   }
 
   if (repos.length === 0) {
-    return <p className="dashboard-metric-caption">No repositories are connected yet.</p>;
+    return (
+      <div className="dashboard-empty">
+        <p className="text-slate-600">
+          This account has no repository Striff can see yet. Add one to the installation on GitHub,
+          and its docs are listed as soon as Striff has read the repository.
+        </p>
+        <a
+          href="https://github.com/apps/striff-app/installations/new"
+          className="dashboard-button dashboard-button-primary mt-4 inline-block"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Manage repositories on GitHub
+        </a>
+      </div>
+    );
   }
 
   const summary = catalog?.summary;
+  // Whether the rules on screen are the ones Striff checks pull requests against. Both the note
+  // and the state line under it depend on this, and they used to work it out separately: the note
+  // compared hashes, the line assumed the answer was always yes, and a reader who picked an older
+  // version was told both that these rules came from the September reading and that they were not
+  // the ones Striff uses.
+  const showingExtracted =
+    !detail?.showing ||
+    !detail.document.extractedContentHash ||
+    detail.showing.startsWith(detail.document.extractedContentHash);
+  /** The version being shown, where the catalogue lists it, for its date and pull request. */
+  const shownVersion = (detail?.versions || []).find(
+    (v: any) => detail?.showing && v.contentHash === detail.showing
+  );
 
   return (
     <div className="docs-tab">
@@ -940,12 +1140,12 @@ export default function DocsTab({
               {term === "" && (
                 <p className="docs-palette-hint">
                   Type to search this repository's documents and every rule read from them.
-                  {indexing && " Reading the rules…"}
+                  {rulesLoading && " Reading the rules…"}
                 </p>
               )}
               {term !== "" && docHits.length === 0 && ruleHits.length === 0 && (
                 <p className="docs-palette-hint">
-                  Nothing matches “{query}”.{indexing && " Still reading the rules…"}
+                  Nothing matches “{query}”.{rulesLoading && " Still reading the rules…"}
                 </p>
               )}
               {docHits.length > 0 && (
@@ -999,7 +1199,7 @@ export default function DocsTab({
                       <span className="docs-palette-sub">
                         {marked(rule.path)}
                         {rule.sourceLine ? `:${rule.sourceLine}` : ""}
-                        {` · ${DOC_STANDING_LABEL[docStanding(rule)].toLowerCase()}`}
+                        {` · ${STANDING_LABEL[standing(rule)].toLowerCase()}`}
                       </span>
                     </button>
                   ))}
@@ -1011,7 +1211,7 @@ export default function DocsTab({
       )}
       <div className="docs-head">
         <div className="docs-head-copy">
-          <p className="dashboard-kicker">Documents</p>
+          <p className="dashboard-kicker">Docs &amp; rules</p>
           <div className="docs-title">
             <select
               className="docs-title-select"
@@ -1030,14 +1230,12 @@ export default function DocsTab({
             </select>
             <a
               className="docs-repo-link"
-              href={`https://github.com/${owner}/${name}`}
+              href={githubUrl("", true)}
               target="_blank"
               rel="noopener noreferrer"
               title="Open this repository on GitHub"
             >
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
-                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
-              </svg>
+              <GitHubMark />
               GitHub
             </a>
           </div>
@@ -1045,7 +1243,8 @@ export default function DocsTab({
               repository with every document read was still told some were waiting. It is now the
               count, or nothing. */}
           <p className="docs-lede">
-            Every doc Striff can read in this repository, and the rules it found in them.
+            Every doc Striff can read in this repository, and the rules it found in them. Pick a
+            folder for every rule beneath it, or the repository for all of them.
             {summary && summary.notRead > 0 ? (
               <>
                 {" "}Striff reads a doc the first time a pull request changes code that doc talks
@@ -1058,54 +1257,57 @@ export default function DocsTab({
         </div>
         {summary && (
           <div className="docs-tally">
+            {/* The counts are of what is selected, so a folder says how much of the repository it
+                accounts for rather than repeating the whole of it. */}
             <button
               type="button"
               className="docs-tally-item"
-              title="Every document in this repository, whatever state it is in."
+              title={
+                scopeKind === "doc"
+                  ? "This document."
+                  : `Every document ${scopeKind === "root" ? "in this repository" : `under ${selected}/`}, whatever state it is in.`
+              }
               onClick={() => setFilter("all")}
             >
-              <b>{summary.documents}</b>
-              <i>documents</i>
+              <b>{scopeDocs.length}</b>
+              <i>document{scopeDocs.length === 1 ? "" : "s"}</i>
             </button>
             <button
               type="button"
-              className="docs-tally-item"
-              title="Documents Striff can extract rules from: everything it holds, less the ones that say they are no longer current, the ones a screen kept out, and the ones you excluded."
-              onClick={() => setFilter("all")}
+              className={`docs-tally-item is-violated${ruleFilter === "broken" ? " is-on" : ""}`}
+              title={`${STANDING_HELP.broken} Click to show these.`}
+              onClick={() => setRuleFilter(ruleFilter === "broken" ? "all" : "broken")}
             >
-              <b>
-                {summary.documents - summary.retired - summary.screenedOut - summary.excluded}
-              </b>
-              <i>extractable</i>
-            </button>
-            {/* These three count rules, not documents, so they lead to the rules and land on the
-                ones they counted. A number you cannot follow is a number you have to trust. */}
-            <button
-              type="button"
-              className="docs-tally-item is-violated"
-              title="Rules the code does not keep. Opens the rules, showing these."
-              onClick={() => onOpenRules?.("broken")}
-            >
-              <b>{summary.brokenRules + summary.alreadyBrokenRules}</b>
+              <b>{scopeCounts.broken}</b>
               <i>broken</i>
             </button>
             <button
               type="button"
-              className="docs-tally-item is-held"
-              title="Rules the code keeps. Opens the rules, showing these."
-              onClick={() => onOpenRules?.("holds")}
+              className={`docs-tally-item is-held${ruleFilter === "holds" ? " is-on" : ""}`}
+              title={`${STANDING_HELP.holds} Click to show these.`}
+              onClick={() => setRuleFilter(ruleFilter === "holds" ? "all" : "holds")}
             >
-              <b>{summary.holdsOnDefaultBranch}</b>
+              <b>{scopeCounts.holds}</b>
               <i>holding</i>
             </button>
             <button
               type="button"
-              className="docs-tally-item"
-              title="Every rule read from this repository's docs. Opens the rules."
-              onClick={() => onOpenRules?.("all")}
+              className={`docs-tally-item${ruleFilter === "unchecked" ? " is-on" : ""}`}
+              title={`${STANDING_HELP.unchecked} Click to show these.`}
+              onClick={() => setRuleFilter(ruleFilter === "unchecked" ? "all" : "unchecked")}
             >
-              <b>{summary.rules}</b>
-              <i>rules</i>
+              <b>{scopeCounts.unchecked}</b>
+              <i>not checked</i>
+            </button>
+            {/* Not lit when nothing is filtered: a light on every count says nothing. */}
+            <button
+              type="button"
+              className="docs-tally-item"
+              title="Every rule read from what is selected."
+              onClick={() => setRuleFilter("all")}
+            >
+              <b>{scopeCounts.all}</b>
+              <i>rule{scopeCounts.all === 1 ? "" : "s"}</i>
             </button>
             {catalog && !sample && (
               <ReadRepository
@@ -1117,6 +1319,7 @@ export default function DocsTab({
                 waiting={summary.notRead}
                 read={summary.read}
                 busy={asking || busy}
+                stale={watchedOut}
                 onRead={readRepository}
               />
             )}
@@ -1142,7 +1345,7 @@ export default function DocsTab({
                 type="button"
                 className="dashboard-button dashboard-button-secondary mt-4"
                 disabled={busy}
-                onClick={() => loadCatalog()}
+                onClick={() => reload()}
               >
                 Try again
               </button>
@@ -1161,7 +1364,7 @@ export default function DocsTab({
               stale={listingStale}
               onLookAgain={() => {
                 setListingStale(false);
-                loadCatalog();
+                reload();
               }}
             />
           )}
@@ -1179,28 +1382,24 @@ export default function DocsTab({
               <span>Search docs and rules</span>
               <kbd>⌘K</kbd>
             </button>
-            {actionError && detail && <p className="docs-write-error">{actionError}</p>}
+            {actionError && (scopeKind !== "doc" || detail) && (
+              <p className="docs-write-error">{actionError}</p>
+            )}
             <div className="docs-filters">
-              {([
-                ["all", "All", filterCounts.all, ""],
-                ["broken", "Broken", filterCounts.broken, "broken"],
-                ["notRead", "Not read", filterCounts.notRead, "unread"],
-                ["skipped", "Skipped", filterCounts.skipped, "other"],
-                ["excluded", "Excluded", filterCounts.excluded, "other"],
-              ] as const).map(([key, label, count, dot]) => (
+              {FILTER_CHIPS.filter((chip) => chip.always || filterCounts[chip.key] > 0 || filter === chip.key).map((chip) => (
                 <button
-                  key={key}
+                  key={chip.key}
                   type="button"
-                  className={`docs-filter${filter === key ? " is-on" : ""}`}
-                  onClick={() => setFilter(key)}
+                  className={`docs-filter${filter === chip.key ? " is-on" : ""}`}
+                  onClick={() => setFilter(chip.key)}
                 >
-                  {dot && <span className={`docs-fdot is-${dot}`} />}
-                  {label} <b>{count}</b>
+                  {chip.dot && <span className={`docs-fdot is-${chip.dot}`} />}
+                  {chip.label} <b>{filterCounts[chip.key]}</b>
                 </button>
               ))}
             </div>
             <div className="docs-tree" role="tree">
-              {renderNodes(tree, 0)}
+              {renderNode(tree, 0)}
             </div>
             <div className="docs-tree-foot">
               {catalog.summary.documents} docs{catalog.lastScanMs ? `, listed ${when(catalog.lastScanMs)}` : ""}
@@ -1229,12 +1428,98 @@ export default function DocsTab({
             </div>
           </div>
           <div className="docs-pane">
-            {!selected && (
-              <p className="dashboard-metric-caption">
-                Choose a document to see the rules Striff read from it.
-              </p>
+            {/* ── A folder, or the repository: everything beneath it ── */}
+            {scopeKind !== "doc" && (
+              <>
+                <div className="docs-pane-head">
+                  <span className="docs-pane-path">
+                    {scopeKind === "root" ? (
+                      <b>{repo}</b>
+                    ) : (
+                      selected.split("/").map((part, index, all) => (
+                        <span key={index}>
+                          {index > 0 && <i className="docs-crumb-sep">/</i>}
+                          {index === all.length - 1 ? <b>{part}/</b> : part}
+                        </span>
+                      ))
+                    )}
+                  </span>
+                  <a
+                    className="docs-pane-github"
+                    href={githubUrl(selected, true)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`Open ${scopeKind === "root" ? repo : `${selected}/`} on GitHub${branch ? `, at ${branch}` : ""}`}
+                  >
+                    <GitHubMark />
+                    {scopeKind === "root" ? "Open repository" : "Open folder"}
+                  </a>
+                  <span className="docs-pane-actions">
+                    {scopeKind === "folder" && rowMenu(selected, undefined, true, "pane")}
+                  </span>
+                </div>
+
+                {/* A folder has no state of its own, and its rule count is not trustworthy
+                    without the states of the documents under it: fourteen rules, plus whatever
+                    is in three files nobody has read. */}
+                <p className="docs-scope-summary">
+                  <button
+                    type="button"
+                    className={`docs-scope-part${filter === "all" ? " is-on" : ""}`}
+                    title="Every document here, whatever state it is in."
+                    onClick={() => setFilter("all")}
+                  >
+                    {scopeDocs.length} document{scopeDocs.length === 1 ? "" : "s"}
+                  </button>
+                  {scopeSummary.map((part) => (
+                    <span key={part.key}>
+                      <i className="docs-scope-sep" aria-hidden="true">·</i>
+                      <button
+                        type="button"
+                        className={`docs-scope-part${filter === part.key ? " is-on" : ""}`}
+                        title={`${part.help} Click to show these in the tree.`}
+                        onClick={() => setFilter(filter === part.key ? "all" : part.key)}
+                      >
+                        {part.count} {part.label}
+                      </button>
+                    </span>
+                  ))}
+                </p>
+
+                {rulesLoading && !rulesIndex && (
+                  <p className="dashboard-metric-caption">Reading this repository's rules…</p>
+                )}
+                {rulesIndex && scopeRows.length === 0 && (
+                  <p className="dashboard-metric-caption">
+                    {/* A truncated answer is the one case where an empty scope is not an answer
+                        about the scope: the rules exist and this list did not reach them. */}
+                    {rulesIndex.truncated
+                      ? "This repository holds more rules than one list can carry, and the documents before this one fill it. Striff has these; this page cannot reach them yet."
+                      : scopeDocs.some((doc) => doc.state === "NOT_READ")
+                      ? "No rule has been read from these docs yet. Striff reads a doc the first time a pull request changes code that doc talks about."
+                      : "Striff has read these docs and found no rule in them that states a claim about the code."}
+                  </p>
+                )}
+                {rulesIndex && scopeRows.length > 0 && (
+                  <RulesTable
+                    rows={scopeRows}
+                    owner={owner}
+                    name={name}
+                    branch={branch}
+                    scopeLabel={scopeLabel}
+                    fileStem={scopeFileStem}
+                    showPath
+                    filter={ruleFilter}
+                    docCount={scopeRuleDocs}
+                    truncated={!!rulesIndex.truncated}
+                    onOpenDoc={(path) => openDoc(path)}
+                  />
+                )}
+              </>
             )}
-            {selected && !detail && actionError && (
+
+            {/* ── One document ── */}
+            {scopeKind === "doc" && !detail && actionError && (
               <div className="docs-pane-error">
                 <p>{actionError}</p>
                 <button type="button" onClick={() => openDoc(selected)} disabled={busy}>
@@ -1242,10 +1527,10 @@ export default function DocsTab({
                 </button>
               </div>
             )}
-            {selected && !detail && !actionError && (
+            {scopeKind === "doc" && !detail && !actionError && (
               <p className="dashboard-metric-caption">Loading…</p>
             )}
-            {selected && detail && (
+            {scopeKind === "doc" && detail && (
               <>
                 <div className="docs-pane-head">
                   <span className="docs-pane-path">
@@ -1256,11 +1541,23 @@ export default function DocsTab({
                       </span>
                     ))}
                   </span>
+                  {/* Reading the document itself is the first thing anyone does when a rule looks
+                      wrong, so it is a link rather than an item in a menu nobody opens. */}
+                  <a
+                    className="docs-pane-github"
+                    href={githubUrl(selected, false)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`Open ${selected} on GitHub${branch ? `, at ${branch}` : ""}`}
+                  >
+                    <GitHubMark />
+                    Open on GitHub
+                  </a>
                   <span className="docs-pane-actions">{rowMenu(selected, detail.document, false, "pane")}</span>
                 </div>
                 <p className="docs-version-line">
                   <span title="The text on the default branch when Striff last listed it. Striff keeps a fingerprint, not the text.">
-                    On {catalog?.defaultBranch || "the default branch"}:{" "}
+                    On {branch || "the default branch"}:{" "}
                     <code>{detail.document.currentContentHash || "not listed yet"}</code>
                   </span>
                   {detail.document.extractedContentHash && (
@@ -1295,7 +1592,7 @@ export default function DocsTab({
                         onClick={() => openDoc(detail.document.path, version.contentHash)}
                       >
                         <code>{version.contentHash.slice(0, 8)}</code>
-                        {version.onDefaultBranch && <i>on {catalog?.defaultBranch || "main"}</i>}
+                        {version.onDefaultBranch && <i>on {branch || "main"}</i>}
                         {version.pullNo && !version.onDefaultBranch && <i>PR #{version.pullNo}</i>}
                         <b>{version.ruleCount}</b>
                       </button>
@@ -1345,11 +1642,11 @@ export default function DocsTab({
                       <>
                         <b>{detail.rules.length} rule{detail.rules.length === 1 ? "" : "s"}</b>{" "}
                         extracted from this doc
-                        {shownRules.length < detail.rules.length && (
+                        {scopeRows.length < detail.rules.length && (
                           <>
                             {", "}
-                            {detail.rules.length - shownRules.length} of which nothing has been able
-                            to judge yet, so {detail.rules.length - shownRules.length === 1 ? "it is" : "they are"}{" "}
+                            {detail.rules.length - scopeRows.length} of which nothing has been able
+                            to judge yet, so {detail.rules.length - scopeRows.length === 1 ? "it is" : "they are"}{" "}
                             not listed
                           </>
                         )}
@@ -1359,77 +1656,19 @@ export default function DocsTab({
                   </p>
                 )}
 
-                {shownRules.length > 0 && (
-                  <table className="docs-rules">
-                    <thead>
-                      <tr>
-                        <th>Line</th>
-                        <th>The sentence in your docs</th>
-                        <th>The rule it became</th>
-                        <th>Latest outcome</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {shownRules.map((rule) => (
-                        <tr
-                          key={rule.factId}
-                          className={
-                            rule.status === "VIOLATED"
-                              ? "is-violated"
-                              : rule.status === "PRE_EXISTING"
-                              ? "is-prior"
-                              : ""
-                          }
-                        >
-                          <td className="docs-rule-line">{rule.sourceLine ? `:${rule.sourceLine}` : ""}</td>
-                          <td className="docs-rule-quote">
-                            <Clamped lines={4}>{withCode(rule.quote)}</Clamped>
-                          </td>
-                          <td className="docs-rule-statement">
-                            <Clamped lines={4}>{withCode(rule.statement)}</Clamped>
-                          </td>
-                          <td>
-                            <span
-                              className={`docs-outcome is-${docStanding(rule)}`}
-                              title={docStanding(rule) === "broken"
-                                ? "The code does not keep this rule."
-                                : docStanding(rule) === "holds"
-                                ? "The code keeps this rule."
-                                : "Nothing has judged this rule against the code yet."}
-                            >
-                              {DOC_STANDING_LABEL[docStanding(rule)]}
-                            </span>
-                            {rule.pullNo && (
-                              <span className="docs-outcome-when">
-                                PR #{rule.pullNo} · {when(rule.judgedAtMs)}
-                              </span>
-                            )}
-                            {rule.pullNo && !rule.onDefaultBranch && (
-                              <span className="docs-outcome-branch">
-                                judged on a pull request, not against the branch
-                              </span>
-                            )}
-                            {worthAnIssue(rule.status) && (
-                              <a
-                                className="docs-issue-link"
-                                href={issueUrl(owner, name, selected, rule)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="Opens GitHub with an issue written out: the sentence, the rule, what happened and what would close it."
-                              >
-                                Open an issue
-                                <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                  <path d="M6.5 3.5H3.5v9h9v-3" /><path d="M9.5 3.5h3v3" /><path d="M12.5 3.5 7 9" />
-                                </svg>
-                              </a>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {scopeRows.length > 0 && (
+                  <RulesTable
+                    rows={scopeRows}
+                    owner={owner}
+                    name={name}
+                    branch={branch}
+                    scopeLabel={scopeLabel}
+                    fileStem={scopeFileStem}
+                    showPath={false}
+                    filter={ruleFilter}
+                    docCount={1}
+                  />
                 )}
-
               </>
             )}
           </div>

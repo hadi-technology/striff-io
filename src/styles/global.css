@@ -5077,11 +5077,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .docs-outcome.is-holds { border-color: #bfe3cd; background: #edf9f1; color: #1a7f45; }
 .docs-outcome.is-unchecked { border-color: #e3e8ee; background: #f6f8fa; color: #57606a; }
 
-/* The rule is the column someone reads; the other two are a reference and a word. */
 .rules-table { table-layout: fixed; }
-.rules-table td:first-child, .rules-table th:first-child { width: 52%; }
-.rules-table td:nth-child(2), .rules-table th:nth-child(2) { width: 27%; }
-.rules-table td:nth-child(3), .rules-table th:nth-child(3) { width: 21%; }
 
 /* Search and export share a line: the export button had a row of its own and nothing in it. */
 .rules-toolbar { flex-wrap: nowrap; align-items: center; }
@@ -5094,9 +5090,6 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 
 @media (max-width: 860px) {
   .rules-toolbar { flex-wrap: wrap; }
-  .rules-table td:first-child, .rules-table th:first-child,
-  .rules-table td:nth-child(2), .rules-table th:nth-child(2),
-  .rules-table td:nth-child(3), .rules-table th:nth-child(3) { width: auto; }
 }
 
 /* The repository itself, one click away from the page that is about it. */
@@ -5181,16 +5174,17 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   word-break: break-word;
 }
 
-/* The per-document table: a line number is three characters, and the sentence and the rule are
-   what a reader is here for. table-layout is fixed, so without this every column took a quarter. */
-.docs-pane .docs-rules th:nth-child(1), .docs-pane .docs-rules td:nth-child(1) { width: 4.5rem; }
-.docs-pane .docs-rules th:nth-child(2), .docs-pane .docs-rules td:nth-child(2) { width: 34%; }
-.docs-pane .docs-rules th:nth-child(3), .docs-pane .docs-rules td:nth-child(3) { width: 34%; }
-.docs-pane .docs-rules th:nth-child(4), .docs-pane .docs-rules td:nth-child(4) { width: auto; }
-@media (max-width: 640px) {
-  .docs-pane .docs-rules th:nth-child(1), .docs-pane .docs-rules td:nth-child(1),
-  .docs-pane .docs-rules th:nth-child(2), .docs-pane .docs-rules td:nth-child(2),
-  .docs-pane .docs-rules th:nth-child(3), .docs-pane .docs-rules td:nth-child(3) { width: auto; }
+/* One document's own rules all came from the same file, so "where it came from" is a line number
+   and three characters do not need a fifth of the table. The sentence and the rule take the room
+   the paths were using. table-layout is fixed, so without this every column takes a quarter. */
+.rules-table.is-one-doc th:nth-child(1), .rules-table.is-one-doc td:nth-child(1) { width: 9rem; }
+.rules-table.is-one-doc th:nth-child(2), .rules-table.is-one-doc td:nth-child(2) { width: 36%; }
+.rules-table.is-one-doc th:nth-child(3), .rules-table.is-one-doc td:nth-child(3) { width: 36%; }
+.rules-table.is-one-doc th:nth-child(4), .rules-table.is-one-doc td:nth-child(4) { width: auto; }
+@media (max-width: 860px) {
+  .rules-table.is-one-doc th:nth-child(1), .rules-table.is-one-doc td:nth-child(1),
+  .rules-table.is-one-doc th:nth-child(2), .rules-table.is-one-doc td:nth-child(2),
+  .rules-table.is-one-doc th:nth-child(3), .rules-table.is-one-doc td:nth-child(3) { width: auto; }
 }
 
 /* A cell that stops after a few lines. One long sentence used to set the height of its row and
@@ -5319,6 +5313,12 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .rules-table td:nth-child(2), .rules-table th:nth-child(2) { width: 30%; }
 .rules-table td:nth-child(3), .rules-table th:nth-child(3) { width: 30%; }
 .rules-table td:nth-child(4), .rules-table th:nth-child(4) { width: 20%; }
+@media (max-width: 860px) {
+  .rules-table td:nth-child(1), .rules-table th:nth-child(1),
+  .rules-table td:nth-child(2), .rules-table th:nth-child(2),
+  .rules-table td:nth-child(3), .rules-table th:nth-child(3),
+  .rules-table td:nth-child(4), .rules-table th:nth-child(4) { width: auto; }
+}
 .rules-table .docs-rule-quote {
   color: #57606a;
   font-family: "Source Serif 4", Georgia, serif;
@@ -5634,7 +5634,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 
 .teams-panels {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
 }
 @media (max-width: 1024px) {
@@ -5664,7 +5664,9 @@ button.docs-tally-item.is-on i { color: #1f2328; }
    right and faded at the bottom, so it reads as a page that continues. */
 .teams-panel-art {
   position: relative;
-  height: 15rem;
+  /* Two panels rather than three: each is half the row, so the window onto the view is wider,
+     and a taller one shows the tree and the rules beside it rather than only the heading. */
+  height: 17rem;
   overflow: hidden;
   border-bottom: 1px solid #e8edf3;
   background:
@@ -6176,3 +6178,93 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   font-weight: 500;
 }
 @media (max-width: 720px) { .ghcheck-legend em { display: none; } }
+
+/* ---- Docs & rules: one tree, and the rules of whatever it has selected ----
+   The tree is the only navigation now. A folder's chevron opens it and its name selects it, and
+   the repository has a row of its own at the head, which is what makes "every rule in here" a
+   thing you click rather than a second page. */
+
+/* The chevron is its own control: expanding a folder and selecting it are different questions,
+   and one button could only answer one of them. */
+/* Folders and documents keep the same left edge, so a chevron that can be pressed and a spacer
+   that cannot are the same width. */
+.docs-chev, .docs-chev-button { width: 16px; }
+.docs-chev-button {
+  flex: 0 0 auto;
+  align-items: center;
+  border-radius: 0.3rem;
+  background: transparent;
+  padding: 0;
+  height: 20px;
+}
+.docs-chev-button:hover { background: #e8eef6; color: #24292f; }
+.docs-row.is-folder .docs-row-main { padding-left: 0.1rem; }
+
+/* The repository's own row: the head of the tree, and where the view opens. */
+.docs-row.is-root { margin-bottom: 0.15rem; border-bottom: 1px solid #f1f4f7; border-radius: 0.4rem 0.4rem 0 0; }
+.docs-row.is-root .docs-row-name { font-weight: 700; color: #0f172a; }
+.docs-row.is-root.is-open .docs-row-name { color: #1d4ed8; }
+
+/* The file itself, beside the path of it: reading the document is the first thing anyone does
+   when a rule looks wrong, so it is a link rather than an item in a menu nobody opens. */
+.docs-pane-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.2rem 0.5rem;
+  color: #57606a;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.docs-pane-github:hover { border-color: #cbd5e1; color: #24292f; text-decoration: none; }
+
+/* What a folder's own row cannot carry: the states of the documents under it, so its rule count
+   can be trusted. Every part is a filter on the tree, because a fact you can act on beats one you
+   have to go looking for. */
+.docs-scope-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.1rem;
+  margin-top: 0.55rem;
+  color: #57606a;
+  font-size: 0.82rem;
+}
+.docs-scope-sep { margin: 0 0.4rem; font-style: normal; color: #c3cedb; }
+.docs-scope-part {
+  border-radius: 0.35rem;
+  padding: 0.05rem 0.25rem;
+  margin: 0 -0.25rem;
+  color: #57606a;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.docs-scope-part:hover { background: #f1f5f9; color: #1f2328; }
+.docs-scope-part.is-on { background: #eef4fe; color: #1d4ed8; font-weight: 600; }
+
+/* The rules of the selection sit inside the pane, so they carry no shadow of their own. */
+.docs-pane .rules-panel { margin-top: 0.85rem; border-radius: 0.6rem; box-shadow: none; }
+
+/* The export says what it would write before anyone presses it: an export that turns out to have
+   covered a folder rather than the repository is a surprise found in a downloads folder. */
+.rules-export-button b { font-weight: 700; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rules-export-count { color: #8a95a1; font-weight: 500; }
+@media (max-width: 640px) { .rules-export-button b { max-width: 9rem; } }
+
+/* One document's rules all came from the same file, whose name is the heading above them. */
+.rules-source-line { color: #57606a; font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; }
+
+/* On paper the tree is navigation, and navigation does not print. */
+@media print {
+  .docs-list,
+  .docs-pane-actions,
+  .docs-pane-github,
+  .docs-scope-summary,
+  .tree-search { display: none !important; }
+  .docs-split { display: block; }
+  .docs-pane { border: 0; border-radius: 0; padding: 0; }
+  .docs-pane .rules-panel { margin-top: 0; border: 0; border-radius: 0; }
+}

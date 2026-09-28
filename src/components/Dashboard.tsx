@@ -1,7 +1,6 @@
 import { createElement, useState, useEffect, useRef } from "react";
 import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab from "./DocsTab";
-import RulesTab from "./RulesTab";
 import { EXTENSION_URL } from "./docRules";
 
 const OAUTH_CLIENT_ID =
@@ -15,8 +14,8 @@ interface User {
   name: string | null;
 }
 
-/** The sections of the dashboard: two belong to the account, two to the repository in view. */
-type Section = "repos" | "docs" | "rules" | "metrics" | "billing";
+/** The sections of the dashboard: three belong to the account, one to the repository in view. */
+type Section = "repos" | "docs" | "metrics" | "billing";
 
 interface Repo {
   full_name: string;
@@ -99,14 +98,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [autoCheckout, setAutoCheckout] = useState<{ installationId: number; plan: string } | null>(null);
-  const [section, setSection] = useState<Section>("rules");
-  // Which repository the documents view is showing; set by opening one from Repositories.
+  const [section, setSection] = useState<Section>("docs");
+  // Which repository the docs and rules view is showing; set by opening one from Repositories.
   const [openRepo, setOpenRepo] = useState<string | null>(null);
-  // The document the documents view should open on, set by following a rule to where it came from.
-  const [focusDoc, setFocusDoc] = useState<string | null>(null);
-  // A count followed from the documents view: which rules to show, and when it was asked for, so
-  // asking twice for the same ones still moves the view.
-  const [rulesFilter, setRulesFilter] = useState<{ value: string; at: number } | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -176,7 +170,7 @@ export default function Dashboard() {
   const current =
     installations.find((inst) => inst.id === accountId) || installations[0] || null;
 
-  // Opening on the rules means opening on a repository: the one last looked at for this account,
+  // Opening on the docs means opening on a repository: the one last looked at for this account,
   // and otherwise its first. Remembered per account, so switching accounts does not carry a
   // repository that does not belong to it.
   useEffect(() => {
@@ -320,24 +314,16 @@ export default function Dashboard() {
                   {openRepo.split("/")[1] || openRepo}
                 </p>
                 <nav className="dash-nav">
-                  <button
-                    type="button"
-                    className={`nav-item${section === "rules" ? " active" : ""}`}
-                    onClick={() => setSection("rules")}
-                  >
-                    <NavIcon name="rules" />
-                    <span>Rules</span>
-                  </button>
+                  {/* One item, because there is one view: the document tree, and the rules of
+                      whatever it has selected. Rules used to be a second item showing the same
+                      data flat, which is the repository row of this tree. */}
                   <button
                     type="button"
                     className={`nav-item${section === "docs" ? " active" : ""}`}
-                    onClick={() => {
-                      setFocusDoc(null);
-                      setSection("docs");
-                    }}
+                    onClick={() => setSection("docs")}
                   >
                     <NavIcon name="docs" />
-                    <span>Documents</span>
+                    <span>Docs &amp; rules</span>
                   </button>
                 </nav>
               </div>
@@ -355,25 +341,11 @@ export default function Dashboard() {
               openRepo={openRepo}
               onOpenRepo={(fullName) => {
                 setOpenRepo(fullName);
-                setFocusDoc(null);
-                setSection("rules");
-              }}
-              // Either tab's repository picker moves the whole shell: the sidebar, the memory and
-              // the other tab followed the first choice and then disagreed with the second.
-              onRepoChange={(fullName) => {
-                setOpenRepo(fullName);
-                setFocusDoc(null);
-              }}
-              focusDoc={focusDoc}
-              rulesFilter={rulesFilter}
-              onOpenRules={(value) => {
-                setRulesFilter({ value, at: Date.now() });
-                setSection("rules");
-              }}
-              onOpenDoc={(path) => {
-                setFocusDoc(path);
                 setSection("docs");
               }}
+              // The view's own repository picker moves the whole shell: the sidebar and the
+              // memory followed the first choice and then disagreed with the second.
+              onRepoChange={setOpenRepo}
             />
           </div>
         </div>
@@ -623,7 +595,6 @@ const NavIcon = ({ name }: { name: string }) => {
     overview: ["M2 2h5v5H2z", "M9 2h5v5H9z", "M2 9h5v5H2z", "M9 9h5v5H9z"],
     repos: ["M3 12.75V2.75A1.25 1.25 0 0 1 4.25 1.5H13v10H4.25A1.25 1.25 0 0 0 3 12.75Z", "M3 12.75A1.25 1.25 0 0 0 4.25 14H13v-2.5"],
     docs: ["M3.5 1.75h5.5l3.5 3.5v9h-9Z", "m5.75 9.5 1.5 1.5 3-3"],
-    rules: ["M2.75 3.5h10.5", "M2.75 7h10.5", "M2.75 10.5h7"],
     billing: ["M1.5 3.5h13v9h-13z", "M1.5 6.5h13"],
   };
   return createElement(
@@ -644,10 +615,6 @@ function InstallationCard({
   onSection,
   openRepo,
   onOpenRepo,
-  focusDoc,
-  rulesFilter,
-  onOpenRules,
-  onOpenDoc,
   onRepoChange,
 }: {
   installation: Installation;
@@ -658,15 +625,7 @@ function InstallationCard({
   onSection?: (section: Section) => void;
   openRepo?: string | null;
   onOpenRepo?: (fullName: string) => void;
-  /** The document the documents view should open on, where a reader followed a rule to its source. */
-  focusDoc?: string | null;
-  /** Which rules to show, where a reader followed a count to them. */
-  rulesFilter?: { value: string; at: number } | null;
-  /** Follows a count of rules to the rules themselves. */
-  onOpenRules?: (filter: string) => void;
-  /** Follows a rule to the document it was read from. */
-  onOpenDoc?: (path: string) => void;
-  /** Reports a repository picked inside a tab, so the shell and the other tab follow it. */
+  /** Reports a repository picked inside the view, so the shell follows it. */
   onRepoChange?: (fullName: string) => void;
 }) {
   const repos = installation.repositories || [];
@@ -1019,26 +978,13 @@ function InstallationCard({
                 </p>
               )}
             </div>
-          ) : installTab === "rules" ? (
-            <div className="mt-3 dashboard-metric-fade-in">
-              <RulesTab
-                installationId={installation.id}
-                repos={repos}
-                openRepo={openRepo}
-                onOpenDoc={onOpenDoc}
-                onRepoChange={onRepoChange}
-                showFilter={rulesFilter}
-              />
-            </div>
           ) : installTab === "docs" ? (
             <div className="mt-3 dashboard-metric-fade-in">
               <DocsTab
                 installationId={installation.id}
                 repos={repos}
                 openRepo={openRepo}
-                focusDoc={focusDoc}
                 onRepoChange={onRepoChange}
-                onOpenRules={onOpenRules}
               />
             </div>
           ) : installTab === "metrics" ? (

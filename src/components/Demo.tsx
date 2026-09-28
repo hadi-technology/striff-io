@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import RulesTab from "./RulesTab";
 import DocsTab from "./DocsTab";
 import MetricsTab from "./MetricsTab";
 import { demoCatalog, demoDoc, demoRules, DEMO_REPO } from "../data/demoDashboard";
@@ -12,7 +11,7 @@ import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
  * repositories. That is a large first step for someone who has read one article and wants to know
  * whether the screenshots are real, and it is the step a link in a comment thread cannot carry.
  *
- * So this is the real thing: the same three views a customer uses, the same tables, sorting,
+ * So this is the real thing: the same two views a customer uses, the same tree, tables, sorting,
  * search, export, truncation and clamping, running against a fixed set of answers in the shape the
  * API sends. Nothing is redrawn for the occasion, which is the point -- a demo that is a picture of
  * a product proves only that somebody can draw.
@@ -22,25 +21,24 @@ import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
  * pretending, because a control that appears to work and does not is worse than one that is
  * honest about being an example.
  *
- * The open view is in the URL fragment (#rules, #docs, #metrics), so the homepage can send a
- * reader to one view and a reader can send a colleague to the one they mean.
+ * The open view is in the URL fragment (#docs, #metrics), so the homepage can send a reader to one
+ * view and a reader can send a colleague to the one they mean. `#rules` was the flat list of rules
+ * before it became the repository row of the tree, and it still lands where those rules are.
  */
-type View = "rules" | "docs" | "metrics";
+type View = "docs" | "metrics";
 const VIEWS: { id: View; label: string }[] = [
-  { id: "rules", label: "Rules" },
-  { id: "docs", label: "Documents" },
+  { id: "docs", label: "Docs & rules" },
   { id: "metrics", label: "Metrics" },
 ];
 
 function viewFromHash(): View | null {
   const h = window.location.hash.replace(/^#/, "");
+  if (h === "rules") return "docs";
   return VIEWS.some((v) => v.id === h) ? (h as View) : null;
 }
 
 export default function Demo() {
-  const [view, setView] = useState<View>("rules");
-  const [focusDoc, setFocusDoc] = useState<string | null>(null);
-  const [filter, setFilter] = useState<{ value: string; at: number } | null>(null);
+  const [view, setView] = useState<View>("docs");
   const repos = [{ full_name: DEMO_REPO }];
 
   useEffect(() => {
@@ -55,7 +53,7 @@ export default function Demo() {
 
   const show = (v: View) => {
     setView(v);
-    const url = `${window.location.pathname}${window.location.search}${v === "rules" ? "" : `#${v}`}`;
+    const url = `${window.location.pathname}${window.location.search}${v === "docs" ? "" : `#${v}`}`;
     window.history.replaceState(null, "", url);
   };
 
@@ -85,30 +83,12 @@ export default function Demo() {
       </div>
 
       <div className="demo-stage">
-        {view === "rules" && (
-          <RulesTab
-            installationId={0}
-            repos={repos}
-            openRepo={DEMO_REPO}
-            sample={demoRules}
-            showFilter={filter}
-            onOpenDoc={(path) => {
-              setFocusDoc(path);
-              show("docs");
-            }}
-          />
-        )}
         {view === "docs" && (
           <DocsTab
             installationId={0}
             repos={repos}
             openRepo={DEMO_REPO}
-            focusDoc={focusDoc}
-            sample={{ catalog: demoCatalog, doc: demoDoc }}
-            onOpenRules={(value) => {
-              setFilter({ value, at: Date.now() });
-              show("rules");
-            }}
+            sample={{ catalog: demoCatalog, rules: demoRules, doc: demoDoc }}
           />
         )}
         {view === "metrics" && (

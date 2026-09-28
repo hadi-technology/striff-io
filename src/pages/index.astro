@@ -6,8 +6,7 @@ import RuleRows from "../components/RuleRows.astro";
 import { heroExampleRules, heroExampleRepo, heroExampleTally } from "../data/heroExampleRules";
 import MetricsTab from "../components/MetricsTab";
 import { Image } from "astro:assets";
-import dashRules from "../assets/dash-rules.webp";
-import dashDocs from "../assets/dash-docs.webp";
+import dashDocsRules from "../assets/dash-docs-rules.webp";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 
 // ---- Problem-section visualization: agents doing the work ----
@@ -156,24 +155,17 @@ const realCheckRules = [
 ];
 
 /**
- * For-teams: the dashboard's three views, one panel each, every panel a door into the demo's
- * matching tab. The rules and documents panels are photographed; the metrics panel is the live
- * component on the example workspace.
+ * For-teams: the dashboard's two views, one panel each, every panel a door into the demo's
+ * matching tab. The docs-and-rules panel is photographed; the metrics panel is the live component
+ * on the example workspace.
  */
 const teamsPanels = [
   {
-    view: "rules",
-    eyebrow: "Rules",
-    title: "Every rule, and whether the code still keeps it",
-    body: "One row per sentence Striff turned into a rule: the document and line it came from, the rule it became, and the verdict on your default branch. Sort by what is broken, search by a class name, export the table.",
-    cta: "Open the rules"
-  },
-  {
     view: "docs",
-    eyebrow: "Documents",
-    title: "Which documents the code still agrees with",
-    body: "Your architecture docs, ADRs and agent instructions, each with its rules beside the text that stated them. A document with a broken rule is a document your agents are being misled by.",
-    cta: "Open the documents"
+    eyebrow: "Docs & rules",
+    title: "Every rule your docs state, for a repository, a folder or one file",
+    body: "Your architecture docs, ADRs and agent instructions as a tree. Pick a document for its own rules, a folder for every rule beneath it, or the repository for all of them: the sentence each rule came from, the rule it became, and whether the default branch still keeps it. Sort, search and export what you picked.",
+    cta: "Open the docs and rules"
   },
   {
     view: "metrics",
@@ -681,7 +673,7 @@ const plans = [
 
     <!-- ==================== FOR TEAMS ==================== -->
     <!-- The one section on the page for the lead rather than the reviewer. It sells the
-         dashboard and nothing else: the three views, each a door into the demo, which is the
+         dashboard and nothing else: the two views, each a door into the demo, which is the
          real dashboard on an invented repository. The check itself is sold above. -->
     <section id="teams" class="scroll-mt-24 bg-slate-100/60 pb-20 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
@@ -703,14 +695,9 @@ const plans = [
           {teamsPanels.map((panel) => (
             <article class="teams-panel" data-reveal>
               <div class="teams-panel-art">
-                {panel.view === "rules" && (
-                  <figure class="teams-panel-shot">
-                    <Image src={dashRules} alt="The rules page: every rule read from the repository's docs, with the line it came from, the sentence, the rule, and whether the code keeps it." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 30vw" loading="lazy" />
-                  </figure>
-                )}
                 {panel.view === "docs" && (
                   <figure class="teams-panel-shot">
-                    <Image src={dashDocs} alt="The documents page: the repository's docs in a tree, and one document's rules line by line beside it." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 30vw" loading="lazy" />
+                    <Image src={dashDocsRules} alt="The docs and rules page: the repository's documents in a tree with the repository itself selected, and every rule beneath it beside them — the sentence each came from, the rule it became, and whether the code keeps it." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 45vw" loading="lazy" />
                   </figure>
                 )}
                 {panel.view === "metrics" && (
