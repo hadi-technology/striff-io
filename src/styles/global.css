@@ -4221,6 +4221,7 @@
 .docs-badge { border: 1px solid; border-radius: 0.3rem; padding: 0.05rem 0.35rem; font-size: 0.65rem; font-weight: 700; white-space: nowrap; }
 .docs-badge.is-broken { background: #fdeaec; border-color: #f2c1c7; color: #b4233c; }
 .docs-badge.is-outdated { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+.docs-badge.is-in-part { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
 .docs-badge.is-not_read { background: #fff; border-color: #cbd5e1; border-style: dashed; color: #64748b; }
 .docs-badge.is-screened_out,
 .docs-badge.is-retired,
