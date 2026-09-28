@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import RulesTab from "./RulesTab";
 import DocsTab from "./DocsTab";
 import MetricsTab from "./MetricsTab";
-import { demoCatalog, demoDoc, demoRules, DEMO_REPO } from "../data/demoDashboard";
+import { demoCatalog, demoDoc, demoRules, DEMO_REPO, demoStaleNames } from "../data/demoDashboard";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 
 /**
@@ -104,7 +104,7 @@ export default function Demo() {
             repos={repos}
             openRepo={DEMO_REPO}
             focusDoc={focusDoc}
-            sample={{ catalog: demoCatalog, doc: demoDoc }}
+            sample={{ catalog: demoCatalog, doc: demoDoc, staleNames: demoStaleNames }}
             onOpenRules={(value) => {
               setFilter({ value, at: Date.now() });
               show("rules");

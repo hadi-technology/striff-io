@@ -1,5 +1,5 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
-import { issueUrl, worthAnIssue } from "./docIssue";
+import { issueUrl, staleNameIssueUrl, worthAnIssue } from "./docIssue";
 import RevisionLine from "./RevisionLine";
 import { Clamped, mark, snippet, useWatch, withCode, when } from "./docRules";
 import Listing from "./Listing";
@@ -101,6 +101,51 @@ interface Catalog {
   summary: Summary;
   documents: Doc[];
   exclusions: Exclusion[];
+}
+
+/**
+ * One name a doc writes that the default branch does not have, or has somewhere else. Found by
+ * a reading of the whole repository, and counted apart from the rules: a doc naming something
+ * that is gone is a stale doc, not a broken rule.
+ */
+interface StaleName {
+  docPath: string;
+  name: string;
+  /** ABSENT where the code declares nothing by the name, MOVED where it declares it elsewhere. */
+  state: string;
+  sentence: string | null;
+  sourceLine: number | null;
+  namespace: string | null;
+  /** A file the repository's history holds for it, where that is what shows it was here. */
+  historicalPath: string | null;
+  /** Other types the package holds, where that is what shows it is missing. */
+  siblings: string[];
+  packageSize: number | null;
+  movedToNamespace: string | null;
+  movedToPath: string | null;
+  firstSeenMs: number;
+  lastSeenMs: number;
+}
+
+interface StaleNames {
+  findings: StaleName[];
+  documents: number;
+  truncated: boolean;
+  /** When a reading last reported any; null where nothing has looked, which is not "none". */
+  lastSeenMs: number | null;
+}
+
+/** What the code has in place of a name a doc writes, in one sentence. */
+function staleLine(finding: StaleName): string {
+  if (finding.state === "MOVED") {
+    return `The code declares it in \`${finding.movedToNamespace}\`${finding.movedToPath ? `, at \`${finding.movedToPath}\`` : ""}, not in ${finding.namespace ? `\`${finding.namespace}\`` : "the package this doc writes"}.`;
+  }
+  if (finding.historicalPath) {
+    return `The repository once held \`${finding.historicalPath}\`. It doesn't now.`;
+  }
+  const shown = (finding.siblings || []).slice(0, 3).join(", ");
+  const more = finding.packageSize && finding.packageSize > 3 ? ", …" : "";
+  return `${finding.namespace ? `\`${finding.namespace}\`` : "Its package"} holds ${finding.packageSize || (finding.siblings || []).length} type${(finding.packageSize || 0) === 1 ? "" : "s"}${shown ? ` (${shown}${more})` : ""} and none by this name.`;
 }
 
 /** One thing this repository has asked Striff not to read: a document, or a folder of them. */
@@ -376,13 +421,18 @@ export default function DocsTab({
    * function giving one document's rules. See the same prop on RulesTab. Writes are refused, so
    * the demo can be explored and cannot be changed.
    */
-  sample?: { catalog: any; doc: (path: string, version?: string | null) => any };
+  sample?: {
+    catalog: any;
+    doc: (path: string, version?: string | null) => any;
+    staleNames?: any;
+  };
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "broken" | "notRead" | "skipped" | "excluded">("all");
+  const [filter, setFilter] = useState<"all" | "broken" | "stale" | "notRead" | "skipped" | "excluded">("all");
+  const [staleNames, setStaleNames] = useState<StaleNames | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   /** Whether this page gave up waiting for a listing that had not arrived. */
@@ -465,6 +515,7 @@ export default function DocsTab({
     if (sample) {
       setCatalog(sample.catalog);
       const docs: Doc[] = sample.catalog.documents || [];
+      setStaleNames(sample.staleNames || null);
       setExpanded(allFolders(buildTree(docs)));
       const first =
         (focusDoc && docs.find((doc) => doc.path === focusDoc)) ||
@@ -498,6 +549,7 @@ export default function DocsTab({
         return;
       }
       setCatalog(data);
+      loadStaleNames(wanted);
       const docs: Doc[] = data.documents || [];
       setExpanded(allFolders(buildTree(docs)));
       // Landing on an empty pane wastes the arrival: open what a reader would have opened first,
@@ -512,6 +564,25 @@ export default function DocsTab({
       if (wanted === loadedAt.current) setError("Couldn't load this repository's documents");
     } finally {
       if (wanted === loadedAt.current) setLoading(false);
+    }
+  }
+
+  /**
+   * The names the docs write that the code does not have. Asked for beside the catalogue and
+   * never in its way: where it cannot be had, the documents are shown without it, and nothing is
+   * said about stale names at all, since an empty list would say there are none.
+   */
+  async function loadStaleNames(wanted: number) {
+    setStaleNames(null);
+    try {
+      const res = await fetch(
+        `/.netlify/functions/doc-catalog-proxy?view=type-findings&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
+      );
+      if (!res.ok || wanted !== loadedAt.current) return;
+      const data = await res.json();
+      if (wanted === loadedAt.current && Array.isArray(data.findings)) setStaleNames(data);
+    } catch {
+      // Left unset: the view says nothing about stale names.
     }
   }
 
@@ -634,11 +705,22 @@ export default function DocsTab({
     if (reading) await openDoc(reading);
   }
 
+  /** The stale names of each doc, by the doc's path. */
+  const staleByDoc = useMemo(() => {
+    const byDoc = new Map<string, StaleName[]>();
+    for (const finding of staleNames?.findings || []) {
+      byDoc.set(finding.docPath, [...(byDoc.get(finding.docPath) || []), finding]);
+    }
+    return byDoc;
+  }, [staleNames]);
+
   const documents = useMemo(() => {
     const all = catalog?.documents || [];
     switch (filter) {
       case "broken":
         return all.filter((doc) => doc.brokenRules + doc.alreadyBrokenRules > 0);
+      case "stale":
+        return all.filter((doc) => staleByDoc.has(doc.path));
       case "notRead":
         return all.filter((doc) => doc.state === "NOT_READ");
       case "skipped":
@@ -648,7 +730,7 @@ export default function DocsTab({
       default:
         return all;
     }
-  }, [catalog, filter]);
+  }, [catalog, filter, staleByDoc]);
 
   /** What each filter would show, counted in documents, since documents are what it filters. */
   const filterCounts = useMemo(() => {
@@ -656,11 +738,12 @@ export default function DocsTab({
     return {
       all: all.length,
       broken: all.filter((doc) => doc.brokenRules + doc.alreadyBrokenRules > 0).length,
+      stale: all.filter((doc) => staleByDoc.has(doc.path)).length,
       notRead: all.filter((doc) => doc.state === "NOT_READ").length,
       skipped: all.filter((doc) => doc.state === "SCREENED_OUT").length,
       excluded: all.filter((doc) => doc.state === "EXCLUDED").length,
     };
-  }, [catalog]);
+  }, [catalog, staleByDoc]);
 
   const tree = useMemo(() => buildTree(documents), [documents]);
   // The rules of the open document that are worth listing. A rule nothing has judged says nothing
@@ -867,6 +950,14 @@ export default function DocsTab({
             title={`Striff read the first ${(doc.readChars as number).toLocaleString("en-US")} of this doc's ${(doc.totalChars as number).toLocaleString("en-US")} characters.`}
           >
             Read in part
+          </span>
+        )}
+        {staleByDoc.has(doc.path) && (
+          <span
+            className="docs-badge is-stale"
+            title="Names this doc writes that the code no longer has."
+          >
+            {staleByDoc.get(doc.path)!.length} gone
           </span>
         )}
         {doc.state !== "READ" && (
@@ -1142,6 +1233,21 @@ export default function DocsTab({
               <b>{summary.rules}</b>
               <i>rules</i>
             </button>
+            {/* Shown only once a reading of the whole repository has looked. Until then there is
+                no number to give: a zero would say every doc is current, and nothing has checked.
+                Counted apart from the rules, because a doc naming something that is gone is a
+                stale doc and not a broken rule. */}
+            {staleNames && staleNames.lastSeenMs != null && (
+              <button
+                type="button"
+                className={`docs-tally-item is-stale${staleNames.findings.length === 0 ? " is-none" : ""}`}
+                title={`Names your docs write that the code no longer has, in ${staleNames.documents} doc${staleNames.documents === 1 ? "" : "s"}. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
+                onClick={() => setFilter("stale")}
+              >
+                <b>{staleNames.findings.length}{staleNames.truncated ? "+" : ""}</b>
+                <i>names gone</i>
+              </button>
+            )}
             {catalog && !sample && (
               <ReadRepository
                 reading={catalog.reading}
@@ -1219,6 +1325,9 @@ export default function DocsTab({
               {([
                 ["all", "All", filterCounts.all, ""],
                 ["broken", "Broken", filterCounts.broken, "broken"],
+                ...(filterCounts.stale > 0
+                  ? [["stale", "Names gone", filterCounts.stale, "stale"] as const]
+                  : []),
                 ["notRead", "Not read", filterCounts.notRead, "unread"],
                 ["skipped", "Skipped", filterCounts.skipped, "other"],
                 ["excluded", "Excluded", filterCounts.excluded, "other"],
@@ -1463,6 +1572,67 @@ export default function DocsTab({
                       ))}
                     </tbody>
                   </table>
+                )}
+
+                {selected && staleByDoc.has(selected) && (
+                  <div className="docs-stale">
+                    <h4>
+                      Names this doc writes that the code no longer has
+                      <b>{staleByDoc.get(selected)!.length}</b>
+                    </h4>
+                    <p className="docs-stale-note">
+                      These aren't broken rules. The doc names something the default branch
+                      doesn't have, so the doc is out of date about it. Edit the doc so it stops
+                      naming it, or bring it back; the next reading of the repository closes it
+                      either way.
+                    </p>
+                    <table className="docs-rules docs-stale-table">
+                      <thead>
+                        <tr>
+                          <th>Line</th>
+                          <th>The name</th>
+                          <th>The sentence in your docs</th>
+                          <th>What the code has</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {staleByDoc.get(selected)!.map((finding) => (
+                          <tr key={finding.name}>
+                            <td className="docs-rule-line">
+                              {finding.sourceLine ? `:${finding.sourceLine}` : ""}
+                            </td>
+                            <td className="docs-stale-name">
+                              <code>{finding.name}</code>
+                              <span className={`docs-outcome is-${finding.state === "MOVED" ? "unclear" : "broken"}`}>
+                                {finding.state === "MOVED" ? "Moved" : "Gone"}
+                              </span>
+                            </td>
+                            <td className="docs-rule-quote">
+                              <Clamped lines={4}>{withCode(finding.sentence || "")}</Clamped>
+                            </td>
+                            <td>
+                              <span className="docs-stale-has">{withCode(staleLine(finding))}</span>
+                              <span className="docs-outcome-when">
+                                first seen {when(finding.firstSeenMs)}
+                              </span>
+                              {!sample && (
+                                <a
+                                  className="docs-issue-link"
+                                  href={staleNameIssueUrl(owner, name, selected, finding,
+                                    catalog?.defaultBranch || "main")}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Opens GitHub with an issue written out: the doc, the sentence, what the code has and what would close it."
+                                >
+                                  Open an issue
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
 
               </>

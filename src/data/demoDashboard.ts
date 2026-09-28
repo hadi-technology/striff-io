@@ -161,6 +161,62 @@ export const demoCatalog: any = {
   documents,
 };
 
+/** The names the docs write that the code no longer has, as `view=type-findings` sends them. */
+export const demoStaleNames: any = {
+  repoOwner: "acme",
+  repoName: "checkout-service",
+  documents: 2,
+  truncated: false,
+  lastSeenMs: NOW - 2 * DAY,
+  findings: [
+    {
+      docPath: "ARCHITECTURE.md",
+      name: "CartSessionStore",
+      state: "ABSENT",
+      sentence: "`CartSessionStore` keeps an open cart for thirty minutes after the last change.",
+      sourceLine: 64,
+      namespace: "checkout.cart",
+      historicalPath: "src/main/java/com/acme/checkout/cart/CartSessionStore.java",
+      siblings: [],
+      packageSize: 0,
+      movedToNamespace: null,
+      movedToPath: null,
+      firstSeenMs: NOW - 16 * DAY,
+      lastSeenMs: NOW - 2 * DAY,
+    },
+    {
+      docPath: "ARCHITECTURE.md",
+      name: "billing.LedgerEntry",
+      state: "MOVED",
+      sentence: "Every charge is written as a `billing.LedgerEntry` before the provider is called.",
+      sourceLine: 71,
+      namespace: "billing",
+      historicalPath: null,
+      siblings: [],
+      packageSize: 6,
+      movedToNamespace: "billing.ledger",
+      movedToPath: "src/main/java/com/acme/checkout/billing/ledger/LedgerEntry.java",
+      firstSeenMs: NOW - 2 * DAY,
+      lastSeenMs: NOW - 2 * DAY,
+    },
+    {
+      docPath: "docs/adr/0007-payments.md",
+      name: "PaypalGateway",
+      state: "ABSENT",
+      sentence: "`PaypalGateway` and `StripeGateway` are the two providers behind `PaymentGateway`.",
+      sourceLine: 22,
+      namespace: "billing.providers",
+      historicalPath: null,
+      siblings: ["StripeGateway", "AdyenGateway", "PaymentGateway"],
+      packageSize: 3,
+      movedToNamespace: null,
+      movedToPath: null,
+      firstSeenMs: NOW - 40 * DAY,
+      lastSeenMs: NOW - 2 * DAY,
+    },
+  ],
+};
+
 /** Every rule of the repository, as `view=rules` sends them. */
 export const demoRules: any = {
   repoOwner: "acme",

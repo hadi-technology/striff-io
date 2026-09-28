@@ -23,6 +23,72 @@ export interface IssueRule {
   onDefaultBranch: string | null;
 }
 
+/** As much of a name a doc writes and the code lacks as the issue needs to describe itself. */
+export interface IssueStaleName {
+  name: string;
+  state: string;
+  sentence: string | null;
+  sourceLine: number | null;
+  historicalPath: string | null;
+  movedToNamespace: string | null;
+  movedToPath: string | null;
+}
+
+/**
+ * The issue a reader would write for a name a doc writes that the code does not have.
+ *
+ * @param owner the repository's owner
+ * @param repo the repository's name
+ * @param docPath the document that writes the name
+ * @param finding the name and what shows it is gone
+ * @param branch the branch the line link should point at
+ * @return the URL to open
+ */
+export function staleNameIssueUrl(
+  owner: string,
+  repo: string,
+  docPath: string,
+  finding: IssueStaleName,
+  branch = "main"
+): string {
+  const moved = finding.state === "MOVED";
+  const title = moved
+    ? `${docPath} puts ${finding.name} where the code no longer has it`
+    : `${docPath} names ${finding.name}, which the code no longer has`;
+  const where = `https://github.com/${owner}/${repo}/blob/${branch}/${docPath
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/")}${finding.sourceLine ? `#L${finding.sourceLine}` : ""}`;
+  const lines = [
+    `**The doc:** [\`${docPath}${finding.sourceLine ? `:${finding.sourceLine}` : ""}\`](${where})`,
+    "",
+  ];
+  const quote = plain(finding.sentence).slice(0, MAX_QUOTE);
+  if (quote) lines.push(`> ${quote}`, "");
+  if (moved) {
+    lines.push(
+      `**What the code has:** \`${finding.name}\` is declared in \`${finding.movedToNamespace}\`${
+        finding.movedToPath ? ` (\`${finding.movedToPath}\`)` : ""
+      }, not where the doc puts it.`
+    );
+  } else if (finding.historicalPath) {
+    lines.push(
+      `**What the code has:** nothing by that name. The repository once held \`${finding.historicalPath}\` and does not now.`
+    );
+  } else {
+    lines.push("**What the code has:** nothing by that name.");
+  }
+  lines.push(
+    "",
+    "**What would close this:** edit the doc so it stops naming it, or bring it back.",
+    "",
+    "_Found by [Striff](https://striff.io), reading the default branch._"
+  );
+  return `https://github.com/${owner}/${repo}/issues/new?title=${encodeURIComponent(
+    title
+  )}&body=${encodeURIComponent(lines.join("\n"))}`;
+}
+
 /** GitHub's own limit is generous, but a URL this long is a sign the quote ran away. */
 const MAX_QUOTE = 600;
 
