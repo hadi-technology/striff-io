@@ -153,18 +153,31 @@ const STATE_LABEL: Record<DocState, string> = {
  *     is what was excluded; naming it is the difference between a reader finding the rule and
  *     hunting for one that is not on this document at all
  */
-function stateLine(doc: Doc, covering?: Exclusion | null): string {
+/**
+ * What state this document is in, in one sentence.
+ *
+ * @param showingExtracted whether the rules on screen are the ones Striff checks against. Where
+ *     they are not -- someone picked an older version from the chips -- this line says nothing
+ *     about where the rules came from, because the note above it is already saying, and the two
+ *     of them disagreeing was a bug a reader could see: one claimed the rules were the September
+ *     ones, the other that they were not the ones Striff uses.
+ */
+function stateLine(doc: Doc, covering?: Exclusion | null, showingExtracted = true): string {
   switch (doc.state) {
     case "READ":
       if (doc.outdated) {
-        return `Edited on the default branch since Striff last read it. These rules come from the ${when(doc.lastExtractedMs)} version${doc.lastExtractedPullNo ? ` (PR #${doc.lastExtractedPullNo})` : ""}, and refresh on the next pull request that changes code this doc talks about.`;
+        return showingExtracted
+          ? `Edited on the default branch since Striff last read it. These rules come from the ${when(doc.lastExtractedMs)} version${doc.lastExtractedPullNo ? ` (PR #${doc.lastExtractedPullNo})` : ""}, and refresh on the next pull request that changes code this doc talks about.`
+          : "Edited on the default branch since Striff last read it. It re-reads a doc on the next pull request that changes code the doc talks about.";
       }
       if (!doc.lastExtractedMs) {
         // A repository read before Striff kept a catalogue: the rules are real, the date is not
         // known, and inventing one would be worse than saying so.
         return "Striff has rules for this doc from a reading it made before it kept a record of when. They refresh on the next pull request that changes code this doc talks about.";
       }
-      return `Rules last extracted ${when(doc.lastExtractedMs)}${doc.lastExtractedPullNo ? ` on PR #${doc.lastExtractedPullNo}` : ""}.`;
+      return showingExtracted
+        ? `Rules last extracted ${when(doc.lastExtractedMs)}${doc.lastExtractedPullNo ? ` on PR #${doc.lastExtractedPullNo}` : ""}.`
+        : "Striff has read this doc.";
     case "NOT_READ":
       return "Striff hasn't read this doc yet. It reads a doc the first time a pull request changes code the doc talks about.";
     case "SCREENED_OUT":
@@ -626,6 +639,20 @@ export default function DocsTab({
   // The rules of the open document that are worth listing. A rule nothing has judged says nothing
   // about the code, so it is not given a row -- but it was still extracted, and the count above the
   // table says so rather than quietly losing it.
+  // Whether the rules on screen are the ones Striff checks pull requests against. Both the note
+  // and the state line under it depend on this, and they used to work it out separately: the note
+  // compared hashes, the line assumed the answer was always yes, and a reader who picked an older
+  // version was told both that these rules came from the September reading and that they were not
+  // the ones Striff uses.
+  const showingExtracted =
+    !detail?.showing ||
+    !detail.document.extractedContentHash ||
+    detail.showing.startsWith(detail.document.extractedContentHash);
+  /** The version being shown, where the catalogue lists it, for its date and pull request. */
+  const shownVersion = (detail?.versions || []).find(
+    (v: any) => detail?.showing && v.contentHash === detail.showing
+  );
+
   const shownRules = useMemo(
     () => (detail?.rules || []).filter((rule) => docStanding(rule) !== "unclear"),
     [detail]
@@ -1275,18 +1302,18 @@ export default function DocsTab({
                     ))}
                   </p>
                 )}
-                {detail.showing
-                  && detail.document.extractedContentHash
-                  && !detail.showing.startsWith(detail.document.extractedContentHash) && (
-                    <p className="docs-version-note">
-                      These are the rules of the version you picked, not the ones Striff checks
-                      pull requests against — those come from{" "}
-                      <code>{detail.document.extractedContentHash}</code>.{" "}
-                      <button type="button" onClick={() => openDoc(detail.document.path)}>
-                        Show those
-                      </button>
-                    </p>
-                  )}
+                {!showingExtracted && (
+                  <p className="docs-version-note">
+                    You are looking at <code>{(detail.showing || "").slice(0, 8)}</code>
+                    {shownVersion?.pullNo ? `, read on PR #${shownVersion.pullNo}` : ""}
+                    {shownVersion?.readAtMs ? ` on ${when(shownVersion.readAtMs)}` : ""}.
+                    {" "}Striff checks pull requests against{" "}
+                    <code>{(detail.document.extractedContentHash || "").slice(0, 8)}</code>.{" "}
+                    <button type="button" onClick={() => openDoc(detail.document.path)}>
+                      Show those
+                    </button>
+                  </p>
+                )}
                 <p className={`docs-state-line is-${detail.document.state.toLowerCase()}`}>
                   <span
                     className={`docs-sdot is-${
@@ -1297,7 +1324,7 @@ export default function DocsTab({
                   />
                   <span>
                     {withCode(stateLine(detail.document,
-                      coveringFolder(detail.document.path, catalog?.exclusions)))}
+                      coveringFolder(detail.document.path, catalog?.exclusions), showingExtracted))}
                   </span>
                 </p>
 
