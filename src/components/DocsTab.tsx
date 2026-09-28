@@ -44,6 +44,29 @@ interface Doc {
   forced: boolean;
   forcedBy: string | null;
   forcedReason: string | null;
+  /**
+   * How many characters of the doc its rules were read from, null where that is all of it. A doc
+   * longer than one reading holds is read from its opening.
+   */
+  readChars?: number | null;
+  /** How long the doc is, null wherever readChars is. */
+  totalChars?: number | null;
+}
+
+/** Whether a doc that has been read was read from its opening and not from all of it. */
+function readInPart(doc: Doc): boolean {
+  return doc.state === "READ" && doc.readChars != null && doc.totalChars != null
+    && doc.readChars < doc.totalChars;
+}
+
+/**
+ * What a reader is told about a doc read in part, empty where it was read whole. It says how far
+ * the reading went and what that leaves out, because "read" on its own would claim the rest.
+ */
+function partLine(doc: Doc): string {
+  if (!readInPart(doc)) return "";
+  const share = Math.max(1, Math.round((100 * (doc.readChars as number)) / (doc.totalChars as number)));
+  return ` This is a long doc: Striff read the first ${(doc.readChars as number).toLocaleString("en-US")} of its ${(doc.totalChars as number).toLocaleString("en-US")} characters, about ${share}%. What it says further down isn't checked.`;
 }
 
 interface Summary {
@@ -208,6 +231,10 @@ const STATE_LABEL: Record<DocState, string> = {
  *     ones, the other that they were not the ones Striff uses.
  */
 function stateLine(doc: Doc, covering?: Exclusion | null, showingExtracted = true): string {
+  return stateLineOf(doc, covering, showingExtracted) + partLine(doc);
+}
+
+function stateLineOf(doc: Doc, covering?: Exclusion | null, showingExtracted = true): string {
   switch (doc.state) {
     case "READ":
       if (doc.outdated) {
@@ -916,6 +943,14 @@ export default function DocsTab({
         )}
         {doc.outdated && doc.state === "READ" && (
           <span className="docs-badge is-outdated">Edited since</span>
+        )}
+        {readInPart(doc) && (
+          <span
+            className="docs-badge is-in-part"
+            title={`Striff read the first ${(doc.readChars as number).toLocaleString("en-US")} of this doc's ${(doc.totalChars as number).toLocaleString("en-US")} characters.`}
+          >
+            Read in part
+          </span>
         )}
         {staleByDoc.has(doc.path) && (
           <span

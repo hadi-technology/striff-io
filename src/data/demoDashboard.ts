@@ -46,13 +46,15 @@ function doc(path: string, state: string, extra: Record<string, unknown> = {}) {
     forced: false,
     forcedBy: null as string | null,
     forcedReason: null as string | null,
+    readChars: null as number | null,
+    totalChars: null as number | null,
     ...extra,
   };
 }
 
 const documents = [
   doc("AGENTS.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 3, brokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 2 * DAY }),
-  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 3, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398" }),
+  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 3, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: 29940, totalChars: 94044 }),
   doc("CONTRIBUTING.md", "NOT_READ"),
   doc("README.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: describes setup and usage, not how the code is built" }),
   doc("docs/adr/0007-payments.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 2, alreadyBrokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 12 * DAY }),

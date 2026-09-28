@@ -4221,6 +4221,7 @@
 .docs-badge { border: 1px solid; border-radius: 0.3rem; padding: 0.05rem 0.35rem; font-size: 0.65rem; font-weight: 700; white-space: nowrap; }
 .docs-badge.is-broken { background: #fdeaec; border-color: #f2c1c7; color: #b4233c; }
 .docs-badge.is-outdated { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+.docs-badge.is-in-part { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
 .docs-badge.is-stale { background: #fff7ed; border-color: #fdba74; color: #9a3412; }
 .docs-fdot.is-stale { background: #ea580c; }
 .docs-tally-item.is-stale b { color: #c2410c; }
