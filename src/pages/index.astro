@@ -283,9 +283,17 @@ const plans = [
               </span>
             </div>
 
-            <RuleRows rows={heroExampleRules} compact />
+            <RuleRows rows={heroExampleRules} />
           </div>
-          <p class="hero-check-more">Three of the {heroExampleTally.broken + heroExampleTally.held} rules this repository&rsquo;s docs state. <a href="/demo">The dashboard lists all of them &rarr;</a></p>
+          <!-- The notation named once, where it is being looked at. Without this the formulas
+               are a signal that something is being computed; with it they are the thing being
+               computed, which is the claim the whole page rests on. -->
+          <p class="hero-check-more">
+            <Formula tex={String.raw`\varphi`} /> is the rule compiled to a formula,
+            <Formula tex={String.raw`\mathcal{M}`} /> your code parsed at each revision; the
+            verdict is whether one satisfies the other. Three of the {heroExampleTally.broken + heroExampleTally.held} rules
+            this repository&rsquo;s docs state. <a href="/demo">The dashboard lists all of them &rarr;</a>
+          </p>
           <div class="hero-langs" aria-label="Supported languages">
             <span class="hero-langs-label">Works with</span>
             {heroLanguages.map((lang) => (
