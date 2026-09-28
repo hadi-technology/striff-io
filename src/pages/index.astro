@@ -76,9 +76,16 @@ const heroLanguages = [
 
 
 /**
- * The pipeline, stage by stage: which documents are read, how a sentence becomes a rule,
- * how a rule is evaluated at both revisions, and what a rendered item may say.
- * Two of five stages involve a model. Neither of them decides what is true.
+ * How a documented rule becomes a verdict: the code parsed, the prose read, the rule grounded and
+ * compiled, the formula checked at both revisions.
+ *
+ * One of the four stages involves a language model, it is the one that reads English, and nothing
+ * downstream of it asks a model anything. There used to be a fifth, "Narrate", which said a model
+ * ranked and explained the results. It does not: the rules are ordered by CheckRunFormatter and
+ * the English reading of a rule is composed from the rule's own body by ArchRuleRenderer, both of
+ * them programs. The stage was describing the review notes, which are a different part of the
+ * product, and putting them here made the model look like the last word on a verdict it never
+ * touches.
  */
 const pipeline = [
   {
@@ -102,15 +109,9 @@ const pipeline = [
   {
     kind: "symbolic",
     name: "Evaluate",
-    body: "The formula is model-checked at both revisions. Which of the two satisfy it is the whole verdict: satisfied before and not after is a rule this change broke; unsatisfied at both was already broken and is not blamed on the change.",
+    body: "The formula is model-checked at both revisions. Which of the two satisfy it is the whole verdict: satisfied before and not after is a rule this change broke; unsatisfied at both was already broken and is not blamed on the change. The sentence you read on the check is composed from the formula, so it cannot drift from what was actually checked.",
     tex: String.raw`\mathcal{M}_{\mathrm{before}} \models \varphi \qquad \mathcal{M}_{\mathrm{after}} \nvDash \varphi`
   },
-  {
-    kind: "neural",
-    name: "Narrate",
-    body: "A check has to read as English, so the model writes what the evaluation already decided and ranks it worst first. It is handed the verdicts, not the code: it cannot originate a finding, change one, or turn \u201ccould not answer\u201d into a pass.",
-    out: "Broken by this pull request"
-  }
 ];
 
 
@@ -603,11 +604,11 @@ const plans = [
             <div class="compute-intro compute-intro-wide">
               <h2 class="text-balance">Every verdict is computed, not generated.</h2>
               <p class="section-subcopy mt-4">
-                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> The language model only reads the prose and explains the results, and nothing is needed beyond the documents your repository already has.
+                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> <strong>The language model is asked exactly one question, at the start, and it is asked in English</strong> &mdash; the grounding, the verdict and the sentence you read are all computed, and nothing is needed beyond the documents your repository already has.
               </p>
             </div>
-            <p class="compute-label"><span>01</span> How a finding is produced</p>
-            <ol class="pipeline-flow is-across">
+            <p class="compute-label"><span>01</span> How a documented rule becomes a verdict</p>
+            <ol class="pipeline-flow is-across" style={`--pipe-steps: ${pipeline.length}`}>
               {pipeline.map((step, i) => (
                 <li class={`pipe-step pipe-${step.kind}`} data-pipe-step={i + 1}>
                   <span class="pipe-rail" aria-hidden="true"><span class="pipe-dot"></span></span>

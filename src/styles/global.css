@@ -3304,7 +3304,9 @@
 
 .pipeline-flow.is-across {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /* One column per step, however many there are: the row lost a step when the one that claimed
+     a model wrote the results turned out to be describing a different part of the product. */
+  grid-template-columns: repeat(var(--pipe-steps, 4), minmax(0, 1fr));
   gap: 0 1.5rem;
   max-width: none;
 }
