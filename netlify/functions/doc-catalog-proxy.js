@@ -284,6 +284,10 @@ export const handler = async (event) => {
     } else if (params.view === "rules") {
       url = `${base}/rules?token=${token}`;
       init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
+    } else if (params.view === "type-findings") {
+      // The names the documents write that the default branch does not have.
+      url = `${base}/type-findings?token=${token}`;
+      init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
     } else if (params.path) {
       url = `${base}/doc?path=${encodeURIComponent(params.path)}`
         + (params.version ? `&version=${encodeURIComponent(params.version)}` : "")
