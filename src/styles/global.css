@@ -3943,15 +3943,19 @@
    time: identifiers in its typewriter face, quantifiers the only colour, and the phi label in
    the margin the way a paper names an equation. Each chunk is one KaTeX box, so a long
    formula wraps only between chunks, never inside a term. */
+/* Set small and tight. The formula has to be recognisably a formula, not legible at arm's
+   length: it is evidence that the rule above it was compiled and checked, and a reader who
+   wants to read it is a reader who will lean in. Set at reading size it took a third of the
+   card and pushed the third rule off the screen. */
 .hcc-formula {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  column-gap: 0.5rem;
-  row-gap: 0.1rem;
+  column-gap: 0.35rem;
+  row-gap: 0;
   align-items: baseline;
   min-width: 0;
-  margin-top: 0.1rem;
-  padding-top: 0.5rem;
+  margin-top: 0.05rem;
+  padding-top: 0.35rem;
   border-top: 1px dashed rgba(100, 116, 139, 0.28);
   color: #0f172a;
 }
@@ -3961,9 +3965,10 @@
   .hcc-formula { overflow-x: auto; overflow-y: hidden; padding-bottom: 0.15rem; }
 }
 .hcc-formula-label { grid-row: 1 / span 3; color: #94a3b8; white-space: nowrap; }
-.hcc-formula-line { grid-column: 2; line-height: 1.75; }
-.hcc-formula-line + .hcc-formula-line { padding-left: 1.2rem; }
-.hcc-formula .katex { font-size: 1.05em; }
+.hcc-formula-label .katex { font-size: 0.82em; }
+.hcc-formula-line { grid-column: 2; line-height: 1.4; }
+.hcc-formula-line + .hcc-formula-line { padding-left: 0.8rem; }
+.hcc-formula .katex { font-size: 0.82em; }
 .hcc-formula .lg-q { color: #6d28d9; }
 
 /* What the change did, under a broken rule: the class and the reference that broke it. */
@@ -3974,12 +3979,12 @@
   .hcc-table .hcc-verdict-cell { align-items: flex-start; }
   .hcc-status-sat { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0; }
   .hcc-status-sat > span + span::before { content: "\00b7"; margin: 0 0.75rem; color: #94a3b8; }
-  .hcc-formula .katex { font-size: 1em; }
+  .hcc-formula .katex { font-size: 0.86em; }
 }
 /* On a phone, a size down again: fewer terms are wider than the column, so fewer rows need
    scrolling to be read at all. */
 @media (max-width: 480px) {
-  .hcc-formula .katex { font-size: 0.92em; }
+  .hcc-formula .katex { font-size: 0.8em; }
 }
 
 /* The notation, named under the card. Inline formulas in a line of prose sit on the baseline
