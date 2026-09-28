@@ -27,7 +27,7 @@ import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
  */
 type View = "docs" | "metrics";
 const VIEWS: { id: View; label: string }[] = [
-  { id: "docs", label: "Docs & rules" },
+  { id: "docs", label: "Docs & Rules" },
   { id: "metrics", label: "Metrics" },
 ];
 

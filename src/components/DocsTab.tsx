@@ -1205,7 +1205,7 @@ export default function DocsTab({
       )}
       <div className="docs-head">
         <div className="docs-head-copy">
-          <p className="dashboard-kicker">Docs &amp; rules</p>
+          <p className="dashboard-kicker">Docs &amp; Rules</p>
           <div className="docs-title">
             <span className="docs-title-name">{repo}</span>
             <a
@@ -1434,7 +1434,12 @@ export default function DocsTab({
 
                 {/* A folder has no state of its own, and its rule count is not trustworthy
                     without the states of the documents under it: fourteen rules, plus whatever
-                    is in three files nobody has read. */}
+                    is in three files nobody has read.
+
+                    Only for a folder. At the repository the chips above the tree count the same
+                    documents in the same words, and saying it twice on one screen made the tree's
+                    own chips look like they meant something else. */}
+                {scopeKind === "folder" && (
                 <p className="docs-scope-summary">
                   <button
                     type="button"
@@ -1458,6 +1463,7 @@ export default function DocsTab({
                     </span>
                   ))}
                 </p>
+                )}
 
                 {rulesLoading && !rulesIndex && (
                   <p className="dashboard-metric-caption">Reading this repository's rules…</p>

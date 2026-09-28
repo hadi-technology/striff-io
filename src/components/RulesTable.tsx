@@ -309,8 +309,18 @@ export default function RulesTable({
           {shown.map((row) => (
             <tr
               key={row.factId}
+              /* The tone follows the pill. It used to follow the pull request's own status, so a
+                 rule the default branch reports as broken -- which the pill says, in red -- got a
+                 white row with no mark on it at all. Newly broken and already broken keep their
+                 own tones, because the first is this change's doing and the second is not. */
               className={
-                row.status === "VIOLATED" ? "is-violated" : row.status === "PRE_EXISTING" ? "is-prior" : ""
+                row.status === "VIOLATED"
+                  ? "is-violated"
+                  : row.status === "PRE_EXISTING"
+                  ? "is-prior"
+                  : standing(row) === "broken"
+                  ? "is-violated"
+                  : ""
               }
             >
               <td className="rules-source">

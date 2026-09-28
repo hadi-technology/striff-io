@@ -211,6 +211,8 @@ export default function Dashboard() {
         user={user}
         installations={installations}
         current={current}
+        section={section}
+        openRepo={openRepo}
         onAccount={setAccountId}
         onSignOut={signOut}
       />
@@ -250,7 +252,7 @@ export default function Dashboard() {
           <button type="button" onClick={init} className="dashboard-button dashboard-button-primary">
             Try again
           </button>
-          <a href="/contact" className="dashboard-button dashboard-button-secondary">
+          <a href={helpUrl(user, current, section, openRepo)} className="dashboard-button dashboard-button-secondary">
             Contact support
           </a>
           <a href="/" className="dashboard-button dashboard-button-secondary">
@@ -344,7 +346,7 @@ export default function Dashboard() {
                     onClick={() => setSection("docs")}
                   >
                     <NavIcon name="docs" />
-                    <span>Docs &amp; rules</span>
+                    <span>Docs &amp; Rules</span>
                   </button>
                 </nav>
               </div>
@@ -379,6 +381,31 @@ export default function Dashboard() {
 
 
 /**
+ * The contact form, told what the reader was looking at.
+ *
+ * Only what identifies the installation and the page: the GitHub login, the account, the
+ * repository and the section. No email -- the form asks for one that is reachable, which is not
+ * necessarily the one GitHub holds -- and nothing about the documents or rules themselves.
+ */
+function helpUrl(
+  user: User | null,
+  current: Installation | null,
+  section?: Section,
+  openRepo?: string | null
+): string {
+  const context = new URLSearchParams({ from: "dashboard" });
+  if (user?.login) context.set("login", user.login);
+  if (user?.name) context.set("name", user.name);
+  if (current) {
+    context.set("account", current.account.login);
+    context.set("installation", String(current.id));
+  }
+  if (openRepo) context.set("repo", openRepo);
+  if (section) context.set("section", section);
+  return `/contact?${context.toString()}`;
+}
+
+/**
  * The application's own bar: who you are signed in as, which account you are looking at, and the
  * way out. The marketing header is turned off on this page, so this is the only chrome above the
  * work, and switching account happens here rather than inside the sections it changes.
@@ -387,12 +414,18 @@ function DashBar({
   user,
   installations,
   current,
+  section,
+  openRepo,
   onAccount,
   onSignOut,
 }: {
   user: User | null;
   installations: Installation[];
   current: Installation | null;
+  /** Which part of the dashboard is open, so asking for help says where from. */
+  section?: Section;
+  /** The repository in view, for the same reason. */
+  openRepo?: string | null;
   onAccount: (id: number) => void;
   onSignOut: () => void;
 }) {
@@ -431,7 +464,11 @@ function DashBar({
           )
         )}
         <div className="bar-right">
-          <a className="bar-link" href="/contact">Help</a>
+          {/* Help used to be a bare link to the contact form, which meant someone with a problem
+              in front of them had to describe from memory which account, which repository and
+              which page they were on -- and usually did not, so the first reply was a request
+              for all three. The form fills that in and shows what it is sending. */}
+          <a className="bar-link" href={helpUrl(user, current, section, openRepo)}>Help</a>
           {user && (
             <div className="bar-user">
               <button
@@ -875,7 +912,7 @@ function InstallationCard({
               onClick={() => setInstallTab("docs")}
               className={`dashboard-tab ${installTab === "docs" ? "dashboard-tab-active" : ""}`}
             >
-              Docs &amp; rules
+              Docs &amp; Rules
             </button>
             <button
               onClick={() => setInstallTab("metrics")}

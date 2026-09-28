@@ -35,6 +35,20 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             netlify-honeypot="bot-field"
           >
             <input type="hidden" name="form-name" value="contact" />
+            <!-- Netlify registers a form's fields from the static HTML at deploy time, so this
+                 has to exist here even though only the dashboard ever fills it. -->
+            <input type="hidden" name="context" id="contact-context" value="" />
+
+            <!-- Shown, not smuggled. Someone who arrived from the dashboard should be able to
+                 see what is being sent with their message, and delete it if they would rather
+                 not. Hidden on a plain visit, where there is nothing to say. -->
+            <div class="contact-context" id="contact-context-panel" hidden>
+              <p class="contact-context-head">
+                <span>Sent with your message</span>
+                <button type="button" id="contact-context-drop">Don&rsquo;t include this</button>
+              </p>
+              <dl class="contact-context-list" id="contact-context-list"></dl>
+            </div>
             <p class="hidden">
               <label>
                 Don't fill this out if you're human:
@@ -95,3 +109,71 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </section>
   </main>
 </BaseLayout>
+
+<script is:inline>
+  // What the dashboard knew and the form would otherwise have to ask for. The first reply to a
+  // help request used to be "which account, which repository, which page" -- three questions
+  // whose answers the page already had when the link was clicked.
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("from") !== "dashboard") return;
+
+    var LABELS = {
+      name: "Name on GitHub",
+      login: "GitHub user",
+      account: "Account",
+      installation: "Installation",
+      repo: "Repository",
+      section: "Was looking at",
+    };
+    var SECTIONS = {
+      repos: "Repositories",
+      docs: "Docs & Rules",
+      metrics: "Metrics",
+      billing: "Billing",
+    };
+
+    var rows = [];
+    Object.keys(LABELS).forEach(function (key) {
+      var value = params.get(key);
+      if (!value) return;
+      rows.push([LABELS[key], key === "section" ? SECTIONS[value] || value : value]);
+    });
+    if (rows.length === 0) return;
+
+    var panel = document.getElementById("contact-context-panel");
+    var list = document.getElementById("contact-context-list");
+    var field = document.getElementById("contact-context");
+    if (!panel || !list || !field) return;
+
+    rows.forEach(function (row) {
+      var dt = document.createElement("dt");
+      dt.textContent = row[0];
+      var dd = document.createElement("dd");
+      dd.textContent = row[1];
+      list.appendChild(dt);
+      list.appendChild(dd);
+    });
+    field.value = rows.map(function (row) { return row[0] + ": " + row[1]; }).join("\n");
+    panel.hidden = false;
+
+    // Their message, not ours: whoever would rather not send this can take it off.
+    var drop = document.getElementById("contact-context-drop");
+    if (drop) {
+      drop.addEventListener("click", function () {
+        field.value = "";
+        panel.hidden = true;
+      });
+    }
+
+    // The name is the one field this can fill without guessing at something that has to be
+    // right: the email must be one they actually read, so it stays theirs to type.
+    var nameField = document.getElementById("contact-name");
+    var known = params.get("name") || params.get("login");
+    if (nameField && known && !nameField.value) nameField.value = known;
+
+    // Someone who pressed Help from inside the product has a product problem.
+    var topic = document.getElementById("contact-topic");
+    if (topic && !topic.value) topic.value = params.get("section") === "billing" ? "billing" : "general";
+  })();
+</script>
