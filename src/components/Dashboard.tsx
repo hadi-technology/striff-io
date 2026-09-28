@@ -310,9 +310,30 @@ export default function Dashboard() {
             {openRepo && (
               <div className="dash-repo-group">
                 <p className="nav-label">Repository</p>
-                <p className="dash-repo-name" title={openRepo}>
-                  {openRepo.split("/")[1] || openRepo}
-                </p>
+                {/* Which repository you are looking at is navigation, so it sits with the rest of
+                    it. It used to be a picker on top of the work, which read as part of the page
+                    rather than as the thing that chooses the page. */}
+                {(current.repositories || []).length > 1 ? (
+                  <select
+                    className="dash-repo-select"
+                    aria-label="Repository"
+                    title={openRepo}
+                    value={openRepo}
+                    onChange={(event) => setOpenRepo(event.target.value)}
+                  >
+                    {/* One installation is one account, so every repository here shares an owner
+                        and the owner is already named above. */}
+                    {(current.repositories || []).map((r) => (
+                      <option key={r.full_name} value={r.full_name}>
+                        {r.full_name.split("/")[1] || r.full_name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="dash-repo-name" title={openRepo}>
+                    {openRepo.split("/")[1] || openRepo}
+                  </p>
+                )}
                 <nav className="dash-nav">
                   {/* One item, because there is one view: the document tree, and the rules of
                       whatever it has selected. Rules used to be a second item showing the same
@@ -343,9 +364,6 @@ export default function Dashboard() {
                 setOpenRepo(fullName);
                 setSection("docs");
               }}
-              // The view's own repository picker moves the whole shell: the sidebar and the
-              // memory followed the first choice and then disagreed with the second.
-              onRepoChange={setOpenRepo}
             />
           </div>
         </div>
@@ -615,7 +633,6 @@ function InstallationCard({
   onSection,
   openRepo,
   onOpenRepo,
-  onRepoChange,
 }: {
   installation: Installation;
   onError: (msg: string) => void;
@@ -625,8 +642,6 @@ function InstallationCard({
   onSection?: (section: Section) => void;
   openRepo?: string | null;
   onOpenRepo?: (fullName: string) => void;
-  /** Reports a repository picked inside the view, so the shell follows it. */
-  onRepoChange?: (fullName: string) => void;
 }) {
   const repos = installation.repositories || [];
   const privateRepos = repos.filter((r) => r.private);
@@ -980,12 +995,7 @@ function InstallationCard({
             </div>
           ) : installTab === "docs" ? (
             <div className="mt-3 dashboard-metric-fade-in">
-              <DocsTab
-                installationId={installation.id}
-                repos={repos}
-                openRepo={openRepo}
-                onRepoChange={onRepoChange}
-              />
+              <DocsTab installationId={installation.id} repos={repos} openRepo={openRepo} />
             </div>
           ) : installTab === "metrics" ? (
             <div className="mt-3 dashboard-metric-fade-in">

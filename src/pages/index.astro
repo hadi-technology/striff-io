@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import InlineCodeText from "../components/InlineCodeText.astro";
 import BlogLink from "../components/BlogLink.astro";
 import RuleRows from "../components/RuleRows.astro";
+import Formula from "../components/Formula.astro";
 import { heroExampleRules, heroExampleRepo, heroExampleTally } from "../data/heroExampleRules";
 import MetricsTab from "../components/MetricsTab";
 import { Image } from "astro:assets";
@@ -83,31 +84,31 @@ const pipeline = [
   {
     kind: "symbolic",
     name: "Parse",
-    body: "The code before and after the pull request becomes a structural model of types, members, references and packages \u2014 resolved the way a compiler would, not by matching text.",
-    out: "1,284 types \u00b7 8,902 references"
+    body: "Both revisions of the code become one structural model \u2014 types, members, references, packages \u2014 resolved the way a compiler resolves them, never matched as text. Everything after this point is about the model, not about the source.",
+    tex: String.raw`\mathcal{M} = \langle\, T, M, R, P \,\rangle \quad |T| = 1{,}284 \quad |R| = 8{,}902`
   },
   {
     kind: "neural",
     name: "Read",
-    body: "Your documents go to a language model, which proposes candidate rules from prose. The only step that reads English.",
+    body: "Your documents go to a language model, which proposes candidate rules from prose. The only step that reads English, and the only one that can be wrong without being caught \u2014 which is what the next step is for.",
     out: "\u201cNever import from legacy/ in new code\u201d \u00b7 AGENTS.md:18"
   },
   {
     kind: "symbolic",
     name: "Ground and compile",
-    body: "A proposed rule that names a class or package your code does not contain is dropped. The rest become formulas over the model.",
-    out: "Nothing in checkout depends on legacy"
+    body: "Every name a proposed rule uses must resolve in the model. One that names a class your code does not contain is dropped rather than guessed at. What survives is compiled into a formula of first-order logic over the model \u2014 the point past which no prose is left to interpret.",
+    tex: String.raw`\varphi \coloneqq \neg\exists\, c, d.\; \mathrm{in}(c, \mathtt{checkout}) \wedge \mathrm{in}(d, \mathtt{legacy}) \wedge \mathrm{refs}(c, d)`
   },
   {
     kind: "symbolic",
     name: "Evaluate",
-    body: "Each formula is checked against the model of the code before and after the change. A rule is held when nothing in the pull request breaks it, and only a violation the change introduced is attributed to it.",
-    out: "held before \u00b7 fails after"
+    body: "The formula is model-checked at both revisions. Which of the two satisfy it is the whole verdict: satisfied before and not after is a rule this change broke; unsatisfied at both was already broken and is not blamed on the change.",
+    tex: String.raw`\mathcal{M}_{\mathrm{before}} \models \varphi \qquad \mathcal{M}_{\mathrm{after}} \nvDash \varphi`
   },
   {
     kind: "neural",
     name: "Narrate",
-    body: "The model ranks and explains what the evaluation already found. It cannot originate a finding, rename one, or turn \u201ccould not answer\u201d into a pass.",
+    body: "A check has to read as English, so the model writes what the evaluation already decided and ranks it worst first. It is handed the verdicts, not the code: it cannot originate a finding, change one, or turn \u201ccould not answer\u201d into a pass.",
     out: "Broken by this pull request"
   }
 ];
@@ -249,9 +250,19 @@ const plans = [
                  the card was a table of rules with no occasion. -->
             <header class="hcc-head ghcheck-head">
               <span class="ghcheck-mark"><img src="/icon.svg" alt="" width="18" height="18" /></span>
+              <!-- A check exists on a pull request, and the header is the only thing that says
+                   which one. It used to say it in the same small mono line as the branch, where
+                   the number a reviewer would quote was the least visible thing on the card. -->
               <span class="ghcheck-title">
-                <b>Striff</b>
-                <i>{heroExampleRepo} &middot; #418 &middot; feat/csv-export</i>
+                <b>
+                  Striff
+                  <span class="ghcheck-on">on</span>
+                  <span class="ghcheck-pr">
+                    <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/></svg>
+                    Pull request #418
+                  </span>
+                </b>
+                <i>{heroExampleRepo} &middot; feat/csv-export &rarr; main</i>
               </span>
               <span class="ghcheck-state is-bad">
                 <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.06 1.06L6.94 8 4.97 9.97a.75.75 0 1 0 1.06 1.06L8 9.06l1.97 1.97a.75.75 0 0 0 1.06-1.06L9.06 8l1.97-1.97a.75.75 0 0 0-1.06-1.06L8 6.94Z"/></svg>
@@ -400,9 +411,6 @@ const plans = [
             </div>
 
             <div class="ghcheck-body">
-              <h3 class="ghcheck-h">Review Summary</h3>
-              <p class="ghcheck-p">Reviewed 50 components and 64 relationships across the current structural diff.</p>
-
               <h3 class="ghcheck-h">Documented Rules</h3>
               <p class="ghcheck-note">Rules read from this repository&rsquo;s own docs and checked against the dependency graph this PR produces.</p>
 
@@ -433,10 +441,10 @@ const plans = [
                 <div
                   class="ghcheck-diagram"
                   data-panzoom
-                  data-focus-x="9640"
-                  data-focus-y="1480"
-                  data-focus-w="1760"
-                  data-focus-h="820"
+                  data-focus-x="10120"
+                  data-focus-y="1708"
+                  data-focus-w="1313"
+                  data-focus-h="465"
                 >
                   <img src="/examples/agentbridge-1102-diagram.svg" width="12796" height="3793" alt="Striff's diagram of catatafishen/agentbridge pull request 1102: the fifty classes the change touched and how they connect, opened on the git tools, with added members in green, removed in red and changed in blue" loading="lazy" draggable="false" data-panzoom-img />
                   <!-- What the colours mean, at the moment of looking at them. As prose under
@@ -460,6 +468,14 @@ const plans = [
                   </div>
                 </div>
               </figure>
+
+              <p class="ghcheck-caption">
+                Every check carries one of these. It is the part of the architecture this pull
+                request touched &mdash; one box per class, one line per dependency between them
+                &mdash; drawn from the same parsed model the rules are checked against, with what
+                the change added, removed and altered picked out in colour. Drag it, or open it
+                full size.
+              </p>
 
               <p class="ghcheck-foot">
                 <img src="/icon.svg" alt="" width="14" height="14" />
@@ -605,7 +621,9 @@ const plans = [
                     {/* What this step produced, appearing as the sequence reaches it. Small,
                         under the paragraph that describes the step, so the description and its
                         result are one thing rather than a card somewhere else on the page. */}
-                    <p class="pipe-out"><span>{step.out}</span></p>
+                    <p class={`pipe-out${step.tex ? " is-formula" : ""}`}>
+                      {step.tex ? <span><Formula tex={step.tex} /></span> : <span>{step.out}</span>}
+                    </p>
                   </div>
                 </li>
               ))}

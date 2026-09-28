@@ -1,27 +1,33 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 /**
- * Asking Striff to read a whole repository now, and watching it happen.
+ * Asking Striff to read a whole repository now.
  *
  * Reading is otherwise lazy: a document is read the first time a pull request changes code it
  * names, which is right for cost and wrong for someone who has just connected a repository and
  * wants to see what it promises. This asks for all of it at once — parse the repository, read every
  * document, judge every rule against the default branch.
  *
- * It sits beside the "read / extractable" count, because that count is what it changes: five of
- * eight documents read, and here is how the other three get read. A button of its own under the
- * heading made a repository look like it needed configuring.
+ * It sits beside the counts, because those counts are what it changes: nine of twelve documents
+ * read, and here is how the other three get read. A button of its own under the heading made a
+ * repository look like it needed configuring.
  *
- * The work is a queued job of minutes, so the button is not the interesting part; the state is.
- * What it offers depends on what there is to do:
+ * The work is a queued job of minutes, and this does not sit and watch it. A run reports nothing
+ * until it is finished, so a live display of it is a spinner beside a clock: it costs a request
+ * every few seconds, it tells a reader nothing they can act on, and it invites them to wait at a
+ * page rather than go back to work. So the button carries its own state in its label, says once
+ * that the answer arrives on a refresh, and gets out of the way:
  *
- * - nothing read yet → "Read this repository now"
- * - some documents waiting → "Read the N docs waiting"
- * - everything read → nothing at all
- * - asked for, not started → "Queued to read 8 documents", with how long it has waited
- * - reading → "Reading 8 documents…", with how long it has been going
- * - just finished → what it found, for a few minutes, then nothing
- * - stopped → what went wrong, and a way to try again
+ * - documents waiting → "Read 3 docs now"
+ * - asked for, or a run already going → the same button, greyed, "Read 3 docs now (reading…)"
+ * - everything read → nothing at all, which is how a finished reading reports itself
+ * - stopped, or going so long that nothing is coming → the button again, and why
+ *
+ * Being out of service has to survive a refresh, or it is not out of service. The run record is the
+ * real answer and it says "queued" within the same request the press makes — but a reload in that
+ * gap came back to a live button, and a live button is one somebody presses again, each press
+ * queueing another reading of the same repository. So a press is also written down in this browser,
+ * and the button stays out until the record takes over or the note goes stale.
  *
  * There is deliberately no standing "re-check" button. Once every document is read, the rules are
  * kept current by the work that is already happening: a pull request re-judges the rules its change
@@ -39,11 +45,6 @@ import { useEffect, useRef, useState } from "react";
  *
  * What it costs us is our problem and is not said out loud: the reader is told how long it takes,
  * which is what they can act on.
- *
- * The count beside "Reading" is how many documents the run has to get through, not how many are
- * left. The catalogue only hears what a run read once the whole run is finished, so a number
- * presented as progress would sit still for minutes and read as a hang. The elapsed time is the
- * liveness signal; the count is the size of the job.
  */
 
 export interface Reading {
@@ -56,7 +57,7 @@ export interface Reading {
   reason: string | null;
 }
 
-/** A run that has not stopped is one worth watching. */
+/** A run the server has not finished with. */
 export function isRunning(reading: Reading | null | undefined): boolean {
   return reading?.state === "queued" || reading?.state === "running";
 }
@@ -64,8 +65,24 @@ export function isRunning(reading: Reading | null | undefined): boolean {
 /** How long a finished reading keeps saying what it found before the whole thing goes away. */
 const JUST_FINISHED_MS = 3 * 60 * 1000;
 
-/** How long a press waits for the run record to appear before it stops believing in it. */
-const STUCK_MS = 45 * 1000;
+/**
+ * How long a press holds the button on this browser's word alone.
+ *
+ * Normally nothing like this long: the run record says "done" or "stopped" well before it, and
+ * either of those releases the button. This is the backstop for a press the server took and then
+ * never recorded, and it is deliberately long -- the cost of holding a button too long is someone
+ * waiting, and the cost of releasing it too early is a second reading of the same repository,
+ * which is the expensive mistake.
+ */
+const PRESS_HOLDS_MS = 10 * 60 * 1000;
+
+/**
+ * How long a run may claim to be going before this offers to start one again.
+ *
+ * Nothing here is watching, so a run that stopped without writing that it stopped would otherwise
+ * leave the button greyed for the rest of the repository's life.
+ */
+const ABANDONED_MS = 20 * 60 * 1000;
 
 function since(ms: number): string {
   const seconds = Math.max(0, Math.round((Date.now() - ms) / 1000));
@@ -74,14 +91,42 @@ function since(ms: number): string {
   return minutes < 60 ? `${minutes} min` : `${Math.round(minutes / 60)}h`;
 }
 
+/** Where a press is written down, per repository, so a reload does not undo it. */
+function pressKey(repo: string): string {
+  return `striff.reading.${repo}`;
+}
+
+function pressedAt(repo: string): number {
+  try {
+    return Number(window.localStorage.getItem(pressKey(repo))) || 0;
+  } catch {
+    // A browser that will not remember is not a reason to fail: the run record still answers.
+    return 0;
+  }
+}
+
+function rememberPress(repo: string, at: number) {
+  try {
+    if (at) {
+      window.localStorage.setItem(pressKey(repo), String(at));
+    } else {
+      window.localStorage.removeItem(pressKey(repo));
+    }
+  } catch {
+    // As above.
+  }
+}
+
 export default function ReadRepository({
+  repo,
   reading,
   waiting,
   read,
   busy,
-  stale,
   onRead,
 }: {
+  /** The repository this is about, so a press is remembered against the right one. */
+  repo: string;
   /** Where the last reading got to, null where none was ever asked for. */
   reading: Reading | null;
   /** Documents Striff can read here that it has not read. */
@@ -92,87 +137,59 @@ export default function ReadRepository({
   busy?: boolean;
   /** Asks for a reading. Resolves false where the API refused it, so the control can recover. */
   onRead: () => void | boolean | Promise<boolean | void>;
-  /** Whether the page has stopped watching this run, so it must say to come back. */
-  stale?: boolean;
 }) {
-  // Pressed, and not yet visible in the run record: the gap between the click and the first answer
-  // is where someone presses again, and again, each press queueing another reading. The control
-  // takes itself out of service the moment it is pressed and stays out until the record says
-  // something — running, finished, or stopped.
-  const [asked, setAsked] = useState(false);
+  // Read on mount, so a reload lands on the same answer the press left behind.
+  const [asked, setAsked] = useState<number>(0);
+
+  useEffect(() => {
+    setAsked(pressedAt(repo));
+  }, [repo]);
+
+  // A finished run -- done, stopped, or declined -- is the end of the press that started it, and
+  // the note goes. A run still going agrees with the note rather than replacing it: clearing on
+  // "queued" is what handed the button back to anyone who reloaded, and a button handed back is a
+  // second reading of the same repository.
   useEffect(() => {
     if (!reading) return;
-    if (isRunning(reading) || reading.state === "done" || reading.state === "failed"
-        || reading.state === "skipped") {
-      setAsked(false);
+    if (reading.state === "done" || reading.state === "failed" || reading.state === "skipped") {
+      rememberPress(repo, 0);
+      setAsked(0);
     }
-  }, [reading?.state, reading?.askedAtMs]);
-  // Insurance against a spinner with nothing behind it. The API writes the run record before it
-  // answers, so a press that was taken shows up on the next load; if nothing has shown up after
-  // this long, something went wrong that nobody told us about, and a control stuck saying
-  // "asking..." for the rest of the session is worse than one that can be pressed again.
+  }, [repo, reading?.state, reading?.askedAtMs]);
+
   useEffect(() => {
     if (!asked) return;
-    const giveUp = window.setTimeout(() => setAsked(false), STUCK_MS);
+    const left = asked + PRESS_HOLDS_MS - Date.now();
+    if (left <= 0) {
+      rememberPress(repo, 0);
+      setAsked(0);
+      return;
+    }
+    const giveUp = window.setTimeout(() => {
+      rememberPress(repo, 0);
+      setAsked(0);
+    }, left);
     return () => window.clearTimeout(giveUp);
-  }, [asked]);
-  // Re-rendered on a timer only while something is running, so "23s" does not go stale in front of
-  // someone watching it, and nothing ticks on a page where nothing is happening.
-  const [, setTick] = useState(0);
-  const timer = useRef<number | null>(null);
-  useEffect(() => {
-    const finishing = reading?.state === "done" && reading.finishedAtMs > 0
-      && Date.now() - reading.finishedAtMs < JUST_FINISHED_MS;
-    if (!isRunning(reading) && !finishing) return;
-    timer.current = window.setInterval(() => setTick((n) => n + 1), 1000);
-    return () => {
-      if (timer.current) window.clearInterval(timer.current);
-    };
-  }, [reading?.state, reading?.finishedAtMs]);
+  }, [repo, asked]);
 
-  if (asked || isRunning(reading)) {
-    const started = reading?.state === "running";
-    // How big the job is, said once. Not how much of it is done: the catalogue is only told what a
-    // run read when the run ends, so a figure offered as progress would not move for minutes.
-    const scope = waiting > 0
-      ? `${waiting} document${waiting === 1 ? "" : "s"}`
-      : null;
-    const label = !isRunning(reading)
-      ? "Asking Striff to read this repository…"
-      : started
-      ? scope ? `Reading ${scope}…` : "Reading…"
-      : scope ? `Queued to read ${scope}` : "Queued to read…";
-    const elapsed = started ? since(reading!.startedAtMs) : reading ? since(reading!.askedAtMs) : null;
-    // Said early, because the count does not move and the clock is the only thing that does.
-    const patience = stale
-      ? "Striff is still at it. This page has stopped checking — refresh to see where it got to."
-      : started && Date.now() - reading!.startedAtMs > 20_000
-      ? "This takes a few minutes. You can leave the page; it keeps going without you."
-      : null;
-    return (
-      <span className="read-repo is-running" role="status" aria-live="polite">
-        <span className="read-repo-running-line">
-          <span className="read-repo-spinner" aria-hidden="true" />
-          <span className="read-repo-running-label" title={label}>{label}</span>
-          {elapsed && <span className="read-repo-elapsed">{elapsed}</span>}
-        </span>
-        {patience && <span className="read-repo-note">{patience}</span>}
-      </span>
-    );
-  }
+  // A run going far longer than a run takes is not a run any more.
+  const abandoned = isRunning(reading) && Date.now() - (reading!.askedAtMs || 0) > ABANDONED_MS;
+  const held = asked > 0 && Date.now() - asked < PRESS_HOLDS_MS;
+  const inProgress = held || (isRunning(reading) && !abandoned);
 
-  const stopped = reading?.state === "failed";
+  const stopped = reading?.state === "failed" || (abandoned && !held);
   const justFinished = reading?.state === "done"
     && reading.finishedAtMs > 0
     && Date.now() - reading.finishedAtMs < JUST_FINISHED_MS;
   const nothingToRead = waiting === 0 && read > 0;
 
   // Everything is read and nothing went wrong: there is no work to offer and nothing to report.
-  if (nothingToRead && !stopped && !justFinished) {
+  // This is also how a reading that worked reports itself — the button it was pressed on is gone.
+  if (nothingToRead && !stopped && !justFinished && !inProgress) {
     return null;
   }
 
-  if (nothingToRead && justFinished) {
+  if (nothingToRead && justFinished && !inProgress) {
     return (
       <span className="read-repo">
         <span className="read-repo-note is-good">
@@ -183,15 +200,20 @@ export default function ReadRepository({
     );
   }
 
-  // "Read 3" beside a count of documents read could be a count itself. It has to name what it
-  // does to what, in the fewest words that still say it: read documents, here, now. The sentence
-  // that explains why anyone would still lives in the title.
-  const label = stopped
-    ? "Try again"
-    : waiting > 0
+  // "Read 3" beside a count of documents read could be a count itself. It has to name what it does
+  // to what, in the fewest words that still say it: read documents, here, now. While it runs, the
+  // same words with the state in brackets — the button is the only thing that has to change, so it
+  // is the only thing that does.
+  // Two words, because there are two states worth telling apart. "asking…" was a third for the
+  // fraction of a second between the press and the answer, and it survived a reload as a lie.
+  const doing = reading?.state === "queued" ? "queued…" : "reading…";
+  const offer = waiting > 0
     ? `Read ${waiting} doc${waiting === 1 ? "" : "s"} now`
     : "Read these docs now";
-  const help = waiting > 0
+  const label = inProgress ? `${offer} (${doing})` : stopped ? "Try again" : offer;
+  const help = inProgress
+    ? "Striff is reading this repository. It takes a few minutes; refresh the page to see the rules."
+    : waiting > 0
     ? "Reads the documents Striff has not read yet and checks every rule it finds against your default branch. Takes a few minutes."
     : "Reads every document in this repository and checks every rule it finds against your default branch. Takes a few minutes.";
 
@@ -199,15 +221,21 @@ export default function ReadRepository({
     <span className="read-repo">
       <button
         type="button"
-        className={`read-repo-button${stopped ? " is-bad" : ""}`}
-        disabled={!!busy}
+        className={`read-repo-button${stopped && !inProgress ? " is-bad" : ""}`}
+        disabled={inProgress || !!busy}
         title={help}
         onClick={async () => {
-          setAsked(true);
+          const at = Date.now();
+          rememberPress(repo, at);
+          setAsked(at);
           try {
-            if ((await onRead()) === false) setAsked(false);
+            if ((await onRead()) === false) {
+              rememberPress(repo, 0);
+              setAsked(0);
+            }
           } catch {
-            setAsked(false);
+            rememberPress(repo, 0);
+            setAsked(0);
           }
         }}
       >
@@ -217,18 +245,27 @@ export default function ReadRepository({
         </svg>
         {label}
       </button>
-      {justFinished && (
+      {/* Said once, and not repeated by a clock: the reading finishes when it finishes, and this
+          page finds out the next time it is loaded. */}
+      {inProgress && (
+        <span className="read-repo-note" role="status">
+          Striff is reading. It takes a few minutes — refresh the page to see the rules.
+        </span>
+      )}
+      {!inProgress && justFinished && (
         <span className="read-repo-note is-good">
           Read {since(reading!.finishedAtMs)} ago · {reading!.rulesJudged} rule
           {reading!.rulesJudged === 1 ? "" : "s"} judged
         </span>
       )}
-      {reading?.state === "skipped" && (
+      {!inProgress && reading?.state === "skipped" && (
         <span className="read-repo-note">{reading.reason}</span>
       )}
-      {stopped && (
+      {!inProgress && stopped && (
         <span className="read-repo-note is-bad">
-          The last reading stopped: {reading!.reason || "no reason recorded"}
+          {reading?.state === "failed"
+            ? `The last reading stopped: ${reading.reason || "no reason recorded"}`
+            : "The last reading has been going far longer than a reading takes. You can ask for another."}
         </span>
       )}
     </span>

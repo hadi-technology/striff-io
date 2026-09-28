@@ -11,7 +11,7 @@ import RulesTable, {
   type RuleFilter,
 } from "./RulesTable";
 import Listing from "./Listing";
-import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
+import ReadRepository, { type Reading } from "./ReadRepository";
 
 /**
  * One repository's documents, and the rules read from whichever of them is selected.
@@ -395,15 +395,12 @@ export default function DocsTab({
   installationId,
   repos,
   openRepo,
-  onRepoChange,
   sample,
 }: {
   installationId: number;
   repos: { full_name: string }[];
-  /** The repository a reader opened from the repositories list, if they came that way. */
+  /** The repository to show. The shell's sidebar picks it; this view only reads it. */
   openRepo?: string | null;
-  /** Reports a repository picked here, so the shell follows it. */
-  onRepoChange?: (fullName: string) => void;
   /**
    * Fixed answers to show instead of asking the API, for the public demo: the catalogue, every
    * rule in the repository, and a function giving one document's rules. Writes are refused, so the
@@ -426,8 +423,6 @@ export default function DocsTab({
   const [error, setError] = useState("");
   /** Whether this page gave up waiting for a listing that had not arrived. */
   const [listingStale, setListingStale] = useState(false);
-  /** Whether this page gave up watching a reading that had not finished. */
-  const [watchedOut, setWatchedOut] = useState(false);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set([""]));
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -449,16 +444,16 @@ export default function DocsTab({
   catalogRef.current = catalog;
   const branch = catalog?.defaultBranch || null;
 
-  // A listing this page asked for is queued work: watch until it lands, and stop as soon as there
-  // is anything to show or anything to say about why there is not.
-  useWatch(isRunning(catalog?.reading), () => reload(), 5000, 20 * 60 * 1000,
-    () => setWatchedOut(true));
+  // A listing is seconds of work and it is the difference between an empty page and a page: watch
+  // until it lands, and stop as soon as there is anything to show or anything to say about why
+  // there is not. Only the catalogue -- a repository with no documents listed has no rules to ask
+  // for. A reading is the other kind of wait, and nothing watches that: see ReadRepository.
   useWatch(
     !!catalog
       && (catalog.documents || []).length === 0
       && catalog.lastScanMs === null
       && !catalog.lastAttempt,
-    () => reload(),
+    () => loadCatalog(),
     5000,
     180000,
     () => setListingStale(true)
@@ -678,7 +673,6 @@ export default function DocsTab({
         setActionError(answer.message || answer.error || "Couldn't ask Striff to read this repository.");
         return false;
       }
-      setWatchedOut(false);
       await reload();
       return true;
     } catch {
@@ -1213,21 +1207,7 @@ export default function DocsTab({
         <div className="docs-head-copy">
           <p className="dashboard-kicker">Docs &amp; rules</p>
           <div className="docs-title">
-            <select
-              className="docs-title-select"
-              aria-label="Repository"
-              value={repo}
-              onChange={(event) => {
-                setRepo(event.target.value);
-                onRepoChange?.(event.target.value);
-              }}
-            >
-              {repos.map((r) => (
-                <option key={r.full_name} value={r.full_name}>
-                  {r.full_name}
-                </option>
-              ))}
-            </select>
+            <span className="docs-title-name">{repo}</span>
             <a
               className="docs-repo-link"
               href={githubUrl("", true)}
@@ -1243,15 +1223,8 @@ export default function DocsTab({
               repository with every document read was still told some were waiting. It is now the
               count, or nothing. */}
           <p className="docs-lede">
-            Every doc Striff can read in this repository, and the rules it found in them. Pick a
-            folder for every rule beneath it, or the repository for all of them.
-            {summary && summary.notRead > 0 ? (
-              <>
-                {" "}Striff reads a doc the first time a pull request changes code that doc talks
-                about, so {summary.notRead} of these {summary.notRead === 1 ? "has" : "have"} not
-                been read yet.
-              </>
-            ) : null}
+            Pick a doc for its rules, a folder for everything beneath it, or the repository for
+            all of them.
           </p>
           {catalog && <RevisionLine catalog={catalog} />}
         </div>
@@ -1311,6 +1284,7 @@ export default function DocsTab({
             </button>
             {catalog && !sample && (
               <ReadRepository
+                repo={repo}
                 reading={catalog.reading}
                 /* Documents nothing has read, which is the only work a reading does. The old
                    sum subtracted the states it knew about and so counted documents a reading
@@ -1319,7 +1293,6 @@ export default function DocsTab({
                 waiting={summary.notRead}
                 read={summary.read}
                 busy={asking || busy}
-                stale={watchedOut}
                 onRead={readRepository}
               />
             )}
@@ -1495,9 +1468,11 @@ export default function DocsTab({
                         about the scope: the rules exist and this list did not reach them. */}
                     {rulesIndex.truncated
                       ? "This repository holds more rules than one list can carry, and the documents before this one fill it. Striff has these; this page cannot reach them yet."
-                      : scopeDocs.some((doc) => doc.state === "NOT_READ")
-                      ? "No rule has been read from these docs yet. Striff reads a doc the first time a pull request changes code that doc talks about."
-                      : "Striff has read these docs and found no rule in them that states a claim about the code."}
+                      : !scopeDocs.some((doc) => doc.state === "NOT_READ")
+                      ? "Striff read these docs and found no rule about the code in them."
+                      : summary && summary.notRead > 0 && !sample
+                      ? `Nothing here has been read yet. Read ${summary.notRead} doc${summary.notRead === 1 ? "" : "s"} now, above, does it without waiting for a pull request.`
+                      : "Nothing here has been read yet. Striff reads a doc the first time a pull request changes code that doc talks about."}
                   </p>
                 )}
                 {rulesIndex && scopeRows.length > 0 && (
