@@ -46,13 +46,15 @@ function doc(path: string, state: string, extra: Record<string, unknown> = {}) {
     forced: false,
     forcedBy: null as string | null,
     forcedReason: null as string | null,
+    readChars: null as number | null,
+    totalChars: null as number | null,
     ...extra,
   };
 }
 
 const documents = [
   doc("AGENTS.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 3, brokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 2 * DAY }),
-  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 3, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398" }),
+  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 3, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: 29940, totalChars: 94044 }),
   doc("CONTRIBUTING.md", "NOT_READ"),
   doc("README.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: describes setup and usage, not how the code is built" }),
   doc("docs/adr/0007-payments.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 2, alreadyBrokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 12 * DAY }),
@@ -157,6 +159,62 @@ export const demoCatalog: any = {
   exclusions: [],
   summary,
   documents,
+};
+
+/** The names the docs write that the code no longer has, as `view=type-findings` sends them. */
+export const demoStaleNames: any = {
+  repoOwner: "acme",
+  repoName: "checkout-service",
+  documents: 2,
+  truncated: false,
+  lastSeenMs: NOW - 2 * DAY,
+  findings: [
+    {
+      docPath: "ARCHITECTURE.md",
+      name: "CartSessionStore",
+      state: "ABSENT",
+      sentence: "`CartSessionStore` keeps an open cart for thirty minutes after the last change.",
+      sourceLine: 64,
+      namespace: "checkout.cart",
+      historicalPath: "src/main/java/com/acme/checkout/cart/CartSessionStore.java",
+      siblings: [],
+      packageSize: 0,
+      movedToNamespace: null,
+      movedToPath: null,
+      firstSeenMs: NOW - 16 * DAY,
+      lastSeenMs: NOW - 2 * DAY,
+    },
+    {
+      docPath: "ARCHITECTURE.md",
+      name: "billing.LedgerEntry",
+      state: "MOVED",
+      sentence: "Every charge is written as a `billing.LedgerEntry` before the provider is called.",
+      sourceLine: 71,
+      namespace: "billing",
+      historicalPath: null,
+      siblings: [],
+      packageSize: 6,
+      movedToNamespace: "billing.ledger",
+      movedToPath: "src/main/java/com/acme/checkout/billing/ledger/LedgerEntry.java",
+      firstSeenMs: NOW - 2 * DAY,
+      lastSeenMs: NOW - 2 * DAY,
+    },
+    {
+      docPath: "docs/adr/0007-payments.md",
+      name: "PaypalGateway",
+      state: "ABSENT",
+      sentence: "`PaypalGateway` and `StripeGateway` are the two providers behind `PaymentGateway`.",
+      sourceLine: 22,
+      namespace: "billing.providers",
+      historicalPath: null,
+      siblings: ["StripeGateway", "AdyenGateway", "PaymentGateway"],
+      packageSize: 3,
+      movedToNamespace: null,
+      movedToPath: null,
+      firstSeenMs: NOW - 40 * DAY,
+      lastSeenMs: NOW - 2 * DAY,
+    },
+  ],
 };
 
 /** Every rule of the repository, as `view=rules` sends them. */

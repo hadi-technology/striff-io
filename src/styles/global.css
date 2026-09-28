@@ -4237,6 +4237,21 @@
 .docs-badge { border: 1px solid; border-radius: 0.3rem; padding: 0.05rem 0.35rem; font-size: 0.65rem; font-weight: 700; white-space: nowrap; }
 .docs-badge.is-broken { background: #fdeaec; border-color: #f2c1c7; color: #b4233c; }
 .docs-badge.is-outdated { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+.docs-badge.is-in-part { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+.docs-badge.is-stale { background: #fff7ed; border-color: #fdba74; color: #9a3412; }
+.docs-fdot.is-stale { background: #ea580c; }
+.docs-tally-item.is-stale b { color: #c2410c; }
+.docs-tally-item.is-stale.is-none b { color: #16202b; }
+.docs-stale { margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid #edf1f5; }
+.docs-stale h4 { margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 0.86rem; font-weight: 700; color: #16202b; }
+.docs-stale h4 b { padding: 0.05rem 0.4rem; border-radius: 999px; background: #fff7ed; border: 1px solid #fdba74; color: #9a3412; font-size: 0.68rem; }
+.docs-stale-note { margin: 0.35rem 0 0; max-width: 46rem; font-size: 0.8rem; line-height: 1.5; color: #526071; }
+.docs-stale-table th:nth-child(2) { width: 12rem; }
+.docs-stale-table th:nth-child(4) { width: 36%; }
+.docs-stale-name { width: 12rem; }
+.docs-stale-has { display: block; overflow-wrap: anywhere; }
+.docs-stale-has code { font-size: 0.74rem; overflow-wrap: anywhere; white-space: normal; }
+.docs-stale-name code { display: block; margin-bottom: 0.3rem; font-family: "IBM Plex Mono", monospace; font-size: 0.76rem; font-weight: 600; color: #16202b; overflow-wrap: anywhere; }
 .docs-badge.is-not_read { background: #fff; border-color: #cbd5e1; border-style: dashed; color: #64748b; }
 .docs-badge.is-screened_out,
 .docs-badge.is-retired,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import DocsTab from "./DocsTab";
 import MetricsTab from "./MetricsTab";
-import { demoCatalog, demoDoc, demoRules, DEMO_REPO } from "../data/demoDashboard";
+import { demoCatalog, demoDoc, demoRules, DEMO_REPO, demoStaleNames } from "../data/demoDashboard";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 
 /**
@@ -88,7 +88,7 @@ export default function Demo() {
             installationId={0}
             repos={repos}
             openRepo={DEMO_REPO}
-            sample={{ catalog: demoCatalog, rules: demoRules, doc: demoDoc }}
+            sample={{ catalog: demoCatalog, rules: demoRules, doc: demoDoc, staleNames: demoStaleNames }}
           />
         )}
         {view === "metrics" && (
