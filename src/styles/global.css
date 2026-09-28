@@ -3304,7 +3304,9 @@
 
 .pipeline-flow.is-across {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /* One column per step, however many there are: the row lost a step when the one that claimed
+     a model wrote the results turned out to be describing a different part of the product. */
+  grid-template-columns: repeat(var(--pipe-steps, 4), minmax(0, 1fr));
   gap: 0 1.5rem;
   max-width: none;
 }
@@ -3941,15 +3943,19 @@
    time: identifiers in its typewriter face, quantifiers the only colour, and the phi label in
    the margin the way a paper names an equation. Each chunk is one KaTeX box, so a long
    formula wraps only between chunks, never inside a term. */
+/* Set small and tight. The formula has to be recognisably a formula, not legible at arm's
+   length: it is evidence that the rule above it was compiled and checked, and a reader who
+   wants to read it is a reader who will lean in. Set at reading size it took a third of the
+   card and pushed the third rule off the screen. */
 .hcc-formula {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  column-gap: 0.5rem;
-  row-gap: 0.1rem;
+  column-gap: 0.35rem;
+  row-gap: 0;
   align-items: baseline;
   min-width: 0;
-  margin-top: 0.1rem;
-  padding-top: 0.5rem;
+  margin-top: 0.05rem;
+  padding-top: 0.35rem;
   border-top: 1px dashed rgba(100, 116, 139, 0.28);
   color: #0f172a;
 }
@@ -3959,9 +3965,10 @@
   .hcc-formula { overflow-x: auto; overflow-y: hidden; padding-bottom: 0.15rem; }
 }
 .hcc-formula-label { grid-row: 1 / span 3; color: #94a3b8; white-space: nowrap; }
-.hcc-formula-line { grid-column: 2; line-height: 1.75; }
-.hcc-formula-line + .hcc-formula-line { padding-left: 1.2rem; }
-.hcc-formula .katex { font-size: 1.05em; }
+.hcc-formula-label .katex { font-size: 0.82em; }
+.hcc-formula-line { grid-column: 2; line-height: 1.4; }
+.hcc-formula-line + .hcc-formula-line { padding-left: 0.8rem; }
+.hcc-formula .katex { font-size: 0.82em; }
 .hcc-formula .lg-q { color: #6d28d9; }
 
 /* What the change did, under a broken rule: the class and the reference that broke it. */
@@ -3972,8 +3979,17 @@
   .hcc-table .hcc-verdict-cell { align-items: flex-start; }
   .hcc-status-sat { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0; }
   .hcc-status-sat > span + span::before { content: "\00b7"; margin: 0 0.75rem; color: #94a3b8; }
-  .hcc-formula .katex { font-size: 1em; }
+  .hcc-formula .katex { font-size: 0.86em; }
 }
+/* On a phone, a size down again: fewer terms are wider than the column, so fewer rows need
+   scrolling to be read at all. */
+@media (max-width: 480px) {
+  .hcc-formula .katex { font-size: 0.8em; }
+}
+
+/* The notation, named under the card. Inline formulas in a line of prose sit on the baseline
+   rather than lifting it. */
+.hero-check-more .katex { font-size: 1.05em; vertical-align: baseline; }
 
 
 .hcc-table .hcc-rule-text.hcc-rule-reading .github-inline-code {
@@ -4414,19 +4430,18 @@
 .docs-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
 .docs-head-copy { min-width: 0; }
 .docs-title { margin: 0.2rem 0 0.3rem; }
-.docs-title-select {
+.docs-title-name {
+  display: inline-block;
   max-width: 100%;
-  border: 0;
-  border-radius: 0.4rem;
-  background: transparent;
-  padding: 0 0.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
   color: #0f172a;
-  font-family: "Inter", system-ui, sans-serif;
   font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
-.docs-title-select:hover { background: #f1f5f9; }
 .docs-lede { max-width: 44rem; color: #57606a; font-size: 0.85rem; line-height: 1.55; }
 
 .docs-tally { display: flex; gap: 1.35rem; padding-left: 1.35rem; border-left: 1px solid #e2e8f0; }
@@ -4455,7 +4470,7 @@
 
   .docs-head { gap: 0.75rem; }
   .docs-tally { padding-left: 0; border-left: 0; gap: 1rem; flex-wrap: wrap; }
-  .docs-title-select { font-size: 1.15rem; max-width: 100%; }
+  .docs-title-name { font-size: 1.15rem; max-width: 100%; }
   .docs-summary { gap: 0.25rem 0.75rem; font-size: 0.78rem; }
 
   .docs-tree { max-height: 18rem; }
@@ -4558,11 +4573,35 @@
 .docs-fdot.is-unread { background: #fff; box-shadow: inset 0 0 0 1.5px #94a3b8; }
 .docs-fdot.is-other { background: #cbd5e1; }
 
+/* A wash on the rows that need something doing, and nothing on the ones that do not.
+   Tinting every row by its standing would paint most of the table green -- most rules hold --
+   and the one broken row would be harder to find, not easier: colour marks the exception or it
+   marks nothing. The wash is faint enough that the pill stays the thing that says which state
+   this is, since colour on its own is not a label anyone can read. */
+.docs-rules tr.is-violated td { background: #fdf4f5; }
+.docs-rules tr.is-prior td { background: #fdf8ee; }
+.docs-rules tr.is-violated:hover td { background: #fceef0; }
+.docs-rules tr.is-prior:hover td { background: #fcf4e4; }
 .docs-rules tr.is-violated td:first-child { box-shadow: inset 2px 0 0 #d33a4b; }
 .docs-rules tr.is-prior td:first-child { box-shadow: inset 2px 0 0 #e0a13a; }
 
 /* The two levels these things live at: an account, and a repository inside it. */
 .dash-repo-group { margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid #edf1f5; }
+.dash-repo-select {
+  width: 100%;
+  margin: 0 0 0.5rem;
+  border: 1px solid rgba(31, 35, 40, 0.14);
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.35rem 0.4rem;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+.dash-repo-select:hover { border-color: #cbd5e1; background: #f8fafc; }
+.dash-repo-select:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
+
 .dash-repo-name {
   padding: 0 10px 0.35rem;
   overflow: hidden;
@@ -5092,11 +5131,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .docs-outcome.is-holds { border-color: #bfe3cd; background: #edf9f1; color: #1a7f45; }
 .docs-outcome.is-unchecked { border-color: #e3e8ee; background: #f6f8fa; color: #57606a; }
 
-/* The rule is the column someone reads; the other two are a reference and a word. */
 .rules-table { table-layout: fixed; }
-.rules-table td:first-child, .rules-table th:first-child { width: 52%; }
-.rules-table td:nth-child(2), .rules-table th:nth-child(2) { width: 27%; }
-.rules-table td:nth-child(3), .rules-table th:nth-child(3) { width: 21%; }
 
 /* Search and export share a line: the export button had a row of its own and nothing in it. */
 .rules-toolbar { flex-wrap: nowrap; align-items: center; }
@@ -5109,9 +5144,6 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 
 @media (max-width: 860px) {
   .rules-toolbar { flex-wrap: wrap; }
-  .rules-table td:first-child, .rules-table th:first-child,
-  .rules-table td:nth-child(2), .rules-table th:nth-child(2),
-  .rules-table td:nth-child(3), .rules-table th:nth-child(3) { width: auto; }
 }
 
 /* The repository itself, one click away from the page that is about it. */
@@ -5196,16 +5228,17 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   word-break: break-word;
 }
 
-/* The per-document table: a line number is three characters, and the sentence and the rule are
-   what a reader is here for. table-layout is fixed, so without this every column took a quarter. */
-.docs-pane .docs-rules th:nth-child(1), .docs-pane .docs-rules td:nth-child(1) { width: 4.5rem; }
-.docs-pane .docs-rules th:nth-child(2), .docs-pane .docs-rules td:nth-child(2) { width: 34%; }
-.docs-pane .docs-rules th:nth-child(3), .docs-pane .docs-rules td:nth-child(3) { width: 34%; }
-.docs-pane .docs-rules th:nth-child(4), .docs-pane .docs-rules td:nth-child(4) { width: auto; }
-@media (max-width: 640px) {
-  .docs-pane .docs-rules th:nth-child(1), .docs-pane .docs-rules td:nth-child(1),
-  .docs-pane .docs-rules th:nth-child(2), .docs-pane .docs-rules td:nth-child(2),
-  .docs-pane .docs-rules th:nth-child(3), .docs-pane .docs-rules td:nth-child(3) { width: auto; }
+/* One document's own rules all came from the same file, so "where it came from" is a line number
+   and three characters do not need a fifth of the table. The sentence and the rule take the room
+   the paths were using. table-layout is fixed, so without this every column takes a quarter. */
+.rules-table.is-one-doc th:nth-child(1), .rules-table.is-one-doc td:nth-child(1) { width: 9rem; }
+.rules-table.is-one-doc th:nth-child(2), .rules-table.is-one-doc td:nth-child(2) { width: 36%; }
+.rules-table.is-one-doc th:nth-child(3), .rules-table.is-one-doc td:nth-child(3) { width: 36%; }
+.rules-table.is-one-doc th:nth-child(4), .rules-table.is-one-doc td:nth-child(4) { width: auto; }
+@media (max-width: 860px) {
+  .rules-table.is-one-doc th:nth-child(1), .rules-table.is-one-doc td:nth-child(1),
+  .rules-table.is-one-doc th:nth-child(2), .rules-table.is-one-doc td:nth-child(2),
+  .rules-table.is-one-doc th:nth-child(3), .rules-table.is-one-doc td:nth-child(3) { width: auto; }
 }
 
 /* A cell that stops after a few lines. One long sentence used to set the height of its row and
@@ -5334,6 +5367,12 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .rules-table td:nth-child(2), .rules-table th:nth-child(2) { width: 30%; }
 .rules-table td:nth-child(3), .rules-table th:nth-child(3) { width: 30%; }
 .rules-table td:nth-child(4), .rules-table th:nth-child(4) { width: 20%; }
+@media (max-width: 860px) {
+  .rules-table td:nth-child(1), .rules-table th:nth-child(1),
+  .rules-table td:nth-child(2), .rules-table th:nth-child(2),
+  .rules-table td:nth-child(3), .rules-table th:nth-child(3),
+  .rules-table td:nth-child(4), .rules-table th:nth-child(4) { width: auto; }
+}
 .rules-table .docs-rule-quote {
   color: #57606a;
   font-family: "Source Serif 4", Georgia, serif;
@@ -5649,7 +5688,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 
 .teams-panels {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
 }
 @media (max-width: 1024px) {
@@ -5679,7 +5718,10 @@ button.docs-tally-item.is-on i { color: #1f2328; }
    right and faded at the bottom, so it reads as a page that continues. */
 .teams-panel-art {
   position: relative;
-  height: 15rem;
+  /* Two panels rather than three: each is half the row, so the window onto the view is wider,
+     and a taller one shows the tree and the rules beside it rather than only the heading. The
+     dashboard is what this section is selling; a thumbnail of it sells nothing. */
+  height: 21rem;
   overflow: hidden;
   border-bottom: 1px solid #e8edf3;
   background:
@@ -5872,16 +5914,45 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   background: #fff;
   flex: 0 0 auto;
 }
-.ghcheck-title { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
-.ghcheck-title b { color: #16202b; font-size: 0.9rem; font-weight: 700; }
+.ghcheck-title { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.ghcheck-title b {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  color: #16202b;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: -0.012em;
+}
+.ghcheck-on { color: #9aa4b1; font-size: 0.85rem; font-weight: 500; }
+.ghcheck-pr {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid #c7d7f5;
+  border-radius: 999px;
+  background: #eef4ff;
+  padding: 0.08rem 0.55rem;
+  color: #1d4ed8;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.ghcheck-pr svg { flex: 0 0 auto; }
 .ghcheck-title i {
   color: #6b7684;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 0.74rem;
+  font-size: 0.8rem;
   font-style: normal;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .ghcheck-title b { font-size: 0.92rem; }
+  .ghcheck-pr { font-size: 0.85rem; }
 }
 .ghcheck-state {
   display: inline-flex;
@@ -5910,30 +5981,51 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .ghcheck-p { margin: 0 0 1.35rem; color: #424b55; font-size: 0.9rem; line-height: 1.6; }
 .ghcheck-note { margin: 0 0 0.85rem; color: #8a95a1; font-size: 0.82rem; font-style: italic; line-height: 1.55; }
 
-.ghcheck-table-wrap { overflow-x: auto; border: 1px solid #eef2f7; border-radius: 0.6rem; }
-.ghcheck-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.ghcheck-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #dde5ef;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 28px -18px rgba(15, 23, 42, 0.35);
+}
+.ghcheck-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+/* Dark head, because this table is the product and a grey-on-grey head made it look like a
+   log. The columns are the three questions, and they read as headings rather than as hints. */
 .ghcheck-table thead th {
-  border-bottom: 1px solid #eef2f7;
-  background: #fbfcfe;
-  padding: 0.55rem 0.85rem;
-  color: #6b7684;
-  font-size: 0.7rem;
+  background: #16202b;
+  padding: 0.6rem 0.95rem;
+  color: #c6d2e2;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   text-align: left;
   white-space: nowrap;
 }
-.ghcheck-table tbody tr + tr td { border-top: 1px solid #f3f6fa; }
-.ghcheck-table td { padding: 0.7rem 0.85rem; vertical-align: top; }
-.ghcheck-table tbody tr:hover { background: #fcfdfe; }
-.ghcheck-rule { color: #16202b; font-weight: 600; line-height: 1.5; min-width: 15rem; }
+.ghcheck-table thead th:first-child { border-top-left-radius: 0.72rem; }
+.ghcheck-table thead th:last-child { border-top-right-radius: 0.72rem; }
+.ghcheck-table tbody tr + tr td { border-top: 1px solid #e8eef6; }
+.ghcheck-table td { padding: 0.8rem 0.95rem; vertical-align: top; }
+/* Banded, faintly, so the eye can hold a row across three columns of prose. */
+.ghcheck-table tbody tr:nth-child(even) { background: #f8fafd; }
+.ghcheck-table tbody tr:hover { background: #eef4ff; }
+/* The rule is the column the whole check is about: it gets the ink. */
+.ghcheck-rule {
+  position: relative;
+  color: #0f172a;
+  font-weight: 650;
+  line-height: 1.5;
+  min-width: 15rem;
+  box-shadow: inset 3px 0 0 #2563eb;
+}
 .ghcheck-rule .github-inline-code {
-  border: 1px solid #e6ebf1;
-  border-radius: 0.3rem;
-  background: #f6f8fa;
-  padding: 0.05em 0.32em;
+  border: 1px solid #cfe0fb;
+  border-radius: 0.32rem;
+  background: #eaf1fe;
+  padding: 0.06em 0.34em;
+  color: #16407f;
   font-size: 0.9em;
+  font-weight: 600;
 }
 .ghcheck-src { min-width: 14rem; }
 .ghcheck-src code {
@@ -5941,6 +6033,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   color: #1d4ed8;
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.78rem;
+  font-weight: 600;
 }
 /* The quoted sentence is what the check puts in the link's tooltip. On a page nobody hovers,
    it is the most convincing thing in the row, so it is shown. */
@@ -5949,9 +6042,12 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin-top: 0.2rem;
-  color: #8a95a1;
-  font-size: 0.78rem;
+  margin-top: 0.25rem;
+  border-left: 2px solid #e2e8f0;
+  padding-left: 0.5rem;
+  color: #57606a;
+  font-family: "Source Serif 4", ui-serif, Georgia, serif;
+  font-size: 0.86rem;
   line-height: 1.5;
 }
 .ghcheck-verdict { white-space: nowrap; }
@@ -5959,15 +6055,24 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  border: 1px solid #b7e0c4;
+  border: 1px solid #9fd4b2;
   border-radius: 999px;
-  background: #e7f6ec;
-  padding: 0.12rem 0.55rem;
-  color: #17632f;
+  background: linear-gradient(180deg, #edfbf1, #dff4e7);
+  padding: 0.15rem 0.6rem;
+  color: #12653a;
   font-size: 0.78rem;
   font-weight: 700;
+  box-shadow: 0 1px 0 rgba(18, 101, 58, 0.08);
 }
 .ghcheck-more { margin: 0.7rem 0 0; color: #8a95a1; font-size: 0.8rem; }
+
+.ghcheck-caption {
+  margin: 0.7rem 0 0;
+  max-width: 62rem;
+  color: #57606a;
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
 
 .ghcheck-figure { margin: 1.35rem 0 0; }
 .ghcheck-diagram {
@@ -6078,7 +6183,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   margin: 0.6rem 0 0;
   min-height: 2.6rem;
 }
-.pipe-out span {
+.pipe-out > span {
   display: inline-block;
   border: 1px solid #e2e9f3;
   border-radius: 0.45rem;
@@ -6092,15 +6197,28 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   transform: translateY(4px);
   transition: opacity 320ms ease, transform 320ms cubic-bezier(0.22, 0.75, 0.2, 1);
 }
-.pipeline-flow.is-across .pipe-step.is-done .pipe-out span { opacity: 1; transform: none; }
-.pipeline-flow.is-across .pipe-step.is-on .pipe-out span {
+.pipeline-flow.is-across .pipe-step.is-done .pipe-out > span { opacity: 1; transform: none; }
+.pipeline-flow.is-across .pipe-step.is-on .pipe-out > span {
   border-color: #b9cdf0;
   background: #eef4ff;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
 }
 @media (prefers-reduced-motion: reduce) {
-  .pipe-out span { opacity: 1; transform: none; transition: none; }
+  .pipe-out > span { opacity: 1; transform: none; transition: none; }
 }
+
+/* Two of the five steps produce a formula rather than a line of text, because that is what
+   those two steps actually produce. Typeset, at the size the rest of the chip is set in, and
+   allowed to scroll rather than to widen its column. */
+.pipe-out.is-formula { min-height: 3.1rem; }
+.pipe-out.is-formula > span {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.4rem 0.6rem;
+  color: #16202b;
+  font-family: inherit;
+}
+.pipe-out.is-formula .katex { font-size: 0.95rem; }
 
 .diagram-source-label { color: #6b7684; font-size: 0.85rem; }
 
@@ -6191,3 +6309,144 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   font-weight: 500;
 }
 @media (max-width: 720px) { .ghcheck-legend em { display: none; } }
+
+/* ---- Docs & rules: one tree, and the rules of whatever it has selected ----
+   The tree is the only navigation now. A folder's chevron opens it and its name selects it, and
+   the repository has a row of its own at the head, which is what makes "every rule in here" a
+   thing you click rather than a second page. */
+
+/* The chevron is its own control: expanding a folder and selecting it are different questions,
+   and one button could only answer one of them. */
+/* Folders and documents keep the same left edge, so a chevron that can be pressed and a spacer
+   that cannot are the same width. */
+.docs-chev, .docs-chev-button { width: 16px; }
+.docs-chev-button {
+  flex: 0 0 auto;
+  align-items: center;
+  border-radius: 0.3rem;
+  background: transparent;
+  padding: 0;
+  height: 20px;
+}
+.docs-chev-button:hover { background: #e8eef6; color: #24292f; }
+.docs-row.is-folder .docs-row-main { padding-left: 0.1rem; }
+
+/* The repository's own row: the head of the tree, and where the view opens. */
+.docs-row.is-root { margin-bottom: 0.15rem; border-bottom: 1px solid #f1f4f7; border-radius: 0.4rem 0.4rem 0 0; }
+.docs-row.is-root .docs-row-name { font-weight: 700; color: #0f172a; }
+.docs-row.is-root.is-open .docs-row-name { color: #1d4ed8; }
+
+/* The file itself, beside the path of it: reading the document is the first thing anyone does
+   when a rule looks wrong, so it is a link rather than an item in a menu nobody opens. */
+.docs-pane-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.2rem 0.5rem;
+  color: #57606a;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.docs-pane-github:hover { border-color: #cbd5e1; color: #24292f; text-decoration: none; }
+
+/* What a folder's own row cannot carry: the states of the documents under it, so its rule count
+   can be trusted. Every part is a filter on the tree, because a fact you can act on beats one you
+   have to go looking for. */
+.docs-scope-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.1rem;
+  margin-top: 0.55rem;
+  color: #57606a;
+  font-size: 0.82rem;
+}
+.docs-scope-sep { margin: 0 0.4rem; font-style: normal; color: #c3cedb; }
+.docs-scope-part {
+  border-radius: 0.35rem;
+  padding: 0.05rem 0.25rem;
+  margin: 0 -0.25rem;
+  color: #57606a;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.docs-scope-part:hover { background: #f1f5f9; color: #1f2328; }
+.docs-scope-part.is-on { background: #eef4fe; color: #1d4ed8; font-weight: 600; }
+
+/* The rules of the selection sit inside the pane, so they carry no shadow of their own. */
+.docs-pane .rules-panel { margin-top: 0.85rem; border-radius: 0.6rem; box-shadow: none; }
+
+/* The export says what it would write before anyone presses it: an export that turns out to have
+   covered a folder rather than the repository is a surprise found in a downloads folder. */
+.rules-export-button b { font-weight: 700; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rules-export-count { color: #8a95a1; font-weight: 500; }
+@media (max-width: 640px) { .rules-export-button b { max-width: 9rem; } }
+
+/* One document's rules all came from the same file, whose name is the heading above them. */
+.rules-source-line { color: #57606a; font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; }
+
+/* On paper the tree is navigation, and navigation does not print. */
+@media print {
+  .docs-list,
+  .docs-pane-actions,
+  .docs-pane-github,
+  .docs-scope-summary,
+  .tree-search { display: none !important; }
+  .docs-split { display: block; }
+  .docs-pane { border: 0; border-radius: 0; padding: 0; }
+  .docs-pane .rules-panel { margin-top: 0; border: 0; border-radius: 0; }
+}
+
+/* ---- The context a help request arrives with ----
+   Shown above the message rather than attached to it invisibly: someone who came from the
+   dashboard can see what is being sent and take it off. */
+.contact-context {
+  grid-column: 1 / -1;
+  margin-bottom: 1rem;
+  border: 1px solid #dbe6f6;
+  border-radius: 0.65rem;
+  background: #f6f9ff;
+  padding: 0.7rem 0.85rem;
+}
+.contact-context-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 0.45rem;
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.contact-context-head button {
+  border: 0;
+  background: transparent;
+  color: #6b7684;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.contact-context-head button:hover { color: #24292f; }
+.contact-context-list {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.2rem 0.75rem;
+  margin: 0;
+  font-size: 0.82rem;
+}
+.contact-context-list dt { color: #6b7684; }
+.contact-context-list dd {
+  margin: 0;
+  color: #16202b;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}

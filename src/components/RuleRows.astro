@@ -19,10 +19,13 @@ interface Props {
   /**
    * Drops the formula and the two satisfaction facts, leaving sentence, rule and verdict.
    *
-   * The hero uses this. A first-order-logic formula is the strongest thing on the page for a
-   * reader who has decided to care and a wall for one who has not, and the hero's whole job is
-   * the second reader. The formula keeps its place where the claim it proves is made: the
-   * pipeline section below, and the flagship post.
+   * The hero used this, on the reasoning that a first-order-logic formula is a wall for a reader
+   * who has not decided to care yet. That reasoning weighed comprehension too heavily: the
+   * objection this product meets first is that it is a language model guessing, and a formula
+   * answers that objection whether or not it is read. The two satisfaction facts answer it
+   * better still, because a formula shows something was compiled and those show it was checked,
+   * at both revisions, with the one that failed picked out. So the hero shows all of it, and
+   * this stays for anywhere a row has to fit somewhere narrow.
    */
   compact?: boolean;
 }
