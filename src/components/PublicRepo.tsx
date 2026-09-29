@@ -171,6 +171,10 @@ export default function PublicRepo() {
     ? new Date(snapshotMs).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
     : null;
   const docsSource: DocsSource = {
+    refreshedAt: page.claimed ? undefined : snapshotAt ?? undefined,
+    lede: "This is a public, read-only report. Striff reads this repository's docs, turns each "
+      + "sentence that makes a claim about the code into a rule, and checks the rule against the "
+      + "code on the default branch.",
     url: (docsView, path) => path != null
       ? proxy(page.repoOwner, page.repoName, "doc", { path })
       : proxy(page.repoOwner, page.repoName, docsView === "" ? "catalog" : docsView),
@@ -178,12 +182,6 @@ export default function PublicRepo() {
 
   return (
     <div className="public-repo">
-      <p className="public-repo-intro">
-        This is a public, read-only report. Striff reads this repository's docs, turns each
-        sentence that makes a claim about the code into a rule, and checks the rule against the
-        code on the default branch.
-      </p>
-
       {readingNow && (
         <p className="public-repo-withheld">
           Striff is reading this repository's documents
@@ -194,11 +192,6 @@ export default function PublicRepo() {
 
       <div className="demo">
         <div className="demo-bar">
-          {!page.claimed && snapshotAt && (
-            <p className="public-repo-refreshed">
-              Last refreshed <strong>{snapshotAt}</strong>
-            </p>
-          )}
           <div className="demo-tabs" role="tablist" aria-label="Repository views">
             {views.length > 1 && views.map((v) => (
               <button

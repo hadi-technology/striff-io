@@ -475,6 +475,10 @@ const GitHubMark = () =>
 export interface DocsSource {
   /** The URL of one read: the catalogue (""), every rule, the names gone, or one document. */
   url(view: "" | "rules" | "type-findings", path?: string): string;
+  /** What the view says under the repository's name, in place of how to use the tree. */
+  lede?: string;
+  /** When the page was last read, shown beside the repository's name. */
+  refreshedAt?: string;
 }
 
 export default function DocsTab({
@@ -1454,6 +1458,11 @@ export default function DocsTab({
               <GitHubMark />
               GitHub
             </a>
+            {source?.refreshedAt && (
+              <span className="docs-refreshed-chip" title="When Striff last read this repository. This page is not updated after that.">
+                Last refreshed {source.refreshedAt}
+              </span>
+            )}
             {/* A public page is a snapshot: loading it again finds the same thing. */}
             {!source && (
               <button
@@ -1472,8 +1481,8 @@ export default function DocsTab({
               repository with every document read was still told some were waiting. It is now the
               count, or nothing. */}
           <p className="docs-lede">
-            Pick a doc for its rules, a folder for everything beneath it, or the repository for
-            all of them.
+            {source?.lede
+              ?? "Pick a doc for its rules, a folder for everything beneath it, or the repository for all of them."}
           </p>
           {catalog && <RevisionLine catalog={catalog} />}
         </div>
@@ -1489,15 +1498,18 @@ export default function DocsTab({
               <b>{allDocs.length}</b>
               <i>document{allDocs.length === 1 ? "" : "s"}</i>
             </button>
+            {/* Not lit when nothing is filtered: a light on every count says nothing. */}
             <button
               type="button"
-              className={`docs-tally-item is-violated${ruleFilter === "broken" ? " is-on" : ""}`}
-              title={`${STANDING_HELP.broken} Click to show these.`}
-              onClick={() => setRuleFilter(ruleFilter === "broken" ? "all" : "broken")}
+              className="docs-tally-item"
+              title="Every rule read from this repository's documents."
+              onClick={() => setRuleFilter("all")}
             >
-              <b>{repoCounts.broken}</b>
-              <i>broken</i>
+              <b>{repoCounts.all}</b>
+              <i>rule{repoCounts.all === 1 ? "" : "s"}</i>
             </button>
+            {/* Totals first, then how the rules stand: what holds, what is broken, what nothing
+                has checked. */}
             <button
               type="button"
               className={`docs-tally-item is-held${ruleFilter === "holds" ? " is-on" : ""}`}
@@ -1509,22 +1521,21 @@ export default function DocsTab({
             </button>
             <button
               type="button"
+              className={`docs-tally-item is-violated${ruleFilter === "broken" ? " is-on" : ""}`}
+              title={`${STANDING_HELP.broken} Click to show these.`}
+              onClick={() => setRuleFilter(ruleFilter === "broken" ? "all" : "broken")}
+            >
+              <b>{repoCounts.broken}</b>
+              <i>broken</i>
+            </button>
+            <button
+              type="button"
               className={`docs-tally-item${ruleFilter === "unchecked" ? " is-on" : ""}`}
               title={`${STANDING_HELP.unchecked} Click to show these.`}
               onClick={() => setRuleFilter(ruleFilter === "unchecked" ? "all" : "unchecked")}
             >
               <b>{repoCounts.unchecked}</b>
               <i>not checked</i>
-            </button>
-            {/* Not lit when nothing is filtered: a light on every count says nothing. */}
-            <button
-              type="button"
-              className="docs-tally-item"
-              title="Every rule read from this repository's documents."
-              onClick={() => setRuleFilter("all")}
-            >
-              <b>{repoCounts.all}</b>
-              <i>rule{repoCounts.all === 1 ? "" : "s"}</i>
             </button>
             {/* Shown only once a reading of the whole repository has looked. Until then there is
                 no number to give: a zero would say every doc is current, and nothing has checked.
