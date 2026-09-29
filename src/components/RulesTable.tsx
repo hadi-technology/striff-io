@@ -351,9 +351,7 @@ export default function RulesTable({
                 </span>
                 {showPath && (
                   <span className="rules-source-when">
-                    {row.doc.outdated
-                      ? `Doc edited since Striff read it${row.doc.lastExtractedMs ? `, ${when(row.doc.lastExtractedMs)}` : ""}`
-                      : row.doc.lastExtractedMs
+                    {row.doc.lastExtractedMs
                       ? `Read ${when(row.doc.lastExtractedMs)}${row.doc.lastExtractedPullNo ? ` on PR #${row.doc.lastExtractedPullNo}` : ""}`
                       : ""}
                   </span>
@@ -369,14 +367,22 @@ export default function RulesTable({
                 <span className={`docs-outcome is-${standing(row)}`} title={STANDING_HELP[standing(row)]}>
                   {STANDING_LABEL[standing(row)]}
                 </span>
+                {/* This column is narrow, so each line under the pill is short enough to stay one
+                    line, and the sentence it stands for is in its title. */}
                 {row.pullNo && (
-                  <span className="docs-outcome-when">
-                    last judged on PR #{row.pullNo} · {when(row.judgedAtMs)}
+                  <span
+                    className="docs-outcome-when"
+                    title={`Last judged on PR #${row.pullNo}, ${when(row.judgedAtMs)}.`}
+                  >
+                    PR #{row.pullNo} · {when(row.judgedAtMs)}
                   </span>
                 )}
                 {row.pullNo && !row.onDefaultBranch && (
-                  <span className="docs-outcome-branch">
-                    judged on a pull request, not against the branch
+                  <span
+                    className="docs-outcome-branch"
+                    title="A pull request judged this rule. Nothing has judged it against the default branch yet."
+                  >
+                    not checked on {branch || "the branch"} yet
                   </span>
                 )}
                 {standing(row) === "broken" && (

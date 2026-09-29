@@ -199,23 +199,6 @@ function coveringFolder(path: string, exclusions: Exclusion[] | undefined): Excl
 interface Detail {
   document: Doc;
   rules: Rule[];
-  /** Every version of this document Striff holds an extraction for, newest reading first. */
-  versions: Version[];
-  /** The version the rules above were read from. */
-  showing: string | null;
-}
-
-/**
- * One version of a document Striff has read. A pull request reads the text on its own branch, so a
- * version can hold rules without ever having been on the default branch.
- */
-interface Version {
-  contentHash: string;
-  ruleCount: number;
-  readAtMs: number | null;
-  pullNo: string | null;
-  onDefaultBranch: boolean;
-  shown: boolean;
 }
 
 const STATE_LABEL: Record<DocState, string> = {
@@ -234,32 +217,23 @@ const STATE_LABEL: Record<DocState, string> = {
  * @param covering the folder rule that excludes it, where a folder rather than the document itself
  *     is what was excluded; naming it is the difference between a reader finding the rule and
  *     hunting for one that is not on this document at all
- * @param showingExtracted whether the rules on screen are the ones Striff checks against. Where
- *     they are not -- someone picked an older version from the chips -- this line says nothing
- *     about where the rules came from, because the note above it is already saying, and the two
- *     of them disagreeing was a bug a reader could see: one claimed the rules were the September
- *     ones, the other that they were not the ones Striff uses.
  */
-function stateLine(doc: Doc, covering?: Exclusion | null, showingExtracted = true): string {
-  return stateLineOf(doc, covering, showingExtracted) + partLine(doc);
+function stateLine(doc: Doc, covering?: Exclusion | null): string {
+  return stateLineOf(doc, covering) + partLine(doc);
 }
 
-function stateLineOf(doc: Doc, covering?: Exclusion | null, showingExtracted = true): string {
+function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
   switch (doc.state) {
     case "READ":
       if (doc.outdated) {
-        return showingExtracted
-          ? `Edited on the default branch since Striff last read it. These rules come from the ${when(doc.lastExtractedMs)} version${doc.lastExtractedPullNo ? ` (PR #${doc.lastExtractedPullNo})` : ""}, and refresh on the next pull request that changes code this doc talks about.`
-          : "Edited on the default branch since Striff last read it. It re-reads a doc on the next pull request that changes code the doc talks about.";
+        return `Edited on the default branch since Striff last read it. These rules come from the ${when(doc.lastExtractedMs)} version${doc.lastExtractedPullNo ? ` (PR #${doc.lastExtractedPullNo})` : ""}, and refresh on the next pull request that changes code this doc talks about.`;
       }
       if (!doc.lastExtractedMs) {
         // A repository read before Striff kept a catalogue: the rules are real, the date is not
         // known, and inventing one would be worse than saying so.
         return "Striff has rules for this doc from a reading it made before it kept a record of when. They refresh on the next pull request that changes code this doc talks about.";
       }
-      return showingExtracted
-        ? `Rules last extracted ${when(doc.lastExtractedMs)}${doc.lastExtractedPullNo ? ` on PR #${doc.lastExtractedPullNo}` : ""}.`
-        : "Striff has read this doc.";
+      return `Rules last extracted ${when(doc.lastExtractedMs)}${doc.lastExtractedPullNo ? ` on PR #${doc.lastExtractedPullNo}` : ""}.`;
     case "NOT_READ":
       return "Striff hasn't read this doc yet. It reads a doc the first time a pull request changes code the doc talks about.";
     case "SCREENED_OUT":
@@ -488,7 +462,7 @@ export default function DocsTab({
   sample?: {
     catalog: any;
     rules: any;
-    doc: (path: string, version?: string | null) => any;
+    doc: (path: string) => any;
     staleNames?: any;
   };
 }) {
@@ -669,12 +643,12 @@ export default function DocsTab({
     }
   }
 
-  async function openDoc(path: string, version?: string | null) {
+  async function openDoc(path: string) {
     setSelected(path);
     setDetail(null);
     setActionError("");
     if (sample) {
-      setDetail(sample.doc(path, version));
+      setDetail(sample.doc(path));
       return;
     }
     // Two clicks in a row answer in whatever order the network likes. Only the document asked for
@@ -682,7 +656,7 @@ export default function DocsTab({
     const wanted = ++openedAt.current;
     try {
       const res = await fetch(
-        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}&path=${encodeURIComponent(path)}${version ? `&version=${encodeURIComponent(version)}` : ""}`
+        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}&path=${encodeURIComponent(path)}`
       );
       if (wanted !== openedAt.current) return;
       if (!res.ok) {
@@ -853,9 +827,7 @@ export default function DocsTab({
   /**
    * The rules the selection covers.
    *
-   * A document's own rules come from its own answer, not from the repository-wide one, because
-   * that answer is the only one that knows about versions: pick an older reading from the chips
-   * and these are its rules.
+   * A document's own rules come from its own answer, not from the repository-wide one.
    */
   const scopeRows = useMemo<Row[]>(() => {
     if (scopeKind === "doc") {
@@ -1086,23 +1058,12 @@ export default function DocsTab({
             {doc.brokenRules + doc.alreadyBrokenRules} broken
           </span>
         )}
-        {doc.outdated && doc.state === "READ" && (
-          <span className="docs-badge is-outdated">Edited since</span>
-        )}
         {staleByDoc.has(doc.path) && (
           <span
             className="docs-badge is-stale"
             title="Names this doc writes that the code no longer has."
           >
             {staleByDoc.get(doc.path)!.length} gone
-          </span>
-        )}
-        {readInPart(doc) && (
-          <span
-            className="docs-badge is-in-part"
-            title={`Striff read the first ${(doc.readChars as number).toLocaleString("en-US")} of this doc's ${(doc.totalChars as number).toLocaleString("en-US")} characters.`}
-          >
-            Read in part
           </span>
         )}
         {doc.state !== "READ" && (
@@ -1240,19 +1201,6 @@ export default function DocsTab({
   }
 
   const summary = catalog?.summary;
-  // Whether the rules on screen are the ones Striff checks pull requests against. Both the note
-  // and the state line under it depend on this, and they used to work it out separately: the note
-  // compared hashes, the line assumed the answer was always yes, and a reader who picked an older
-  // version was told both that these rules came from the September reading and that they were not
-  // the ones Striff uses.
-  const showingExtracted =
-    !detail?.showing ||
-    !detail.document.extractedContentHash ||
-    detail.showing.startsWith(detail.document.extractedContentHash);
-  /** The version being shown, where the catalogue lists it, for its date and pull request. */
-  const shownVersion = (detail?.versions || []).find(
-    (v: any) => detail?.showing && v.contentHash === detail.showing
-  );
 
   return (
     <div className="docs-tab">
@@ -1694,62 +1642,6 @@ export default function DocsTab({
                   </a>
                   <span className="docs-pane-actions">{rowMenu(selected, detail.document, false, "pane")}</span>
                 </div>
-                <p className="docs-version-line">
-                  <span title="The text on the default branch when Striff last listed it. Striff keeps a fingerprint, not the text.">
-                    On {branch || "the default branch"}:{" "}
-                    <code>{detail.document.currentContentHash || "not listed yet"}</code>
-                  </span>
-                  {detail.document.extractedContentHash && (
-                    <span title="The version the rules below were read from. A pull request reads the text on its own branch, so this is not always a version that reached the default branch.">
-                      {" · rules from "}
-                      <code>{detail.document.extractedContentHash}</code>
-                      {detail.document.lastExtractedPullNo
-                        ? ` (PR #${detail.document.lastExtractedPullNo})`
-                        : ""}
-                      {detail.document.currentContentHash
-                        && detail.document.extractedContentHash !== detail.document.currentContentHash
-                        ? " — a different version to the one on the branch"
-                        : ""}
-                    </span>
-                  )}
-                </p>
-                {detail.versions && detail.versions.length > 1 && (
-                  <p className="docs-versions">
-                    <span className="docs-versions-label">Versions Striff has read:</span>
-                    {detail.versions.map((version) => (
-                      <button
-                        key={version.contentHash}
-                        type="button"
-                        className={`docs-version${version.shown ? " is-on" : ""}`}
-                        title={`${version.ruleCount} rule${version.ruleCount === 1 ? "" : "s"}${
-                          version.pullNo ? `, read on PR #${version.pullNo}` : ""
-                        }${version.readAtMs ? ` on ${when(version.readAtMs)}` : ""}${
-                          version.onDefaultBranch
-                            ? ". This is the text on the default branch."
-                            : ". This version is not what the default branch holds — a pull request read it on its own branch."
-                        }`}
-                        onClick={() => openDoc(detail.document.path, version.contentHash)}
-                      >
-                        <code>{version.contentHash.slice(0, 8)}</code>
-                        {version.onDefaultBranch && <i>on {branch || "main"}</i>}
-                        {version.pullNo && !version.onDefaultBranch && <i>PR #{version.pullNo}</i>}
-                        <b>{version.ruleCount}</b>
-                      </button>
-                    ))}
-                  </p>
-                )}
-                {!showingExtracted && (
-                  <p className="docs-version-note">
-                    You are looking at <code>{(detail.showing || "").slice(0, 8)}</code>
-                    {shownVersion?.pullNo ? `, read on PR #${shownVersion.pullNo}` : ""}
-                    {shownVersion?.readAtMs ? ` on ${when(shownVersion.readAtMs)}` : ""}.
-                    {" "}Striff checks pull requests against{" "}
-                    <code>{(detail.document.extractedContentHash || "").slice(0, 8)}</code>.{" "}
-                    <button type="button" onClick={() => openDoc(detail.document.path)}>
-                      Show those
-                    </button>
-                  </p>
-                )}
                 <p className={`docs-state-line is-${detail.document.state.toLowerCase()}`}>
                   <span
                     className={`docs-sdot is-${
@@ -1760,7 +1652,7 @@ export default function DocsTab({
                   />
                   <span>
                     {withCode(stateLine(detail.document,
-                      coveringFolder(detail.document.path, catalog?.exclusions), showingExtracted))}
+                      coveringFolder(detail.document.path, catalog?.exclusions)))}
                   </span>
                 </p>
 
