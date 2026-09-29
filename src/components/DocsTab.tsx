@@ -443,6 +443,16 @@ const DotsIcon = () =>
     createElement("circle", { cx: 12.8, cy: 8, r: 1.3 })
   );
 
+/** Two arrows chasing each other: load again. */
+export const RefreshMark = () => (
+  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M13.25 6.5A5.25 5.25 0 0 0 3.6 4.4" />
+    <path d="M3.25 2.25v2.5h2.5" />
+    <path d="M2.75 9.5a5.25 5.25 0 0 0 9.65 2.1" />
+    <path d="M12.75 13.75v-2.5h-2.5" />
+  </svg>
+);
+
 const GitHubMark = () =>
   createElement(
     "svg",
@@ -1415,6 +1425,16 @@ export default function DocsTab({
               <GitHubMark />
               GitHub
             </a>
+            <button
+              type="button"
+              className={`docs-refresh${loading || rulesLoading ? " is-loading" : ""}`}
+              onClick={() => reload()}
+              disabled={loading || rulesLoading}
+              title="Load this repository's documents and rules again"
+            >
+              <RefreshMark />
+              Refresh
+            </button>
           </div>
           {/* The second sentence used to be there whatever the repository looked like, so a
               repository with every document read was still told some were waiting. It is now the
@@ -1575,7 +1595,9 @@ export default function DocsTab({
                   key={chip.key}
                   type="button"
                   className={`docs-filter${filter === chip.key ? " is-on" : ""}`}
-                  onClick={() => setFilter(chip.key)}
+                  aria-pressed={filter === chip.key}
+                  // A second click on the chip in use puts the tree back as it was.
+                  onClick={() => setFilter(filter === chip.key ? "all" : chip.key)}
                 >
                   {chip.dot && <span className={`docs-fdot is-${chip.dot}`} />}
                   {chip.label} <b>{filterCounts[chip.key]}</b>
@@ -1732,8 +1754,10 @@ export default function DocsTab({
                       ? "This repository holds more rules than one list can carry, and the documents before this one fill it. Striff has these; this page cannot reach them yet."
                       : !scopeDocs.some((doc) => doc.state === "NOT_READ")
                       ? "Striff read these docs and found no rule about the code in them."
+                      : isRunning(catalog?.reading)
+                      ? "Striff is reading these docs now. Their rules appear here as they are read; refresh to see them."
                       : summary && summary.notRead > 0 && !sample
-                      ? `Nothing here has been read yet. Read ${summary.notRead} doc${summary.notRead === 1 ? "" : "s"} now, above, does it without waiting for a pull request.`
+                      ? `Nothing here has been read yet. Use Read ${summary.notRead} doc${summary.notRead === 1 ? "" : "s"} now, above, to read ${summary.notRead === 1 ? "it" : "them"} without waiting for a pull request.`
                       : "Nothing here has been read yet. Striff reads a doc the first time a pull request changes code that doc talks about."}
                   </p>
                 )}

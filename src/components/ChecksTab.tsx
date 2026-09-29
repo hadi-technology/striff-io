@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { RefreshMark } from "./DocsTab";
 
 /**
  * The checks Striff ran on a repository's pull requests lately.
@@ -73,6 +74,7 @@ export default function ChecksTab({
   const [answer, setAnswer] = useState<ChecksPage | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [asked, setAsked] = useState(0);
   const [owner, name] = repo.split("/");
 
   useEffect(() => setPage(0), [repo]);
@@ -103,7 +105,7 @@ export default function ChecksTab({
     return () => {
       current = false;
     };
-  }, [installationId, repo, page]);
+  }, [installationId, repo, page, asked]);
 
   if (!repo) {
     return <p className="dashboard-metric-caption">Pick a repository to see its checks.</p>;
@@ -123,6 +125,16 @@ export default function ChecksTab({
             are listed.
           </p>
         </div>
+        <button
+          type="button"
+          className={`docs-refresh${loading ? " is-loading" : ""}`}
+          onClick={() => setAsked((n) => n + 1)}
+          disabled={loading}
+          title="Load the checks again"
+        >
+          <RefreshMark />
+          Refresh
+        </button>
       </div>
 
       {error && <p className="dashboard-inline-error">{error}</p>}

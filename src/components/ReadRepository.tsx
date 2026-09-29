@@ -235,7 +235,7 @@ export default function ReadRepository({
             </span>
           )}
         </span>
-        <span className="read-repo-note">Refresh the page to see what has been read since.</span>
+        <span className="read-repo-note">Press Refresh to see what has been read since.</span>
       </span>
     );
   }
