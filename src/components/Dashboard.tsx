@@ -3,6 +3,9 @@ import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab from "./DocsTab";
 import { EXTENSION_URL } from "./docRules";
 
+/** Where the GitHub App is installed on an account: the first one, or one more. */
+const INSTALL_URL = "https://github.com/apps/striff-app/installations/new";
+
 const OAUTH_CLIENT_ID =
   typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_GITHUB_OAUTH_CLIENT_ID
     ? import.meta.env.PUBLIC_GITHUB_OAUTH_CLIENT_ID
@@ -277,7 +280,7 @@ export default function Dashboard() {
             analyzing pull requests. Public repos are free.
           </p>
           <a
-            href="https://github.com/apps/striff-app/installations/new"
+            href={INSTALL_URL}
             className="dashboard-button dashboard-button-primary mt-4 inline-block"
             target="_blank"
             rel="noopener noreferrer"
@@ -447,21 +450,14 @@ function DashBar({
           <span className="bar-tile"><img src="/icon.svg" alt="" width="20" height="20" /></span>
           <span className="bar-word">Striff</span>
         </a>
+        {/* A menu even with one account in it: it is where someone looks to add a second, and a
+            name that did nothing when pressed gave no sign that there could be one. */}
         {current && (
-          installations.length > 1 ? (
-            <AccountPicker
-              installations={installations}
-              current={current}
-              onAccount={onAccount}
-            />
-          ) : (
-            <span className="bar-account is-only">
-              {current.account.avatar_url && (
-                <img className="bar-account-avatar" src={current.account.avatar_url} alt="" />
-              )}
-              <span className="bar-account-name">{current.account.login}</span>
-            </span>
-          )
+          <AccountPicker
+            installations={installations}
+            current={current}
+            onAccount={onAccount}
+          />
         )}
         <div className="bar-right">
           {/* Help used to be a bare link to the contact form, which meant someone with a problem
@@ -484,7 +480,7 @@ function DashBar({
               {menuOpen && (
                 <div className="bar-menu" role="menu">
                   <p className="bar-menu-who">{user.login}</p>
-                  <a className="bar-menu-item" href="https://github.com/apps/striff-app/installations/new" target="_blank" rel="noopener noreferrer" role="menuitem">
+                  <a className="bar-menu-item" href={INSTALL_URL} target="_blank" rel="noopener noreferrer" role="menuitem">
                     Add an account
                   </a>
                   {/* Findable without being sold: someone who wants the findings on the pull
@@ -583,7 +579,7 @@ function AccountPicker({
         className="bar-account"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`Account: ${current.account.login}. Change account`}
+        aria-label={`Account: ${current.account.login}. ${installations.length > 1 ? "Change or add an account" : "Add an account"}`}
         onClick={() => setOpen((was) => !was)}
       >
         {current.account.avatar_url && (
@@ -618,6 +614,23 @@ function AccountPicker({
               )}
             </button>
           ))}
+          {/* Installing the app on another account is how an account gets into this list, so the
+              way to do it sits at the end of the list. It carries the option class so the arrow
+              keys reach it like any other row. */}
+          <a
+            className="bar-menu-item bar-account-option bar-account-add"
+            href={INSTALL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+              <path d="M8 3.5v9M3.5 8h9" />
+            </svg>
+            <span className="bar-account-option-name">Add an account</span>
+            <span className="sr-only"> (opens GitHub in a new tab)</span>
+          </a>
         </div>
       )}
     </div>

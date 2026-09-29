@@ -21,7 +21,7 @@ const navLinks = [
 const inBlog = within("/blog");
 const installUrl = "https://github.com/apps/striff-app/installations/new";
 const extensionHref = "/#extension";
-// On the dashboard the call to action is already answered: the sidebar's "Add an account" installs
+// On the dashboard the call to action is already answered: "Add an account" in the bar installs
 // on another account, and someone with no installation at all is met by an install button in the
 // empty state. A second one in the header would only compete with the page's own.
 const isDashboard = path === "/dashboard" || path.startsWith("/dashboard/") || path.startsWith("/dash-preview");
