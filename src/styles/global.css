@@ -6629,27 +6629,11 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   .check-rules { flex: none; border-left: 0; padding-left: 0; flex-direction: row; align-items: baseline; gap: 0.4rem; }
 }
 
-/* A public repository's page: the dashboard's views under a heading that says whose it is. */
-.public-repo-head { margin-bottom: 1.25rem; }
-.public-repo-title {
-  margin: 0.5rem 0 0;
-  color: #0f172a;
-  font-size: clamp(1.6rem, 3vw, 2.4rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  overflow-wrap: anywhere;
-}
-.public-repo-title a:hover { text-decoration: underline; }
-.public-repo-title-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.75rem 1.5rem;
-}
-.public-repo-install { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
-.public-repo-snapshot { margin: 0; color: #6b7684; font-size: 0.8rem; }
-.public-repo-refreshed { margin: 0.5rem 0 0; color: #334155; font-size: 1rem; }
+/* A public repository's page: the dashboard's views, with when they were read and the install. */
+.public-repo-install { display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; margin-left: auto; }
+.public-repo-snapshot { margin: 0; color: #6b7684; font-size: 0.78rem; }
+.public-repo-refreshed { margin: 0; color: #334155; font-size: 0.92rem; }
 .public-repo-refreshed strong { color: #0f172a; }
-@media (max-width: 720px) { .public-repo-install { align-items: flex-start; } }
+.public-repo-intro { max-width: 60rem; margin: 0 0 1.25rem; color: #334155; font-size: 1rem; line-height: 1.7; }
 .public-repo-withheld { margin: 0 0 1rem; color: #57606a; font-size: 0.88rem; line-height: 1.6; }
+@media (max-width: 720px) { .public-repo-install { align-items: flex-start; margin-left: 0; } }

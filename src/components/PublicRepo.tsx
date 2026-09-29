@@ -178,27 +178,11 @@ export default function PublicRepo() {
 
   return (
     <div className="public-repo">
-      <div className="public-repo-head">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Architecture checks</p>
-        <div className="public-repo-title-row">
-          <h1 className="public-repo-title">
-            <a href={`https://github.com/${fullName}`} target="_blank" rel="noopener noreferrer">{fullName}</a>
-          </h1>
-          {!page.claimed && (
-            <div className="public-repo-install">
-              <a className="btn-primary" href={INSTALL_URL} target="_blank" rel="noopener noreferrer">
-                Is this yours? Install to manage it
-              </a>
-              <p className="public-repo-snapshot">Installed, Striff checks every pull request.</p>
-            </div>
-          )}
-        </div>
-        {!page.claimed && snapshotAt && (
-          <p className="public-repo-refreshed">
-            Last refreshed <strong>{snapshotAt}</strong>
-          </p>
-        )}
-      </div>
+      <p className="public-repo-intro">
+        This is a public, read-only report. Striff reads this repository's docs, turns each
+        sentence that makes a claim about the code into a rule, and checks the rule against the
+        code on the default branch.
+      </p>
 
       {readingNow && (
         <p className="public-repo-withheld">
@@ -210,6 +194,11 @@ export default function PublicRepo() {
 
       <div className="demo">
         <div className="demo-bar">
+          {!page.claimed && snapshotAt && (
+            <p className="public-repo-refreshed">
+              Last refreshed <strong>{snapshotAt}</strong>
+            </p>
+          )}
           <div className="demo-tabs" role="tablist" aria-label="Repository views">
             {views.length > 1 && views.map((v) => (
               <button
@@ -224,10 +213,19 @@ export default function PublicRepo() {
               </button>
             ))}
           </div>
-          <p className="demo-note">
-            <span className="demo-chip">Public</span>
-            Read-only. Nothing here can be changed.
-          </p>
+          {page.claimed ? (
+            <p className="demo-note">
+              <span className="demo-chip">Public</span>
+              Read-only. Nothing here can be changed.
+            </p>
+          ) : (
+            <div className="public-repo-install">
+              <a className="btn-primary" href={INSTALL_URL} target="_blank" rel="noopener noreferrer">
+                Is this yours? Install to manage it
+              </a>
+              <p className="public-repo-snapshot">Installed, Striff checks every pull request.</p>
+            </div>
+          )}
         </div>
         <div className="demo-stage">
           {shown === "docs" && (
