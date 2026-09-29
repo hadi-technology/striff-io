@@ -4469,7 +4469,7 @@
 
 /* ---- Documents view: the page head ---- */
 .docs-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
-.docs-head-copy { min-width: 0; }
+.docs-head-copy { flex: 1 1 22rem; min-width: 0; }
 .docs-title { margin: 0.2rem 0 0.3rem; }
 .docs-title-name {
   display: inline-block;
@@ -5150,6 +5150,21 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   vertical-align: middle;
 }
 .docs-repo-link:hover { border-color: #cbd5e1; color: #24292f; text-decoration: none; }
+/* When a public page's snapshot was read: a fact about the page, so a chip and not a control. */
+.docs-refreshed-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.4rem;
+  border: 1px solid #e8d9a8;
+  border-radius: 999px;
+  background: #fdf6e3;
+  padding: 0.15rem 0.6rem;
+  color: #7a5c12;
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: middle;
+  white-space: nowrap;
+}
 /* Loading the page's answers again, beside the link out, in the same quiet shape. */
 .docs-refresh {
   margin-left: 0.4rem;
@@ -6628,3 +6643,11 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   .check-side { flex: none; flex-direction: row; align-items: center; }
   .check-rules { flex: none; border-left: 0; padding-left: 0; flex-direction: row; align-items: baseline; gap: 0.4rem; }
 }
+
+/* A public repository's page: the dashboard's views, with when they were read and the install. */
+.public-repo-install { display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; margin-top: 0.6rem; }
+/* The head's right side when it offers something: the offer at the top, the counts beneath. */
+.docs-head-side { display: flex; flex-direction: column; align-items: flex-end; gap: 1rem; }
+.public-repo-snapshot { margin: 0; color: #6b7684; font-size: 0.78rem; }
+.public-repo-withheld { margin: 0 0 1rem; color: #57606a; font-size: 0.88rem; line-height: 1.6; }
+@media (max-width: 720px) { .public-repo-install, .docs-head-side { align-items: flex-start; } }

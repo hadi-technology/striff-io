@@ -20,6 +20,20 @@
   to = "/#extension"
   status = 301
 
+# A public repository's page, at the address GitHub gives the repository. A rewrite, not a
+# redirect: the address stays the repository's. Netlify serves a file that exists at the address
+# before any rule, so the site's own two-part pages (/blog/<post>, /contact/thanks) are untouched.
+# Kept last, so every rule above wins.
+[[redirects]]
+  from = "/:owner/:repo"
+  to = "/repo/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/:owner/:repo/"
+  to = "/repo/index.html"
+  status = 200
+
 [[headers]]
   for = "/dashboard"
   [headers.values]

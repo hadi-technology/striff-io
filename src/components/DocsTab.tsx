@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, useRef, useState } from "react";
+import { createElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { staleNameIssueUrl } from "./docIssue";
 import RevisionLine from "./RevisionLine";
 import { Clamped, mark, snippet, useWatch, withCode, when } from "./docRules";
@@ -468,11 +468,27 @@ const GitHubMark = () =>
     })
   );
 
+/**
+ * Where a read-only view reads a repository's documents from, in place of the signed-in proxy: a
+ * public repository's page, which anyone may read and nobody may change from here.
+ */
+export interface DocsSource {
+  /** The URL of one read: the catalogue (""), every rule, the names gone, or one document. */
+  url(view: "" | "rules" | "type-findings", path?: string): string;
+  /** What the view says under the repository's name, in place of how to use the tree. */
+  lede?: string;
+  /** When the page was last read, shown beside the repository's name. */
+  refreshedAt?: string;
+  /** Something to offer at the head's top right, above the counts. */
+  action?: ReactNode;
+}
+
 export default function DocsTab({
   installationId,
   repos,
   openRepo,
   sample,
+  source,
 }: {
   installationId: number;
   repos: { full_name: string }[];
@@ -489,6 +505,12 @@ export default function DocsTab({
     doc: (path: string) => any;
     staleNames?: any;
   };
+  /**
+   * Read a public page instead of the signed-in dashboard. Nothing can be changed, and nothing
+   * offers to: no menus, no reading to ask for, no issue to open on a repository that is not the
+   * reader's.
+   */
+  source?: DocsSource;
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
@@ -596,6 +618,15 @@ export default function DocsTab({
     return () => document.removeEventListener("click", close);
   }, [menuFor]);
 
+  /** Nothing here can be changed: the example repository, or a public page. */
+  const readOnly = !!sample || !!source;
+
+  /** The URL of one read, from the public page where this view reads one. */
+  function readUrl(view: "" | "rules" | "type-findings", path?: string): string {
+    if (source) return source.url(view, path);
+    return `/.netlify/functions/doc-catalog-proxy?${view ? `view=${view}&` : ""}installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}${path != null ? `&path=${encodeURIComponent(path)}` : ""}`;
+  }
+
   /** Both answers this view is built from: what documents exist, and what rules they hold. */
   async function reload() {
     await loadCatalog();
@@ -610,9 +641,7 @@ export default function DocsTab({
   async function loadStaleNames(wanted: number) {
     setStaleNames(null);
     try {
-      const res = await fetch(
-        `/.netlify/functions/doc-catalog-proxy?view=type-findings&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
-      );
+      const res = await fetch(readUrl("type-findings"));
       if (!res.ok || wanted !== loadedAt.current) return;
       const data = await res.json();
       if (wanted === loadedAt.current && Array.isArray(data.findings)) setStaleNames(data);
@@ -641,9 +670,7 @@ export default function DocsTab({
       setError("");
     }
     try {
-      const res = await fetch(
-        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
-      );
+      const res = await fetch(readUrl(""));
       const data = await res.json();
       // A repository switched away from still answers; it just no longer has a view to paint.
       if (wanted !== loadedAt.current) return;
@@ -683,9 +710,7 @@ export default function DocsTab({
     const wanted = ++rulesAt.current;
     setRulesLoading(true);
     try {
-      const res = await fetch(
-        `/.netlify/functions/doc-catalog-proxy?view=rules&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
-      );
+      const res = await fetch(readUrl("rules"));
       if (!res.ok || wanted !== rulesAt.current) return;
       setRulesIndex(await res.json());
     } catch {
@@ -733,9 +758,7 @@ export default function DocsTab({
     // last may paint, or the pane shows one document's rules under another's name.
     const wanted = ++openedAt.current;
     try {
-      const res = await fetch(
-        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}&path=${encodeURIComponent(path)}`
-      );
+      const res = await fetch(readUrl("", path));
       if (wanted !== openedAt.current) return;
       if (!res.ok) {
         const answer = await res.json().catch(() => ({}));
@@ -766,6 +789,10 @@ export default function DocsTab({
    * nothing, so a rejected token or a 500 looked exactly like a change that did not stick.
    */
   async function write(body: unknown, view: "" | "force-read", failed: string) {
+    if (source) {
+      setActionError("This is a public page, so nothing here can be changed.");
+      return false;
+    }
     if (sample) {
       setActionError("This is an example repository, so nothing here can be changed.");
       return false;
@@ -820,7 +847,7 @@ export default function DocsTab({
    */
   /** @return false where the request was refused, so the control stops saying it is asking */
   async function readRepository(): Promise<boolean> {
-    if (sample) return false;
+    if (readOnly) return false;
     setAsking(true);
     setActionError("");
     try {
@@ -1062,6 +1089,8 @@ export default function DocsTab({
 
   /** The ⋯ menu a document or folder carries, in the tree and in the selection's own header. */
   function rowMenu(path: string, doc?: Doc, folder?: boolean, where: string = "tree") {
+    // A public page's reader has nothing to exclude or insist on.
+    if (source) return null;
     // The same document has a menu in the tree and another in its open header; they are told
     // apart by where they are, so opening one does not open the other.
     const id = `${where}:${path}`;
@@ -1324,6 +1353,90 @@ export default function DocsTab({
 
   const summary = catalog?.summary;
 
+  /** The repository's counts, beside the heading. */
+  const tally = summary && (
+    <div className="docs-tally">
+      {/* The whole repository, whatever is selected: see repoCounts. */}
+      <button
+        type="button"
+        className="docs-tally-item"
+        title="Every document in this repository, whatever state it is in."
+        onClick={() => setFilter("all")}
+      >
+        <b>{allDocs.length}</b>
+        <i>document{allDocs.length === 1 ? "" : "s"}</i>
+      </button>
+      {/* Not lit when nothing is filtered: a light on every count says nothing. */}
+      <button
+        type="button"
+        className="docs-tally-item"
+        title="Every rule read from this repository's documents."
+        onClick={() => setRuleFilter("all")}
+      >
+        <b>{repoCounts.all}</b>
+        <i>rule{repoCounts.all === 1 ? "" : "s"}</i>
+      </button>
+      {/* Totals first, then how the rules stand: what holds, what is broken, what nothing
+          has checked. */}
+      <button
+        type="button"
+        className={`docs-tally-item is-held${ruleFilter === "holds" ? " is-on" : ""}`}
+        title={`${STANDING_HELP.holds} Click to show these.`}
+        onClick={() => setRuleFilter(ruleFilter === "holds" ? "all" : "holds")}
+      >
+        <b>{repoCounts.holds}</b>
+        <i>holding</i>
+      </button>
+      <button
+        type="button"
+        className={`docs-tally-item is-violated${ruleFilter === "broken" ? " is-on" : ""}`}
+        title={`${STANDING_HELP.broken} Click to show these.`}
+        onClick={() => setRuleFilter(ruleFilter === "broken" ? "all" : "broken")}
+      >
+        <b>{repoCounts.broken}</b>
+        <i>broken</i>
+      </button>
+      <button
+        type="button"
+        className={`docs-tally-item${ruleFilter === "unchecked" ? " is-on" : ""}`}
+        title={`${STANDING_HELP.unchecked} Click to show these.`}
+        onClick={() => setRuleFilter(ruleFilter === "unchecked" ? "all" : "unchecked")}
+      >
+        <b>{repoCounts.unchecked}</b>
+        <i>not checked</i>
+      </button>
+      {/* Shown only once a reading of the whole repository has looked. Until then there is
+          no number to give: a zero would say every doc is current, and nothing has checked.
+          Counted apart from the rules, because a doc naming something that is gone is a
+          stale doc and not a broken rule. Of the whole repository, like every other count here. */}
+      {staleNames && staleNames.lastSeenMs != null && (
+        <button
+          type="button"
+          className={`docs-tally-item is-stale${repoStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
+          title={`Names your docs write that the code no longer has. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
+          onClick={() => setFilter(filter === "stale" ? "all" : "stale")}
+        >
+          <b>{repoStale}{staleNames.truncated ? "+" : ""}</b>
+          <i>names gone</i>
+        </button>
+      )}
+      {catalog && !readOnly && (
+        <ReadRepository
+          repo={repo}
+          reading={catalog.reading}
+          /* Documents nothing has read, which is the only work a reading does. The old
+             sum subtracted the states it knew about and so counted documents a reading
+             could not finish as waiting for ever, leaving the control offered on a
+             repository where it had nothing left to achieve. */
+          waiting={summary.notRead}
+          read={summary.read}
+          busy={asking || busy}
+          onRead={readRepository}
+        />
+      )}
+    </div>
+  );
+
   return (
     <div className="docs-tab">
       {paletteOpen && (
@@ -1431,106 +1544,40 @@ export default function DocsTab({
               <GitHubMark />
               GitHub
             </a>
-            <button
-              type="button"
-              className={`docs-refresh${loading || rulesLoading ? " is-loading" : ""}`}
-              onClick={() => reload()}
-              disabled={loading || rulesLoading}
-              title="Load this repository's documents and rules again"
-            >
-              <RefreshMark />
-              Refresh
-            </button>
+            {source?.refreshedAt && (
+              <span className="docs-refreshed-chip" title="When Striff last read this repository. This page is not updated after that.">
+                Last refreshed {source.refreshedAt}
+              </span>
+            )}
+            {/* A public page is a snapshot: loading it again finds the same thing. */}
+            {!source && (
+              <button
+                type="button"
+                className={`docs-refresh${loading || rulesLoading ? " is-loading" : ""}`}
+                onClick={() => reload()}
+                disabled={loading || rulesLoading}
+                title="Load this repository's documents and rules again"
+              >
+                <RefreshMark />
+                Refresh
+              </button>
+            )}
           </div>
           {/* The second sentence used to be there whatever the repository looked like, so a
               repository with every document read was still told some were waiting. It is now the
               count, or nothing. */}
           <p className="docs-lede">
-            Pick a doc for its rules, a folder for everything beneath it, or the repository for
-            all of them.
+            {source?.lede
+              ?? "Pick a doc for its rules, a folder for everything beneath it, or the repository for all of them."}
           </p>
           {catalog && <RevisionLine catalog={catalog} />}
         </div>
-        {summary && (
-          <div className="docs-tally">
-            {/* The whole repository, whatever is selected: see repoCounts. */}
-            <button
-              type="button"
-              className="docs-tally-item"
-              title="Every document in this repository, whatever state it is in."
-              onClick={() => setFilter("all")}
-            >
-              <b>{allDocs.length}</b>
-              <i>document{allDocs.length === 1 ? "" : "s"}</i>
-            </button>
-            <button
-              type="button"
-              className={`docs-tally-item is-violated${ruleFilter === "broken" ? " is-on" : ""}`}
-              title={`${STANDING_HELP.broken} Click to show these.`}
-              onClick={() => setRuleFilter(ruleFilter === "broken" ? "all" : "broken")}
-            >
-              <b>{repoCounts.broken}</b>
-              <i>broken</i>
-            </button>
-            <button
-              type="button"
-              className={`docs-tally-item is-held${ruleFilter === "holds" ? " is-on" : ""}`}
-              title={`${STANDING_HELP.holds} Click to show these.`}
-              onClick={() => setRuleFilter(ruleFilter === "holds" ? "all" : "holds")}
-            >
-              <b>{repoCounts.holds}</b>
-              <i>holding</i>
-            </button>
-            <button
-              type="button"
-              className={`docs-tally-item${ruleFilter === "unchecked" ? " is-on" : ""}`}
-              title={`${STANDING_HELP.unchecked} Click to show these.`}
-              onClick={() => setRuleFilter(ruleFilter === "unchecked" ? "all" : "unchecked")}
-            >
-              <b>{repoCounts.unchecked}</b>
-              <i>not checked</i>
-            </button>
-            {/* Not lit when nothing is filtered: a light on every count says nothing. */}
-            <button
-              type="button"
-              className="docs-tally-item"
-              title="Every rule read from this repository's documents."
-              onClick={() => setRuleFilter("all")}
-            >
-              <b>{repoCounts.all}</b>
-              <i>rule{repoCounts.all === 1 ? "" : "s"}</i>
-            </button>
-            {/* Shown only once a reading of the whole repository has looked. Until then there is
-                no number to give: a zero would say every doc is current, and nothing has checked.
-                Counted apart from the rules, because a doc naming something that is gone is a
-                stale doc and not a broken rule. Of the whole repository, like every other count here. */}
-            {staleNames && staleNames.lastSeenMs != null && (
-              <button
-                type="button"
-                className={`docs-tally-item is-stale${repoStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
-                title={`Names your docs write that the code no longer has. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
-                onClick={() => setFilter(filter === "stale" ? "all" : "stale")}
-              >
-                <b>{repoStale}{staleNames.truncated ? "+" : ""}</b>
-                <i>names gone</i>
-              </button>
-            )}
-            {catalog && !sample && (
-              <ReadRepository
-                repo={repo}
-                reading={catalog.reading}
-                /* Documents nothing has read, which is the only work a reading does. The old
-                   sum subtracted the states it knew about and so counted documents a reading
-                   could not finish as waiting for ever, leaving the control offered on a
-                   repository where it had nothing left to achieve. */
-                waiting={summary.notRead}
-                read={summary.read}
-                busy={asking || busy}
-                onRead={readRepository}
-              />
-            )}
+        {source?.action ? (
+          <div className="docs-head-side">
+            {source.action}
+            {tally}
           </div>
-        )}
+        ) : tally}
       </div>
 
       {loading && <p className="dashboard-metric-caption">Loading documents...</p>}
@@ -1762,7 +1809,7 @@ export default function DocsTab({
                       ? "Striff read these docs and found no rule about the code in them."
                       : isRunning(catalog?.reading)
                       ? "Striff is reading these docs now. Their rules appear here as they are read; refresh to see them."
-                      : summary && summary.notRead > 0 && !sample
+                      : summary && summary.notRead > 0 && !readOnly
                       ? `Nothing here has been read yet. Use Read ${summary.notRead} doc${summary.notRead === 1 ? "" : "s"} now, above, to read ${summary.notRead === 1 ? "it" : "them"} without waiting for a pull request.`
                       : "Nothing here has been read yet. Striff reads a doc the first time a pull request changes code that doc talks about."}
                   </p>
@@ -1780,6 +1827,7 @@ export default function DocsTab({
                     docCount={scopeRuleDocs}
                     truncated={!!rulesIndex.truncated}
                     onOpenDoc={(path) => openDoc(path)}
+                    issues={!source}
                   />
                 )}
               </>
@@ -1878,6 +1926,7 @@ export default function DocsTab({
                     showPath={false}
                     filter={ruleFilter}
                     docCount={1}
+                    issues={!source}
                   />
                 )}
 
@@ -1937,7 +1986,7 @@ export default function DocsTab({
                               <span className="docs-outcome-when">
                                 first seen {when(finding.firstSeenMs)}
                               </span>
-                              {!sample && (
+                              {!readOnly && (
                                 <a
                                   className="docs-issue-link"
                                   href={staleNameIssueUrl(owner, name, selected, finding,
