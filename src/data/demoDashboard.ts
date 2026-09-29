@@ -255,3 +255,48 @@ export function demoDoc(path: string): any {
     history: document_.state === "NOT_READ" ? [] : history,
   };
 }
+
+/**
+ * The checks Striff ran on the example repository's pull requests, as `view=checks` sends them:
+ * newest first, ten a page. Pull requests #412 and #427 are the ones the rules above were judged
+ * on, so the two pages agree about what broke what.
+ */
+const demoCheckList = [
+  { pullNo: "431", headline: "Adds a Ledger to billing and routes refunds through it", changed: 6, broken: 0, prior: 1, held: 7, docs: 3, ago: 0.2 * DAY, state: "COMPLETED" },
+  { pullNo: "430", headline: "Moves the Stripe client behind PaymentGateway", changed: 3, broken: 0, prior: 0, held: 5, docs: 2, ago: 1.1 * DAY, state: "COMPLETED" },
+  { pullNo: "427", headline: "Checkout reads invoice totals from the store directly", changed: 4, broken: 2, prior: 0, held: 6, docs: 3, ago: 12 * DAY, state: "COMPLETED" },
+  { pullNo: "425", headline: "Renames OrderRepository and splits its read side", changed: 5, broken: 0, prior: 0, held: 0, docs: 0, ago: 13 * DAY, state: "COMPLETED" },
+  { pullNo: "421", headline: "Adds retry with backoff to the webhook handler", changed: 2, broken: 0, prior: 0, held: 3, docs: 1, ago: 14 * DAY, state: "COMPLETED" },
+  { pullNo: "418", headline: null, changed: null, broken: 0, prior: 0, held: 0, docs: 0, ago: 14.5 * DAY, state: "FAILED" },
+  { pullNo: "412", headline: "Introduces the pricing engine behind a PricingPolicy port", changed: 7, broken: 0, prior: 0, held: 8, docs: 4, ago: 15 * DAY, state: "COMPLETED" },
+  { pullNo: "409", headline: "Caches product lookups in the catalog client", changed: 2, broken: 1, prior: 0, held: 2, docs: 1, ago: 17 * DAY, state: "COMPLETED" },
+  { pullNo: "405", headline: "Splits notifications out of the order service", changed: 9, broken: 0, prior: 1, held: 6, docs: 3, ago: 19 * DAY, state: "COMPLETED" },
+  { pullNo: "402", headline: "Removes the legacy cart session store", changed: 3, broken: 0, prior: 0, held: 4, docs: 2, ago: 21 * DAY, state: "COMPLETED" },
+  { pullNo: "398", headline: "Documents the payment flow and its boundaries", changed: 1, broken: 0, prior: 0, held: 9, docs: 5, ago: 22 * DAY, state: "COMPLETED" },
+  { pullNo: "396", headline: "Upgrades the HTTP client and its timeouts", changed: 2, broken: 0, prior: 0, held: 0, docs: 0, ago: 24 * DAY, state: "COMPLETED" },
+  { pullNo: "391", headline: "Adds an inventory reservation step before payment", changed: 5, broken: 1, prior: 0, held: 5, docs: 2, ago: 26 * DAY, state: "COMPLETED" },
+].map((check, i) => ({
+  pullNo: check.pullNo,
+  pullUrl: `https://github.com/${DEMO_REPO}/pull/${check.pullNo}`,
+  headSha: (0x5c2e91a + i * 104729).toString(16).padStart(7, "0") + "e3",
+  checkedAtMs: NOW - check.ago,
+  state: check.state,
+  headline: check.headline,
+  changedComponents: check.changed,
+  diagrams: check.state === "FAILED" ? 0 : 1,
+  rulesBroken: check.broken,
+  rulesAlreadyBroken: check.prior,
+  rulesHeld: check.held,
+  docsRead: check.docs,
+}));
+
+/** One page of the example repository's checks. */
+export function demoChecks(page: number) {
+  const pages = Math.ceil(demoCheckList.length / 10);
+  return {
+    checks: demoCheckList.slice(page * 10, page * 10 + 10),
+    page,
+    pages,
+    total: demoCheckList.length,
+  };
+}
