@@ -10,7 +10,7 @@ import ChecksTab from "./ChecksTab";
  * missing, or public and never analysed -- is answered the same way, so this page cannot be used
  * to find out which private repositories exist.
  *
- * A page the repository's maintainers did not set up says so before anything else, and shows only
+ * A page the repository's maintainers did not set up offers them the install, and shows only
  * what the repository's documents claim and whether the code holds it: the pull requests on it
  * were chosen by whoever analysed them, not by the repository, so they are no history of it.
  * A repository that installed Striff has every pull request checked, and its page lists them.
@@ -173,23 +173,18 @@ export default function PublicRepo() {
     <div className="public-repo">
       <div className="public-repo-head">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Architecture checks</p>
-        <h1 className="public-repo-title">
-          <a href={`https://github.com/${fullName}`} target="_blank" rel="noopener noreferrer">{fullName}</a>
-        </h1>
+        <div className="public-repo-title-row">
+          <h1 className="public-repo-title">
+            <a href={`https://github.com/${fullName}`} target="_blank" rel="noopener noreferrer">{fullName}</a>
+          </h1>
+          {!page.claimed && (
+            <a className="btn-primary" href={INSTALL_URL} target="_blank" rel="noopener noreferrer">
+              Is this yours? Install to manage it
+            </a>
+          )}
+        </div>
       </div>
 
-      {!page.claimed && (
-        <div className="public-repo-notice" role="note">
-          <p>
-            <strong>The maintainers of this repository haven't installed Striff.</strong> Striff
-            analysed it from its public pull requests and its documents. Nothing here was set up
-            or checked by them.
-          </p>
-          <a className="btn-primary" href={INSTALL_URL} target="_blank" rel="noopener noreferrer">
-            Is this yours? Install to manage it
-          </a>
-        </div>
-      )}
       {page.withheld > 0 && (
         <p className="public-repo-withheld">
           {page.withheld} finding{page.withheld === 1 ? " is" : "s are"} waiting for a person to
