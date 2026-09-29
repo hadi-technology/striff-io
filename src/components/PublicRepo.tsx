@@ -10,9 +10,12 @@ import ChecksTab from "./ChecksTab";
  * missing, or public and never analysed -- is answered the same way, so this page cannot be used
  * to find out which private repositories exist.
  *
- * A page the repository's maintainers did not set up says so before anything else. Nothing on it
- * can be changed, and a finding that a person has not yet checked is left out and counted, never
- * shown as a rule that holds.
+ * A page the repository's maintainers did not set up says so before anything else, and shows only
+ * what the repository's documents claim and whether the code holds it: the pull requests on it
+ * were chosen by whoever analysed them, not by the repository, so they are no history of it.
+ * A repository that installed Striff has every pull request checked, and its page lists them.
+ * Nothing on either can be changed, and a finding that a person has not yet checked is left out
+ * and counted, never shown as a rule that holds.
  */
 
 const INSTALL_URL = "https://github.com/apps/striff-app/installations/new";
@@ -156,6 +159,8 @@ export default function PublicRepo() {
 
   const { page } = loaded;
   const fullName = `${page.repoOwner}/${page.repoName}`;
+  const views: View[] = page.claimed ? ["docs", "checks"] : ["docs"];
+  const shown: View = views.includes(view) ? view : "docs";
   const reading = page.reading;
   const readingNow = reading && (reading.state === "queued" || reading.state === "running");
   const docsSource: DocsSource = {
@@ -204,13 +209,13 @@ export default function PublicRepo() {
       <div className="demo">
         <div className="demo-bar">
           <div className="demo-tabs" role="tablist" aria-label="Repository views">
-            {(["docs", "checks"] as View[]).map((v) => (
+            {views.length > 1 && views.map((v) => (
               <button
                 key={v}
                 type="button"
                 role="tab"
-                aria-selected={view === v}
-                className={`demo-tab${view === v ? " is-on" : ""}`}
+                aria-selected={shown === v}
+                className={`demo-tab${shown === v ? " is-on" : ""}`}
                 onClick={() => show(v)}
               >
                 {v === "docs" ? "Docs & Rules" : "Checks"}
@@ -223,7 +228,7 @@ export default function PublicRepo() {
           </p>
         </div>
         <div className="demo-stage">
-          {view === "docs" && (
+          {shown === "docs" && (
             <DocsTab
               installationId={0}
               repos={[{ full_name: fullName }]}
@@ -231,7 +236,7 @@ export default function PublicRepo() {
               source={docsSource}
             />
           )}
-          {view === "checks" && (
+          {shown === "checks" && (
             <ChecksTab
               installationId={0}
               repo={fullName}
