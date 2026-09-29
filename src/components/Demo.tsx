@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import DocsTab from "./DocsTab";
+import ChecksTab from "./ChecksTab";
 import MetricsTab from "./MetricsTab";
-import { demoCatalog, demoDoc, demoRules, DEMO_REPO, demoStaleNames } from "../data/demoDashboard";
+import { demoCatalog, demoChecks, demoDoc, demoRules, DEMO_REPO, demoStaleNames } from "../data/demoDashboard";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 
 /**
@@ -21,13 +22,14 @@ import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
  * pretending, because a control that appears to work and does not is worse than one that is
  * honest about being an example.
  *
- * The open view is in the URL fragment (#docs, #metrics), so the homepage can send a reader to one
+ * The open view is in the URL fragment (#docs, #checks, #metrics), so the homepage can send a reader to one
  * view and a reader can send a colleague to the one they mean. `#rules` was the flat list of rules
  * before it became the repository row of the tree, and it still lands where those rules are.
  */
-type View = "docs" | "metrics";
+type View = "docs" | "checks" | "metrics";
 const VIEWS: { id: View; label: string }[] = [
   { id: "docs", label: "Docs & Rules" },
+  { id: "checks", label: "Checks" },
   { id: "metrics", label: "Metrics" },
 ];
 
@@ -90,6 +92,9 @@ export default function Demo() {
             openRepo={DEMO_REPO}
             sample={{ catalog: demoCatalog, rules: demoRules, doc: demoDoc, staleNames: demoStaleNames }}
           />
+        )}
+        {view === "checks" && (
+          <ChecksTab installationId={0} repo={DEMO_REPO} sample={demoChecks} />
         )}
         {view === "metrics" && (
           <div className="demo-metrics">

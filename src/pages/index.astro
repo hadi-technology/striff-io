@@ -8,6 +8,7 @@ import { heroExampleRules, heroExampleRepo, heroExampleTally } from "../data/her
 import MetricsTab from "../components/MetricsTab";
 import { Image } from "astro:assets";
 import dashDocsRules from "../assets/dash-docs-rules.webp";
+import dashChecks from "../assets/dash-checks.webp";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 
 // ---- Problem-section visualization: agents doing the work ----
@@ -157,8 +158,8 @@ const realCheckRules = [
 ];
 
 /**
- * For-teams: the dashboard's two views, one panel each, every panel a door into the demo's
- * matching tab. The docs-and-rules panel is photographed; the metrics panel is the live component
+ * For-teams: the dashboard's three views, one panel each, every panel a door into the demo's
+ * matching tab. The docs-and-rules and checks panels are photographed; the metrics panel is the live component
  * on the example workspace.
  */
 const teamsPanels = [
@@ -168,6 +169,13 @@ const teamsPanels = [
     title: "Every rule your docs state, for a repository, a folder or one file",
     body: "Your architecture docs, ADRs and agent instructions as a tree. Pick a document for its own rules, a folder for every rule beneath it, or the repository for all of them: the sentence each rule came from, the rule it became, and whether the default branch still keeps it. Sort, search and export what you picked.",
     cta: "Open the docs and rules"
+  },
+  {
+    view: "checks",
+    eyebrow: "Checks",
+    title: "What every pull request was checked against",
+    body: "Each pull request Striff checked, newest first: how many of your documented rules it was held to, which it kept and which it broke, the documents read to get there, and the pull request one click away.",
+    cta: "Open the checks"
   },
   {
     view: "metrics",
@@ -724,7 +732,12 @@ const plans = [
               <div class="teams-panel-art">
                 {panel.view === "docs" && (
                   <figure class="teams-panel-shot">
-                    <Image src={dashDocsRules} alt="The docs and rules page: the repository's documents in a tree with the repository itself selected, and every rule beneath it beside them — the sentence each came from, the rule it became, and whether the code keeps it." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 45vw" loading="lazy" />
+                    <Image src={dashDocsRules} alt="The docs and rules page: the repository's documents in a tree with the repository itself selected, and every rule beneath it beside them — the sentence each came from, the rule it became, and whether the code keeps it." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 30vw" loading="lazy" />
+                  </figure>
+                )}
+                {panel.view === "checks" && (
+                  <figure class="teams-panel-shot">
+                    <Image src={dashChecks} alt="The checks page: each pull request Striff checked, newest first, with how many documented rules it was held to, how many it kept and broke, and a link to the pull request." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 30vw" loading="lazy" />
                   </figure>
                 )}
                 {panel.view === "metrics" && (
