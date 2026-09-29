@@ -1,6 +1,7 @@
 import { createElement, useState, useEffect, useRef } from "react";
 import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab from "./DocsTab";
+import ChecksTab from "./ChecksTab";
 import { EXTENSION_URL } from "./docRules";
 
 /** Where the GitHub App is installed on an account: the first one, or one more. */
@@ -18,7 +19,7 @@ interface User {
 }
 
 /** The sections of the dashboard: three belong to the account, one to the repository in view. */
-type Section = "repos" | "docs" | "metrics" | "billing";
+type Section = "repos" | "docs" | "checks" | "metrics" | "billing";
 
 interface Repo {
   full_name: string;
@@ -351,6 +352,14 @@ export default function Dashboard() {
                     <NavIcon name="docs" />
                     <span>Docs &amp; Rules</span>
                   </button>
+                  <button
+                    type="button"
+                    className={`nav-item${section === "checks" ? " active" : ""}`}
+                    onClick={() => setSection("checks")}
+                  >
+                    <NavIcon name="checks" />
+                    <span>Checks</span>
+                  </button>
                 </nav>
               </div>
             )}
@@ -663,6 +672,7 @@ const NavIcon = ({ name }: { name: string }) => {
     overview: ["M2 2h5v5H2z", "M9 2h5v5H9z", "M2 9h5v5H2z", "M9 9h5v5H9z"],
     repos: ["M3 12.75V2.75A1.25 1.25 0 0 1 4.25 1.5H13v10H4.25A1.25 1.25 0 0 0 3 12.75Z", "M3 12.75A1.25 1.25 0 0 0 4.25 14H13v-2.5"],
     docs: ["M3.5 1.75h5.5l3.5 3.5v9h-9Z", "m5.75 9.5 1.5 1.5 3-3"],
+    checks: ["M8 1.75a6.25 6.25 0 1 0 0 12.5a6.25 6.25 0 1 0 0-12.5Z", "m5.5 8.25 1.75 1.75 3.25-3.5"],
     billing: ["M1.5 3.5h13v9h-13z", "M1.5 6.5h13"],
   };
   return createElement(
@@ -703,7 +713,7 @@ function InstallationCard({
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
   const [billingError, setBillingError] = useState(false);
-  const [ownTab, setOwnTab] = useState<"repos" | "docs" | "metrics" | "billing">("repos");
+  const [ownTab, setOwnTab] = useState<Section>("repos");
   // The sidebar owns the section when the shell passes one; the card keeps its own otherwise.
   const installTab = section ?? ownTab;
   const setInstallTab = onSection ?? setOwnTab;
@@ -1071,6 +1081,10 @@ function InstallationCard({
           ) : installTab === "docs" ? (
             <div className="mt-3 dashboard-metric-fade-in">
               <DocsTab installationId={installation.id} repos={repos} openRepo={openRepo} />
+            </div>
+          ) : installTab === "checks" ? (
+            <div className="mt-3 dashboard-metric-fade-in">
+              <ChecksTab installationId={installation.id} repo={openRepo || ""} />
             </div>
           ) : installTab === "metrics" ? (
             <div className="mt-3 dashboard-metric-fade-in">

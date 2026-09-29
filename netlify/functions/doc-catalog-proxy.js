@@ -284,6 +284,11 @@ export const handler = async (event) => {
     } else if (params.view === "rules") {
       url = `${base}/rules?token=${token}`;
       init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
+    } else if (params.view === "checks") {
+      // The checks Striff ran on this repository's pull requests lately, ten a page.
+      const page = Math.max(0, parseInt(params.page, 10) || 0);
+      url = `${base}/checks?page=${page}&token=${token}`;
+      init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
     } else if (params.view === "type-findings") {
       // The names the documents write that the default branch does not have.
       url = `${base}/type-findings?token=${token}`;
