@@ -1454,16 +1454,19 @@ export default function DocsTab({
               <GitHubMark />
               GitHub
             </a>
-            <button
-              type="button"
-              className={`docs-refresh${loading || rulesLoading ? " is-loading" : ""}`}
-              onClick={() => reload()}
-              disabled={loading || rulesLoading}
-              title="Load this repository's documents and rules again"
-            >
-              <RefreshMark />
-              Refresh
-            </button>
+            {/* A public page is a snapshot: loading it again finds the same thing. */}
+            {!source && (
+              <button
+                type="button"
+                className={`docs-refresh${loading || rulesLoading ? " is-loading" : ""}`}
+                onClick={() => reload()}
+                disabled={loading || rulesLoading}
+                title="Load this repository's documents and rules again"
+              >
+                <RefreshMark />
+                Refresh
+              </button>
+            )}
           </div>
           {/* The second sentence used to be there whatever the repository looked like, so a
               repository with every document read was still told some were waiting. It is now the

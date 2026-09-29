@@ -10,7 +10,8 @@ import ChecksTab from "./ChecksTab";
  * missing, or public and never analysed -- is answered the same way, so this page cannot be used
  * to find out which private repositories exist.
  *
- * A page the repository's maintainers did not set up offers them the install, and shows only
+ * A page the repository's maintainers did not set up is a snapshot, dated as one, offers them the
+ * install, and shows only
  * what the repository's documents claim and whether the code holds it: the pull requests on it
  * were chosen by whoever analysed them, not by the repository, so they are no history of it.
  * A repository that installed Striff has every pull request checked, and its page lists them.
@@ -30,6 +31,7 @@ type View = "docs" | "checks";
 
 interface Reading {
   state: string | null;
+  finishedAtMs: number;
   docsTotal: number;
   docsDone: number;
 }
@@ -163,6 +165,12 @@ export default function PublicRepo() {
   const shown: View = views.includes(view) ? view : "docs";
   const reading = page.reading;
   const readingNow = reading && (reading.state === "queued" || reading.state === "running");
+  // An unclaimed page is never read again after it is published, so it is as old as its last
+  // reading, or as its publishing where no reading finished.
+  const snapshotMs = reading && reading.finishedAtMs > 0 ? reading.finishedAtMs : page.publishedAtMs;
+  const snapshotAt = snapshotMs
+    ? new Date(snapshotMs).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+    : null;
   const docsSource: DocsSource = {
     url: (docsView, path) => path != null
       ? proxy(page.repoOwner, page.repoName, "doc", { path })
@@ -178,11 +186,19 @@ export default function PublicRepo() {
             <a href={`https://github.com/${fullName}`} target="_blank" rel="noopener noreferrer">{fullName}</a>
           </h1>
           {!page.claimed && (
-            <a className="btn-primary" href={INSTALL_URL} target="_blank" rel="noopener noreferrer">
-              Is this yours? Install to manage it
-            </a>
+            <div className="public-repo-install">
+              <a className="btn-primary" href={INSTALL_URL} target="_blank" rel="noopener noreferrer">
+                Is this yours? Install to manage it
+              </a>
+              <p className="public-repo-snapshot">Installed, Striff checks every pull request.</p>
+            </div>
           )}
         </div>
+        {!page.claimed && snapshotAt && (
+          <p className="public-repo-refreshed">
+            Last refreshed <strong>{snapshotAt}</strong>
+          </p>
+        )}
       </div>
 
       {page.withheld > 0 && (
