@@ -240,8 +240,9 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
       if (doc.forced) {
         return `A screen judged this doc holds no rule to check${doc.screenReason ? ` (${doc.screenReason})` : ""}. ${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
       }
+      // The reason is stored as "screen: why"; the screen's name is for the logs, not a reader.
       return doc.screenReason
-        ? `Nothing here to check against code: ${doc.screenReason}`
+        ? `Skipped: ${doc.screenReason.replace(/^[a-z_]+:\s*/, "")}`
         : "A screen judged this doc holds no rule that could be checked against code.";
     case "RETIRED":
       return doc.retiredReason
