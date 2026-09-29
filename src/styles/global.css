@@ -6511,3 +6511,61 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   font-size: 0.78rem;
   overflow-wrap: anywhere;
 }
+
+/* The checks Striff ran on a repository's pull requests: one row each, what it found on the right. */
+.checks-head { margin-bottom: 1rem; }
+.checks-title { margin-top: 0.2rem; color: #0f172a; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; }
+.checks-lede { margin-top: 0.3rem; color: #57606a; font-size: 0.85rem; }
+.checks-list {
+  border: 1px solid rgba(31, 35, 40, 0.12);
+  border-radius: 0.75rem;
+  background: #fff;
+  overflow: hidden;
+  transition: opacity 120ms ease;
+}
+.checks-list.is-loading { opacity: 0.55; }
+.check-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #edf1f5;
+}
+.check-row:last-child { border-bottom: 0; }
+.check-main { min-width: 0; flex: 1; }
+.check-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; }
+.check-pr { color: #2563eb; font-family: "IBM Plex Mono", monospace; font-size: 0.85rem; font-weight: 700; }
+.check-pr:hover { text-decoration: underline; }
+.check-sha {
+  border-radius: 0.3rem;
+  background: #f6f8fa;
+  padding: 0 0.3rem;
+  color: #57606a;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.74rem;
+}
+.check-when { color: #8a95a1; font-size: 0.76rem; }
+.check-headline { margin-top: 0.25rem; color: #16202b; font-size: 0.9rem; line-height: 1.45; }
+.check-facts { margin-top: 0.2rem; color: #64748b; font-size: 0.76rem; }
+.check-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; flex: 0 0 auto; }
+.check-verdict {
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.check-verdict.is-broken { background: #fdeef0; border-color: #f6c9ce; color: #b3253a; }
+.check-verdict.is-holds { background: #edf9f1; border-color: #bfe3cd; color: #1a7f45; }
+.check-verdict.is-running { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
+.check-verdict.is-muted { background: #f6f8fa; border-color: #e3e8ee; color: #57606a; }
+.check-open { color: #2563eb; font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+.check-open:hover { text-decoration: underline; }
+.checks-pager { display: flex; align-items: center; justify-content: center; gap: 0.9rem; margin-top: 1rem; }
+.checks-page { color: #57606a; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .check-row { flex-direction: column; }
+  .check-side { flex-direction: row; align-items: center; }
+}
