@@ -54,7 +54,7 @@ function doc(path: string, state: string, extra: Record<string, unknown> = {}) {
 
 const documents = [
   doc("AGENTS.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 3, brokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 2 * DAY }),
-  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 3, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: 29940, totalChars: 94044 }),
+  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 3, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: 99908, totalChars: 112480 }),
   doc("CONTRIBUTING.md", "NOT_READ"),
   doc("README.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: describes setup and usage, not how the code is built" }),
   doc("docs/adr/0007-payments.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 2, alreadyBrokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 12 * DAY }),
@@ -236,28 +236,10 @@ export const demoRules: any = {
     })),
 };
 
-function versionsOf(document_: any, showing: string | null) {
-  if (!document_.extractedContentHash) return [];
-  const held = [
-    {
-      contentHash: document_.extractedContentHash,
-      ruleCount: document_.ruleCount,
-      readAtMs: document_.lastExtractedMs,
-      pullNo: document_.lastExtractedPullNo,
-      onDefaultBranch: document_.extractedContentHash === document_.currentContentHash,
-    },
-    ...(document_.extractedContentHash !== document_.currentContentHash
-      ? [{ contentHash: document_.currentContentHash, ruleCount: 2, readAtMs: NOW - 2 * DAY, pullNo: "431", onDefaultBranch: true }]
-      : []),
-  ];
-  return held.map((v) => ({ ...v, shown: v.contentHash === showing }));
-}
-
 /** One document with its rules, as `view=doc` sends it. */
-export function demoDoc(path: string, version?: string | null): any {
+export function demoDoc(path: string): any {
   const document_ = documents.find((d) => d.path === path);
   if (!document_) return null;
-  const showing = version || document_.extractedContentHash || null;
   const own = (rulesByDoc[path] || []).map((r, i) => ({ ...r, factId: `${path}|${i}` }));
   const mine =
     document_.state === "EXCLUDED"
@@ -265,12 +247,7 @@ export function demoDoc(path: string, version?: string | null): any {
       : own;
   return {
     document: document_,
-    rules:
-      version && version !== document_.extractedContentHash
-        ? mine.slice(0, 2).map((r) => ({ ...r, factId: `${r.factId}-v`, status: null, pullNo: null, judgedAtMs: null }))
-        : mine,
+    rules: mine,
     history: document_.state === "NOT_READ" ? [] : history,
-    versions: versionsOf(document_, showing),
-    showing,
   };
 }
