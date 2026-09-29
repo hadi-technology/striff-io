@@ -5269,19 +5269,19 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   align-items: center;
   gap: 0.45rem;
   border: 1px solid #1d4ed8;
-  border-radius: 0.65rem;
+  border-radius: 0.55rem;
   background: #2563eb;
-  padding: 0.55rem 1rem;
+  padding: 0.38rem 0.8rem;
   color: #fff;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 650;
   white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(29, 78, 216, 0.4), 0 0 0 4px rgba(37, 99, 235, 0.14);
+  box-shadow: 0 1px 2px rgba(29, 78, 216, 0.4), 0 0 0 3px rgba(37, 99, 235, 0.14);
   transition: background 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
 .read-repo-button:hover:not(:disabled) {
   background: #1d4ed8;
-  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.45), 0 0 0 5px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.45), 0 0 0 4px rgba(37, 99, 235, 0.2);
   transform: translateY(-1px);
 }
 .read-repo-button:active:not(:disabled) { transform: none; }
@@ -5296,9 +5296,9 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   border: 1px solid #fcd34d;
   border-radius: 999px;
   background: #fffbeb;
-  padding: 0.45rem 0.95rem 0.45rem 0.8rem;
+  padding: 0.32rem 0.8rem 0.32rem 0.7rem;
   color: #92400e;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 650;
   white-space: nowrap;
 }
@@ -5376,6 +5376,11 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 
 /* The read control ends the row of counts, set apart from them. */
 .docs-tally .read-repo { align-self: center; margin-left: 0.35rem; }
+/* Room under the row of counts, whatever comes next: the tree and its rules, or the box that
+   says a repository is being listed, which sat flush against the button above it. */
+.docs-tab .docs-head { margin-bottom: 1.1rem; }
+.docs-tab .docs-head + .docs-split,
+.docs-tab .docs-split { margin-top: 0; }
 
 /* The rule is the thing being read: bigger, with room between the lines, and the names it mentions
    set as code so the eye can pick them out of the sentence. */
@@ -5462,6 +5467,23 @@ button.docs-tally-item.is-on i { color: #1f2328; }
    competing over one line of text, and the name, the only thing anyone reads,
    lost. These are cards: the name first and large, everything else a quiet
    second line, and the whole face is the button. */
+/* What being listed on the Repositories tab means: a note, not a warning. */
+.repo-coverage {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+  border: 1px solid #dbe4f0;
+  border-radius: 0.7rem;
+  background: #f6f9fd;
+  padding: 0.8rem 1rem;
+  color: #2563eb;
+}
+.repo-coverage svg { flex: 0 0 auto; margin-top: 0.15rem; }
+.repo-coverage-title { color: #16202b; font-size: 0.88rem; font-weight: 650; }
+.repo-coverage-body { margin-top: 0.2rem; color: #57606a; font-size: 0.82rem; line-height: 1.55; }
+.repo-coverage-body a { color: #2563eb; font-weight: 600; }
+.repo-coverage-body a:hover { text-decoration: underline; }
+
 .repo-grid {
   margin-top: 0.9rem;
   display: grid;

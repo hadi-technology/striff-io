@@ -527,7 +527,7 @@ export default function DocsTab({
       && (catalog.documents || []).length === 0
       && catalog.lastScanMs === null
       && !catalog.lastAttempt,
-    () => loadCatalog(),
+    () => loadCatalog(true),
     5000,
     180000,
     () => setListingStale(true)
@@ -605,7 +605,13 @@ export default function DocsTab({
     }
   }
 
-  async function loadCatalog() {
+  /**
+   * @param quiet true for a look made while waiting for a listing. The page already says it is
+   *     waiting, so such a look changes nothing on it until there is something to show: it used
+   *     to put "Loading documents..." in place of that sentence for the length of every request,
+   *     every five seconds, and a look that failed put an error there.
+   */
+  async function loadCatalog(quiet = false) {
     if (sample) {
       setCatalog(sample.catalog);
       setStaleNames(sample.staleNames || null);
@@ -614,8 +620,10 @@ export default function DocsTab({
       return;
     }
     const wanted = ++loadedAt.current;
-    setLoading(true);
-    setError("");
+    if (!quiet) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const res = await fetch(
         `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
@@ -624,6 +632,8 @@ export default function DocsTab({
       // A repository switched away from still answers; it just no longer has a view to paint.
       if (wanted !== loadedAt.current) return;
       if (!res.ok) {
+        // The next look is five seconds away, and the page goes on saying it is waiting.
+        if (quiet) return;
         setError(data.message || data.error || "Couldn't load this repository's documents");
         // What is on screen was true when it arrived. A refresh that failed is a reason to say so,
         // not to take the documents away from whoever is reading them.
@@ -633,8 +643,10 @@ export default function DocsTab({
       setCatalog(data);
       loadStaleNames(wanted);
       setExpanded(allFolders(buildTree(data.documents || [], name)));
+      // The documents a listing was waited for bring their rules with them.
+      if (quiet && (data.documents || []).length > 0) loadRules();
     } catch {
-      if (wanted === loadedAt.current) setError("Couldn't load this repository's documents");
+      if (wanted === loadedAt.current && !quiet) setError("Couldn't load this repository's documents");
     } finally {
       if (wanted === loadedAt.current) setLoading(false);
     }
