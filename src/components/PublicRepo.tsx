@@ -172,6 +172,14 @@ export default function PublicRepo() {
     : null;
   const docsSource: DocsSource = {
     refreshedAt: page.claimed ? undefined : snapshotAt ?? undefined,
+    action: page.claimed ? undefined : (
+      <div className="public-repo-install">
+        <a className="btn-primary" href={INSTALL_URL} target="_blank" rel="noopener noreferrer">
+          Is this yours? Install to manage it
+        </a>
+        <p className="public-repo-snapshot">Installed, Striff checks every pull request.</p>
+      </div>
+    ),
     lede: "This is a public, read-only report. Striff reads this repository's docs, turns each "
       + "sentence that makes a claim about the code into a rule, and checks the rule against the "
       + "code on the default branch.",
@@ -191,35 +199,29 @@ export default function PublicRepo() {
       )}
 
       <div className="demo">
-        <div className="demo-bar">
-          <div className="demo-tabs" role="tablist" aria-label="Repository views">
-            {views.length > 1 && views.map((v) => (
-              <button
-                key={v}
-                type="button"
-                role="tab"
-                aria-selected={shown === v}
-                className={`demo-tab${shown === v ? " is-on" : ""}`}
-                onClick={() => show(v)}
-              >
-                {v === "docs" ? "Docs & Rules" : "Checks"}
-              </button>
-            ))}
-          </div>
-          {page.claimed ? (
+        {/* Only a claimed page has more than one view to pick between. */}
+        {page.claimed && (
+          <div className="demo-bar">
+            <div className="demo-tabs" role="tablist" aria-label="Repository views">
+              {views.map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="tab"
+                  aria-selected={shown === v}
+                  className={`demo-tab${shown === v ? " is-on" : ""}`}
+                  onClick={() => show(v)}
+                >
+                  {v === "docs" ? "Docs & Rules" : "Checks"}
+                </button>
+              ))}
+            </div>
             <p className="demo-note">
               <span className="demo-chip">Public</span>
               Read-only. Nothing here can be changed.
             </p>
-          ) : (
-            <div className="public-repo-install">
-              <a className="btn-primary" href={INSTALL_URL} target="_blank" rel="noopener noreferrer">
-                Is this yours? Install to manage it
-              </a>
-              <p className="public-repo-snapshot">Installed, Striff checks every pull request.</p>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
         <div className="demo-stage">
           {shown === "docs" && (
             <DocsTab

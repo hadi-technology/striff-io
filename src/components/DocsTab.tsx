@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, useRef, useState } from "react";
+import { createElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { staleNameIssueUrl } from "./docIssue";
 import RevisionLine from "./RevisionLine";
 import { Clamped, mark, snippet, useWatch, withCode, when } from "./docRules";
@@ -479,6 +479,8 @@ export interface DocsSource {
   lede?: string;
   /** When the page was last read, shown beside the repository's name. */
   refreshedAt?: string;
+  /** Something to offer at the head's top right, above the counts. */
+  action?: ReactNode;
 }
 
 export default function DocsTab({
@@ -1351,6 +1353,90 @@ export default function DocsTab({
 
   const summary = catalog?.summary;
 
+  /** The repository's counts, beside the heading. */
+  const tally = summary && (
+    <div className="docs-tally">
+      {/* The whole repository, whatever is selected: see repoCounts. */}
+      <button
+        type="button"
+        className="docs-tally-item"
+        title="Every document in this repository, whatever state it is in."
+        onClick={() => setFilter("all")}
+      >
+        <b>{allDocs.length}</b>
+        <i>document{allDocs.length === 1 ? "" : "s"}</i>
+      </button>
+      {/* Not lit when nothing is filtered: a light on every count says nothing. */}
+      <button
+        type="button"
+        className="docs-tally-item"
+        title="Every rule read from this repository's documents."
+        onClick={() => setRuleFilter("all")}
+      >
+        <b>{repoCounts.all}</b>
+        <i>rule{repoCounts.all === 1 ? "" : "s"}</i>
+      </button>
+      {/* Totals first, then how the rules stand: what holds, what is broken, what nothing
+          has checked. */}
+      <button
+        type="button"
+        className={`docs-tally-item is-held${ruleFilter === "holds" ? " is-on" : ""}`}
+        title={`${STANDING_HELP.holds} Click to show these.`}
+        onClick={() => setRuleFilter(ruleFilter === "holds" ? "all" : "holds")}
+      >
+        <b>{repoCounts.holds}</b>
+        <i>holding</i>
+      </button>
+      <button
+        type="button"
+        className={`docs-tally-item is-violated${ruleFilter === "broken" ? " is-on" : ""}`}
+        title={`${STANDING_HELP.broken} Click to show these.`}
+        onClick={() => setRuleFilter(ruleFilter === "broken" ? "all" : "broken")}
+      >
+        <b>{repoCounts.broken}</b>
+        <i>broken</i>
+      </button>
+      <button
+        type="button"
+        className={`docs-tally-item${ruleFilter === "unchecked" ? " is-on" : ""}`}
+        title={`${STANDING_HELP.unchecked} Click to show these.`}
+        onClick={() => setRuleFilter(ruleFilter === "unchecked" ? "all" : "unchecked")}
+      >
+        <b>{repoCounts.unchecked}</b>
+        <i>not checked</i>
+      </button>
+      {/* Shown only once a reading of the whole repository has looked. Until then there is
+          no number to give: a zero would say every doc is current, and nothing has checked.
+          Counted apart from the rules, because a doc naming something that is gone is a
+          stale doc and not a broken rule. Of the whole repository, like every other count here. */}
+      {staleNames && staleNames.lastSeenMs != null && (
+        <button
+          type="button"
+          className={`docs-tally-item is-stale${repoStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
+          title={`Names your docs write that the code no longer has. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
+          onClick={() => setFilter(filter === "stale" ? "all" : "stale")}
+        >
+          <b>{repoStale}{staleNames.truncated ? "+" : ""}</b>
+          <i>names gone</i>
+        </button>
+      )}
+      {catalog && !readOnly && (
+        <ReadRepository
+          repo={repo}
+          reading={catalog.reading}
+          /* Documents nothing has read, which is the only work a reading does. The old
+             sum subtracted the states it knew about and so counted documents a reading
+             could not finish as waiting for ever, leaving the control offered on a
+             repository where it had nothing left to achieve. */
+          waiting={summary.notRead}
+          read={summary.read}
+          busy={asking || busy}
+          onRead={readRepository}
+        />
+      )}
+    </div>
+  );
+
   return (
     <div className="docs-tab">
       {paletteOpen && (
@@ -1486,88 +1572,12 @@ export default function DocsTab({
           </p>
           {catalog && <RevisionLine catalog={catalog} />}
         </div>
-        {summary && (
-          <div className="docs-tally">
-            {/* The whole repository, whatever is selected: see repoCounts. */}
-            <button
-              type="button"
-              className="docs-tally-item"
-              title="Every document in this repository, whatever state it is in."
-              onClick={() => setFilter("all")}
-            >
-              <b>{allDocs.length}</b>
-              <i>document{allDocs.length === 1 ? "" : "s"}</i>
-            </button>
-            {/* Not lit when nothing is filtered: a light on every count says nothing. */}
-            <button
-              type="button"
-              className="docs-tally-item"
-              title="Every rule read from this repository's documents."
-              onClick={() => setRuleFilter("all")}
-            >
-              <b>{repoCounts.all}</b>
-              <i>rule{repoCounts.all === 1 ? "" : "s"}</i>
-            </button>
-            {/* Totals first, then how the rules stand: what holds, what is broken, what nothing
-                has checked. */}
-            <button
-              type="button"
-              className={`docs-tally-item is-held${ruleFilter === "holds" ? " is-on" : ""}`}
-              title={`${STANDING_HELP.holds} Click to show these.`}
-              onClick={() => setRuleFilter(ruleFilter === "holds" ? "all" : "holds")}
-            >
-              <b>{repoCounts.holds}</b>
-              <i>holding</i>
-            </button>
-            <button
-              type="button"
-              className={`docs-tally-item is-violated${ruleFilter === "broken" ? " is-on" : ""}`}
-              title={`${STANDING_HELP.broken} Click to show these.`}
-              onClick={() => setRuleFilter(ruleFilter === "broken" ? "all" : "broken")}
-            >
-              <b>{repoCounts.broken}</b>
-              <i>broken</i>
-            </button>
-            <button
-              type="button"
-              className={`docs-tally-item${ruleFilter === "unchecked" ? " is-on" : ""}`}
-              title={`${STANDING_HELP.unchecked} Click to show these.`}
-              onClick={() => setRuleFilter(ruleFilter === "unchecked" ? "all" : "unchecked")}
-            >
-              <b>{repoCounts.unchecked}</b>
-              <i>not checked</i>
-            </button>
-            {/* Shown only once a reading of the whole repository has looked. Until then there is
-                no number to give: a zero would say every doc is current, and nothing has checked.
-                Counted apart from the rules, because a doc naming something that is gone is a
-                stale doc and not a broken rule. Of the whole repository, like every other count here. */}
-            {staleNames && staleNames.lastSeenMs != null && (
-              <button
-                type="button"
-                className={`docs-tally-item is-stale${repoStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
-                title={`Names your docs write that the code no longer has. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
-                onClick={() => setFilter(filter === "stale" ? "all" : "stale")}
-              >
-                <b>{repoStale}{staleNames.truncated ? "+" : ""}</b>
-                <i>names gone</i>
-              </button>
-            )}
-            {catalog && !readOnly && (
-              <ReadRepository
-                repo={repo}
-                reading={catalog.reading}
-                /* Documents nothing has read, which is the only work a reading does. The old
-                   sum subtracted the states it knew about and so counted documents a reading
-                   could not finish as waiting for ever, leaving the control offered on a
-                   repository where it had nothing left to achieve. */
-                waiting={summary.notRead}
-                read={summary.read}
-                busy={asking || busy}
-                onRead={readRepository}
-              />
-            )}
+        {source?.action ? (
+          <div className="docs-head-side">
+            {source.action}
+            {tally}
           </div>
-        )}
+        ) : tally}
       </div>
 
       {loading && <p className="dashboard-metric-caption">Loading documents...</p>}
