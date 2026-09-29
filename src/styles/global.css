@@ -5112,6 +5112,10 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 
 /* One status, so one set of colours for it. */
 .docs-outcome.is-broken { border-color: #f6c9ce; background: #fdeef0; color: #b3253a; }
+/* A pill that names where a break came from, and goes there. */
+.docs-outcome.is-link { gap: 0.25rem; text-decoration: none; }
+.docs-outcome.is-link:hover { border-color: #e79aa5; background: #fbe1e5; }
+.docs-outcome.is-link code { font-family: "IBM Plex Mono", monospace; font-size: 0.95em; }
 .docs-outcome.is-holds { border-color: #bfe3cd; background: #edf9f1; color: #1a7f45; }
 .docs-outcome.is-unchecked { border-color: #e3e8ee; background: #f6f8fa; color: #57606a; }
 
@@ -5146,6 +5150,27 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   vertical-align: middle;
 }
 .docs-repo-link:hover { border-color: #cbd5e1; color: #24292f; text-decoration: none; }
+/* Loading the page's answers again, beside the link out, in the same quiet shape. */
+.docs-refresh {
+  margin-left: 0.4rem;
+  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.2rem 0.55rem;
+  color: #57606a;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.docs-refresh:hover:not(:disabled) { border-color: #cbd5e1; color: #24292f; }
+.docs-refresh:disabled { cursor: progress; }
+.docs-refresh.is-loading svg { animation: read-repo-spin 800ms linear infinite; }
+@keyframes read-repo-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .docs-refresh.is-loading svg { animation: none; } }
+@media print { .docs-refresh { display: none; } }
 
 /* The line on GitHub, beside the path that opens it in the documents view. */
 .rules-source-github { margin-left: 0.3rem; color: #8a95a1; vertical-align: baseline; }
@@ -6513,7 +6538,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 }
 
 /* The checks Striff ran on a repository's pull requests: one row each, what it found on the right. */
-.checks-head { margin-bottom: 1rem; }
+.checks-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .checks-title { margin-top: 0.2rem; color: #0f172a; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; }
 .checks-lede { margin-top: 0.3rem; color: #57606a; font-size: 0.85rem; }
 .checks-list {

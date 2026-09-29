@@ -364,9 +364,24 @@ export default function RulesTable({
                 <Clamped lines={4}>{withCode(row.statement, term)}</Clamped>
               </td>
               <td>
-                <span className={`docs-outcome is-${standing(row)}`} title={STANDING_HELP[standing(row)]}>
-                  {STANDING_LABEL[standing(row)]}
-                </span>
+                {/* A rule a pull request's change broke names that pull request: it is where the
+                    break came from, and one click from the diff. A rule broken before any pull
+                    request judged it has nothing to name, and says only that it is broken. */}
+                {standing(row) === "broken" && row.status === "VIOLATED" && row.pullNo ? (
+                  <a
+                    className="docs-outcome is-broken is-link"
+                    href={`https://github.com/${owner}/${name}/pull/${row.pullNo}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`Pull request #${row.pullNo} broke this rule.`}
+                  >
+                    Broken by #{row.pullNo}
+                  </a>
+                ) : (
+                  <span className={`docs-outcome is-${standing(row)}`} title={STANDING_HELP[standing(row)]}>
+                    {STANDING_LABEL[standing(row)]}
+                  </span>
+                )}
                 {/* This column is narrow, so each line under the pill is short enough to stay one
                     line, and the sentence it stands for is in its title. */}
                 {row.pullNo && (

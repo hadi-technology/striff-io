@@ -151,6 +151,11 @@ interface StaleName {
   movedToPath: string | null;
   firstSeenMs: number;
   lastSeenMs: number;
+  /** The commit that removed historicalPath, where history said; absent otherwise. */
+  removedBySha?: string | null;
+  removedByMessage?: string | null;
+  removedAtMs?: number | null;
+  removedByUrl?: string | null;
 }
 
 interface StaleNames {
@@ -240,8 +245,9 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
       if (doc.forced) {
         return `A screen judged this doc holds no rule to check${doc.screenReason ? ` (${doc.screenReason})` : ""}. ${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
       }
+      // The reason is stored as "screen: why"; the screen's name is for the logs, not a reader.
       return doc.screenReason
-        ? `Nothing here to check against code: ${doc.screenReason}`
+        ? `Skipped: ${doc.screenReason.replace(/^[a-z_]+:\s*/, "")}`
         : "A screen judged this doc holds no rule that could be checked against code.";
     case "RETIRED":
       return doc.retiredReason
@@ -442,6 +448,16 @@ const DotsIcon = () =>
     createElement("circle", { cx: 8, cy: 8, r: 1.3 }),
     createElement("circle", { cx: 12.8, cy: 8, r: 1.3 })
   );
+
+/** Two arrows chasing each other: load again. */
+export const RefreshMark = () => (
+  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M13.25 6.5A5.25 5.25 0 0 0 3.6 4.4" />
+    <path d="M3.25 2.25v2.5h2.5" />
+    <path d="M2.75 9.5a5.25 5.25 0 0 0 9.65 2.1" />
+    <path d="M12.75 13.75v-2.5h-2.5" />
+  </svg>
+);
 
 const GitHubMark = () =>
   createElement(
@@ -1415,6 +1431,16 @@ export default function DocsTab({
               <GitHubMark />
               GitHub
             </a>
+            <button
+              type="button"
+              className={`docs-refresh${loading || rulesLoading ? " is-loading" : ""}`}
+              onClick={() => reload()}
+              disabled={loading || rulesLoading}
+              title="Load this repository's documents and rules again"
+            >
+              <RefreshMark />
+              Refresh
+            </button>
           </div>
           {/* The second sentence used to be there whatever the repository looked like, so a
               repository with every document read was still told some were waiting. It is now the
@@ -1575,7 +1601,9 @@ export default function DocsTab({
                   key={chip.key}
                   type="button"
                   className={`docs-filter${filter === chip.key ? " is-on" : ""}`}
-                  onClick={() => setFilter(chip.key)}
+                  aria-pressed={filter === chip.key}
+                  // A second click on the chip in use puts the tree back as it was.
+                  onClick={() => setFilter(filter === chip.key ? "all" : chip.key)}
                 >
                   {chip.dot && <span className={`docs-fdot is-${chip.dot}`} />}
                   {chip.label} <b>{filterCounts[chip.key]}</b>
@@ -1732,8 +1760,10 @@ export default function DocsTab({
                       ? "This repository holds more rules than one list can carry, and the documents before this one fill it. Striff has these; this page cannot reach them yet."
                       : !scopeDocs.some((doc) => doc.state === "NOT_READ")
                       ? "Striff read these docs and found no rule about the code in them."
+                      : isRunning(catalog?.reading)
+                      ? "Striff is reading these docs now. Their rules appear here as they are read; refresh to see them."
                       : summary && summary.notRead > 0 && !sample
-                      ? `Nothing here has been read yet. Read ${summary.notRead} doc${summary.notRead === 1 ? "" : "s"} now, above, does it without waiting for a pull request.`
+                      ? `Nothing here has been read yet. Use Read ${summary.notRead} doc${summary.notRead === 1 ? "" : "s"} now, above, to read ${summary.notRead === 1 ? "it" : "them"} without waiting for a pull request.`
                       : "Nothing here has been read yet. Striff reads a doc the first time a pull request changes code that doc talks about."}
                   </p>
                 )}
@@ -1880,9 +1910,24 @@ export default function DocsTab({
                             </td>
                             <td className="docs-stale-name">
                               <code>{finding.name}</code>
-                              <span className={`docs-outcome is-${finding.state === "MOVED" ? "unclear" : "broken"}`}>
-                                {finding.state === "MOVED" ? "Moved" : "Gone"}
-                              </span>
+                              {/* The commit that removed the file, where history named one: the
+                                  question a reader has next is when, and by whom. */}
+                              {finding.state !== "MOVED" && finding.removedBySha ? (
+                                <a
+                                  className="docs-outcome is-broken is-link"
+                                  href={finding.removedByUrl
+                                    || `https://github.com/${owner}/${name}/commit/${finding.removedBySha}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={`Removed by ${finding.removedBySha.slice(0, 7)}${finding.removedByMessage ? `: ${finding.removedByMessage}` : ""}${finding.removedAtMs ? `, ${when(finding.removedAtMs)}` : ""}`}
+                                >
+                                  Gone in <code>{finding.removedBySha.slice(0, 7)}</code>
+                                </a>
+                              ) : (
+                                <span className={`docs-outcome is-${finding.state === "MOVED" ? "unclear" : "broken"}`}>
+                                  {finding.state === "MOVED" ? "Moved" : "Gone"}
+                                </span>
+                              )}
                             </td>
                             <td className="docs-rule-quote">
                               <Clamped lines={4}>{withCode(finding.sentence || "")}</Clamped>
