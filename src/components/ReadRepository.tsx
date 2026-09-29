@@ -12,10 +12,10 @@ import { useEffect, useState } from "react";
  * read, and here is how the other three get read. A button of its own under the heading made a
  * repository look like it needed configuring.
  *
- * The work is a queued job of minutes. A run used to report nothing until it had finished, so
- * there was nothing to watch and this did not: a live display of it would have been a spinner
- * beside a clock. A run now records the documents it has read every few documents, so the page
- * that holds this looks again while one is going, and this says how far it has got:
+ * The work is a queued job of minutes, and this does not sit and watch it: a page that reloads
+ * itself every few seconds moves under whoever is reading it. A run records the documents it has
+ * read every few documents, so what this says is how far the run had got when the page was
+ * loaded, and a refresh is how a reader asks again:
  *
  * - documents waiting → "Read 3 docs now"
  * - asked for, or a run already going → no button, and "In progress" beside a dot that pulses,
@@ -233,8 +233,8 @@ export default function ReadRepository({
         </span>
         <span className="read-repo-note">
           {(reading?.docsTotal || 0) > 0
-            ? "Documents and their rules appear here as they are read."
-            : "Striff is reading the code first. Documents appear here as they are read."}
+            ? "Refresh the page to see what has been read since."
+            : "Striff is reading the code first. Refresh the page to see what has been read."}
         </span>
       </span>
     );
