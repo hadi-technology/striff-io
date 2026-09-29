@@ -468,11 +468,21 @@ const GitHubMark = () =>
     })
   );
 
+/**
+ * Where a read-only view reads a repository's documents from, in place of the signed-in proxy: a
+ * public repository's page, which anyone may read and nobody may change from here.
+ */
+export interface DocsSource {
+  /** The URL of one read: the catalogue (""), every rule, the names gone, or one document. */
+  url(view: "" | "rules" | "type-findings", path?: string): string;
+}
+
 export default function DocsTab({
   installationId,
   repos,
   openRepo,
   sample,
+  source,
 }: {
   installationId: number;
   repos: { full_name: string }[];
@@ -489,6 +499,12 @@ export default function DocsTab({
     doc: (path: string) => any;
     staleNames?: any;
   };
+  /**
+   * Read a public page instead of the signed-in dashboard. Nothing can be changed, and nothing
+   * offers to: no menus, no reading to ask for, no issue to open on a repository that is not the
+   * reader's.
+   */
+  source?: DocsSource;
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
@@ -596,6 +612,15 @@ export default function DocsTab({
     return () => document.removeEventListener("click", close);
   }, [menuFor]);
 
+  /** Nothing here can be changed: the example repository, or a public page. */
+  const readOnly = !!sample || !!source;
+
+  /** The URL of one read, from the public page where this view reads one. */
+  function readUrl(view: "" | "rules" | "type-findings", path?: string): string {
+    if (source) return source.url(view, path);
+    return `/.netlify/functions/doc-catalog-proxy?${view ? `view=${view}&` : ""}installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}${path != null ? `&path=${encodeURIComponent(path)}` : ""}`;
+  }
+
   /** Both answers this view is built from: what documents exist, and what rules they hold. */
   async function reload() {
     await loadCatalog();
@@ -610,9 +635,7 @@ export default function DocsTab({
   async function loadStaleNames(wanted: number) {
     setStaleNames(null);
     try {
-      const res = await fetch(
-        `/.netlify/functions/doc-catalog-proxy?view=type-findings&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
-      );
+      const res = await fetch(readUrl("type-findings"));
       if (!res.ok || wanted !== loadedAt.current) return;
       const data = await res.json();
       if (wanted === loadedAt.current && Array.isArray(data.findings)) setStaleNames(data);
@@ -641,9 +664,7 @@ export default function DocsTab({
       setError("");
     }
     try {
-      const res = await fetch(
-        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
-      );
+      const res = await fetch(readUrl(""));
       const data = await res.json();
       // A repository switched away from still answers; it just no longer has a view to paint.
       if (wanted !== loadedAt.current) return;
@@ -683,9 +704,7 @@ export default function DocsTab({
     const wanted = ++rulesAt.current;
     setRulesLoading(true);
     try {
-      const res = await fetch(
-        `/.netlify/functions/doc-catalog-proxy?view=rules&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
-      );
+      const res = await fetch(readUrl("rules"));
       if (!res.ok || wanted !== rulesAt.current) return;
       setRulesIndex(await res.json());
     } catch {
@@ -733,9 +752,7 @@ export default function DocsTab({
     // last may paint, or the pane shows one document's rules under another's name.
     const wanted = ++openedAt.current;
     try {
-      const res = await fetch(
-        `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}&path=${encodeURIComponent(path)}`
-      );
+      const res = await fetch(readUrl("", path));
       if (wanted !== openedAt.current) return;
       if (!res.ok) {
         const answer = await res.json().catch(() => ({}));
@@ -766,6 +783,10 @@ export default function DocsTab({
    * nothing, so a rejected token or a 500 looked exactly like a change that did not stick.
    */
   async function write(body: unknown, view: "" | "force-read", failed: string) {
+    if (source) {
+      setActionError("This is a public page, so nothing here can be changed.");
+      return false;
+    }
     if (sample) {
       setActionError("This is an example repository, so nothing here can be changed.");
       return false;
@@ -820,7 +841,7 @@ export default function DocsTab({
    */
   /** @return false where the request was refused, so the control stops saying it is asking */
   async function readRepository(): Promise<boolean> {
-    if (sample) return false;
+    if (readOnly) return false;
     setAsking(true);
     setActionError("");
     try {
@@ -1062,6 +1083,8 @@ export default function DocsTab({
 
   /** The ⋯ menu a document or folder carries, in the tree and in the selection's own header. */
   function rowMenu(path: string, doc?: Doc, folder?: boolean, where: string = "tree") {
+    // A public page's reader has nothing to exclude or insist on.
+    if (source) return null;
     // The same document has a menu in the tree and another in its open header; they are told
     // apart by where they are, so opening one does not open the other.
     const id = `${where}:${path}`;
@@ -1515,7 +1538,7 @@ export default function DocsTab({
                 <i>names gone</i>
               </button>
             )}
-            {catalog && !sample && (
+            {catalog && !readOnly && (
               <ReadRepository
                 repo={repo}
                 reading={catalog.reading}
@@ -1762,7 +1785,7 @@ export default function DocsTab({
                       ? "Striff read these docs and found no rule about the code in them."
                       : isRunning(catalog?.reading)
                       ? "Striff is reading these docs now. Their rules appear here as they are read; refresh to see them."
-                      : summary && summary.notRead > 0 && !sample
+                      : summary && summary.notRead > 0 && !readOnly
                       ? `Nothing here has been read yet. Use Read ${summary.notRead} doc${summary.notRead === 1 ? "" : "s"} now, above, to read ${summary.notRead === 1 ? "it" : "them"} without waiting for a pull request.`
                       : "Nothing here has been read yet. Striff reads a doc the first time a pull request changes code that doc talks about."}
                   </p>
@@ -1780,6 +1803,7 @@ export default function DocsTab({
                     docCount={scopeRuleDocs}
                     truncated={!!rulesIndex.truncated}
                     onOpenDoc={(path) => openDoc(path)}
+                    issues={!source}
                   />
                 )}
               </>
@@ -1878,6 +1902,7 @@ export default function DocsTab({
                     showPath={false}
                     filter={ruleFilter}
                     docCount={1}
+                    issues={!source}
                   />
                 )}
 
@@ -1937,7 +1962,7 @@ export default function DocsTab({
                               <span className="docs-outcome-when">
                                 first seen {when(finding.firstSeenMs)}
                               </span>
-                              {!sample && (
+                              {!readOnly && (
                                 <a
                                   className="docs-issue-link"
                                   href={staleNameIssueUrl(owner, name, selected, finding,

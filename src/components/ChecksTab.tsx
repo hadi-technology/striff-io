@@ -22,6 +22,11 @@ export interface Check {
   rulesAlreadyBroken: number;
   rulesHeld: number;
   docsRead: number | null;
+  /**
+   * Verdicts that a rule is broken which this page does not show, because nobody has checked them
+   * yet. Counted in neither broken figure. Only a public page withholds any.
+   */
+  withheld?: number;
 }
 
 export interface ChecksPage {
@@ -32,7 +37,7 @@ export interface ChecksPage {
 }
 
 /** What a check found, in one word, and the tone it is shown in. */
-function verdictOf(check: Check): { label: string; tone: string; help: string } {
+function verdictOf(check: Check, whose: "your" | "its" = "your"): { label: string; tone: string; help: string } {
   const state = (check.state || "").toUpperCase();
   if (state === "FAILED" || state === "ERROR") {
     return { label: "Didn't finish", tone: "is-muted", help: "The review of this commit stopped before it finished." };
@@ -41,12 +46,16 @@ function verdictOf(check: Check): { label: string; tone: string; help: string } 
     return { label: "Running", tone: "is-running", help: "Striff is still reviewing this commit." };
   }
   if (check.rulesBroken > 0) {
-    return { label: `Breaks ${check.rulesBroken} rule${check.rulesBroken === 1 ? "" : "s"}`, tone: "is-broken", help: "This change breaks rules your docs state." };
+    return { label: `Breaks ${check.rulesBroken} rule${check.rulesBroken === 1 ? "" : "s"}`, tone: "is-broken", help: `This change breaks rules ${whose} docs state.` };
+  }
+  // Withheld verdicts say a rule may be broken, so the check cannot be said to keep them.
+  if ((check.withheld || 0) > 0) {
+    return { label: "Under review", tone: "is-muted", help: "This check found rules the change may break. A person checks each before it is shown here." };
   }
   if (check.rulesHeld > 0 || check.rulesAlreadyBroken > 0) {
-    return { label: "Keeps your rules", tone: "is-holds", help: "This change breaks none of the rules it touches." };
+    return { label: `Keeps ${whose} rules`, tone: "is-holds", help: "This change breaks none of the rules it touches." };
   }
-  return { label: "No rules touched", tone: "is-muted", help: "None of your documented rules bear on this change." };
+  return { label: "No rules touched", tone: "is-muted", help: `None of ${whose} documented rules bear on this change.` };
 }
 
 /** When a check was made: the day, and the time on it, since several can land on one day. */
@@ -64,11 +73,14 @@ export default function ChecksTab({
   installationId,
   repo,
   sample,
+  source,
 }: {
   installationId: number;
   repo: string;
   /** Fixed pages to show instead of asking the API, for the demo. */
   sample?: (page: number) => ChecksPage;
+  /** The URL of one page of checks on a public repository's page, in place of the dashboard's. */
+  source?: (page: number) => string;
 }) {
   const [page, setPage] = useState(0);
   const [answer, setAnswer] = useState<ChecksPage | null>(null);
@@ -89,7 +101,9 @@ export default function ChecksTab({
     setLoading(true);
     setError("");
     fetch(
-      `/.netlify/functions/doc-catalog-proxy?view=checks&page=${page}&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
+      source
+        ? source(page)
+        : `/.netlify/functions/doc-catalog-proxy?view=checks&page=${page}&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
     )
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
@@ -142,8 +156,9 @@ export default function ChecksTab({
       {answer && checks.length === 0 && !loading && (
         <div className="dashboard-empty">
           <p className="text-slate-600">
-            No checks yet. Striff checks a pull request when one is opened or updated in this
-            repository.
+            {source
+              ? "No checks to show yet."
+              : "No checks yet. Striff checks a pull request when one is opened or updated in this repository."}
           </p>
         </div>
       )}
@@ -151,7 +166,7 @@ export default function ChecksTab({
       {checks.length > 0 && (
         <ol className={`checks-list${loading ? " is-loading" : ""}`}>
           {checks.map((check) => {
-            const verdict = verdictOf(check);
+            const verdict = verdictOf(check, source ? "its" : "your");
             const checked = check.rulesHeld + check.rulesBroken + check.rulesAlreadyBroken;
             // What the check did, beside what it concluded: the work is the reason to look.
             const facts = [
@@ -180,12 +195,16 @@ export default function ChecksTab({
                     {check.headSha && <code className="check-sha">{check.headSha.slice(0, 7)}</code>}
                     <span className="check-when">{checkedAt(check.checkedAtMs)}</span>
                   </div>
-                  <p className="check-headline">
-                    {check.headline
-                      || (verdict.tone === "is-running"
-                        ? "Striff is reviewing this commit."
-                        : "No summary was written for this check.")}
-                  </p>
+                  {/* A public page leaves out a summary written from findings it does not show, so
+                      a missing one there is not a summary that was never written. */}
+                  {(check.headline || verdict.tone === "is-running" || !source) && (
+                    <p className="check-headline">
+                      {check.headline
+                        || (verdict.tone === "is-running"
+                          ? "Striff is reviewing this commit."
+                          : "No summary was written for this check.")}
+                    </p>
+                  )}
                   {facts.length > 0 && <p className="check-facts">{facts.join(" · ")}</p>}
                 </div>
                 {/* The rules a check held the change to, and how each came out: the number a
@@ -200,6 +219,13 @@ export default function ChecksTab({
                       {check.rulesAlreadyBroken > 0 && (
                         <i className="is-prior">{check.rulesAlreadyBroken} already broken</i>
                       )}
+                    </span>
+                  )}
+                  {(check.withheld || 0) > 0 && (
+                    <span className="check-rules-split">
+                      <i className="is-prior" title="Found by this check and not shown until a person has checked them.">
+                        {check.withheld} under review
+                      </i>
                     </span>
                   )}
                 </div>

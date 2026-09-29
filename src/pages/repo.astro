@@ -1,0 +1,23 @@
+---
+/**
+ * A public repository's page. Served for every /<owner>/<repo> address the site has no page of
+ * its own for (see netlify.toml); PublicRepo reads which repository from the address.
+ *
+ * Never indexed: a page whose repository did not install Striff must not turn up in a search as
+ * if it had, and the address that serves it is one page for every repository.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PublicRepo from "../components/PublicRepo";
+---
+<BaseLayout
+  title="Repository | Striff"
+  description="A public repository's documented architecture, and the pull requests Striff checked against it."
+  canonical="https://striff.io/"
+  robots="noindex,nofollow"
+>
+  <main class="demo-page text-slate-900">
+    <section class="mx-auto max-w-[95rem] px-6 pt-14 pb-20 md:pt-20">
+      <PublicRepo client:load />
+    </section>
+  </main>
+</BaseLayout>

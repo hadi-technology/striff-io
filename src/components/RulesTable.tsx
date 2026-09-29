@@ -116,6 +116,7 @@ export default function RulesTable({
   docCount,
   truncated,
   onOpenDoc,
+  issues = true,
 }: {
   /** The rules in scope, already stripped of the ones nothing could judge. */
   rows: Row[];
@@ -137,6 +138,8 @@ export default function RulesTable({
   truncated?: boolean;
   /** Opens a document from the row that names it. */
   onOpenDoc?: (path: string) => void;
+  /** Whether a broken rule offers to open an issue; a public page's reader is not the repository's. */
+  issues?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
@@ -400,7 +403,7 @@ export default function RulesTable({
                     not checked on {branch || "the branch"} yet
                   </span>
                 )}
-                {standing(row) === "broken" && (
+                {issues && standing(row) === "broken" && (
                   <a
                     className="docs-issue-link"
                     href={issueUrl(owner, name, row.doc.path, row, branch)}

@@ -6628,3 +6628,28 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   .check-side { flex: none; flex-direction: row; align-items: center; }
   .check-rules { flex: none; border-left: 0; padding-left: 0; flex-direction: row; align-items: baseline; gap: 0.4rem; }
 }
+
+/* A public repository's page: the dashboard's views under a heading that says whose it is. */
+.public-repo-head { margin-bottom: 1.25rem; }
+.public-repo-title {
+  margin: 0.5rem 0 0;
+  color: #0f172a;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.public-repo-title a:hover { text-decoration: underline; }
+.public-repo-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #e8d9a8;
+  border-radius: 0.9rem;
+  background: #fdf6e3;
+  padding: 1rem 1.25rem;
+}
+.public-repo-notice p { flex: 1 1 28rem; margin: 0; color: #5b4510; font-size: 0.92rem; line-height: 1.6; }
+.public-repo-withheld { margin: 0 0 1rem; color: #57606a; font-size: 0.88rem; line-height: 1.6; }
