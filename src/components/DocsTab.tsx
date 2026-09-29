@@ -945,6 +945,31 @@ export default function DocsTab({
     [scopeRows]
   );
 
+  /**
+   * The counts above the tree, which are of the whole repository whatever is selected. They were
+   * of the selection, so opening a folder changed the numbers at the top of the page, which read
+   * as the repository changing rather than as a narrower view of it. The table below still shows
+   * what is selected, and says how many of the rules it lists.
+   */
+  const repoCounts = useMemo(() => {
+    const rows: { status: string | null; onDefaultBranch: string | null }[] = [];
+    for (const group of rulesIndex?.documents || []) {
+      for (const rule of group.rules) {
+        if (standing(rule) !== "unclear") rows.push(rule);
+      }
+    }
+    return {
+      all: rows.length,
+      broken: rows.filter((row) => standing(row) === "broken").length,
+      holds: rows.filter((row) => standing(row) === "holds").length,
+      unchecked: rows.filter((row) => standing(row) === "unchecked").length,
+    };
+  }, [rulesIndex]);
+  const repoStale = useMemo(
+    () => allDocs.reduce((sum, doc) => sum + (staleByDoc.get(doc.path)?.length || 0), 0),
+    [allDocs, staleByDoc]
+  );
+
   /** What the selection is called, in the export, on paper and in the pane's own heading. */
   const scopeLabel =
     scopeKind === "root" ? repo : scopeKind === "folder" ? `${selected}/` : selected;
@@ -1402,20 +1427,15 @@ export default function DocsTab({
         </div>
         {summary && (
           <div className="docs-tally">
-            {/* The counts are of what is selected, so a folder says how much of the repository it
-                accounts for rather than repeating the whole of it. */}
+            {/* The whole repository, whatever is selected: see repoCounts. */}
             <button
               type="button"
               className="docs-tally-item"
-              title={
-                scopeKind === "doc"
-                  ? "This document."
-                  : `Every document ${scopeKind === "root" ? "in this repository" : `under ${selected}/`}, whatever state it is in.`
-              }
+              title="Every document in this repository, whatever state it is in."
               onClick={() => setFilter("all")}
             >
-              <b>{scopeDocs.length}</b>
-              <i>document{scopeDocs.length === 1 ? "" : "s"}</i>
+              <b>{allDocs.length}</b>
+              <i>document{allDocs.length === 1 ? "" : "s"}</i>
             </button>
             <button
               type="button"
@@ -1423,7 +1443,7 @@ export default function DocsTab({
               title={`${STANDING_HELP.broken} Click to show these.`}
               onClick={() => setRuleFilter(ruleFilter === "broken" ? "all" : "broken")}
             >
-              <b>{scopeCounts.broken}</b>
+              <b>{repoCounts.broken}</b>
               <i>broken</i>
             </button>
             <button
@@ -1432,7 +1452,7 @@ export default function DocsTab({
               title={`${STANDING_HELP.holds} Click to show these.`}
               onClick={() => setRuleFilter(ruleFilter === "holds" ? "all" : "holds")}
             >
-              <b>{scopeCounts.holds}</b>
+              <b>{repoCounts.holds}</b>
               <i>holding</i>
             </button>
             <button
@@ -1441,31 +1461,31 @@ export default function DocsTab({
               title={`${STANDING_HELP.unchecked} Click to show these.`}
               onClick={() => setRuleFilter(ruleFilter === "unchecked" ? "all" : "unchecked")}
             >
-              <b>{scopeCounts.unchecked}</b>
+              <b>{repoCounts.unchecked}</b>
               <i>not checked</i>
             </button>
             {/* Not lit when nothing is filtered: a light on every count says nothing. */}
             <button
               type="button"
               className="docs-tally-item"
-              title="Every rule read from what is selected."
+              title="Every rule read from this repository's documents."
               onClick={() => setRuleFilter("all")}
             >
-              <b>{scopeCounts.all}</b>
-              <i>rule{scopeCounts.all === 1 ? "" : "s"}</i>
+              <b>{repoCounts.all}</b>
+              <i>rule{repoCounts.all === 1 ? "" : "s"}</i>
             </button>
             {/* Shown only once a reading of the whole repository has looked. Until then there is
                 no number to give: a zero would say every doc is current, and nothing has checked.
                 Counted apart from the rules, because a doc naming something that is gone is a
-                stale doc and not a broken rule. Of the selection, like every other count here. */}
+                stale doc and not a broken rule. Of the whole repository, like every other count here. */}
             {staleNames && staleNames.lastSeenMs != null && (
               <button
                 type="button"
-                className={`docs-tally-item is-stale${scopeStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
+                className={`docs-tally-item is-stale${repoStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
                 title={`Names your docs write that the code no longer has. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
                 onClick={() => setFilter(filter === "stale" ? "all" : "stale")}
               >
-                <b>{scopeStale}{staleNames.truncated ? "+" : ""}</b>
+                <b>{repoStale}{staleNames.truncated ? "+" : ""}</b>
                 <i>names gone</i>
               </button>
             )}
