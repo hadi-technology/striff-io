@@ -977,6 +977,31 @@ function InstallationCard({
                 </a>
               </div>
 
+              {/* What being listed here means, said once above the list it is about. Someone who
+                  granted access to a repository should not first find out from a check appearing
+                  on a colleague's pull request. */}
+              <div className="repo-coverage">
+                <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6.25" />
+                  <path d="M8 7.25v3.5M8 5.1v.05" />
+                </svg>
+                <div>
+                  <p className="repo-coverage-title">Striff reviews every pull request in these repositories</p>
+                  <p className="repo-coverage-body">
+                    Each pull request opened or updated in a repository below receives a Striff check
+                    on GitHub, with a diagram of its architectural changes and any conflicts with
+                    your documented rules.
+                    {hasNoPlan
+                      ? " Private repositories are included once a plan is active."
+                      : ""}{" "}
+                    To add or remove repositories, use{" "}
+                    <a href={manageReposUrl} target="_blank" rel="noopener noreferrer">
+                      Manage repos
+                    </a>.
+                  </p>
+                </div>
+              </div>
+
               {/* Repo grid */}
               {displayedRepos.length > 0 ? (
                 <div className="repo-grid">

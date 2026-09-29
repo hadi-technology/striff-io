@@ -19,8 +19,8 @@ import { useEffect, useState } from "react";
  *
  * - documents waiting → "Read 3 docs now"
  * - asked for, or a run already going → no button, and "In progress" beside a dot that pulses,
- *   with how many of its documents are read once the run has counted them. A greyed button still
- *   read as something to press, and its label as an offer still open.
+ *   with how many documents are left to read. A greyed button still read as something to press,
+ *   and its label as an offer still open.
  * - everything read → nothing at all, which is how a finished reading reports itself
  * - stopped, or going so long that nothing is coming → the button again, and why
  *
@@ -219,23 +219,23 @@ export default function ReadRepository({
           role="status"
           title={reading?.state === "queued"
             ? "This reading is queued behind other work and starts on its own."
-            : "Striff is reading this repository."}
+            : (reading?.docsTotal || 0) > 0
+            ? `Striff is reading this repository. It has been through ${reading!.docsDone || 0} of its ${reading!.docsTotal} documents, counting the ones it had already read.`
+            : "Striff is reading this repository's code, and reads its documents next."}
         >
           <span className="read-repo-pulse" aria-hidden="true" />
           In progress
-          {/* Only once the run has counted its documents: before that it is parsing the
-              repository, and "0 of 0" would be a number about nothing. */}
-          {(reading?.docsTotal || 0) > 0 && (
+          {/* The number the button had, going down: documents nothing has read yet. How many of
+              the repository's documents the run has been through was shown here and did not
+              add up to anything beside it -- "13 of 73" under a button that had said 25, because
+              the run passes over the documents already read as well. */}
+          {waiting > 0 && (
             <span className="read-repo-count">
-              {reading!.docsDone || 0} of {reading!.docsTotal} docs
+              {waiting} doc{waiting === 1 ? "" : "s"} left to read
             </span>
           )}
         </span>
-        <span className="read-repo-note">
-          {(reading?.docsTotal || 0) > 0
-            ? "Refresh the page to see what has been read since."
-            : "Striff is reading the code first. Refresh the page to see what has been read."}
-        </span>
+        <span className="read-repo-note">Refresh the page to see what has been read since.</span>
       </span>
     );
   }
