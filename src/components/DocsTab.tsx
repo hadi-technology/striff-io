@@ -12,7 +12,7 @@ import RulesTable, {
   type RuleFilter,
 } from "./RulesTable";
 import Listing from "./Listing";
-import ReadRepository, { type Reading } from "./ReadRepository";
+import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
 
 /**
  * One repository's documents, and the rules read from whichever of them is selected.
@@ -259,6 +259,14 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
   }
 }
 
+/** The tree's width: what it is until someone drags it, how narrow it may go, and a key's step. */
+const TREE_DEFAULT = 320;
+const TREE_MIN = 220;
+const TREE_STEP = 24;
+/** The most of the view the tree may take, so the rules beside it are never squeezed out. */
+const TREE_MAX_SHARE = 0.6;
+const TREE_WIDTH_KEY = "striff.docsTreeWidth";
+
 /**
  * Which documents the tree shows.
  *
@@ -477,6 +485,12 @@ export default function DocsTab({
   /** What is selected: the empty path is the repository itself, which is where this opens. */
   const [selected, setSelected] = useState<string>("");
   const [filter, setFilter] = useState<DocFilter>("all");
+  // How wide the tree is, in pixels; null until someone has dragged it, which leaves the width
+  // to the stylesheet. Remembered, because a width someone chose for long paths is one they
+  // would have to choose again on every visit.
+  const [treeWidth, setTreeWidth] = useState<number | null>(null);
+  const [resizing, setResizing] = useState(false);
+  const split = useRef<HTMLDivElement>(null);
   /** Which of the selection's rules to list, followed from the counts above them. */
   const [ruleFilter, setRuleFilter] = useState<RuleFilter>("all");
   const [loading, setLoading] = useState(false);
@@ -518,6 +532,17 @@ export default function DocsTab({
     180000,
     () => setListingStale(true)
   );
+
+  // The width someone last dragged the tree to. Read after mounting, since the server that first
+  // renders this has no browser to ask.
+  useEffect(() => {
+    try {
+      const remembered = Number(window.localStorage.getItem(TREE_WIDTH_KEY));
+      if (remembered >= TREE_MIN) setTreeWidth(remembered);
+    } catch {
+      // Nothing remembered is the default width.
+    }
+  }, []);
 
   useEffect(() => {
     if (openRepo && openRepo !== repo) setRepo(openRepo);
@@ -640,6 +665,31 @@ export default function DocsTab({
       // say they are still loading rather than claiming a repository has no rules.
     } finally {
       if (wanted === rulesAt.current) setRulesLoading(false);
+    }
+  }
+
+  /** The widest the tree may be dragged: most of the way across, leaving the rules room to read. */
+  function treeMax(): number {
+    const across = split.current?.getBoundingClientRect().width || 0;
+    return Math.max(TREE_MIN, Math.round(across > 0 ? across * TREE_MAX_SHARE : 640));
+  }
+
+  /** How wide the tree is drawn now, for a width nobody has chosen yet. */
+  function treeNow(): number {
+    const list = split.current?.querySelector(".docs-list");
+    return list ? list.getBoundingClientRect().width : TREE_DEFAULT;
+  }
+
+  /** Sets the tree's width, held between its bounds; null gives the width back to the stylesheet. */
+  function resizeTree(width: number | null, remember: boolean) {
+    const held = width == null ? null : Math.round(Math.min(treeMax(), Math.max(TREE_MIN, width)));
+    setTreeWidth(held);
+    if (!remember) return;
+    try {
+      if (held == null) window.localStorage.removeItem(TREE_WIDTH_KEY);
+      else window.localStorage.setItem(TREE_WIDTH_KEY, String(held));
+    } catch {
+      // A browser that will not remember still resizes; the width lasts as long as the page.
     }
   }
 
@@ -785,6 +835,12 @@ export default function DocsTab({
   const allDocs = catalog?.documents || [];
 
   /** The stale names of each doc, by the doc's path. */
+  /** The documents the reading in flight is on, empty where none is going. */
+  const readingNow = useMemo(
+    () => new Set<string>(isRunning(catalog?.reading) ? catalog?.reading?.readingPaths || [] : []),
+    [catalog?.reading]
+  );
+
   const staleByDoc = useMemo(() => {
     const byDoc = new Map<string, StaleName[]>();
     for (const finding of staleNames?.findings || []) {
@@ -1051,8 +1107,21 @@ export default function DocsTab({
 
   /** The badges a document's state earns, in the tree. */
   function rowBadges(doc: Doc) {
+    // A document the reading is on now says so in place of its state: "not read yet" beside
+    // "reading" is two answers to one question. Only a document a reading has work to do on. One
+    // already read is in the step too and is answered from what is held, which is not reading,
+    // and one a screen or the repository keeps out is not read at all.
+    const beingRead = readingNow.has(doc.path)
+      && (doc.state === "NOT_READ" || doc.state === "UNREADABLE"
+        || (doc.state === "READ" && doc.outdated));
     return (
       <>
+        {beingRead && (
+          <span className="docs-badge is-reading" title="Striff is reading this document now.">
+            <span className="read-repo-pulse" aria-hidden="true" />
+            Reading
+          </span>
+        )}
         {doc.brokenRules + doc.alreadyBrokenRules > 0 && (
           <span className="docs-badge is-broken" title="Rules of this doc the code does not keep.">
             {doc.brokenRules + doc.alreadyBrokenRules} broken
@@ -1066,10 +1135,10 @@ export default function DocsTab({
             {staleByDoc.get(doc.path)!.length} gone
           </span>
         )}
-        {doc.state !== "READ" && (
+        {doc.state !== "READ" && !beingRead && (
           <span className={`docs-badge is-${doc.state.toLowerCase()}`}>{STATE_LABEL[doc.state]}</span>
         )}
-        {doc.forced && doc.state !== "READ" && (
+        {doc.forced && doc.state !== "READ" && !beingRead && (
           <span className="docs-badge is-forced">Read anyway</span>
         )}
       </>
@@ -1451,7 +1520,11 @@ export default function DocsTab({
       )}
 
       {catalog && catalog.documents.length > 0 && (
-        <div className="docs-split">
+        <div
+          className={`docs-split${resizing ? " is-resizing" : ""}`}
+          ref={split}
+          style={treeWidth == null ? undefined : ({ "--tree-width": `${treeWidth}px` } as any)}
+        >
           <div className="docs-list">
             <button type="button" className="tree-search" onClick={openPalette}>
               <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
@@ -1506,6 +1579,51 @@ export default function DocsTab({
               )}
             </div>
           </div>
+          {/* The edge between the tree and what it selects, which can be dragged. A separator with a
+              value is what a splitter is to a screen reader, and the arrow keys move it for
+              whoever is not using a pointer. Twice pressed, it goes back to the width it had. */}
+          <div
+            className="docs-split-handle"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Width of the document tree"
+            aria-valuemin={TREE_MIN}
+            aria-valuemax={treeMax()}
+            aria-valuenow={Math.round(treeWidth ?? treeNow())}
+            tabIndex={0}
+            title="Drag to resize. Double-click to reset."
+            onPointerDown={(event) => {
+              if (event.button !== 0) return;
+              event.preventDefault();
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setResizing(true);
+            }}
+            onPointerMove={(event) => {
+              if (!resizing || !split.current) return;
+              resizeTree(event.clientX - split.current.getBoundingClientRect().left, false);
+            }}
+            onPointerUp={(event) => {
+              if (!resizing) return;
+              event.currentTarget.releasePointerCapture(event.pointerId);
+              setResizing(false);
+              if (split.current) {
+                resizeTree(event.clientX - split.current.getBoundingClientRect().left, true);
+              }
+            }}
+            onPointerCancel={() => setResizing(false)}
+            onDoubleClick={() => resizeTree(null, true)}
+            onKeyDown={(event) => {
+              const at = treeWidth ?? treeNow();
+              const to = event.key === "ArrowLeft" ? at - TREE_STEP
+                : event.key === "ArrowRight" ? at + TREE_STEP
+                : event.key === "Home" ? TREE_MIN
+                : event.key === "End" ? treeMax()
+                : null;
+              if (to == null) return;
+              event.preventDefault();
+              resizeTree(to, true);
+            }}
+          />
           <div className="docs-pane">
             {/* ── A folder, or the repository: everything beneath it ── */}
             {scopeKind !== "doc" && (

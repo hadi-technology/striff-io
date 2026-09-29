@@ -12,14 +12,15 @@ import { useEffect, useState } from "react";
  * read, and here is how the other three get read. A button of its own under the heading made a
  * repository look like it needed configuring.
  *
- * The work is a queued job of minutes, and this does not sit and watch it. A run reports nothing
- * until it is finished, so a live display of it is a spinner beside a clock: it costs a request
- * every few seconds, it tells a reader nothing they can act on, and it invites them to wait at a
- * page rather than go back to work. So the button carries its own state in its label, says once
- * that the answer arrives on a refresh, and gets out of the way:
+ * The work is a queued job of minutes, and this does not sit and watch it: a page that reloads
+ * itself every few seconds moves under whoever is reading it. A run records the documents it has
+ * read every few documents, so what this says is how far the run had got when the page was
+ * loaded, and a refresh is how a reader asks again:
  *
  * - documents waiting → "Read 3 docs now"
- * - asked for, or a run already going → the same button, greyed, "Read 3 docs now (reading…)"
+ * - asked for, or a run already going → no button, and "In progress" beside a dot that pulses,
+ *   with how many of its documents are read once the run has counted them. A greyed button still
+ *   read as something to press, and its label as an offer still open.
  * - everything read → nothing at all, which is how a finished reading reports itself
  * - stopped, or going so long that nothing is coming → the button again, and why
  *
@@ -55,6 +56,12 @@ export interface Reading {
   finishedAtMs: number;
   rulesJudged: number;
   reason: string | null;
+  /** Documents the run set out to read; zero or absent where it has not counted them. */
+  docsTotal?: number;
+  /** Documents of those read and recorded so far. A run records each few as it reads them. */
+  docsDone?: number;
+  /** The documents being read now; empty between steps. */
+  readingPaths?: string[];
 }
 
 /** A run the server has not finished with. */
@@ -79,10 +86,11 @@ const PRESS_HOLDS_MS = 10 * 60 * 1000;
 /**
  * How long a run may claim to be going before this offers to start one again.
  *
- * Nothing here is watching, so a run that stopped without writing that it stopped would otherwise
- * leave the button greyed for the rest of the repository's life.
+ * A run that stopped without writing that it stopped would otherwise keep the button away for the
+ * rest of the repository's life. As long as the server believes a run is in flight, which is
+ * longer than a parse of a large repository and every step of a reading take together.
  */
-const ABANDONED_MS = 20 * 60 * 1000;
+const ABANDONED_MS = 30 * 60 * 1000;
 
 function since(ms: number): string {
   const seconds = Math.max(0, Math.round((Date.now() - ms) / 1000));
@@ -200,20 +208,45 @@ export default function ReadRepository({
     );
   }
 
+  // A reading that has been asked for is a state, not an offer, so it is not drawn as a button.
+  // Queued and reading are told apart in the title and not in the words: both are "it is on its
+  // way and there is nothing for you to do", which is the whole of what the page can say.
+  if (inProgress) {
+    return (
+      <span className="read-repo">
+        <span
+          className="read-repo-progress"
+          role="status"
+          title={reading?.state === "queued"
+            ? "This reading is queued behind other work and starts on its own."
+            : "Striff is reading this repository."}
+        >
+          <span className="read-repo-pulse" aria-hidden="true" />
+          In progress
+          {/* Only once the run has counted its documents: before that it is parsing the
+              repository, and "0 of 0" would be a number about nothing. */}
+          {(reading?.docsTotal || 0) > 0 && (
+            <span className="read-repo-count">
+              {reading!.docsDone || 0} of {reading!.docsTotal} docs
+            </span>
+          )}
+        </span>
+        <span className="read-repo-note">
+          {(reading?.docsTotal || 0) > 0
+            ? "Refresh the page to see what has been read since."
+            : "Striff is reading the code first. Refresh the page to see what has been read."}
+        </span>
+      </span>
+    );
+  }
+
   // "Read 3" beside a count of documents read could be a count itself. It has to name what it does
-  // to what, in the fewest words that still say it: read documents, here, now. While it runs, the
-  // same words with the state in brackets — the button is the only thing that has to change, so it
-  // is the only thing that does.
-  // Two words, because there are two states worth telling apart. "asking…" was a third for the
-  // fraction of a second between the press and the answer, and it survived a reload as a lie.
-  const doing = reading?.state === "queued" ? "queued…" : "reading…";
+  // to what, in the fewest words that still say it: read documents, here, now.
   const offer = waiting > 0
     ? `Read ${waiting} doc${waiting === 1 ? "" : "s"} now`
     : "Read these docs now";
-  const label = inProgress ? `${offer} (${doing})` : stopped ? "Try again" : offer;
-  const help = inProgress
-    ? "Striff is reading this repository. It takes a few minutes; refresh the page to see the rules."
-    : waiting > 0
+  const label = stopped ? "Try again" : offer;
+  const help = waiting > 0
     ? "Reads the documents Striff has not read yet and checks every rule it finds against your default branch. Takes a few minutes."
     : "Reads every document in this repository and checks every rule it finds against your default branch. Takes a few minutes.";
 
@@ -221,8 +254,8 @@ export default function ReadRepository({
     <span className="read-repo">
       <button
         type="button"
-        className={`read-repo-button${stopped && !inProgress ? " is-bad" : ""}`}
-        disabled={inProgress || !!busy}
+        className={`read-repo-button${stopped ? " is-bad" : ""}`}
+        disabled={!!busy}
         title={help}
         onClick={async () => {
           const at = Date.now();
@@ -239,29 +272,22 @@ export default function ReadRepository({
           }
         }}
       >
-        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M2.5 3.5h4a2 2 0 0 1 2 2v7a1.6 1.6 0 0 0-1.6-1.6H2.5Z" />
           <path d="M13.5 3.5h-4a2 2 0 0 0-2 2v7a1.6 1.6 0 0 1 1.6-1.6h4.4Z" />
         </svg>
         {label}
       </button>
-      {/* Said once, and not repeated by a clock: the reading finishes when it finishes, and this
-          page finds out the next time it is loaded. */}
-      {inProgress && (
-        <span className="read-repo-note" role="status">
-          Striff is reading. It takes a few minutes — refresh the page to see the rules.
-        </span>
-      )}
-      {!inProgress && justFinished && (
+      {justFinished && (
         <span className="read-repo-note is-good">
           Read {since(reading!.finishedAtMs)} ago · {reading!.rulesJudged} rule
           {reading!.rulesJudged === 1 ? "" : "s"} judged
         </span>
       )}
-      {!inProgress && reading?.state === "skipped" && (
+      {reading?.state === "skipped" && (
         <span className="read-repo-note">{reading.reason}</span>
       )}
-      {!inProgress && stopped && (
+      {stopped && (
         <span className="read-repo-note is-bad">
           {reading?.state === "failed"
             ? `The last reading stopped: ${reading.reason || "no reason recorded"}`

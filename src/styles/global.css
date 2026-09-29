@@ -4201,8 +4201,51 @@
 .docs-summary-broken b { color: #c9313f; }
 .docs-summary-prior b { color: #a8660b; }
 
-.docs-split { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: 1rem; margin-top: 0.85rem; }
-@media (max-width: 900px) { .docs-split { grid-template-columns: minmax(0, 1fr); } }
+/* The tree, the edge between it and what it selects, and the rules. The edge is the gutter, so
+   dragging it costs the layout nothing; the tree is as wide as it was dragged to and never more
+   than most of the view, whatever a wider window once remembered. */
+.docs-split {
+  display: grid;
+  grid-template-columns: minmax(0, min(var(--tree-width, 20rem), 60%)) 1rem minmax(0, 1fr);
+  margin-top: 0.85rem;
+}
+.docs-split-handle {
+  position: relative;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+/* A short grip that is always there to be found, and the whole edge once the pointer is on it.
+   The grip sits beside the top of the tree and not half way down the edge: the rules beside the
+   tree run to several screens, and half way down them is nowhere anyone is looking. */
+.docs-split-handle::after {
+  content: "";
+  position: absolute;
+  top: 8rem;
+  left: 50%;
+  width: 4px;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: #c3cedb;
+  transform: translateX(-50%);
+  transition: top 140ms ease, height 140ms ease, background 140ms ease;
+}
+.docs-split-handle:hover::after,
+.docs-split-handle:focus-visible::after,
+.docs-split.is-resizing .docs-split-handle::after {
+  top: 0.75rem;
+  height: calc(100% - 1.5rem);
+  width: 3px;
+  background: #2563eb;
+}
+/* While it is being dragged the pointer crosses text, which would otherwise be selected. */
+.docs-split.is-resizing { cursor: col-resize; user-select: none; }
+@media (max-width: 900px) {
+  .docs-split { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  .docs-split-handle { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .docs-split-handle::after { transition: none; } }
+@media print { .docs-split-handle { display: none; } }
 
 .docs-list { border: 1px solid rgba(31, 35, 40, 0.12); border-radius: 0.75rem; background: #fff; overflow: hidden; }
 .docs-filters { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.6rem; border-bottom: 1px solid #edf1f5; }
@@ -5115,7 +5158,6 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .bar-account { transition: background 120ms ease, border-color 120ms ease; }
 .bar-account-wrap .bar-account { cursor: pointer; max-width: 14rem; font-family: inherit; }
 .bar-account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bar-account.is-only { cursor: default; }
 .bar-account:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: 2px; }
 .bar-account-wrap .bar-account[aria-expanded="true"] {
   background: rgba(255, 255, 255, 0.14);
@@ -5145,6 +5187,16 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .bar-account-option.is-current { font-weight: 700; }
 .bar-account-option:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; background: #f6f8fa; }
 .bar-account-tick { margin-left: auto; color: var(--accent, #2563eb); flex: 0 0 auto; }
+/* Adding an account closes the list of them, under a rule, in the colour of something to press. */
+.bar-account-add {
+  margin-top: 0.2rem;
+  border-top: 1px solid #edf1f5;
+  border-radius: 0 0 0.45rem 0.45rem;
+  padding-top: 0.55rem;
+  color: #2563eb;
+  font-weight: 600;
+}
+.bar-account-add svg { flex: 0 0 auto; width: 1.25rem; }
 
 /* The path and the link to it on GitHub share a line, and wrap together. */
 .rules-source-where { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.3rem; }
@@ -5209,32 +5261,100 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 /* Asking Striff to read a repository now, and what came of the last time. */
 .docs-actions { margin-top: 0.6rem; }
 .read-repo { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+/* The one thing on this page that starts work, so it is the one filled control on it: documents
+   nobody has read are rules nobody is checking, and an outlined button the size of a count beside
+   it was being read as one more count. */
 .read-repo-button {
-  border: 1px solid var(--line);
-  border-radius: 0.6rem;
-  background: #fff;
-  padding: 0.4rem 0.75rem;
-  color: #24292f;
-  font-size: 0.83rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #1d4ed8;
+  border-radius: 0.65rem;
+  background: #2563eb;
+  padding: 0.55rem 1rem;
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 650;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(29, 78, 216, 0.4), 0 0 0 4px rgba(37, 99, 235, 0.14);
+  transition: background 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
-.read-repo-button:hover:not(:disabled) { background: #f6f8fa; border-color: #cbd5e1; }
-.read-repo-button:disabled { opacity: 0.55; cursor: not-allowed; }
-.read-repo-button.is-primary { border-color: #1f2937; background: #16202b; color: #fff; }
-.read-repo-button.is-primary:hover:not(:disabled) { background: #0f172a; }
+.read-repo-button:hover:not(:disabled) {
+  background: #1d4ed8;
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.45), 0 0 0 5px rgba(37, 99, 235, 0.2);
+  transform: translateY(-1px);
+}
+.read-repo-button:active:not(:disabled) { transform: none; }
+.read-repo-button:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 3px; }
+.read-repo-button:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
+/* A reading under way: a state and not a control, in the colour of something still happening,
+   with a dot whose ring goes out from it and fades for as long as it is. */
+.read-repo-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid #fcd34d;
+  border-radius: 999px;
+  background: #fffbeb;
+  padding: 0.45rem 0.95rem 0.45rem 0.8rem;
+  color: #92400e;
+  font-size: 0.88rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+/* How far it has got, beside what it is doing and quieter than it. */
+.read-repo-count {
+  border-left: 1px solid #fcd34d;
+  padding-left: 0.55rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* A document the reading is on now: the same dot, at the size of a row. */
+.docs-badge.is-reading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+}
+.docs-badge.is-reading .read-repo-pulse { width: 0.4rem; height: 0.4rem; }
+.read-repo-pulse {
+  position: relative;
+  flex: 0 0 auto;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: #f59e0b;
+}
+.read-repo-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #f59e0b;
+  animation: read-repo-pulse 1.6s ease-out infinite;
+}
+@keyframes read-repo-pulse {
+  0% { transform: scale(1); opacity: 0.7; }
+  70%, 100% { transform: scale(2.8); opacity: 0; }
+}
+/* Where motion is unwelcome the ring stands still around the dot, which still says "under way". */
+@media (prefers-reduced-motion: reduce) {
+  .read-repo-pulse::after { animation: none; transform: scale(1.9); opacity: 0.3; }
+}
+/* Asking again after a reading that stopped is a second attempt, and says what went wrong in the
+   colour of it, so it is not the same invitation. */
+.read-repo-button.is-bad {
+  border-color: #e3b7b7;
+  background: #fff;
+  color: #8a1f1f;
+  box-shadow: none;
+}
+.read-repo-button.is-bad:hover:not(:disabled) { background: #fdf4f5; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .read-repo-button { transition: none; } }
 .read-repo-note { color: #8a95a1; font-size: 0.76rem; }
 .read-repo-note.is-bad { color: #8a5a1f; }
-.read-repo.is-running { color: #57606a; font-size: 0.83rem; font-weight: 600; }
-.read-repo-spinner {
-  width: 0.85rem;
-  height: 0.85rem;
-  border: 2px solid #cbd5e1;
-  border-top-color: #2563eb;
-  border-radius: 999px;
-  animation: read-repo-spin 700ms linear infinite;
-}
-@keyframes read-repo-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .read-repo-spinner { animation-duration: 2.4s; } }
 @media print { .read-repo { display: none; } }
 .read-repo-note.is-good { color: #1a7f45; }
 /* The rest of the questions, behind one line. Eleven open at once is a wall to scroll past on the
@@ -5254,28 +5374,8 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 }
 .dashboard-faq-more:hover { background: #f6f8fa; }
 
-/* The read control lives in the row of counts, so it is the size of one. */
-.docs-tally .read-repo { align-self: center; margin-left: 0.15rem; }
-.docs-tally .read-repo-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.55rem;
-  font-size: 0.76rem;
-}
-.docs-tally .read-repo-button.is-bad { border-color: #e3b7b7; color: #8a1f1f; }
-.docs-tally .read-repo.is-running { flex-direction: column; align-items: flex-start; gap: 0.15rem; }
-/* Spinner, what it is doing, and how long it has been doing it, on one line; anything longer
-   drops underneath so the row of counts keeps its height. */
-.read-repo-running-line { display: inline-flex; align-items: center; gap: 0.4rem; }
-.read-repo-running-label { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600; }
-.read-repo-elapsed {
-  color: #8a95a1;
-  font-variant-numeric: tabular-nums;
-  font-size: 0.74rem;
-  font-weight: 500;
-}
-.docs-tally .read-repo.is-running .read-repo-note { font-weight: 500; max-width: 22rem; }
+/* The read control ends the row of counts, set apart from them. */
+.docs-tally .read-repo { align-self: center; margin-left: 0.35rem; }
 
 /* The rule is the thing being read: bigger, with room between the lines, and the names it mentions
    set as code so the eye can pick them out of the sentence. */
