@@ -15,8 +15,8 @@ import ChecksTab from "./ChecksTab";
  * what the repository's documents claim and whether the code holds it: the pull requests on it
  * were chosen by whoever analysed them, not by the repository, so they are no history of it.
  * A repository that installed Striff has every pull request checked, and its page lists them.
- * Nothing on either can be changed, and a finding that a person has not yet checked is left out
- * and counted, never shown as a rule that holds.
+ * Nothing on either can be changed, and a finding that a person has not yet checked is left out,
+ * never shown as a rule that holds.
  */
 
 const INSTALL_URL = "https://github.com/apps/striff-app/installations/new";
@@ -42,7 +42,6 @@ interface PageSummary {
   claimed: boolean;
   publishedAtMs: number | null;
   reading: Reading | null;
-  withheld: number;
 }
 
 type Loaded =
@@ -201,14 +200,6 @@ export default function PublicRepo() {
         )}
       </div>
 
-      {page.withheld > 0 && (
-        <p className="public-repo-withheld">
-          {page.withheld} finding{page.withheld === 1 ? " is" : "s are"} waiting for a person to
-          check {page.withheld === 1 ? "it" : "them"} and {page.withheld === 1 ? "is" : "are"} not
-          shown yet. A rule with a finding held back is shown without a verdict, not as one that
-          holds.
-        </p>
-      )}
       {readingNow && (
         <p className="public-repo-withheld">
           Striff is reading this repository's documents
