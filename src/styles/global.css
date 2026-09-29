@@ -6548,7 +6548,40 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .check-when { color: #8a95a1; font-size: 0.76rem; }
 .check-headline { margin-top: 0.25rem; color: #16202b; font-size: 0.9rem; line-height: 1.45; }
 .check-facts { margin-top: 0.2rem; color: #64748b; font-size: 0.76rem; }
-.check-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; flex: 0 0 auto; }
+.check-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; flex: 0 0 8.5rem; }
+/* How many rules the check held the change to, set large, with how they came out beneath. */
+.check-rules {
+  display: flex;
+  flex: 0 0 9.5rem;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: stretch;
+  border-left: 1px solid #edf1f5;
+  padding-left: 1rem;
+}
+.check-rules b {
+  color: #0f172a;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.check-rules-label {
+  margin-top: 0.2rem;
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.check-rules-split { display: flex; flex-wrap: wrap; gap: 0.15rem 0.5rem; margin-top: 0.3rem; font-size: 0.74rem; font-weight: 600; }
+.check-rules-split i { font-style: normal; }
+.check-rules-split .is-holds { color: #1a7f45; }
+.check-rules-split .is-broken { color: #b3253a; }
+.check-rules-split .is-prior { color: #a8660b; }
+.check-rules.is-none b { color: #c3cedb; }
 .check-verdict {
   border: 1px solid;
   border-radius: 999px;
@@ -6567,5 +6600,6 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .checks-page { color: #57606a; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .check-row { flex-direction: column; }
-  .check-side { flex-direction: row; align-items: center; }
+  .check-side { flex: none; flex-direction: row; align-items: center; }
+  .check-rules { flex: none; border-left: 0; padding-left: 0; flex-direction: row; align-items: baseline; gap: 0.4rem; }
 }

@@ -140,16 +140,17 @@ export default function ChecksTab({
         <ol className={`checks-list${loading ? " is-loading" : ""}`}>
           {checks.map((check) => {
             const verdict = verdictOf(check);
+            const checked = check.rulesHeld + check.rulesBroken + check.rulesAlreadyBroken;
+            // What the check did, beside what it concluded: the work is the reason to look.
             const facts = [
+              check.docsRead != null && check.docsRead > 0
+                ? `${check.docsRead} doc${check.docsRead === 1 ? "" : "s"} read`
+                : null,
               check.changedComponents != null
                 ? `${check.changedComponents} component${check.changedComponents === 1 ? "" : "s"} changed`
                 : null,
-              check.rulesHeld + check.rulesBroken + check.rulesAlreadyBroken > 0
-                ? `${check.rulesHeld + check.rulesBroken + check.rulesAlreadyBroken} rule${check.rulesHeld + check.rulesBroken + check.rulesAlreadyBroken === 1 ? "" : "s"} checked`
-                : null,
-              check.rulesAlreadyBroken > 0 ? `${check.rulesAlreadyBroken} already broken` : null,
-              check.docsRead != null && check.docsRead > 0
-                ? `${check.docsRead} doc${check.docsRead === 1 ? "" : "s"} read`
+              check.diagrams != null && check.diagrams > 0
+                ? `${check.diagrams} diagram${check.diagrams === 1 ? "" : "s"} drawn`
                 : null,
             ].filter(Boolean);
             return (
@@ -174,6 +175,21 @@ export default function ChecksTab({
                         : "No summary was written for this check.")}
                   </p>
                   {facts.length > 0 && <p className="check-facts">{facts.join(" · ")}</p>}
+                </div>
+                {/* The rules a check held the change to, and how each came out: the number a
+                    reader came to this page for, so it is the largest thing on the row. */}
+                <div className={`check-rules${checked === 0 ? " is-none" : ""}`}>
+                  <b>{verdict.tone === "is-running" ? "…" : checked}</b>
+                  <span className="check-rules-label">rule{checked === 1 ? "" : "s"} checked</span>
+                  {checked > 0 && (
+                    <span className="check-rules-split">
+                      {check.rulesHeld > 0 && <i className="is-holds">{check.rulesHeld} kept</i>}
+                      {check.rulesBroken > 0 && <i className="is-broken">{check.rulesBroken} broken</i>}
+                      {check.rulesAlreadyBroken > 0 && (
+                        <i className="is-prior">{check.rulesAlreadyBroken} already broken</i>
+                      )}
+                    </span>
+                  )}
                 </div>
                 <div className="check-side">
                   <span className={`check-verdict ${verdict.tone}`} title={verdict.help}>
