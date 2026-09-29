@@ -12,7 +12,7 @@ import RulesTable, {
   type RuleFilter,
 } from "./RulesTable";
 import Listing from "./Listing";
-import ReadRepository, { type Reading } from "./ReadRepository";
+import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
 
 /**
  * One repository's documents, and the rules read from whichever of them is selected.
@@ -516,6 +516,14 @@ export default function DocsTab({
 
   const [owner, name] = repo.split("/");
   catalogRef.current = catalog;
+  // What a look made while a reading is going checks before it paints: that no other look is
+  // still out, that the page is still about the repository it asked about, and that the document
+  // it asked about is still the one open.
+  const refreshing = useRef(false);
+  const nowShowing = useRef("");
+  nowShowing.current = `${installationId}/${owner}/${name}`;
+  const selectedRef = useRef("");
+  selectedRef.current = selected;
   const branch = catalog?.defaultBranch || null;
 
   // A listing is seconds of work and it is the difference between an empty page and a page: watch
@@ -543,6 +551,11 @@ export default function DocsTab({
       // Nothing remembered is the default width.
     }
   }, []);
+
+  // A reading records the documents it has read every few documents, so while one is going the
+  // page looks again and what has been read so far is on it. It stops the moment the run does,
+  // and gives up after as long as the server will believe a run is in flight.
+  useWatch(isRunning(catalog?.reading), refreshQuietly, 8000, 35 * 60 * 1000);
 
   useEffect(() => {
     if (openRepo && openRepo !== repo) setRepo(openRepo);
@@ -584,6 +597,48 @@ export default function DocsTab({
   async function reload() {
     await loadCatalog();
     await loadRules();
+  }
+
+  /**
+   * Looks again at everything on the page without taking any of it away first.
+   *
+   * This is what runs while a reading is going. A reload clears what it is about to replace,
+   * which is right after a write and wrong every few seconds: the tree would collapse to a
+   * "loading" line and the open document's rules would blink out under whoever was reading
+   * them. Here nothing is cleared, what arrives replaces what was there, and a look that fails
+   * leaves the page as it was. The folders someone opened or closed stay as they left them.
+   */
+  async function refreshQuietly() {
+    if (sample || refreshing.current) return;
+    refreshing.current = true;
+    const forRepo = `${installationId}/${owner}/${name}`;
+    const still = () => nowShowing.current === forRepo;
+    const ask = (query: string) => fetch(
+      `/.netlify/functions/doc-catalog-proxy?${query}installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`
+    );
+    try {
+      const open = detail?.document.path;
+      const [listed, rules, names, document_] = await Promise.all([
+        ask(""),
+        ask("view=rules&"),
+        ask("view=type-findings&"),
+        open ? ask(`path=${encodeURIComponent(open)}&`) : Promise.resolve(null),
+      ]);
+      if (!still()) return;
+      // The catalogue last: it carries whether the reading is still going, and once it says
+      // not, nothing looks again. Everything that reading changed has to be on the page first.
+      if (rules.ok) setRulesIndex(await rules.json());
+      if (names.ok) {
+        const found = await names.json();
+        if (Array.isArray(found.findings)) setStaleNames(found);
+      }
+      if (document_ && document_.ok && open === selectedRef.current) setDetail(await document_.json());
+      if (listed.ok) setCatalog(await listed.json());
+    } catch {
+      // The next look is a few seconds away.
+    } finally {
+      refreshing.current = false;
+    }
   }
 
   /**
@@ -835,6 +890,12 @@ export default function DocsTab({
   const allDocs = catalog?.documents || [];
 
   /** The stale names of each doc, by the doc's path. */
+  /** The documents the reading in flight is on, empty where none is going. */
+  const readingNow = useMemo(
+    () => new Set<string>(isRunning(catalog?.reading) ? catalog?.reading?.readingPaths || [] : []),
+    [catalog?.reading]
+  );
+
   const staleByDoc = useMemo(() => {
     const byDoc = new Map<string, StaleName[]>();
     for (const finding of staleNames?.findings || []) {
@@ -1101,8 +1162,21 @@ export default function DocsTab({
 
   /** The badges a document's state earns, in the tree. */
   function rowBadges(doc: Doc) {
+    // A document the reading is on now says so in place of its state: "not read yet" beside
+    // "reading" is two answers to one question. Only a document a reading has work to do on. One
+    // already read is in the step too and is answered from what is held, which is not reading,
+    // and one a screen or the repository keeps out is not read at all.
+    const beingRead = readingNow.has(doc.path)
+      && (doc.state === "NOT_READ" || doc.state === "UNREADABLE"
+        || (doc.state === "READ" && doc.outdated));
     return (
       <>
+        {beingRead && (
+          <span className="docs-badge is-reading" title="Striff is reading this document now.">
+            <span className="read-repo-pulse" aria-hidden="true" />
+            Reading
+          </span>
+        )}
         {doc.brokenRules + doc.alreadyBrokenRules > 0 && (
           <span className="docs-badge is-broken" title="Rules of this doc the code does not keep.">
             {doc.brokenRules + doc.alreadyBrokenRules} broken
@@ -1116,10 +1190,10 @@ export default function DocsTab({
             {staleByDoc.get(doc.path)!.length} gone
           </span>
         )}
-        {doc.state !== "READ" && (
+        {doc.state !== "READ" && !beingRead && (
           <span className={`docs-badge is-${doc.state.toLowerCase()}`}>{STATE_LABEL[doc.state]}</span>
         )}
-        {doc.forced && doc.state !== "READ" && (
+        {doc.forced && doc.state !== "READ" && !beingRead && (
           <span className="docs-badge is-forced">Read anyway</span>
         )}
       </>

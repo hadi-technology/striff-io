@@ -5302,6 +5302,23 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   font-weight: 650;
   white-space: nowrap;
 }
+/* How far it has got, beside what it is doing and quieter than it. */
+.read-repo-count {
+  border-left: 1px solid #fcd34d;
+  padding-left: 0.55rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* A document the reading is on now: the same dot, at the size of a row. */
+.docs-badge.is-reading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+}
+.docs-badge.is-reading .read-repo-pulse { width: 0.4rem; height: 0.4rem; }
 .read-repo-pulse {
   position: relative;
   flex: 0 0 auto;

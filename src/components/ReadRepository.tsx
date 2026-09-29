@@ -12,15 +12,15 @@ import { useEffect, useState } from "react";
  * read, and here is how the other three get read. A button of its own under the heading made a
  * repository look like it needed configuring.
  *
- * The work is a queued job of minutes, and this does not sit and watch it. A run reports nothing
- * until it is finished, so a live display of it is a spinner beside a clock: it costs a request
- * every few seconds, it tells a reader nothing they can act on, and it invites them to wait at a
- * page rather than go back to work. So the control says what state it is in, says once that the
- * answer arrives on a refresh, and gets out of the way:
+ * The work is a queued job of minutes. A run used to report nothing until it had finished, so
+ * there was nothing to watch and this did not: a live display of it would have been a spinner
+ * beside a clock. A run now records the documents it has read every few documents, so the page
+ * that holds this looks again while one is going, and this says how far it has got:
  *
  * - documents waiting → "Read 3 docs now"
- * - asked for, or a run already going → no button, and "In progress" beside a dot that pulses.
- *   A greyed button still read as something to press, and its label as an offer still open.
+ * - asked for, or a run already going → no button, and "In progress" beside a dot that pulses,
+ *   with how many of its documents are read once the run has counted them. A greyed button still
+ *   read as something to press, and its label as an offer still open.
  * - everything read → nothing at all, which is how a finished reading reports itself
  * - stopped, or going so long that nothing is coming → the button again, and why
  *
@@ -56,6 +56,12 @@ export interface Reading {
   finishedAtMs: number;
   rulesJudged: number;
   reason: string | null;
+  /** Documents the run set out to read; zero or absent where it has not counted them. */
+  docsTotal?: number;
+  /** Documents of those read and recorded so far. A run records each few as it reads them. */
+  docsDone?: number;
+  /** The documents being read now; empty between steps. */
+  readingPaths?: string[];
 }
 
 /** A run the server has not finished with. */
@@ -80,10 +86,11 @@ const PRESS_HOLDS_MS = 10 * 60 * 1000;
 /**
  * How long a run may claim to be going before this offers to start one again.
  *
- * Nothing here is watching, so a run that stopped without writing that it stopped would otherwise
- * leave the button greyed for the rest of the repository's life.
+ * A run that stopped without writing that it stopped would otherwise keep the button away for the
+ * rest of the repository's life. As long as the server believes a run is in flight, which is
+ * longer than a parse of a large repository and every step of a reading take together.
  */
-const ABANDONED_MS = 20 * 60 * 1000;
+const ABANDONED_MS = 30 * 60 * 1000;
 
 function since(ms: number): string {
   const seconds = Math.max(0, Math.round((Date.now() - ms) / 1000));
@@ -216,11 +223,18 @@ export default function ReadRepository({
         >
           <span className="read-repo-pulse" aria-hidden="true" />
           In progress
+          {/* Only once the run has counted its documents: before that it is parsing the
+              repository, and "0 of 0" would be a number about nothing. */}
+          {(reading?.docsTotal || 0) > 0 && (
+            <span className="read-repo-count">
+              {reading!.docsDone || 0} of {reading!.docsTotal} docs
+            </span>
+          )}
         </span>
-        {/* Said once, and not repeated by a clock: the reading finishes when it finishes, and
-            this page finds out the next time it is loaded. */}
         <span className="read-repo-note">
-          It takes a few minutes. Refresh the page to see the rules.
+          {(reading?.docsTotal || 0) > 0
+            ? "Documents and their rules appear here as they are read."
+            : "Striff is reading the code first. Documents appear here as they are read."}
         </span>
       </span>
     );
