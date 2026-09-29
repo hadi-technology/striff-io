@@ -183,6 +183,10 @@ export const demoStaleNames: any = {
       movedToPath: null,
       firstSeenMs: NOW - 16 * DAY,
       lastSeenMs: NOW - 2 * DAY,
+      removedBySha: "d41e7a2c9b",
+      removedByMessage: "Keep carts in the order service",
+      removedAtMs: NOW - 17 * DAY,
+      removedByUrl: null,
     },
     {
       docPath: "ARCHITECTURE.md",

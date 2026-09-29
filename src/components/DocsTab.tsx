@@ -151,6 +151,11 @@ interface StaleName {
   movedToPath: string | null;
   firstSeenMs: number;
   lastSeenMs: number;
+  /** The commit that removed historicalPath, where history said; absent otherwise. */
+  removedBySha?: string | null;
+  removedByMessage?: string | null;
+  removedAtMs?: number | null;
+  removedByUrl?: string | null;
 }
 
 interface StaleNames {
@@ -1905,9 +1910,24 @@ export default function DocsTab({
                             </td>
                             <td className="docs-stale-name">
                               <code>{finding.name}</code>
-                              <span className={`docs-outcome is-${finding.state === "MOVED" ? "unclear" : "broken"}`}>
-                                {finding.state === "MOVED" ? "Moved" : "Gone"}
-                              </span>
+                              {/* The commit that removed the file, where history named one: the
+                                  question a reader has next is when, and by whom. */}
+                              {finding.state !== "MOVED" && finding.removedBySha ? (
+                                <a
+                                  className="docs-outcome is-broken is-link"
+                                  href={finding.removedByUrl
+                                    || `https://github.com/${owner}/${name}/commit/${finding.removedBySha}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={`Removed by ${finding.removedBySha.slice(0, 7)}${finding.removedByMessage ? `: ${finding.removedByMessage}` : ""}${finding.removedAtMs ? `, ${when(finding.removedAtMs)}` : ""}`}
+                                >
+                                  Gone in <code>{finding.removedBySha.slice(0, 7)}</code>
+                                </a>
+                              ) : (
+                                <span className={`docs-outcome is-${finding.state === "MOVED" ? "unclear" : "broken"}`}>
+                                  {finding.state === "MOVED" ? "Moved" : "Gone"}
+                                </span>
+                              )}
                             </td>
                             <td className="docs-rule-quote">
                               <Clamped lines={4}>{withCode(finding.sentence || "")}</Clamped>
