@@ -72,6 +72,15 @@ const apiBaseUrl = "https://api.striff.io";
     const installationId = params.get("installation_id");
     const setupAction = params.get("setup_action");
     const statusEl = document.getElementById("checkout-status");
+    // GitHub returns the install link's `state`, which names where the install began (a report
+    // page sets it). Recorded once per arrival; the visitor's first campaign tags stay on the
+    // person, so the install is attributed to how they first came.
+    if (setupAction === "install" && window.posthog) {
+      window.posthog.capture("app_installed", {
+        source: params.get("state") || "direct",
+        installation_id: installationId,
+      });
+    }
 
     if (setupAction === "update") {
       document.querySelector("h1").textContent = "Installation updated.";

@@ -21,6 +21,21 @@ import ChecksTab from "./ChecksTab";
 
 const INSTALL_URL = "https://github.com/apps/striff-app/installations/new";
 
+/**
+ * The install link on a report page. GitHub hands `state` back to the setup page after the
+ * install, so an install that began on a report page can be counted there. The click is also
+ * recorded here, since a visitor may leave GitHub without installing.
+ */
+function installLinkFor(repo?: string) {
+  const state = repo ? `report_card:${repo}` : "report_card";
+  return `${INSTALL_URL}?state=${encodeURIComponent(state)}`;
+}
+
+function recordInstallClick(repo?: string) {
+  const posthog = (window as unknown as { posthog?: { capture: (e: string, p: object) => void } }).posthog;
+  posthog?.capture("install_clicked", { source: "report_card", repo: repo ?? null });
+}
+
 /** First path segments that are this site's own pages, never a repository's owner. */
 const SITE_ROUTES = new Set(["blog", "contact", "billing", "dashboard", "demo", "pricing", "privacy", "terms", "cookies", "installed"]);
 
@@ -148,7 +163,8 @@ export default function PublicRepo() {
           </p>
         </div>
         <div className="demo-cta-actions">
-          <a className="btn-primary" href={INSTALL_URL} target="_blank" rel="noopener noreferrer">
+          <a className="btn-primary" href={installLinkFor()} onClick={() => recordInstallClick()}
+             target="_blank" rel="noopener noreferrer">
             Install the GitHub App
           </a>
           <a className="btn-secondary" href="/dashboard">Sign in</a>
@@ -174,7 +190,8 @@ export default function PublicRepo() {
     refreshedAt: page.claimed ? undefined : snapshotAt ?? undefined,
     action: page.claimed ? undefined : (
       <div className="public-repo-install">
-        <a className="btn-primary" href={INSTALL_URL} target="_blank" rel="noopener noreferrer">
+        <a className="btn-primary" href={installLinkFor(fullName)} onClick={() => recordInstallClick(fullName)}
+           target="_blank" rel="noopener noreferrer">
           Is this yours? Install to manage it
         </a>
         <p className="public-repo-snapshot">Installed, Striff checks every pull request.</p>
