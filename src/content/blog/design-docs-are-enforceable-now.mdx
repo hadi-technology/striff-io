@@ -1,5 +1,5 @@
 ---
-title: "Every claim in your architecture docs, checked on every pull request"
+title: "The claims in your architecture docs, checked on every pull request"
 description: "Design docs have a second reader now: coding agents build from them, and nothing in a pull request checks that the code still agrees with the prose. Striff turns the sentences already in a repository into rules and checks them at both revisions of every pull request. What that looks like on one real change, and how often it fires across 609 public ones."
 date: 2026-09-10
 category: "Product"
@@ -13,7 +13,7 @@ Your architecture docs have a second reader now. For twenty years a README or a 
 
 Nothing in a pull request checks for that. The diff shows the code. The sentence lives in a different file, so the reviewer never sees the two side by side, and the merge goes through with the prose and the code disagreeing.
 
-Striff closes that gap. It reads the documents already in your repository, turns every sentence that makes a claim about the code into a rule, and checks each rule against the parsed code at the base and the head of every pull request. A language model does the translation from prose to rule. A program does the checking, and it can only report what it computed. There is no rule file to write and nothing to configure, because the rules are the ones your team already wrote down.
+Striff closes that gap. It reads the documents already in your repository, turns the sentences that make a checkable claim about the code into rules, and checks each rule against the parsed code at the base and the head of every pull request. A language model does the translation from prose to rule. A program does the checking, and it can only report what it computed. There is no rule file to write and nothing to configure, because the rules are the ones your team already wrote down.
 
 The result is a GitHub check run beside your tests with a table of the rules the change touched, each one quoting the sentence it came from and the line in the code that decided it. Here is what that looks like on one real pull request.
 
@@ -124,4 +124,4 @@ Name real things: `NodeWorker` is checkable, and "the worker" only is if one cla
 
 ## Where to start
 
-[Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open your next pull request. Striff reads the docs you already have and checks every rule in them, free on public repositories, with nothing to write and nothing to configure. For a public pull request in somebody else's repository, [the browser extension](/#extension) does the same in a tab beside Files changed.
+[Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open your next pull request. Striff reads the docs you already have and checks the rules it finds in them, free on public repositories, with nothing to write and nothing to configure. For a public pull request in somebody else's repository, [the browser extension](/#extension) does the same in a tab beside Files changed.
