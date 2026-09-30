@@ -72,20 +72,22 @@ interface Doc {
   totalChars?: number | null;
 }
 
-/** Whether a doc that has been read was read from its opening and not from all of it. */
+/** Whether a doc that has been read was read in part and not from all of it. */
 function readInPart(doc: Doc): boolean {
   return doc.state === "READ" && doc.readChars != null && doc.totalChars != null
     && doc.readChars < doc.totalChars;
 }
 
 /**
- * What a reader is told about a doc read in part, empty where it was read whole. It says how far
- * the reading went and what that leaves out, because "read" on its own would claim the rest.
+ * What a reader is told about a doc read in part, empty where it was read whole. It says how much
+ * was read and what that leaves out, because "read" on its own would claim the rest. The part left
+ * out is not always the end: a long doc is read a part at a time, and a part that was not read is
+ * read by a later pull request, so the line does not say "the first".
  */
 function partLine(doc: Doc): string {
   if (!readInPart(doc)) return "";
   const share = Math.max(1, Math.round((100 * (doc.readChars as number)) / (doc.totalChars as number)));
-  return ` This is a long doc: Striff read the first ${(doc.readChars as number).toLocaleString("en-US")} of its ${(doc.totalChars as number).toLocaleString("en-US")} characters, about ${share}%. What it says further down isn't checked.`;
+  return ` This is a long doc: Striff has read ${(doc.readChars as number).toLocaleString("en-US")} of its ${(doc.totalChars as number).toLocaleString("en-US")} characters, about ${share}%. What the rest says isn't checked.`;
 }
 
 interface Summary {
