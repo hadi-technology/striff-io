@@ -478,7 +478,7 @@ export interface DocsSource {
   /** The URL of one read: the catalogue (""), every rule, the names gone, or one document. */
   url(view: "" | "rules" | "type-findings", path?: string): string;
   /** What the view says under the repository's name, in place of how to use the tree. */
-  lede?: string;
+  lede?: ReactNode;
   /** When the page was last read, shown beside the repository's name. */
   refreshedAt?: string;
   /** Something to offer at the head's top right, above the counts. */

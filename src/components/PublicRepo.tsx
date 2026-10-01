@@ -37,6 +37,15 @@ function recordInstallClick(repo?: string) {
 }
 
 /** First path segments that are this site's own pages, never a repository's owner. */
+// The post that explains what a report is: a visitor who lands here from a link in a pull
+// request or an email has not met Striff before.
+const EXPLAINER_POST = "/blog/design-docs-are-enforceable-now";
+
+function recordExplainerClick(repo: string) {
+  const posthog = (window as unknown as { posthog?: { capture: (e: string, p: object) => void } }).posthog;
+  posthog?.capture("explainer_clicked", { source: "report_card", repo });
+}
+
 const SITE_ROUTES = new Set(["blog", "contact", "billing", "dashboard", "demo", "pricing", "privacy", "terms", "cookies", "installed"]);
 
 const OWNER = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/;
@@ -197,9 +206,16 @@ export default function PublicRepo() {
         <p className="public-repo-snapshot">Installed, Striff checks every pull request.</p>
       </div>
     ),
-    lede: "This is a public, read-only report. Striff reads this repository's docs, turns each "
-      + "sentence that makes a claim about the code into a rule, and checks the rule against the "
-      + "code on the default branch.",
+    lede: (
+      <>
+        This is a public, read-only report. Striff reads this repository's docs, turns each
+        sentence that makes a claim about the code into a rule, and checks the rule against the
+        code on the default branch.{" "}
+        <a href={EXPLAINER_POST} onClick={() => recordExplainerClick(fullName)}>
+          How this works
+        </a>
+      </>
+    ),
     url: (docsView, path) => path != null
       ? proxy(page.repoOwner, page.repoName, "doc", { path })
       : proxy(page.repoOwner, page.repoName, docsView === "" ? "catalog" : docsView),
