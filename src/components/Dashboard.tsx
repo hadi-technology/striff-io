@@ -1,8 +1,10 @@
 import { createElement, useState, useEffect, useRef } from "react";
 import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab from "./DocsTab";
+import { RepoCardBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import { EXTENSION_URL } from "./docRules";
+import { PENDING_REPO_KEY, findRepo, repoFromSearch, validRepo, withoutRepoParam } from "../lib/dashboardDeepLink.js";
 
 /** Where the GitHub App is installed on an account: the first one, or one more. */
 const INSTALL_URL = "https://github.com/apps/striff-app/installations/new";
@@ -25,6 +27,7 @@ interface Repo {
   full_name: string;
   private: boolean;
   html_url: string;
+  default_branch?: string;
 }
 
 interface Installation {
@@ -106,14 +109,37 @@ export default function Dashboard() {
   // Which repository the docs and rules view is showing; set by opening one from Repositories.
   const [openRepo, setOpenRepo] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
+  /** A repository a link asked for that none of this reader's installations covers. */
+  const [unreachableRepo, setUnreachableRepo] = useState<string | null>(null);
 
   useEffect(() => {
     init();
   }, []);
 
+  /**
+   * The repository a link asked for (/dashboard?repo=<owner>/<name>, which a private repository's
+   * README badge links to), or the one kept while the reader signed in. Taken out of the address
+   * at once, so a reload or a shared address does not ask again.
+   */
+  function takeLinkedRepo(): string | null {
+    if (new URLSearchParams(window.location.search).has("repo")) {
+      const named = repoFromSearch(window.location.search);
+      window.history.replaceState({}, "", withoutRepoParam(window.location.href));
+      if (named) return named;
+    }
+    try {
+      const kept = validRepo(window.sessionStorage.getItem(PENDING_REPO_KEY));
+      window.sessionStorage.removeItem(PENDING_REPO_KEY);
+      return kept;
+    } catch {
+      return null;
+    }
+  }
+
   async function init() {
     setError("");
     setLoading(true);
+    const linkedRepo = takeLinkedRepo();
     try {
       const statusRes = await fetch("/.netlify/functions/auth-status");
       // An outage, a cold start or a proxy error page all return HTML here, and .json() then
@@ -125,6 +151,14 @@ export default function Dashboard() {
       }
       const status = await statusRes.json();
       if (!status.authenticated) {
+        // Kept for the round trip through GitHub's sign-in, which lands back on /dashboard bare.
+        if (linkedRepo) {
+          try {
+            window.sessionStorage.setItem(PENDING_REPO_KEY, linkedRepo);
+          } catch {
+            // Without storage the reader lands on the dashboard as it opens by default.
+          }
+        }
         window.location.href = getOAuthUrl();
         return;
       }
@@ -142,6 +176,17 @@ export default function Dashboard() {
         })
       );
       setInstallations(withRepos);
+      if (linkedRepo) {
+        const found = findRepo(withRepos, linkedRepo);
+        if (found) {
+          setAccountId(found.installationId);
+          setOpenRepo(found.fullName);
+          setSection("docs");
+        } else {
+          // Said the same way whether the repository exists or not.
+          setUnreachableRepo(linkedRepo);
+        }
+      }
 
       // Fire-and-forget: reports the user's primary email to the backend for each installation.
       // Covers installs made while already signed in, which never re-run the OAuth callback's
@@ -273,6 +318,12 @@ export default function Dashboard() {
 
   return framed(
     <div className="dashboard-shell">
+      {unreachableRepo && (
+        <p className="dashboard-link-notice" role="status">
+          <span>You don't have access to <code>{unreachableRepo}</code> in Striff.</span>
+          <button type="button" onClick={() => setUnreachableRepo(null)} aria-label="Dismiss">×</button>
+        </p>
+      )}
       {/* Installations */}
       {installations.length === 0 ? (
         <div className="dashboard-empty">
@@ -720,9 +771,12 @@ function InstallationCard({
   const [metrics, setMetrics] = useState<OrgMetricsData | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [metricsError, setMetricsError] = useState("");
+  /** The repositories whose README has shown the Striff badge; null until the API has said. */
+  const [badgeRepos, setBadgeRepos] = useState<{ repoOwner: string; repoName: string; seenAtMs: number }[] | null>(null);
 
   useEffect(() => {
     fetchBillingInfo();
+    fetchBadgeRepos();
     // Fetched on mount (not lazily on tab open) because the Repositories tab's "Active" badges
     // derive from metrics.activeRepos; lazy loading meant they never appeared until the user
     // happened to visit the Metrics tab.
@@ -763,6 +817,32 @@ function InstallationCard({
     } finally {
       setMetricsLoading(false);
     }
+  }
+
+  /** For the checklist: whether any README of this account shows the badge yet. Quiet on failure. */
+  async function fetchBadgeRepos() {
+    try {
+      const res = await fetch(`/.netlify/functions/metrics-proxy?view=badges&installation_id=${installation.id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      // Only repositories this reader is shown: a private one the account covers but the reader
+      // cannot see is not named here.
+      if (Array.isArray(data.repos)) {
+        const seen = new Set(repos.map((r) => r.full_name.toLowerCase()));
+        setBadgeRepos(data.repos.filter((r: { repoOwner: string; repoName: string }) =>
+          seen.has(`${r.repoOwner}/${r.repoName}`.toLowerCase())));
+      }
+    } catch {
+      // Left unknown: the checklist says nothing rather than claim a step not taken.
+    }
+  }
+
+  /** Opens the docs view on a repository, a public one where there is one, with the badge panel. */
+  function offerBadge() {
+    const target = publicRepos[0] || repos[0];
+    if (!target || !onOpenRepo) return;
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#badge`);
+    onOpenRepo(target.full_name);
   }
 
   async function fetchBillingInfo() {
@@ -987,6 +1067,36 @@ function InstallationCard({
                 </a>
               </div>
 
+              {/* One step of getting started, ticked by itself once any README of this account has
+                  asked for the badge. Said only once the API has answered. */}
+              {badgeRepos && repos.length > 0 && (
+                <p className={`onboarding-item mt-3${badgeRepos.length > 0 ? " is-done" : ""}`}>
+                  <span className="onboarding-tick" aria-hidden="true">
+                    {badgeRepos.length > 0 && (
+                      <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m3.5 8.5 3 3 6-7" />
+                      </svg>
+                    )}
+                  </span>
+                  {badgeRepos.length > 0 ? (
+                    <span>
+                      Add the Striff badge to your README{" "}
+                      <span className="onboarding-when">
+                        · shown in {badgeRepos.map((r) => `${r.repoOwner}/${r.repoName}`).slice(0, 3).join(", ")}
+                        {badgeRepos.length > 3 ? ` and ${badgeRepos.length - 3} more` : ""}
+                      </span>
+                    </span>
+                  ) : (
+                    <span>
+                      Add the Striff badge to your README.{" "}
+                      {onOpenRepo && (
+                        <button type="button" onClick={offerBadge}>Get the snippet</button>
+                      )}
+                    </span>
+                  )}
+                </p>
+              )}
+
               {/* What being listed here means, said once above the list it is about. Someone who
                   granted access to a repository should not first find out from a check appearing
                   on a colleague's pull request. */}
@@ -1048,6 +1158,8 @@ function InstallationCard({
                             )}
                           </span>
                         </button>
+                        {/* The repository's badge, which opens its snippet over this list. */}
+                        <RepoCardBadge installationId={installation.id} repo={repo} />
                         <a
                           href={repo.html_url}
                           target="_blank"

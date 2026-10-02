@@ -77,7 +77,14 @@ export const handler = async (event) => {
   if (!installationId) {
     return { statusCode: 400, body: JSON.stringify({ error: "Missing installation_id" }) };
   }
+  // The id goes into an API path; nothing but digits is an installation.
+  if (!/^\d+$/.test(String(installationId))) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Bad installation_id" }) };
+  }
   const months = event.queryStringParameters?.months || "6";
+  // view=badges: the repositories whose README badge has been requested from a README, for the
+  // installation card's onboarding item. Same authorization as the metrics.
+  const badges = event.queryStringParameters?.view === "badges";
 
   if (!STRIFF_BILLING_AUTH_SECRET) {
     return { statusCode: 500, body: JSON.stringify({ error: "Server not configured: BILLING_AUTH_SECRET missing" }) };
@@ -94,7 +101,9 @@ export const handler = async (event) => {
 
     const hmacToken = generateToken(installationId);
     const res = await fetch(
-      `${STRIFF_API_BASE}/api/v1/organizations/${installationId}/metrics?months=${encodeURIComponent(months)}&token=${hmacToken}`,
+      badges
+        ? `${STRIFF_API_BASE}/api/v1/organizations/${installationId}/badges?token=${hmacToken}`
+        : `${STRIFF_API_BASE}/api/v1/organizations/${installationId}/metrics?months=${encodeURIComponent(months)}&token=${hmacToken}`,
       { headers: { "X-Server-Key": STRIFF_SERVER_KEY } }
     );
     const data = await readBody(res);

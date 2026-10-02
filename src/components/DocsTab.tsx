@@ -13,6 +13,9 @@ import RulesTable, {
 } from "./RulesTable";
 import Listing from "./Listing";
 import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
+import BadgePanel from "./BadgePanel";
+import { BadgeControl, badgePreviewPath } from "./BadgeControl";
+import { isRootReadme } from "../lib/badgeSnippets.js";
 
 /**
  * One repository's documents, and the rules read from whichever of them is selected.
@@ -478,6 +481,64 @@ export const RefreshMark = () => (
   </svg>
 );
 
+/** What the API says of a repository's README badge. */
+interface BadgeInfo {
+  /** The key a private repository's badge carries. */
+  token: string | null;
+  /** When a README first asked for the badge; null until one has. */
+  seenAtMs: number | null;
+  lastSeenAtMs: number | null;
+}
+
+const TickMark = () => (
+  <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="m3.5 8.5 3 3 6-7" />
+  </svg>
+);
+
+/**
+ * A repository's badge, drawn from the live image. Fetched rather than only pointed at, so its alt
+ * text can be the badge's own title; nothing is drawn until it has arrived, and nothing at all if
+ * it does not, so a badge that cannot be had never leaves a gap or a broken image behind.
+ */
+function LiveBadge({ src }: { src: string }) {
+  const [shown, setShown] = useState<{ url: string; title: string } | null>(null);
+  useEffect(() => {
+    let current = true;
+    let url: string | null = null;
+    setShown(null);
+    fetch(src)
+      .then(async (res) => {
+        const type = res.headers.get("content-type") || "";
+        if (!res.ok || !type.includes("svg")) return;
+        const text = await res.text();
+        const svg = new DOMParser().parseFromString(text, "image/svg+xml");
+        const title = svg.querySelector("title")?.textContent?.trim() || svg.documentElement.getAttribute("aria-label") || "";
+        if (!current || svg.querySelector("parsererror")) return;
+        url = URL.createObjectURL(new Blob([text], { type: "image/svg+xml" }));
+        setShown({ url, title: title || "Striff badge" });
+      })
+      .catch(() => {
+        // Nothing is drawn: the chip beside it stands alone.
+      });
+    return () => {
+      current = false;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [src]);
+  if (!shown) return null;
+  return (
+    <img
+      className="docs-live-badge"
+      src={shown.url}
+      alt={shown.title}
+      title={shown.title}
+      height={20}
+      onError={() => setShown(null)}
+    />
+  );
+}
+
 const GitHubMark = () =>
   createElement(
     "svg",
@@ -498,6 +559,8 @@ export interface DocsSource {
   lede?: ReactNode;
   /** When the page was last read, shown beside the repository's name. */
   refreshedAt?: string;
+  /** The repository's README badge, shown after refreshedAt; same-origin, so its title can be read. */
+  badgeUrl?: string;
   /** Something to offer at the head's top right, above the counts. */
   action?: ReactNode;
 }
@@ -510,7 +573,8 @@ export default function DocsTab({
   source,
 }: {
   installationId: number;
-  repos: { full_name: string }[];
+  /** The repositories to pick from; the dashboard's carry whether each is private, and its branch. */
+  repos: { full_name: string; private?: boolean; default_branch?: string }[];
   /** The repository to show. The shell's sidebar picks it; this view only reads it. */
   openRepo?: string | null;
   /**
@@ -572,10 +636,17 @@ export default function DocsTab({
   const loadedAt = useRef(0);
   const rulesAt = useRef(0);
 
+  /** Whether the README badge's panel is open, and what the API says of this repository's badge. */
+  const [badgeOpen, setBadgeOpen] = useState(false);
+  const [badge, setBadge] = useState<BadgeInfo | null>(null);
+  const [badgeError, setBadgeError] = useState("");
+  const badgeAt = useRef(0);
+
   /** What the view is showing right now, for the listing wait to look at before it reloads. */
   const catalogRef = useRef<Catalog | null>(null);
 
   const [owner, name] = repo.split("/");
+  const currentRepo = repos.find((each) => each.full_name === repo);
   catalogRef.current = catalog;
   const branch = catalog?.defaultBranch || null;
 
@@ -609,6 +680,11 @@ export default function DocsTab({
     if (openRepo && openRepo !== repo) setRepo(openRepo);
   }, [openRepo]);
 
+  // The welcome email and the installation card's checklist send a reader to /dashboard#badge.
+  useEffect(() => {
+    if (!source && window.location.hash === "#badge") setBadgeOpen(true);
+  }, []);
+
   // A repository belongs to one account. Switching account while this view holds the last one's
   // repository asks the API about a pair that does not exist — an installation and a repository
   // from different accounts — which is refused, correctly, and reads as "no documents".
@@ -632,6 +708,7 @@ export default function DocsTab({
     setStaleNames(null);
     setActionError("");
     reload();
+    loadBadge();
   }, [repo, installationId, repos.length]);
 
   useEffect(() => {
@@ -648,6 +725,47 @@ export default function DocsTab({
   function readUrl(view: "" | "rules" | "type-findings", path?: string): string {
     if (source) return source.url(view, path);
     return `/.netlify/functions/doc-catalog-proxy?${view ? `view=${view}&` : ""}installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}${path != null ? `&path=${encodeURIComponent(path)}` : ""}`;
+  }
+
+  /**
+   * This repository's badge: its key, and whether a README has shown it yet. Asked for on the
+   * dashboard only; the demo has nothing to ask about, and a public page offers no key.
+   */
+  async function loadBadge() {
+    const wanted = ++badgeAt.current;
+    setBadge(null);
+    setBadgeError("");
+    if (readOnly || !owner || !name) return;
+    try {
+      const res = await fetch(`/.netlify/functions/doc-catalog-proxy?view=badge&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`);
+      const data = await res.json().catch(() => ({}));
+      if (wanted !== badgeAt.current) return;
+      if (!res.ok) {
+        setBadgeError(data.message || data.error || "Couldn't get this repository's badge key.");
+        return;
+      }
+      setBadge(data);
+    } catch {
+      if (wanted === badgeAt.current) setBadgeError("Couldn't get this repository's badge key.");
+    }
+  }
+
+  /** A new key for this repository's badge; a README holding the old one stops showing counts. */
+  async function rotateBadge() {
+    const wanted = ++badgeAt.current;
+    try {
+      const res = await fetch(`/.netlify/functions/doc-catalog-proxy?view=badge-rotate&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (wanted !== badgeAt.current) return;
+      if (!res.ok) {
+        setBadgeError(data.message || data.error || "Couldn't make a new key.");
+        return;
+      }
+      setBadgeError("");
+      setBadge(data);
+    } catch {
+      if (wanted === badgeAt.current) setBadgeError("Couldn't make a new key.");
+    }
   }
 
   /** Both answers this view is built from: what documents exist, and what rules they hold. */
@@ -1629,9 +1747,14 @@ export default function DocsTab({
               <GitHubMark />
               GitHub
             </a>
-            {source?.refreshedAt && (
-              <span className="docs-refreshed-chip" title="When Striff last read this repository. This page is not updated after that.">
-                Last refreshed {source.refreshedAt}
+            {(source?.refreshedAt || source?.badgeUrl) && (
+              <span className="docs-refreshed-group">
+                {source.refreshedAt && (
+                  <span className="docs-refreshed-chip" title="When Striff last read this repository. This page is not updated after that.">
+                    Last refreshed {source.refreshedAt}
+                  </span>
+                )}
+                {source.badgeUrl && <LiveBadge src={source.badgeUrl} />}
               </span>
             )}
             {/* A public page is a snapshot: loading it again finds the same thing. */}
@@ -1646,6 +1769,22 @@ export default function DocsTab({
                 <RefreshMark />
                 Refresh
               </button>
+            )}
+            {/* The repository's own badge is the way to its snippet: clicking it opens the panel.
+                Not on a public page: whoever reads one is not, as a rule, whoever keeps its README. */}
+            {!source && (
+              <BadgeControl
+                className="docs-badge-control"
+                src={sample
+                  ? "/badge-examples/demo-flat.svg"
+                  : currentRepo?.private
+                    ? (badge?.token ? badgePreviewPath(owner, name, badge.token) : null)
+                    : badgePreviewPath(owner, name)}
+                onOpen={() => setBadgeOpen(!badgeOpen)}
+                expanded={badgeOpen}
+                controls="docs-badge-panel"
+                fallback="text"
+              />
             )}
           </div>
           {/* The second sentence used to be there whatever the repository looked like, so a
@@ -1675,6 +1814,43 @@ export default function DocsTab({
           </div>
         ) : tally}
       </div>
+
+      {/* One step of getting started: ticked once a README has asked for the badge. Only once the
+          API has said, so an answer not yet in is never shown as a step not taken. */}
+      {!readOnly && badge && (
+        <p className={`onboarding-item${badge.seenAtMs ? " is-done" : ""}`}>
+          <span className="onboarding-tick" aria-hidden="true">{badge.seenAtMs ? <TickMark /> : null}</span>
+          {badge.seenAtMs ? (
+            <span>
+              Add the Striff badge to your README{" "}
+              <span className="onboarding-when">· first shown in a README {when(badge.seenAtMs)}</span>
+            </span>
+          ) : (
+            <span>
+              Add the Striff badge to your README.{" "}
+              {!badgeOpen && (
+                <button type="button" onClick={() => setBadgeOpen(true)}>Get the snippet</button>
+              )}
+            </span>
+          )}
+        </p>
+      )}
+
+      {badgeOpen && !source && (
+        <div id="docs-badge-panel">
+          <BadgePanel
+            owner={owner}
+            name={name}
+            branch={branch || currentRepo?.default_branch || "main"}
+            readmePath={(catalog?.documents || []).find((doc) => isRootReadme(doc.path))?.path ?? null}
+            privateRepo={!sample && !!currentRepo?.private}
+            token={badge?.token ?? null}
+            tokenError={badgeError}
+            sample={!!sample}
+            onRotate={sample ? undefined : rotateBadge}
+          />
+        </div>
+      )}
 
       {loading && <p className="dashboard-metric-caption">Loading documents...</p>}
       {error && <p className="dashboard-inline-error">{error}</p>}
