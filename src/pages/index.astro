@@ -10,6 +10,7 @@ import { Image } from "astro:assets";
 import dashDocsRules from "../assets/dash-docs-rules.webp";
 import dashChecks from "../assets/dash-checks.webp";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
+import { ossFindings, permalink, breakable } from "../data/ossFindings";
 
 // ---- Problem-section visualization: agents doing the work ----
 // Every push, PR and merge in the feed is authored by an agent, and the side branches in
@@ -397,6 +398,55 @@ const structuredData = JSON.stringify([
             ))}
           </div>
 
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== FOUND IN OPEN SOURCE ==================== -->
+    <!-- Three sentences still in well-known projects' docs that name code those projects do not
+         have, each linked to the line at the commit it was checked against and to the
+         repository's report. Static (src/data/ossFindings.ts), so a box cannot change under a
+         reader. Factual, never mocking: the point is that review never puts the sentence beside
+         the code, in any repository. -->
+    <section id="found-in-oss" class="oss-ribbon scroll-mt-24" aria-labelledby="oss-ribbon-title">
+      <div class="mx-auto max-w-[90rem] px-6">
+        <div class="oss-ribbon-head" data-reveal>
+          <p class="examples-kicker">Found in open source</p>
+          <h2 id="oss-ribbon-title" class="oss-ribbon-title text-balance">Stale docs Striff found in projects you use</h2>
+          <p class="oss-ribbon-sub">
+            Each sentence below is in the project&rsquo;s docs today and names a class its code
+            doesn&rsquo;t have. Review reads the diff, so nobody puts the sentence beside the code.
+            That holds in every repository, well-run ones included.
+          </p>
+        </div>
+        <div class="oss-ribbon-grid">
+          {ossFindings.map((f) => (
+            <article class="oss-card" data-reveal>
+              <header class="oss-card-head">
+                <span class="oss-card-repo">
+                  <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"/></svg>
+                  <span class="oss-card-name"><span class="oss-card-owner">{f.owner}/</span><wbr /><b>{f.repo}</b></span>
+                </span>
+                <span class="oss-card-stars" aria-label={`${f.stars} GitHub stars`}>{f.stars} <span aria-hidden="true">&#9733;</span></span>
+              </header>
+              <p class="oss-card-label">The docs say</p>
+              <blockquote class="oss-card-quote"><code set:html={breakable(f.quote)} /></blockquote>
+              <a class="oss-card-source" href={permalink(f)} target="_blank" rel="noopener noreferrer">
+                <Fragment set:html={breakable(`${f.docPath}:${f.line}`)} />
+              </a>
+              <p class="oss-card-label">The code has</p>
+              <p class="oss-card-code" set:html={f.codeHas} />
+              <a class="oss-card-cta" href={`/${f.owner}/${f.repo}`}>
+                See {f.repo}&rsquo;s report <span aria-hidden="true">&rarr;</span>
+              </a>
+            </article>
+          ))}
+        </div>
+        <div class="oss-ribbon-foot" data-reveal>
+          <a class="btn-primary" href={`${githubAppUrl}?state=home_showcase`} target="_blank" rel="noopener noreferrer">
+            See what Striff finds in yours
+          </a>
+          <span class="oss-ribbon-note">Install the GitHub App. Your repository&rsquo;s rules appear on your dashboard.</span>
         </div>
       </div>
     </section>
