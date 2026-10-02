@@ -58,3 +58,57 @@ test("a Striff page shows the badge from its own origin, as a preview", async ()
   assert.equal(badgePreviewPath("acme", "secret", { style: "for-the-badge", token: "ab12" }),
     "/badge/acme/secret.svg?style=for-the-badge&token=ab12&preview=1");
 });
+
+test("a variant other than the default count is named in the address, the preview and every snippet", async () => {
+  const { badgePreviewPath } = await import("../src/lib/badgeSnippets.js");
+  assert.equal(badgeImageUrl("acme", "widgets", { variant: "count" }), "https://striff.io/badge/acme/widgets.svg");
+  assert.equal(badgePreviewPath("acme", "widgets", { variant: "count" }), "/badge/acme/widgets.svg?preview=1");
+  assert.equal(badgePreviewPath("acme", "secret", { style: "flat-square", variant: "agent", token: "ab12" }),
+    "/badge/acme/secret.svg?style=flat-square&variant=agent&token=ab12&preview=1");
+  for (const variant of ["practice", "agent"]) {
+    const image = badgeImageUrl("acme", "secret", { style: "for-the-badge", variant, token: "ab12" });
+    assert.equal(image, `https://striff.io/badge/acme/secret.svg?style=for-the-badge&variant=${variant}&token=ab12`);
+    const link = badgeLinkUrl("acme", "secret", { privateRepo: true });
+    for (const format of ["markdown", "html", "rst", "asciidoc"]) {
+      const snippet = badgeSnippet(format, image, link);
+      assert.ok(snippet.includes(`variant=${variant}`), `${variant} ${format}`);
+      assert.ok(!snippet.includes("utm_"), format);
+    }
+  }
+  for (const format of ["markdown", "html", "rst", "asciidoc"]) {
+    const snippet = badgeSnippet(format, badgeImageUrl("acme", "widgets", { variant: "count" }), badgeLinkUrl("acme", "widgets"));
+    assert.ok(!snippet.includes("variant="), format);
+  }
+});
+
+test("rules verified comes first and is preselected from ten rules held; below that practice is", async () => {
+  const { badgeVariantChoices } = await import("../src/lib/badgeSnippets.js");
+  const offered = (facts) => badgeVariantChoices(facts)
+    .map((each) => `${each.id}:${each.shown ? "shown" : "hidden"}/${each.available ? "on" : "off"}${each.preselected ? "*" : ""}`);
+  assert.deepEqual(offered({ heldRules: 10, agentDocs: true }),
+    ["count:shown/on*", "practice:shown/on", "agent:shown/on"]);
+  assert.deepEqual(offered({ heldRules: 9, agentDocs: false }),
+    ["count:shown/off", "practice:shown/on*", "agent:hidden/off"]);
+  assert.deepEqual(offered({ heldRules: 0 }), ["count:shown/off", "practice:shown/on*", "agent:hidden/off"]);
+  assert.deepEqual(offered({ heldRules: null }), ["count:shown/off", "practice:shown/on*", "agent:hidden/off"]);
+  assert.deepEqual(offered({}), ["count:shown/off", "practice:shown/on*", "agent:hidden/off"]);
+});
+
+test("practice is named in the address only where it was chosen over an available count", async () => {
+  const { badgeVariantChoices } = await import("../src/lib/badgeSnippets.js");
+  const address = (facts, id) => badgeVariantChoices(facts).find((each) => each.id === id).address;
+  const snippetFor = (facts, id) => badgeSnippet("markdown",
+    badgeImageUrl("acme", "widgets", { variant: address(facts, id) }), badgeLinkUrl("acme", "widgets"));
+  // Below ten, preselected or picked, practice leaves the variant out: it upgrades on its own at ten.
+  for (const facts of [{ heldRules: 9 }, { heldRules: 0 }, { heldRules: null }, {}]) {
+    assert.equal(address(facts, "practice"), "count");
+    assert.equal(snippetFor(facts, "practice"),
+      "[![Striff](https://striff.io/badge/acme/widgets.svg)](https://striff.io/acme/widgets)");
+  }
+  // From ten, the default count is left out and a practice picked over it is kept.
+  assert.equal(snippetFor({ heldRules: 10 }, "count"),
+    "[![Striff](https://striff.io/badge/acme/widgets.svg)](https://striff.io/acme/widgets)");
+  assert.equal(snippetFor({ heldRules: 10 }, "practice"),
+    "[![Striff](https://striff.io/badge/acme/widgets.svg?variant=practice)](https://striff.io/acme/widgets)");
+  assert.equal(address({ heldRules: 3, agentDocs: true }, "agent"), "agent");
+});

@@ -1,7 +1,7 @@
 import { createElement, useState, useEffect, useRef } from "react";
 import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab from "./DocsTab";
-import { RepoCardBadge } from "./BadgeControl";
+import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import { EXTENSION_URL } from "./docRules";
 import { PENDING_REPO_KEY, findRepo, repoFromSearch, validRepo, withoutRepoParam } from "../lib/dashboardDeepLink.js";
@@ -111,6 +111,15 @@ export default function Dashboard() {
   const [accountId, setAccountId] = useState<number | null>(null);
   /** A repository a link asked for that none of this reader's installations covers. */
   const [unreachableRepo, setUnreachableRepo] = useState<string | null>(null);
+  /**
+   * Whether the selected repository's badge panel is open over the page. The welcome email and
+   * the post-install page link to /dashboard#badge, which opens it on arrival.
+   */
+  const [badgeOpen, setBadgeOpen] = useState(false);
+
+  useEffect(() => {
+    if (window.location.hash === "#badge") setBadgeOpen(true);
+  }, []);
 
   useEffect(() => {
     init();
@@ -391,6 +400,26 @@ export default function Dashboard() {
                     {openRepo.split("/")[1] || openRepo}
                   </p>
                 )}
+                {/* The selected repository's README badge, in view whichever section is open;
+                    clicking it opens the panel with its snippet over the page. */}
+                {(() => {
+                  const selected = (current.repositories || []).find((r) => r.full_name === openRepo);
+                  return selected ? (
+                    <SideBadge
+                      key={selected.full_name}
+                      installationId={current.id}
+                      repo={selected}
+                      open={badgeOpen}
+                      onOpen={() => setBadgeOpen(true)}
+                      onClose={() => {
+                        setBadgeOpen(false);
+                        if (window.location.hash === "#badge") {
+                          window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+                        }
+                      }}
+                    />
+                  ) : null;
+                })()}
                 <nav className="dash-nav">
                   {/* One item, because there is one view: the document tree, and the rules of
                       whatever it has selected. Rules used to be a second item showing the same
@@ -428,6 +457,10 @@ export default function Dashboard() {
               onOpenRepo={(fullName) => {
                 setOpenRepo(fullName);
                 setSection("docs");
+              }}
+              onOfferBadge={(fullName) => {
+                setOpenRepo(fullName);
+                setBadgeOpen(true);
               }}
             />
           </div>
@@ -744,6 +777,7 @@ function InstallationCard({
   onSection,
   openRepo,
   onOpenRepo,
+  onOfferBadge,
 }: {
   installation: Installation;
   onError: (msg: string) => void;
@@ -753,6 +787,8 @@ function InstallationCard({
   onSection?: (section: Section) => void;
   openRepo?: string | null;
   onOpenRepo?: (fullName: string) => void;
+  /** Selects a repository and opens its badge panel. */
+  onOfferBadge?: (fullName: string) => void;
 }) {
   const repos = installation.repositories || [];
   const privateRepos = repos.filter((r) => r.private);
@@ -837,12 +873,11 @@ function InstallationCard({
     }
   }
 
-  /** Opens the docs view on a repository, a public one where there is one, with the badge panel. */
+  /** Selects a repository, a public one where there is one, and opens its badge panel. */
   function offerBadge() {
     const target = publicRepos[0] || repos[0];
-    if (!target || !onOpenRepo) return;
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#badge`);
-    onOpenRepo(target.full_name);
+    if (!target || !onOfferBadge) return;
+    onOfferBadge(target.full_name);
   }
 
   async function fetchBillingInfo() {

@@ -68,6 +68,8 @@ interface PageSummary {
   claimed: boolean;
   publishedAtMs: number | null;
   reading: Reading | null;
+  /** What decides which badge variants the page's maintainers are offered. */
+  badge?: { heldRules: number; agentDocs: boolean } | null;
 }
 
 type Loaded =
@@ -278,6 +280,9 @@ export default function PublicRepo() {
           name={page.repoName}
           branch={maintainer.branch}
           readmePath={maintainer.readmePath}
+          installed={page.claimed}
+          heldRules={page.badge?.heldRules ?? null}
+          agentDocs={!!page.badge?.agentDocs}
           heading="Add this badge to your README"
         />
       )}

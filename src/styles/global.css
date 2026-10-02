@@ -6738,8 +6738,13 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .badge-control:hover img { filter: brightness(1.08); }
 .badge-control:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 .badge-control[aria-expanded="true"] { box-shadow: 0 0 0 2px #bfdbfe; }
-.docs-badge-control { margin-left: 0.4rem; }
 @media print { .badge-control { display: none; } }
+
+/* The selected repository's badge in the side panel, under the picker: as wide as the panel
+   allows and no wider, so a long message scales down rather than wrapping or running out. */
+.dash-repo-badge { display: flex; max-width: 100%; padding: 0 10px 0.35rem; }
+.dash-repo-badge .badge-control { max-width: 100%; }
+.dash-repo-badge .badge-control img { max-width: 100%; height: auto; max-height: 20px; }
 
 /* A repository card's badge: between its face and its link out, or under its name when narrow. */
 .repo-card-badge { flex: none; align-self: center; display: inline-flex; padding: 0 0.35rem; }
@@ -6807,6 +6812,8 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 }
 .badge-panel-choice:hover { border-color: #cbd5e1; color: #24292f; }
 .badge-panel-choice.is-on { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
+.badge-panel-choice:disabled { border-style: dashed; background: #f8fafc; color: #8a95a1; cursor: not-allowed; }
+.badge-panel-choice-hint { font-weight: 500; }
 .badge-panel-snippet {
   margin: 0.8rem 0 0;
   overflow-x: auto;
