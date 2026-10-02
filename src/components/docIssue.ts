@@ -32,6 +32,9 @@ export interface IssueStaleName {
   historicalPath: string | null;
   movedToNamespace: string | null;
   movedToPath: string | null;
+  /** For a renamed name: the spelling the code declares now, and the file declaring it. */
+  renamedTo?: string | null;
+  renamedToPath?: string | null;
 }
 
 /**
@@ -52,9 +55,12 @@ export function staleNameIssueUrl(
   branch = "main"
 ): string {
   const moved = finding.state === "MOVED";
+  const renamed = finding.state === "RENAMED" && !!finding.renamedTo;
   const title = moved
     ? `${docPath} puts ${finding.name} where the code no longer has it`
-    : `${docPath} names ${finding.name}, which the code no longer has`;
+    : renamed
+      ? `${docPath} writes ${finding.name}, which the code now spells ${finding.renamedTo}`
+      : `${docPath} names ${finding.name}, which the code no longer has`;
   const where = `https://github.com/${owner}/${repo}/blob/${branch}/${docPath
     .split("/")
     .map(encodeURIComponent)
@@ -71,6 +77,12 @@ export function staleNameIssueUrl(
         finding.movedToPath ? ` (\`${finding.movedToPath}\`)` : ""
       }, not where the doc puts it.`
     );
+  } else if (renamed) {
+    lines.push(
+      `**What the code has:** \`${finding.renamedTo}\`${
+        finding.renamedToPath ? ` (\`${finding.renamedToPath}\`)` : ""
+      }. The name was renamed, and the doc still writes the old spelling.`
+    );
   } else if (finding.historicalPath) {
     lines.push(
       `**What the code has:** nothing by that name. The repository once held \`${finding.historicalPath}\` and does not now.`
@@ -80,7 +92,9 @@ export function staleNameIssueUrl(
   }
   lines.push(
     "",
-    "**What would close this:** edit the doc so it stops naming it, or bring it back.",
+    renamed
+      ? `**What would close this:** edit the doc to write \`${finding.renamedTo}\`.`
+      : "**What would close this:** edit the doc so it stops naming it, or bring it back.",
     "",
     "_Found by [Striff](https://striff.io), reading the default branch._"
   );

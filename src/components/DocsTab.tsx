@@ -151,16 +151,27 @@ interface RepoRules {
 interface StaleName {
   docPath: string;
   name: string;
-  /** ABSENT where the code declares nothing by the name, MOVED where it declares it elsewhere. */
+  /**
+   * ABSENT where the code declares nothing by the name, RENAMED where it declares it once in
+   * another case (renamedTo), MOVED where it declares it elsewhere.
+   */
   state: string;
   sentence: string | null;
   sourceLine: number | null;
   namespace: string | null;
   /** A file the repository's history holds for it, where that is what shows it was here. */
   historicalPath: string | null;
-  /** Other types the package holds, where that is what shows it is missing. */
+  /**
+   * Other names the package holds, where that is what shows it is missing. The first few in
+   * alphabetical order, so not a list for a reader: nearNames is.
+   */
   siblings: string[];
   packageSize: number | null;
+  /** For a renamed name: the spelling the code declares now, and the file declaring it. */
+  renamedTo?: string | null;
+  renamedToPath?: string | null;
+  /** Names the package declares that read as near this one, best first; empty where none does. */
+  nearNames?: string[];
   movedToNamespace: string | null;
   movedToPath: string | null;
   firstSeenMs: number;
@@ -185,12 +196,46 @@ function staleLine(finding: StaleName): string {
   if (finding.state === "MOVED") {
     return `The code declares it in \`${finding.movedToNamespace}\`${finding.movedToPath ? `, at \`${finding.movedToPath}\`` : ""}, not in ${finding.namespace ? `\`${finding.namespace}\`` : "the package this doc writes"}.`;
   }
-  if (finding.historicalPath) {
-    return `The repository once held \`${finding.historicalPath}\`. It doesn't now.`;
+  if (finding.state === "RENAMED" && finding.renamedTo) {
+    return `Renamed: \`${simpleName(finding.name)}\` is now \`${finding.renamedTo}\`${finding.renamedToPath ? `, at \`${finding.renamedToPath}\`` : ""}.`;
   }
-  const shown = (finding.siblings || []).slice(0, 3).join(", ");
-  const more = finding.packageSize && finding.packageSize > 3 ? ", …" : "";
-  return `${finding.namespace ? `\`${finding.namespace}\`` : "Its package"} holds ${finding.packageSize || (finding.siblings || []).length} type${(finding.packageSize || 0) === 1 ? "" : "s"}${shown ? ` (${shown}${more})` : ""} and none by this name.`;
+  const hint = nearHint(finding);
+  if (finding.historicalPath) {
+    return `The repository once held \`${finding.historicalPath}\`. It doesn't now.${hint}`;
+  }
+  return `${finding.namespace ? `\`${finding.namespace}\`` : "Its package"} declares nothing by this name.${hint}`;
+}
+
+/**
+ * The names the package declares that read as near a missing one, or nothing. Never a list of
+ * whatever the package holds: an unrelated name beside a missing one is noise.
+ */
+function nearHint(finding: StaleName): string {
+  const near = finding.nearNames || [];
+  if (near.length === 0) return "";
+  const lower = simpleName(finding.name).toLowerCase();
+  const sameName = near.filter((name) => name.toLowerCase() === lower);
+  if (sameName.length > 1) {
+    return ` Several types share this name in other capitalisations: ${sameName.map((name) => `\`${name}\``).join(", ")}.`;
+  }
+  return ` Closest ${near.length === 1 ? "name" : "names"} there: ${near.map((name) => `\`${name}\``).join(", ")}.`;
+}
+
+/** A name without the package a doc writes before it. */
+function simpleName(name: string): string {
+  return name.slice(name.lastIndexOf(".") + 1);
+}
+
+/** The word a name's badge carries. */
+function staleLabel(finding: StaleName): string {
+  if (finding.state === "MOVED") return "Moved";
+  if (finding.state === "RENAMED") return "Renamed";
+  return "Gone";
+}
+
+/** A moved or renamed name is still in the code; only a gone one is marked as broken. */
+function staleTone(finding: StaleName): string {
+  return finding.state === "MOVED" || finding.state === "RENAMED" ? "unclear" : "broken";
 }
 
 /** One thing this repository has asked Striff not to read: a document, or a folder of them. */
@@ -1982,15 +2027,32 @@ export default function DocsTab({
                       {scopeStaleFindings.map((finding) => (
                         <li key={`${finding.docPath}:${finding.name}`} className="docs-gone-item">
                           <div className="docs-gone-head">
-                            <span className={`docs-outcome is-${finding.state === "MOVED" ? "unclear" : "broken"}`}>
-                              {finding.state === "MOVED" ? "Moved" : "Gone"}
+                            <span className={`docs-outcome is-${staleTone(finding)}`}>
+                              {staleLabel(finding)}
                             </span>
                             <code className="docs-gone-name">{finding.name}</code>
                           </div>
                           {finding.sentence && (
                             <blockquote className="docs-gone-quote">{withCode(finding.sentence)}</blockquote>
                           )}
-                          <p className="docs-gone-has">{withCode(staleLine(finding))}</p>
+                          <p className="docs-gone-has">
+                            {withCode(staleLine(finding))}
+                            {/* The commit that renamed the file, where history named one. */}
+                            {finding.state === "RENAMED" && finding.removedBySha ? (
+                              <>
+                                {" "}
+                                <a
+                                  href={finding.removedByUrl
+                                    || `https://github.com/${owner}/${name}/commit/${finding.removedBySha}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={finding.removedByMessage || undefined}
+                                >
+                                  Renamed in <code>{finding.removedBySha.slice(0, 7)}</code>
+                                </a>
+                              </>
+                            ) : null}
+                          </p>
                           <p className="docs-gone-where">
                             <button type="button" className="rules-source-link" onClick={() => openDoc(finding.docPath)}>
                               {finding.docPath}
@@ -2176,18 +2238,18 @@ export default function DocsTab({
                                   question a reader has next is when, and by whom. */}
                               {finding.state !== "MOVED" && finding.removedBySha ? (
                                 <a
-                                  className="docs-outcome is-broken is-link"
+                                  className={`docs-outcome is-${staleTone(finding)} is-link`}
                                   href={finding.removedByUrl
                                     || `https://github.com/${owner}/${name}/commit/${finding.removedBySha}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  title={`Removed by ${finding.removedBySha.slice(0, 7)}${finding.removedByMessage ? `: ${finding.removedByMessage}` : ""}${finding.removedAtMs ? `, ${when(finding.removedAtMs)}` : ""}`}
+                                  title={`${finding.state === "RENAMED" ? "Renamed" : "Removed"} by ${finding.removedBySha.slice(0, 7)}${finding.removedByMessage ? `: ${finding.removedByMessage}` : ""}${finding.removedAtMs ? `, ${when(finding.removedAtMs)}` : ""}`}
                                 >
-                                  Gone in <code>{finding.removedBySha.slice(0, 7)}</code>
+                                  {staleLabel(finding)} in <code>{finding.removedBySha.slice(0, 7)}</code>
                                 </a>
                               ) : (
-                                <span className={`docs-outcome is-${finding.state === "MOVED" ? "unclear" : "broken"}`}>
-                                  {finding.state === "MOVED" ? "Moved" : "Gone"}
+                                <span className={`docs-outcome is-${staleTone(finding)}`}>
+                                  {staleLabel(finding)}
                                 </span>
                               )}
                             </td>
