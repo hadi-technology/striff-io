@@ -19,7 +19,8 @@ import {
  * The preview is the badge itself, asked for as a preview so that showing it here is never taken
  * for a README carrying it. The variants offered are the ones the repository qualifies for: the
  * count, first and the default, from ten rules held; agent docs only where they give rules. A
- * variant other than the default is named in the preview and in every snippet.
+ * variant other than the default is named in the preview and in every snippet, except a practice
+ * chosen below ten rules, which the default draws the same and outgrows at ten.
  *
  * A private repository's badge carries a key for that repository, and the snippet carries it too:
  * without it the badge would read "checked", with no count, to every reader. Rotating the key is the way to stop
@@ -125,10 +126,12 @@ export default function BadgePanel({
   // README, so none is offered until the key is here.
   const waitingForKey = !!privateRepo && !token;
   const key = privateRepo ? token : null;
-  const image = badgeImageUrl(owner, name, { style, variant, token: key });
+  // What the address names: the choice's own variant, or the default where that draws the same.
+  const addressed = choices.find((each) => each.id === variant)?.address ?? DEFAULT_VARIANT;
+  const image = badgeImageUrl(owner, name, { style, variant: addressed, token: key });
   const link = badgeLinkUrl(owner, name, { privateRepo: !!privateRepo });
   const snippet = badgeSnippet(format, image, link);
-  const preview = badgePreviewPath(owner, name, { style, variant, token: key });
+  const preview = badgePreviewPath(owner, name, { style, variant: addressed, token: key });
 
   async function copy() {
     const ok = await copyText(snippet);

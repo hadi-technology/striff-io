@@ -93,3 +93,22 @@ test("rules verified comes first and is preselected from ten rules held; below t
   assert.deepEqual(offered({ heldRules: null }), ["count:shown/off", "practice:shown/on*", "agent:hidden/off"]);
   assert.deepEqual(offered({}), ["count:shown/off", "practice:shown/on*", "agent:hidden/off"]);
 });
+
+test("practice is named in the address only where it was chosen over an available count", async () => {
+  const { badgeVariantChoices } = await import("../src/lib/badgeSnippets.js");
+  const address = (facts, id) => badgeVariantChoices(facts).find((each) => each.id === id).address;
+  const snippetFor = (facts, id) => badgeSnippet("markdown",
+    badgeImageUrl("acme", "widgets", { variant: address(facts, id) }), badgeLinkUrl("acme", "widgets"));
+  // Below ten, preselected or picked, practice leaves the variant out: it upgrades on its own at ten.
+  for (const facts of [{ heldRules: 9 }, { heldRules: 0 }, { heldRules: null }, {}]) {
+    assert.equal(address(facts, "practice"), "count");
+    assert.equal(snippetFor(facts, "practice"),
+      "[![Striff](https://striff.io/badge/acme/widgets.svg)](https://striff.io/acme/widgets)");
+  }
+  // From ten, the default count is left out and a practice picked over it is kept.
+  assert.equal(snippetFor({ heldRules: 10 }, "count"),
+    "[![Striff](https://striff.io/badge/acme/widgets.svg)](https://striff.io/acme/widgets)");
+  assert.equal(snippetFor({ heldRules: 10 }, "practice"),
+    "[![Striff](https://striff.io/badge/acme/widgets.svg?variant=practice)](https://striff.io/acme/widgets)");
+  assert.equal(address({ heldRules: 3, agentDocs: true }, "agent"), "agent");
+});

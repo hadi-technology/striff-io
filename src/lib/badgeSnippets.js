@@ -132,15 +132,19 @@ export function readmeEditUrl(owner, name, branch, readmePath) {
  * that, or while the count is not known, it is held back and "practice" is preselected. "agent" is
  * offered only where the repository's agent-instruction documents give rules.
  *
+ * Each choice names the variant its address carries. Below ten rules the practice choice carries
+ * the default, which draws the same words today and turns into the count by itself at ten; only a
+ * practice chosen over an available count is named in the address, and so kept.
+ *
  * @param {{ heldRules?: number | null, agentDocs?: boolean }} facts
- * @returns {{ id: string, available: boolean, shown: boolean, preselected: boolean }[]}
+ * @returns {{ id: string, available: boolean, shown: boolean, preselected: boolean, address: string }[]}
  */
 export function badgeVariantChoices(facts = {}) {
   const held = typeof facts.heldRules === "number" ? facts.heldRules : null;
   const counts = held !== null && held >= COUNT_THRESHOLD;
   return [
-    { id: "count", available: counts, shown: true, preselected: counts },
-    { id: "practice", available: true, shown: true, preselected: !counts },
-    { id: "agent", available: !!facts.agentDocs, shown: !!facts.agentDocs, preselected: false },
+    { id: "count", available: counts, shown: true, preselected: counts, address: "count" },
+    { id: "practice", available: true, shown: true, preselected: !counts, address: counts ? "practice" : DEFAULT_VARIANT },
+    { id: "agent", available: !!facts.agentDocs, shown: !!facts.agentDocs, preselected: false, address: "agent" },
   ];
 }
