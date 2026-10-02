@@ -66,7 +66,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
       <section class="mt-8">
         <h2 class="text-2xl font-semibold">3. AI Processing</h2>
-        <p>Striff sends the text of your repository's documentation to a language model provider, which proposes the rules your documents state. Review notes are written from a structural model of the change (component names, relationships and documentation excerpts), not from your source files. Whether a rule holds is decided by Striff's own analysis of your code, not by a language model.</p>
+        <p>Striff sends the text of your repository's documentation to a language model through OpenRouter, which proposes the rules your documents state. Review notes are written from a structural model of the change (component names, relationships and documentation excerpts), not from your source files. Whether a rule holds is decided by Striff's own analysis of your code, not by a language model.</p>
       </section>
 
       <section class="mt-8">
@@ -74,8 +74,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <p>We share data only with providers that help us run Striff, and only what each one needs:</p>
         <ul class="ml-6 list-disc">
           <li><strong>GitHub</strong>: the source of repository data, and where results are posted</li>
-          <li><strong>DigitalOcean</strong>: hosting for the Striff servers and database</li>
-          <li><strong>A language model provider</strong>: reads documentation text, as described in section 3</li>
+          <li><strong>DigitalOcean</strong>: hosting for the Striff servers and database, in Toronto, Canada</li>
+          <li><strong>OpenRouter</strong>: passes documentation text to the language model and returns its answer, as described in section 3; it may route a request to any provider that hosts that model</li>
           <li><strong>Stripe</strong>: payment processing</li>
           <li><strong>Resend</strong>: sending email</li>
           <li><strong>Sentry</strong>: error monitoring, with personal data collection turned off</li>
@@ -118,7 +118,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
       <section class="mt-8">
         <h2 class="text-2xl font-semibold">10. International Transfers</h2>
-        <p>Striff is operated from the United States, and our service providers may process data in the United States and other countries. By using Striff from outside those countries, your information may be transferred to and processed in them.</p>
+        <p>Striff's servers and database are in Canada, and HADI Technology operates from the United States. Our service providers may process data in the United States, Canada and other countries. By using Striff from outside those countries, your information may be transferred to and processed in them.</p>
       </section>
 
       <section class="mt-8">
