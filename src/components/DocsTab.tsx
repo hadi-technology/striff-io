@@ -379,7 +379,7 @@ const FILTER_CHIPS: { key: DocFilter; label: string; dot: string; always: boolea
   { key: "results", label: "With results", dot: "", always: false },
   { key: "all", label: "All", dot: "", always: true },
   { key: "broken", label: "Broken", dot: "broken", always: true },
-  { key: "stale", label: "Names gone", dot: "stale", always: false },
+  { key: "stale", label: "Names out of date", dot: "stale", always: false },
   { key: "notRead", label: "Not read", dot: "unread", always: true },
   { key: "outdated", label: "Edited since", dot: "outdated", always: false },
   { key: "unreadable", label: "Couldn't read", dot: "broken", always: false },
@@ -1395,9 +1395,9 @@ export default function DocsTab({
         {staleByDoc.has(doc.path) && (
           <span
             className="docs-badge is-stale"
-            title="Names this doc writes that the code no longer has."
+            title="Names this doc writes that no longer match the code: gone, moved or renamed."
           >
-            {staleByDoc.get(doc.path)!.length} gone
+            {staleByDoc.get(doc.path)!.length} stale
           </span>
         )}
         {doc.state !== "READ" && !beingRead && (doc.rereading ? (
@@ -1606,11 +1606,11 @@ export default function DocsTab({
         <button
           type="button"
           className={`docs-tally-item is-stale${repoStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
-          title={`Names your docs write that the code no longer has. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
+          title={`Names your docs write that no longer match the code: gone, moved or renamed. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
           onClick={() => setFilter(filter === "stale" ? "all" : "stale")}
         >
           <b>{repoStale}{staleNames.truncated ? "+" : ""}</b>
-          <i>names gone</i>
+          <i>names out of date</i>
         </button>
       )}
       {catalog && !readOnly && (
