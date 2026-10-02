@@ -1086,8 +1086,9 @@ export default function DocsTab({
     () => scopeDocs.flatMap((doc) => staleByDoc.get(doc.path) || []),
     [scopeDocs, staleByDoc]
   );
-  /** Whether the pane leads with the names gone, in place of saying it found no rule. */
-  const namesFirst = publicNoRules && scopeKind !== "doc" && scopeStaleFindings.length > 0;
+  /** Whether a public page leads with the names gone, above whatever rules the scope has. */
+  const namesFirst = !!source && !!rulesIndex && !rereadingNow && scopeKind !== "doc"
+    && scopeStaleFindings.length > 0;
 
   /** What the selection is called, in the export, on paper and in the pane's own heading. */
   const scopeLabel =
@@ -1655,7 +1656,7 @@ export default function DocsTab({
             {source?.lede
               ?? "Pick a doc for its rules, a folder for everything beneath it, or the repository for all of them."}
           </p>
-          {publicNoRules && repoStale > 0 && (
+          {!!source && repoStale > 0 && (
             <p className="docs-names-line">
               {repoStale}{staleNames?.truncated ? "+" : ""} name{repoStale === 1 && !staleNames?.truncated ? "" : "s"} in
               these docs no longer match{repoStale === 1 && !staleNames?.truncated ? "es" : ""} the code.
