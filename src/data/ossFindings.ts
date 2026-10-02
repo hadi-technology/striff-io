@@ -1,69 +1,31 @@
 /**
- * Stale sentences Striff found in well-known open-source repositories, shown on the home page.
+ * Well-known open-source repositories whose public Striff report holds at least one finding,
+ * shown as a strip of links under the home page's hero.
  *
- * Static on purpose: each entry was checked by hand against the repository's default branch at
- * the commit it links to, so the box cannot change under a reader the way live data could. The
- * quote is the text on the linked line exactly as it appears in the source file; `codeHas` says
- * only what that same commit's code shows. Re-check an entry against its repository before
- * changing the commit, and drop it if the sentence has been fixed.
+ * Static on purpose: each entry's report was checked to hold a finding when it was added, and the
+ * strip names only the repository and its stars, so nothing on it can go out of date the way a
+ * finding count could. Drop an entry whose report no longer has a finding. Each avatar is the
+ * organisation's GitHub avatar, served from /oss-avatars so the page loads nothing from GitHub.
  */
-export interface OssFinding {
+export interface OssRepo {
   owner: string;
   repo: string;
   /** Stars, rounded for display. */
   stars: string;
-  docPath: string;
-  line: number;
-  commit: string;
-  /** The linked line's text, verbatim from the source file. */
-  quote: string;
-  /** What the code at the same commit has instead; `code` spans mark identifiers. */
-  codeHas: string;
+  /** Path of the organisation's avatar under public/. */
+  avatar: string;
 }
 
-export const ossFindings: OssFinding[] = [
-  {
-    owner: "scikit-learn",
-    repo: "scikit-learn",
-    stars: "67k",
-    docPath: "doc/developers/utilities.rst",
-    line: 49,
-    commit: "2cc5fc9856675eb112bbd6640404027195741710",
-    quote: "``sklearn.utils.Memory`` instance",
-    codeHas: "There is no <code>sklearn.utils.Memory</code>. <code>check_memory</code> builds a <code>joblib.Memory</code>.",
-  },
-  {
-    owner: "Lightning-AI",
-    repo: "pytorch-lightning",
-    stars: "31k",
-    docPath: "docs/source-pytorch/extensions/strategy.rst",
-    line: 85,
-    commit: "84df182f50ab34301aabb3c0eb4031815bfb413d",
-    quote: ":class:`~lightning.pytorch.strategies.SingleXLAStrategy`",
-    codeHas: "The class is <code>SingleDeviceXLAStrategy</code>. A nitpick-ignore entry in <code>conf.py</code> keeps the docs build from flagging the old name.",
-  },
-  {
-    owner: "celery",
-    repo: "celery",
-    stars: "29k",
-    docPath: "docs/userguide/workers.rst",
-    line: 1280,
-    commit: "6bc42201225b93bbf2d0310262b55380e7406ef6",
-    quote: ":class:`!celery.worker.control.ControlDispatch` instance.",
-    codeHas: "No <code>ControlDispatch</code> exists anywhere in the code. The <code>!</code> tells Sphinx not to link it, so the build never checks it.",
-  },
+export const ossRepos: OssRepo[] = [
+  { owner: "scikit-learn", repo: "scikit-learn", stars: "67k", avatar: "/oss-avatars/scikit-learn.png" },
+  { owner: "Lightning-AI", repo: "pytorch-lightning", stars: "31k", avatar: "/oss-avatars/lightning-ai.png" },
+  { owner: "celery", repo: "celery", stars: "29k", avatar: "/oss-avatars/celery.png" },
+  { owner: "dotnet", repo: "BenchmarkDotNet", stars: "11.5k", avatar: "/oss-avatars/dotnet.png" },
+  { owner: "apache", repo: "storm", stars: "6.7k", avatar: "/oss-avatars/apache.png" },
+  { owner: "Netflix", repo: "mantis", stars: "1.5k", avatar: "/oss-avatars/netflix.png" },
 ];
 
-/** The line in the repository's docs, at the commit it was checked against. */
-export function permalink(f: OssFinding): string {
-  return `https://github.com/${f.owner}/${f.repo}/blob/${f.commit}/${f.docPath}?plain=1#L${f.line}`;
-}
-
-/**
- * The text HTML-escaped, with a break opportunity after each dot and slash, so a long dotted
- * name wraps between its parts on a phone rather than in the middle of one.
- */
-export function breakable(text: string): string {
-  const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  return escaped.replace(/([./])/g, "$1<wbr>");
+/** The repository's public report on striff.io. */
+export function reportPath(r: OssRepo): string {
+  return `/${r.owner}/${r.repo}`;
 }
