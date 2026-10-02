@@ -6867,7 +6867,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .docs-head-top .docs-title { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 
 /* The badge panel's own close control, where it sits in the page rather than a dialog. */
-.badge-panel-head { position: relative; }
+.badge-panel-head { position: relative; padding-right: 2.75rem; }
 .badge-panel-close {
   position: absolute; top: -0.35rem; right: -0.35rem; width: 2rem; height: 2rem;
   display: inline-flex; align-items: center; justify-content: center;
