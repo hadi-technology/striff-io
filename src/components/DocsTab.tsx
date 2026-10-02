@@ -1205,7 +1205,7 @@ export default function DocsTab({
     [scopeDocs, staleByDoc]
   );
   /** Whether a public page leads with the names gone, above whatever rules the scope has. */
-  const namesFirst = !!source && !!rulesIndex && !rereadingNow && scopeKind !== "doc"
+  const namesFirst = !!source && !!rulesIndex && scopeKind !== "doc"
     && scopeStaleFindings.length > 0;
 
   /** What the selection is called, in the export, on paper and in the pane's own heading. */
@@ -1820,27 +1820,6 @@ export default function DocsTab({
         ) : tally}
       </div>
 
-      {/* One step of getting started: ticked once a README has asked for the badge. Only once the
-          API has said, so an answer not yet in is never shown as a step not taken. */}
-      {!readOnly && badge && (
-        <p className={`onboarding-item${badge.seenAtMs ? " is-done" : ""}`}>
-          <span className="onboarding-tick" aria-hidden="true">{badge.seenAtMs ? <TickMark /> : null}</span>
-          {badge.seenAtMs ? (
-            <span>
-              Add the Striff badge to your README{" "}
-              <span className="onboarding-when">· first shown in a README {when(badge.seenAtMs)}</span>
-            </span>
-          ) : (
-            <span>
-              Add the Striff badge to your README.{" "}
-              {!badgeOpen && (
-                <button type="button" onClick={() => setBadgeOpen(true)}>Get the snippet</button>
-              )}
-            </span>
-          )}
-        </p>
-      )}
-
       {badgeOpen && !source && (
         <div id="docs-badge-panel">
           <BadgePanel
@@ -1853,6 +1832,7 @@ export default function DocsTab({
             tokenError={badgeError}
             sample={!!sample}
             onRotate={sample ? undefined : rotateBadge}
+            onClose={() => setBadgeOpen(false)}
           />
         </div>
       )}
