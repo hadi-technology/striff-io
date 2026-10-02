@@ -295,6 +295,7 @@ const TREE_WIDTH_KEY = "striff.docsTreeWidth";
  * of these, so "1 edited since read" is a sentence you can click.
  */
 type DocFilter =
+  | "results"
   | "all"
   | "broken"
   | "stale"
@@ -307,6 +308,8 @@ type DocFilter =
   | "forced";
 
 const DOC_FILTER_TEST: Record<DocFilter, (doc: Doc) => boolean> = {
+  // Filled in where the view is: it depends on the rules and on the names gone.
+  results: () => false,
   all: () => true,
   broken: (doc) => doc.brokenRules + doc.alreadyBrokenRules > 0,
   // Filled in where the view is, because it is the only thing here that is not a fact about the
@@ -324,6 +327,7 @@ const DOC_FILTER_TEST: Record<DocFilter, (doc: Doc) => boolean> = {
 
 /** The chips above the tree, in the order a reader looks for them. */
 const FILTER_CHIPS: { key: DocFilter; label: string; dot: string; always: boolean }[] = [
+  { key: "results", label: "With results", dot: "", always: false },
   { key: "all", label: "All", dot: "", always: true },
   { key: "broken", label: "Broken", dot: "broken", always: true },
   { key: "stale", label: "Names gone", dot: "stale", always: false },
@@ -537,7 +541,11 @@ export default function DocsTab({
   const [staleNames, setStaleNames] = useState<StaleNames | null>(null);
   /** What is selected: the empty path is the repository itself, which is where this opens. */
   const [selected, setSelected] = useState<string>("");
-  const [filter, setFilter] = useState<DocFilter>("all");
+  /**
+   * The filter someone picked, null until they pick one. Unpicked, the tree shows the documents
+   * with results, or all of them where none has any, so it is never empty on load.
+   */
+  const [chosenFilter, setFilter] = useState<DocFilter | null>(null);
   // How wide the tree is, in pixels; null until someone has dragged it, which leaves the width
   // to the stylesheet. Remembered, because a width someone chose for long paths is one they
   // would have to choose again on every visit.
@@ -618,7 +626,7 @@ export default function DocsTab({
     // A new repository is read from its root, as a fresh one is.
     setSelected("");
     setDetail(null);
-    setFilter("all");
+    setFilter(null);
     setRuleFilter("all");
     setRulesIndex(null);
     setStaleNames(null);
@@ -919,21 +927,42 @@ export default function DocsTab({
     return byDoc;
   }, [staleNames]);
 
-  /** Every filter is a fact about a document; this one needs the reading's answer as well. */
-  const matches = (key: DocFilter) => (doc: Doc) =>
-    key === "stale" ? staleByDoc.has(doc.path) : DOC_FILTER_TEST[key](doc);
+  /**
+   * The documents with something to show: a rule that holds, a broken rule where this view shows
+   * broken rules (not on a public page), or a name gone.
+   */
+  const resultDocs = useMemo(() => {
+    const paths = new Set<string>(staleByDoc.keys());
+    for (const group of rulesIndex?.documents || []) {
+      if (group.rules.some((rule) => standing(rule) === "holds" || (!source && standing(rule) === "broken"))) {
+        paths.add(group.document.path);
+      }
+    }
+    if (!source) {
+      for (const doc of allDocs) if (DOC_FILTER_TEST.broken(doc)) paths.add(doc.path);
+    }
+    return paths;
+  }, [catalog, rulesIndex, staleByDoc, source]);
 
-  const documents = useMemo(
-    () => allDocs.filter(matches(filter)),
-    [catalog, filter, staleByDoc]
-  );
+  /** Every filter is a fact about a document; these need the reading's answers as well. */
+  const matches = (key: DocFilter) => (doc: Doc) =>
+    key === "stale" ? staleByDoc.has(doc.path)
+      : key === "results" ? resultDocs.has(doc.path)
+      : DOC_FILTER_TEST[key](doc);
 
   /** What each filter would show, counted in documents, since documents are what it filters. */
   const filterCounts = useMemo(() => {
     const counted = {} as Record<DocFilter, number>;
     for (const chip of FILTER_CHIPS) counted[chip.key] = allDocs.filter(matches(chip.key)).length;
     return counted;
-  }, [catalog, staleByDoc]);
+  }, [catalog, staleByDoc, resultDocs]);
+
+  const filter: DocFilter = chosenFilter ?? (filterCounts.results > 0 ? "results" : "all");
+
+  const documents = useMemo(
+    () => allDocs.filter(matches(filter)),
+    [catalog, filter, staleByDoc, resultDocs]
+  );
 
   const tree = useMemo(() => buildTree(documents, name), [documents, name]);
 
