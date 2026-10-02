@@ -5453,6 +5453,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .read-repo-note.is-bad { color: #8a5a1f; }
 @media print { .read-repo { display: none; } }
 .read-repo-note.is-good { color: #1a7f45; }
+.read-repo-part { cursor: help; text-decoration: underline dotted; text-underline-offset: 2px; }
 /* The rest of the questions, behind one line. Eleven open at once is a wall to scroll past on the
    way to the thing someone actually came to the billing page for. */
 .dashboard-faq-more {
