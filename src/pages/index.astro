@@ -337,6 +337,44 @@ const structuredData = JSON.stringify([
           </div>
         </div>
 
+        <!-- Found in open source: repositories people know, each linking to its public report,
+             which is the case study. Under the hero's buttons, so it is on the first screen.
+             Static (src/data/ossFindings.ts). The list scrolls slowly and stops under a pointer or
+             keyboard focus, and with reduced motion it stands still. The second copy of the list
+             exists only to make the loop seamless, so it is hidden from assistive technology and
+             the tab order. -->
+        <section id="found-in-oss" class="proof-strip" aria-labelledby="proof-strip-label" data-reveal>
+          <div class="proof-strip-inner">
+            <p id="proof-strip-label" class="proof-strip-label">Striff has found doc&#8288;&ndash;&#8288;code drift in</p>
+            <div class="proof-strip-viewport">
+              <div class="proof-strip-rail">
+                {[false, true].map((copy) => (
+                  <ul class="proof-strip-list" aria-hidden={copy ? "true" : undefined} aria-labelledby={copy ? undefined : "proof-strip-label"}>
+                    {ossRepos.map((r) => (
+                      <li>
+                        <a
+                          class="proof-item"
+                          href={reportPath(r)}
+                          tabindex={copy ? -1 : undefined}
+                          aria-label={copy ? undefined : `${r.owner}/${r.repo}, ${r.stars} stars`}
+                          title={`Read Striff's report on ${r.owner}/${r.repo}`}
+                        >
+                          <img class="proof-item-avatar" src={r.avatar} alt="" width="20" height="20" decoding="async" />
+                          <span class="proof-item-name"><span class="proof-item-owner">{r.owner}<span class="proof-item-slash">/</span></span><span class="proof-item-repo">{r.repo}</span></span>
+                          <span class="proof-item-stars">{r.stars}<span aria-hidden="true"> &#9733;</span></span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ))}
+              </div>
+            </div>
+            <a class="proof-strip-cta" href={`${githubAppUrl}?state=home_showcase`} target="_blank" rel="noopener noreferrer">
+              See what Striff finds in yours <span aria-hidden="true">&rarr;</span>
+            </a>
+          </div>
+        </section>
+
         <div class="hero-check-wrap" data-reveal>
           <div class="hero-check-card">
             <!-- Styled as the check it is, and in the same clothes as the real one further down
@@ -399,44 +437,6 @@ const structuredData = JSON.stringify([
           </div>
 
         </div>
-      </div>
-    </section>
-
-    <!-- ==================== FOUND IN OPEN SOURCE ==================== -->
-    <!-- Repositories people know, each linking to its public report, which is the case study.
-         Static (src/data/ossFindings.ts). The list scrolls slowly and stops under a pointer or
-         keyboard focus, and with reduced motion it stands still. The second copy of the list exists
-         only to make the loop seamless, so it is hidden from assistive technology and the tab
-         order. -->
-    <section id="found-in-oss" class="proof-strip" aria-labelledby="proof-strip-label">
-      <div class="proof-strip-inner mx-auto max-w-[90rem] px-6">
-        <p id="proof-strip-label" class="proof-strip-label">Striff has found doc&#8288;&ndash;&#8288;code drift in</p>
-        <div class="proof-strip-viewport">
-          <div class="proof-strip-rail">
-            {[false, true].map((copy) => (
-              <ul class="proof-strip-list" aria-hidden={copy ? "true" : undefined} aria-labelledby={copy ? undefined : "proof-strip-label"}>
-                {ossRepos.map((r) => (
-                  <li>
-                    <a
-                      class="proof-item"
-                      href={reportPath(r)}
-                      tabindex={copy ? -1 : undefined}
-                      aria-label={copy ? undefined : `${r.owner}/${r.repo}, ${r.stars} stars`}
-                      title={`Read Striff's report on ${r.owner}/${r.repo}`}
-                    >
-                      <img class="proof-item-avatar" src={r.avatar} alt="" width="22" height="22" decoding="async" />
-                      <span class="proof-item-name"><span class="proof-item-owner">{r.owner}/</span>{r.repo}</span>
-                      <span class="proof-item-stars">{r.stars}<span aria-hidden="true"> &#9733;</span></span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ))}
-          </div>
-        </div>
-        <a class="proof-strip-cta" href={`${githubAppUrl}?state=home_showcase`} target="_blank" rel="noopener noreferrer">
-          See what Striff finds in yours <span aria-hidden="true">&rarr;</span>
-        </a>
       </div>
     </section>
 
