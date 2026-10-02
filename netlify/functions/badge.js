@@ -1,16 +1,18 @@
 // Netlify function behind https://striff.io/badge/<owner>/<repo>.svg: the README badge.
 //
-// The badge says how many of a repository's documented rules hold on its default branch, and is
-// drawn by striff-api, which also decides whether the repository has one at all. Every answer it
-// gives is an image with status 200, a repository it has no count for included, so a README never shows a broken
-// image for a repository Striff does not know. This function adds nothing to that decision. It
-// checks that the address could name a GitHub repository, passes the style, label and token on,
-// and lets Netlify's CDN keep the answer, so README traffic seldom reaches the API.
+// The badge says that a repository's docs are checked against its code, or, as ?variant= asks,
+// how many of its documented rules hold. It is drawn by striff-api, which also decides whether
+// the repository has one at all. Every answer it gives is an image with status 200, a repository
+// it has no count for included, so a README never shows a broken image for a repository Striff
+// does not know. This function adds nothing to that decision. It checks that the address could
+// name a GitHub repository, passes the style, label, variant and token on, and lets Netlify's CDN
+// keep the answer, so README traffic seldom reaches the API.
 //
 // A request that does not carry preview=1 came from somewhere other than Striff's own pages, a
 // README almost always, and is passed on as from=readme: that is what ticks the onboarding item
-// "Add the Striff badge to your README". One line is logged per request, which is how many
-// READMEs carry the badge is counted per repository per day.
+// "Add the Striff badge to your README". One line is logged per request, with the variant asked
+// for, which is how many READMEs carry the badge, and which variant, is counted per repository per
+// day.
 
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
 const STRIFF_API_BASE = process.env.STRIFF_API_BASE_URL || "https://api.striff.io";
@@ -20,6 +22,8 @@ const OWNER = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/;
 const NAME = /^[A-Za-z0-9._-]{1,100}$/;
 
 const STYLES = new Set(["flat", "flat-square", "for-the-badge"]);
+// What the badge can say; the API falls back to the default for a repository that does not qualify.
+const VARIANTS = new Set(["practice", "count", "agent", "held"]);
 const TOKEN = /^[A-Za-z0-9_-]{1,128}$/;
 // Printable, no control characters, and short enough to draw: the API measures up to this.
 const LABEL = /^[^\u0000-\u001f\u007f]{1,40}$/u;
@@ -56,9 +60,9 @@ function decode(part) {
 }
 
 /**
- * The API path for a badge: the repository, and whichever of style, label and token are ones the
- * API could use. One that is not is dropped rather than refused, so a typo in a README still
- * shows a badge.
+ * The API path for a badge: the repository, and whichever of style, label, variant and token are
+ * ones the API could use. One that is not is dropped rather than refused, so a typo in a README
+ * still shows a badge.
  *
  * @param {{ owner: string, name: string }} repo
  * @param {Record<string, string | undefined>} params the request's query parameters
@@ -67,6 +71,7 @@ export function apiPathFor(repo, params) {
   const query = new URLSearchParams();
   if (params.style && STYLES.has(params.style)) query.set("style", params.style);
   if (params.label && LABEL.test(params.label)) query.set("label", params.label);
+  if (params.variant && VARIANTS.has(params.variant)) query.set("variant", params.variant);
   if (params.token && TOKEN.test(params.token)) query.set("token", params.token);
   if (params.preview !== "1") query.set("from", "readme");
   const search = query.toString();
@@ -108,6 +113,7 @@ export const handler = async (event) => {
     badge: `${repo.owner}/${repo.name}`.toLowerCase(),
     day: new Date().toISOString().slice(0, 10),
     readme,
+    variant: params.variant && VARIANTS.has(params.variant) ? params.variant : "practice",
   }));
   if (!STRIFF_SERVER_KEY) {
     return { statusCode: 500, headers: { "Cache-Control": "no-store" }, body: "Server not configured" };

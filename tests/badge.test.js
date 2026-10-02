@@ -86,7 +86,30 @@ test("a README's request is forwarded with the server key and marked as one", as
     badge: "acme/widgets",
     day: new Date().toISOString().slice(0, 10),
     readme: true,
+    variant: "practice",
   });
+});
+
+test("a variant the API draws is passed on and logged; any other is dropped", async () => {
+  const repo = { owner: "acme", name: "widgets" };
+  for (const variant of ["practice", "count", "agent", "held"]) {
+    assert.equal(apiPathFor(repo, { variant, preview: "1" }),
+      `/api/v1/public-repos/acme/widgets/badge?variant=${variant}`);
+  }
+  assert.equal(apiPathFor(repo, { variant: "loud", preview: "1" }), "/api/v1/public-repos/acme/widgets/badge");
+  assert.equal(apiPathFor(repo, { variant: "COUNT", preview: "1" }), "/api/v1/public-repos/acme/widgets/badge");
+  assert.equal(
+    apiPathFor(repo, { style: "flat-square", label: "striff", variant: "count", token: "0123abcd" }),
+    "/api/v1/public-repos/acme/widgets/badge?style=flat-square&label=striff&variant=count&token=0123abcd&from=readme"
+  );
+
+  await get("/badge/acme/widgets.svg", { variant: "agent" });
+  await get("/badge/acme/widgets.svg", { variant: "loud" });
+
+  assert.equal(asked[0].url, "https://api.example/api/v1/public-repos/acme/widgets/badge?variant=agent&from=readme");
+  assert.equal(JSON.parse(logged[0]).variant, "agent");
+  assert.equal(asked[1].url, "https://api.example/api/v1/public-repos/acme/widgets/badge?from=readme");
+  assert.equal(JSON.parse(logged[1]).variant, "practice");
 });
 
 test("a preview on Striff's own pages is not counted as a README", async () => {
