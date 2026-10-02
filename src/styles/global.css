@@ -6861,3 +6861,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .installed-badge { margin-top: 2rem; }
 .installed-badge h2 { color: #0f172a; font-size: 1.125rem; font-weight: 700; }
 .installed-badge > p { margin: 0.5rem 0 1rem; max-width: 42rem; color: #475569; font-size: 0.9rem; line-height: 1.6; }
+
+/* The report and dashboard title row sits above the description and counts, at full width. */
+.docs-head-top { min-width: 0; }
+.docs-head-top .docs-title { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
