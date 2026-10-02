@@ -1205,7 +1205,7 @@ export default function DocsTab({
     [scopeDocs, staleByDoc]
   );
   /** Whether a public page leads with the names gone, above whatever rules the scope has. */
-  const namesFirst = !!source && !!rulesIndex && !rereadingNow && scopeKind !== "doc"
+  const namesFirst = !!source && !!rulesIndex && scopeKind !== "doc"
     && scopeStaleFindings.length > 0;
 
   /** What the selection is called, in the export, on paper and in the pane's own heading. */
@@ -1733,61 +1733,65 @@ export default function DocsTab({
           </div>
         </div>
       )}
+      {/* The title row spans the page: the description, counts and install button share the
+          row below it, so a long repository name keeps its chips and badge on one line. */}
+      <div className="docs-head-top">
+        <p className="dashboard-kicker">Docs &amp; Rules</p>
+        <div className="docs-title">
+          <span className="docs-title-name">{repo}</span>
+          <a
+            className="docs-repo-link"
+            href={githubUrl("", true)}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open this repository on GitHub"
+          >
+            <GitHubMark />
+            GitHub
+          </a>
+          {(source?.refreshedAt || source?.badgeUrl) && (
+            <span className="docs-refreshed-group">
+              {source.refreshedAt && (
+                <span className="docs-refreshed-chip" title="When Striff last read this repository. This page is not updated after that.">
+                  Last refreshed {source.refreshedAt}
+                </span>
+              )}
+              {source.badgeUrl && <LiveBadge src={source.badgeUrl} />}
+            </span>
+          )}
+          {/* A public page is a snapshot: loading it again finds the same thing. */}
+          {!source && (
+            <button
+              type="button"
+              className={`docs-refresh${loading || rulesLoading ? " is-loading" : ""}`}
+              onClick={() => reload()}
+              disabled={loading || rulesLoading}
+              title="Load this repository's documents and rules again"
+            >
+              <RefreshMark />
+              Refresh
+            </button>
+          )}
+          {/* The repository's own badge is the way to its snippet: clicking it opens the panel.
+              Not on a public page: whoever reads one is not, as a rule, whoever keeps its README. */}
+          {!source && (
+            <BadgeControl
+              className="docs-badge-control"
+              src={sample
+                ? "/badge-examples/demo-flat.svg"
+                : currentRepo?.private
+                  ? (badge?.token ? badgePreviewPath(owner, name, badge.token) : null)
+                  : badgePreviewPath(owner, name)}
+              onOpen={() => setBadgeOpen(!badgeOpen)}
+              expanded={badgeOpen}
+              controls="docs-badge-panel"
+              fallback="text"
+            />
+          )}
+        </div>
+      </div>
       <div className="docs-head">
         <div className="docs-head-copy">
-          <p className="dashboard-kicker">Docs &amp; Rules</p>
-          <div className="docs-title">
-            <span className="docs-title-name">{repo}</span>
-            <a
-              className="docs-repo-link"
-              href={githubUrl("", true)}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open this repository on GitHub"
-            >
-              <GitHubMark />
-              GitHub
-            </a>
-            {(source?.refreshedAt || source?.badgeUrl) && (
-              <span className="docs-refreshed-group">
-                {source.refreshedAt && (
-                  <span className="docs-refreshed-chip" title="When Striff last read this repository. This page is not updated after that.">
-                    Last refreshed {source.refreshedAt}
-                  </span>
-                )}
-                {source.badgeUrl && <LiveBadge src={source.badgeUrl} />}
-              </span>
-            )}
-            {/* A public page is a snapshot: loading it again finds the same thing. */}
-            {!source && (
-              <button
-                type="button"
-                className={`docs-refresh${loading || rulesLoading ? " is-loading" : ""}`}
-                onClick={() => reload()}
-                disabled={loading || rulesLoading}
-                title="Load this repository's documents and rules again"
-              >
-                <RefreshMark />
-                Refresh
-              </button>
-            )}
-            {/* The repository's own badge is the way to its snippet: clicking it opens the panel.
-                Not on a public page: whoever reads one is not, as a rule, whoever keeps its README. */}
-            {!source && (
-              <BadgeControl
-                className="docs-badge-control"
-                src={sample
-                  ? "/badge-examples/demo-flat.svg"
-                  : currentRepo?.private
-                    ? (badge?.token ? badgePreviewPath(owner, name, badge.token) : null)
-                    : badgePreviewPath(owner, name)}
-                onOpen={() => setBadgeOpen(!badgeOpen)}
-                expanded={badgeOpen}
-                controls="docs-badge-panel"
-                fallback="text"
-              />
-            )}
-          </div>
           {/* The second sentence used to be there whatever the repository looked like, so a
               repository with every document read was still told some were waiting. It is now the
               count, or nothing. */}
@@ -1816,27 +1820,6 @@ export default function DocsTab({
         ) : tally}
       </div>
 
-      {/* One step of getting started: ticked once a README has asked for the badge. Only once the
-          API has said, so an answer not yet in is never shown as a step not taken. */}
-      {!readOnly && badge && (
-        <p className={`onboarding-item${badge.seenAtMs ? " is-done" : ""}`}>
-          <span className="onboarding-tick" aria-hidden="true">{badge.seenAtMs ? <TickMark /> : null}</span>
-          {badge.seenAtMs ? (
-            <span>
-              Add the Striff badge to your README{" "}
-              <span className="onboarding-when">· first shown in a README {when(badge.seenAtMs)}</span>
-            </span>
-          ) : (
-            <span>
-              Add the Striff badge to your README.{" "}
-              {!badgeOpen && (
-                <button type="button" onClick={() => setBadgeOpen(true)}>Get the snippet</button>
-              )}
-            </span>
-          )}
-        </p>
-      )}
-
       {badgeOpen && !source && (
         <div id="docs-badge-panel">
           <BadgePanel
@@ -1849,6 +1832,7 @@ export default function DocsTab({
             tokenError={badgeError}
             sample={!!sample}
             onRotate={sample ? undefined : rotateBadge}
+            onClose={() => setBadgeOpen(false)}
           />
         </div>
       )}

@@ -43,6 +43,8 @@ export interface BadgePanelProps {
   tokenError?: string;
   /** Says what the panel is, in place of the default heading. */
   heading?: string;
+  /** Closes the panel; given where the panel sits in the page rather than in a dialog. */
+  onClose?: () => void;
 }
 
 /** Puts text on the clipboard, by the old route where the browser will not grant the new one. */
@@ -82,6 +84,7 @@ export default function BadgePanel({
   onRotate,
   tokenError,
   heading,
+  onClose,
 }: BadgePanelProps) {
   const [style, setStyle] = useState<string>("flat");
   const [format, setFormat] = useState<Format>("markdown");
@@ -126,6 +129,11 @@ export default function BadgePanel({
   return (
     <section className="badge-panel" aria-label="README badge">
       <div className="badge-panel-head">
+        {onClose && (
+          <button type="button" className="badge-panel-close" onClick={onClose} aria-label="Close the badge panel" title="Close">
+            ×
+          </button>
+        )}
         <div>
           <p className="dashboard-kicker">{heading ?? "Add badge to README"}</p>
           <p className="badge-panel-lede">

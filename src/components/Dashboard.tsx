@@ -1067,35 +1067,6 @@ function InstallationCard({
                 </a>
               </div>
 
-              {/* One step of getting started, ticked by itself once any README of this account has
-                  asked for the badge. Said only once the API has answered. */}
-              {badgeRepos && repos.length > 0 && (
-                <p className={`onboarding-item mt-3${badgeRepos.length > 0 ? " is-done" : ""}`}>
-                  <span className="onboarding-tick" aria-hidden="true">
-                    {badgeRepos.length > 0 && (
-                      <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="m3.5 8.5 3 3 6-7" />
-                      </svg>
-                    )}
-                  </span>
-                  {badgeRepos.length > 0 ? (
-                    <span>
-                      Add the Striff badge to your README{" "}
-                      <span className="onboarding-when">
-                        · shown in {badgeRepos.map((r) => `${r.repoOwner}/${r.repoName}`).slice(0, 3).join(", ")}
-                        {badgeRepos.length > 3 ? ` and ${badgeRepos.length - 3} more` : ""}
-                      </span>
-                    </span>
-                  ) : (
-                    <span>
-                      Add the Striff badge to your README.{" "}
-                      {onOpenRepo && (
-                        <button type="button" onClick={offerBadge}>Get the snippet</button>
-                      )}
-                    </span>
-                  )}
-                </p>
-              )}
 
               {/* What being listed here means, said once above the list it is about. Someone who
                   granted access to a repository should not first find out from a check appearing
