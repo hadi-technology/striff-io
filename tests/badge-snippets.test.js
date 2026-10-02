@@ -12,17 +12,32 @@ test("the badge's address carries a style other than flat, and a key only where 
   assert.equal(badgeImageUrl("acme", "widgets", { preview: true }), "https://striff.io/badge/acme/widgets.svg?preview=1");
 });
 
-test("each markup links the badge to the repository's page", () => {
-  const image = badgeImageUrl("acme", "widgets", { style: "flat-square", token: "ab12" });
+test("a public repository's badge links to its page, in every markup, with no tracking", () => {
+  const image = badgeImageUrl("acme", "widgets", { style: "flat-square" });
   const link = badgeLinkUrl("acme", "widgets");
-  assert.equal(link, "https://striff.io/acme/widgets?utm_source=badge&utm_medium=readme");
+  assert.equal(link, "https://striff.io/acme/widgets");
   assert.equal(badgeSnippet("markdown", image, link),
-    "[![Striff](https://striff.io/badge/acme/widgets.svg?style=flat-square&token=ab12)](https://striff.io/acme/widgets?utm_source=badge&utm_medium=readme)");
+    "[![Striff](https://striff.io/badge/acme/widgets.svg?style=flat-square)](https://striff.io/acme/widgets)");
   assert.equal(badgeSnippet("html", image, link),
-    '<a href="https://striff.io/acme/widgets?utm_source=badge&amp;utm_medium=readme"><img src="https://striff.io/badge/acme/widgets.svg?style=flat-square&amp;token=ab12" alt="Striff"></a>');
+    '<a href="https://striff.io/acme/widgets"><img src="https://striff.io/badge/acme/widgets.svg?style=flat-square" alt="Striff"></a>');
   assert.equal(badgeSnippet("rst", image, link),
-    `.. image:: ${image}\n   :target: ${link}\n   :alt: Striff`);
-  assert.equal(badgeSnippet("asciidoc", image, link), `image:${image}[Striff,link="${link}"]`);
+    ".. image:: https://striff.io/badge/acme/widgets.svg?style=flat-square\n   :target: https://striff.io/acme/widgets\n   :alt: Striff");
+  assert.equal(badgeSnippet("asciidoc", image, link),
+    'image:https://striff.io/badge/acme/widgets.svg?style=flat-square[Striff,link="https://striff.io/acme/widgets"]');
+});
+
+test("a private repository's badge carries its key and links to Striff, never to its own name", () => {
+  const image = badgeImageUrl("acme", "secret", { token: "ab12" });
+  const link = badgeLinkUrl("acme", "secret", { privateRepo: true });
+  assert.equal(link, "https://striff.io/");
+  for (const format of ["markdown", "html", "rst", "asciidoc"]) {
+    const snippet = badgeSnippet(format, image, link);
+    assert.ok(snippet.includes("https://striff.io/badge/acme/secret.svg?token=ab12"), format);
+    assert.ok(!snippet.includes("striff.io/acme/secret"), format);
+    assert.ok(!snippet.includes("utm_"), format);
+  }
+  assert.equal(badgeSnippet("markdown", image, link),
+    "[![Striff](https://striff.io/badge/acme/secret.svg?token=ab12)](https://striff.io/)");
 });
 
 test("the README is opened in GitHub's editor, or a new one is started", () => {

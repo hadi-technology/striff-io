@@ -96,7 +96,7 @@ export default function BadgePanel({
   const waitingForKey = !!privateRepo && !token;
   const key = privateRepo ? token : null;
   const image = badgeImageUrl(owner, name, { style, token: key });
-  const link = badgeLinkUrl(owner, name);
+  const link = badgeLinkUrl(owner, name, { privateRepo: !!privateRepo });
   const snippet = badgeSnippet(format, image, link);
   const preview = sample
     ? `/badge-examples/demo-${style}.svg`
@@ -128,8 +128,8 @@ export default function BadgePanel({
         <div>
           <p className="dashboard-kicker">{heading ?? "Add badge to README"}</p>
           <p className="badge-panel-lede">
-            Shows how many of this repository's documented rules hold on its default branch, and
-            links to the page that lists them.
+            Shows how many of this repository's documented rules hold on its default branch
+            {privateRepo ? ", and links to Striff." : ", and links to the page that lists them."}
           </p>
         </div>
         <div className="badge-panel-preview" aria-live="polite">

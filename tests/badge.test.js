@@ -5,7 +5,7 @@ process.env.STRIFF_SERVER_KEY = "server-key";
 process.env.STRIFF_API_BASE_URL = "https://api.example";
 const { repoFromPath, apiPathFor, handler } = await import("../netlify/functions/badge.js");
 
-const SVG = '<svg xmlns="http://www.w3.org/2000/svg"><title>striff: 42 rules hold</title></svg>';
+const SVG = '<svg xmlns="http://www.w3.org/2000/svg"><title>docs: 42 rules hold</title></svg>';
 const realFetch = globalThis.fetch;
 const realLog = console.log;
 let asked;

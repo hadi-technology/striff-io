@@ -35,9 +35,18 @@ export function badgeImageUrl(owner, name, options = {}) {
   return `${SITE}/badge/${encodeURIComponent(owner)}/${encodeURIComponent(name)}.svg${search ? `?${search}` : ""}`;
 }
 
-/** The repository's page, which every click on the badge lands on, marked as coming from one. */
-export function badgeLinkUrl(owner, name) {
-  return `${SITE}/${encodeURIComponent(owner)}/${encodeURIComponent(name)}?utm_source=badge&utm_medium=readme`;
+/**
+ * Where a click on the badge lands: a public repository's own page, and Striff's home page for a
+ * private one, which has no public page; its link would only fail, and would carry its name.
+ *
+ * @param {string} owner
+ * @param {string} name
+ * @param {{ privateRepo?: boolean }} [options]
+ */
+export function badgeLinkUrl(owner, name, options = {}) {
+  return options.privateRepo
+    ? `${SITE}/`
+    : `${SITE}/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`;
 }
 
 /**
