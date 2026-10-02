@@ -3,7 +3,8 @@
 // Whether a repository has a page, and what it shows, is decided by striff-api: it asks GitHub
 // whether the repository is public on every read, and answers the same 404 for any repository
 // without a page. This function adds nothing to that decision. It only forwards the reads the page
-// makes, with the server key, and refuses anything else: no writes, no path it does not know.
+// makes, with the server key, and refuses anything else: no writes, no path it does not know. A
+// reader's view may let striff-api read the page's documents again; a tool's never does.
 
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
 const STRIFF_API_BASE = process.env.STRIFF_API_BASE_URL || "https://api.striff.io";
@@ -22,6 +23,22 @@ const VIEWS = {
 };
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
+
+/**
+ * Whether the request says it is a tool's (a card snapshot, an operator's script) rather than a
+ * reader's: then striff-api is told so, and the view starts no re-reading of the page. Said by the
+ * X-Striff-No-Refresh header, or by no_refresh=1 for a caller that cannot set one.
+ *
+ * @param {{ headers?: Record<string, string | undefined>,
+ *           queryStringParameters?: Record<string, string | undefined> | null }} event
+ */
+export function noRefresh(event) {
+  const headers = event.headers || {};
+  const header = headers["x-striff-no-refresh"] ?? headers["X-Striff-No-Refresh"];
+  const param = (event.queryStringParameters || {}).no_refresh;
+  const says = (value) => value != null && value !== "" && value !== "0" && value !== "false";
+  return says(header) || says(param);
+}
 
 /**
  * The API path a request is for, or null where the request names no page the site reads.
@@ -71,9 +88,11 @@ export const handler = async (event) => {
     return { statusCode: 500, headers: JSON_HEADERS, body: JSON.stringify({ error: "Server not configured" }) };
   }
   try {
-    const res = await fetch(`${STRIFF_API_BASE}${path}`, {
-      headers: { "X-Server-Key": STRIFF_SERVER_KEY, Accept: "application/json" },
-    });
+    const headers = { "X-Server-Key": STRIFF_SERVER_KEY, Accept: "application/json" };
+    if (noRefresh(event)) {
+      headers["X-Striff-No-Refresh"] = "1";
+    }
+    const res = await fetch(`${STRIFF_API_BASE}${path}`, { headers });
     return {
       statusCode: res.status,
       // A page is the same for everyone who opens it, so a minute of it may be shared; a refusal
