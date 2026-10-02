@@ -90,3 +90,21 @@ test("an API that cannot be reached is a 502, not an empty page", async () => {
 
   assert.equal(res.statusCode, 502);
 });
+
+test("a tool's read tells striff-api so, and a reader's does not", async () => {
+  await handler({ httpMethod: "GET", headers: { "x-striff-no-refresh": "1" },
+    queryStringParameters: { owner: "acme", repo: "widgets", view: "catalog" } });
+  await handler({ httpMethod: "GET",
+    queryStringParameters: { owner: "acme", repo: "widgets", view: "catalog", no_refresh: "1" } });
+  await handler({ httpMethod: "GET", headers: {},
+    queryStringParameters: { owner: "acme", repo: "widgets", view: "catalog" } });
+  await handler({ httpMethod: "GET", headers: { "x-striff-no-refresh": "0" },
+    queryStringParameters: { owner: "acme", repo: "widgets" } });
+
+  assert.equal(asked.length, 4);
+  assert.equal(asked[0].init.headers["X-Striff-No-Refresh"], "1");
+  assert.equal(asked[1].init.headers["X-Striff-No-Refresh"], "1");
+  assert.equal(asked[2].init.headers["X-Striff-No-Refresh"], undefined);
+  assert.equal(asked[3].init.headers["X-Striff-No-Refresh"], undefined);
+  assert.equal(asked[1].url, "https://api.example/api/v1/public-repos/acme/widgets/doc-catalog");
+});
