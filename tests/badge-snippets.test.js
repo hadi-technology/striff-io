@@ -19,10 +19,10 @@ test("each markup links the badge to the repository's page", () => {
   assert.equal(badgeSnippet("markdown", image, link),
     "[![Striff](https://striff.io/badge/acme/widgets.svg?style=flat-square&token=ab12)](https://striff.io/acme/widgets?utm_source=badge&utm_medium=readme)");
   assert.equal(badgeSnippet("html", image, link),
-    '<a href="https://striff.io/acme/widgets?utm_source=badge&amp;utm_medium=readme"><img src="https://striff.io/badge/acme/widgets.svg?style=flat-square&amp;token=ab12" alt="Striff: architecture docs"></a>');
+    '<a href="https://striff.io/acme/widgets?utm_source=badge&amp;utm_medium=readme"><img src="https://striff.io/badge/acme/widgets.svg?style=flat-square&amp;token=ab12" alt="Striff"></a>');
   assert.equal(badgeSnippet("rst", image, link),
-    `.. image:: ${image}\n   :target: ${link}\n   :alt: Striff: architecture docs`);
-  assert.equal(badgeSnippet("asciidoc", image, link), `image:${image}[Striff: architecture docs,link="${link}"]`);
+    `.. image:: ${image}\n   :target: ${link}\n   :alt: Striff`);
+  assert.equal(badgeSnippet("asciidoc", image, link), `image:${image}[Striff,link="${link}"]`);
 });
 
 test("the README is opened in GitHub's editor, or a new one is started", () => {

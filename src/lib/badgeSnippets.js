@@ -16,7 +16,7 @@ export const BADGE_FORMATS = [
   { id: "asciidoc", label: "AsciiDoc" },
 ];
 
-const ALT = "Striff: architecture docs";
+const ALT = "Striff";
 
 /**
  * The badge's address. A private repository's carries its key, and only a private one's: the key

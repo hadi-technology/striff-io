@@ -502,6 +502,49 @@ const TickMark = () => (
   </svg>
 );
 
+/**
+ * A repository's badge, drawn from the live image. Fetched rather than only pointed at, so its alt
+ * text can be the badge's own title; nothing is drawn until it has arrived, and nothing at all if
+ * it does not, so a badge that cannot be had never leaves a gap or a broken image behind.
+ */
+function LiveBadge({ src }: { src: string }) {
+  const [shown, setShown] = useState<{ url: string; title: string } | null>(null);
+  useEffect(() => {
+    let current = true;
+    let url: string | null = null;
+    setShown(null);
+    fetch(src)
+      .then(async (res) => {
+        const type = res.headers.get("content-type") || "";
+        if (!res.ok || !type.includes("svg")) return;
+        const text = await res.text();
+        const svg = new DOMParser().parseFromString(text, "image/svg+xml");
+        const title = svg.querySelector("title")?.textContent?.trim() || svg.documentElement.getAttribute("aria-label") || "";
+        if (!current || svg.querySelector("parsererror")) return;
+        url = URL.createObjectURL(new Blob([text], { type: "image/svg+xml" }));
+        setShown({ url, title: title || "Striff badge" });
+      })
+      .catch(() => {
+        // Nothing is drawn: the chip beside it stands alone.
+      });
+    return () => {
+      current = false;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [src]);
+  if (!shown) return null;
+  return (
+    <img
+      className="docs-live-badge"
+      src={shown.url}
+      alt={shown.title}
+      title={shown.title}
+      height={20}
+      onError={() => setShown(null)}
+    />
+  );
+}
+
 const GitHubMark = () =>
   createElement(
     "svg",
@@ -522,6 +565,8 @@ export interface DocsSource {
   lede?: ReactNode;
   /** When the page was last read, shown beside the repository's name. */
   refreshedAt?: string;
+  /** The repository's README badge, shown after refreshedAt; same-origin, so its title can be read. */
+  badgeUrl?: string;
   /** Something to offer at the head's top right, above the counts. */
   action?: ReactNode;
 }
@@ -1723,9 +1768,14 @@ export default function DocsTab({
                 Add badge to README
               </button>
             )}
-            {source?.refreshedAt && (
-              <span className="docs-refreshed-chip" title="When Striff last read this repository. This page is not updated after that.">
-                Last refreshed {source.refreshedAt}
+            {(source?.refreshedAt || source?.badgeUrl) && (
+              <span className="docs-refreshed-group">
+                {source.refreshedAt && (
+                  <span className="docs-refreshed-chip" title="When Striff last read this repository. This page is not updated after that.">
+                    Last refreshed {source.refreshedAt}
+                  </span>
+                )}
+                {source.badgeUrl && <LiveBadge src={source.badgeUrl} />}
               </span>
             )}
             {/* A public page is a snapshot: loading it again finds the same thing. */}

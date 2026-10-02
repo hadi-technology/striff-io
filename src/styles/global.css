@@ -5184,6 +5184,19 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   vertical-align: middle;
   white-space: nowrap;
 }
+/* The chip and the repository's badge beside it: one unit after the name, wrapping as one, and
+   the badge under the chip with a small gap where the row is too narrow for both. */
+.docs-refreshed-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+  max-width: 100%;
+}
+.docs-refreshed-group .docs-refreshed-chip { margin-left: 0; }
+.docs-live-badge { display: block; height: 20px; width: auto; max-width: 100%; }
 /* Loading the page's answers again, beside the link out, in the same quiet shape. */
 .docs-refresh {
   margin-left: 0.4rem;
@@ -6768,5 +6781,3 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .onboarding-when { color: #57606a; font-weight: 400; }
 
 /* A public page's own badge, as a README shows it, and the snippet for whoever may add it. */
-.public-repo-badge { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0 0 1rem; color: #57606a; font-size: 0.8rem; }
-.public-repo-badge img { display: block; }

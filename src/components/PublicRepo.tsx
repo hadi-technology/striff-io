@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import DocsTab, { type DocsSource } from "./DocsTab";
 import ChecksTab from "./ChecksTab";
 import BadgePanel from "./BadgePanel";
-import { badgeImageUrl, badgeLinkUrl, isRootReadme } from "../lib/badgeSnippets.js";
+import { isRootReadme } from "../lib/badgeSnippets.js";
 
 /**
  * A public repository's page: the dashboard's documents and checks views, read-only, for anyone.
@@ -235,6 +235,9 @@ export default function PublicRepo() {
     : null;
   const docsSource: DocsSource = {
     refreshedAt: page.claimed ? undefined : snapshotAt ?? undefined,
+    // The repository's own badge, as its README would show it. Same-origin and marked a preview,
+    // so showing it here is never counted as a README carrying it.
+    badgeUrl: `/badge/${encodeURIComponent(page.repoOwner)}/${encodeURIComponent(page.repoName)}.svg?preview=1`,
     action: page.claimed ? undefined : (
       <div className="public-repo-install">
         <a className="btn-primary" href={installLinkFor(fullName)} onClick={() => recordInstallClick(fullName)}
@@ -268,18 +271,6 @@ export default function PublicRepo() {
           Their rules appear here as they are read.
         </p>
       )}
-
-      {/* The badge as a README shows it, linking back here. A preview, so showing it on this page
-          is never counted as a README carrying it. */}
-      <div className="public-repo-badge">
-        <a href={badgeLinkUrl(page.repoOwner, page.repoName)}>
-          <img
-            src={badgeImageUrl(page.repoOwner, page.repoName, { preview: true })}
-            alt={`Striff: architecture docs of ${fullName}`}
-            height={20}
-          />
-        </a>
-      </div>
 
       {maintainer && (
         <BadgePanel
