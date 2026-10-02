@@ -75,8 +75,10 @@ interface Doc {
   totalChars?: number | null;
   /** Read under an older rule schema and being read again; its state says NOT_READ meanwhile. */
   rereading?: boolean;
-  /** The rules it gave when last read, where it is being read again. */
+  /** The rules it gave when last read, where it is being read again, broken ones included. */
   lastKnownRuleCount?: number | null;
+  /** Of those, the ones that held on the default branch when last judged there. */
+  lastKnownHeldCount?: number | null;
 }
 
 /** Whether a doc that has been read was read in part and not from all of it. */
@@ -114,8 +116,10 @@ interface Summary {
   brokenOnDefaultBranch: number;
   /** How many documents are being read again after a change to how Striff reads rules. */
   rereading?: number;
-  /** The rules those documents gave when last read. */
+  /** The rules those documents gave when last read, broken ones included. */
   lastKnownRules?: number | null;
+  /** Of those, the ones that held on the default branch when last judged there. */
+  lastKnownHeld?: number | null;
 }
 
 interface Catalog {
@@ -1182,6 +1186,11 @@ export default function DocsTab({
    */
   const rereadingNow = (catalog?.summary?.rereading || 0) > 0;
   const lastKnownRules = rereadingNow ? catalog?.summary?.lastKnownRules || 0 : 0;
+  /**
+   * Of those, the ones that held when last judged. Holding counts only these: a rule that was
+   * broken last time is still a rule, and never a rule that holds.
+   */
+  const lastKnownHeld = rereadingNow ? catalog?.summary?.lastKnownHeld || 0 : 0;
   /** The rules the scope's documents gave last time, where they are being read again. */
   const scopeLastKnown = useMemo(
     () => scopeDocs.reduce((sum, doc) => sum + (doc.rereading ? doc.lastKnownRuleCount || 0 : 0), 0),
@@ -1585,8 +1594,9 @@ export default function DocsTab({
         title={`${STANDING_HELP.holds} Click to show these.`}
         onClick={() => setRuleFilter(ruleFilter === "holds" ? "all" : "holds")}
       >
-        {/* A public page shows only rules that hold, so the rules being read again held. */}
-        <b>{repoCounts.holds + (source ? lastKnownRules : 0)}</b>
+        {/* A public page counts among those holding the rules being read again that held when
+            last judged, never the ones that were broken. */}
+        <b>{repoCounts.holds + (source ? lastKnownHeld : 0)}</b>
         <i>holding</i>
       </button>
       <button
