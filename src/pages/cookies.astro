@@ -8,7 +8,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <h1 class="mb-8 text-4xl font-bold tracking-tight">Cookie Policy</h1>
 
     <div class="prose prose-slate max-w-none">
-      <p class="text-slate-600">Last updated: April 2026</p>
+      <p class="text-slate-600">Last updated: October 2, 2026</p>
 
       <section class="mt-8">
         <h2 class="text-2xl font-semibold">What Are Cookies?</h2>
@@ -19,7 +19,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <h2 class="text-2xl font-semibold">How We Use Cookies</h2>
 
         <h3 class="mt-4 text-xl font-semibold">Essential Cookies</h3>
-        <p>These cookies are necessary for the website to function properly. They enable basic functionality like page navigation and access to secure areas.</p>
+        <p>These cookies are set only when you sign in to the dashboard, and the dashboard cannot work without them:</p>
+        <ul class="ml-6 list-disc">
+          <li><strong><code class="bg-slate-100 px-1 rounded">gh_token</code></strong>: keeps you signed in. It holds your GitHub sign-in token, is HTTP-only and secure so page scripts cannot read it, and lasts up to 30 days or until you sign out.</li>
+          <li><strong><code class="bg-slate-100 px-1 rounded">gh_oauth_state</code></strong>: protects sign-in against forged requests. It lasts 10 minutes.</li>
+        </ul>
+        <p class="mt-2">The dashboard also keeps two small values in your browser's own storage, not in cookies: the repository you last opened, so it opens there next time, and the time of your last sign-in prompt, so it does not prompt you twice in a row. Neither leaves your browser.</p>
 
         <h3 class="mt-4 text-xl font-semibold">Analytics Cookies</h3>
         <p>We use PostHog to collect analytics data about how visitors use our website. These cookies help us:</p>
@@ -77,6 +82,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <p>If you choose to disable cookies:</p>
         <ul class="ml-6 list-disc">
           <li>The website will still function normally for viewing content</li>
+          <li>You will not be able to sign in to the dashboard</li>
           <li>We will not be able to collect analytics data about your visit</li>
           <li>This may affect our ability to improve the website based on user behavior</li>
         </ul>

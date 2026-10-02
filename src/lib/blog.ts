@@ -11,7 +11,21 @@ export const SITE = "https://striff.io";
 export const BLOG_NAME = "Striff Engineering";
 export const BLOG_MISSION = "On documented architecture, and making it hold.";
 export const BLOG_DESCRIPTION =
-  "Engineering patterns, real findings from open-source PRs, and updates on making structural review part of every pull request.";
+  "Spec-driven development, spec drift and documented architecture: real findings from open-source pull requests, and how to keep code true to the docs it was built from.";
+
+/**
+ * A post's address as the site serves it. Netlify serves every page as a folder and answers the
+ * address without the trailing slash with a 301 to it, so a canonical, a sitemap entry or a feed
+ * link without the slash points search engines at a redirect.
+ */
+export function postUrl(slug: string): string {
+  return `${SITE}/blog/${slug}/`;
+}
+
+/** The day a post last changed: its `updated` date when it has one, otherwise the day it was published. */
+export function lastModified(post: Post): Date {
+  return post.data.updated ?? post.data.date;
+}
 
 /** Published posts, newest first. A draft is never built, listed, linked or syndicated. */
 export async function getPublishedPosts(): Promise<Post[]> {

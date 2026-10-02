@@ -7,6 +7,8 @@ import Footer from "../components/Footer.astro";
 
 const {
   title = "Striff",
+  // Social previews use the headline even when the <title> is worded for search.
+  ogTitle = title,
   description = "Your documented architecture, checked on every pull request.",
   canonical = "https://striff.io/",
   ogImage = "https://striff.io/og-image.png",
@@ -19,6 +21,15 @@ const {
   // it wears its own bar and its sections are the navigation, so it turns this off.
   chrome = true
 } = Astro.props;
+
+// Netlify serves every page as a folder, /pricing/, and answers /pricing with a 301 to it. A
+// canonical has to name the address that answers 200, or it sends search engines to a redirect
+// whose target names the redirect back. A path with a file extension is a file and keeps its form.
+const canonicalUrl = (() => {
+  const url = new URL(canonical);
+  if (!url.pathname.endsWith("/") && !/\.[a-z0-9]+$/i.test(url.pathname)) url.pathname += "/";
+  return url.href;
+})();
 ---
 <!DOCTYPE html>
 <html lang="en" data-scheme={scheme}>
@@ -28,17 +39,17 @@ const {
     <meta name="description" content={description} />
     <meta name="robots" content={robots} />
     <meta name="theme-color" content="#0f172a" />
-    <link rel="canonical" href={canonical} />
+    <link rel="canonical" href={canonicalUrl} />
     <meta property="og:site_name" content="Striff" />
     <meta property="og:type" content={ogType} />
-    <meta property="og:title" content={title} />
+    <meta property="og:title" content={ogTitle} />
     <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonical} />
+    <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={title} />
+    <meta name="twitter:title" content={ogTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
     <title>{title}</title>

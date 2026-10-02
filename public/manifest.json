@@ -1,7 +1,7 @@
 {
   "name": "Striff",
   "short_name": "Striff",
-  "description": "Structural diffs for modern code review",
+  "description": "Your specs and architecture docs, checked on every pull request",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
