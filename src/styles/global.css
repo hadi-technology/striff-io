@@ -4243,6 +4243,8 @@
 @media (max-width: 900px) {
   .docs-split { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
   .docs-split-handle { display: none; }
+  /* Stacked, the names gone come before the tree, so a phone opens on them. */
+  .docs-split.is-names-first .docs-pane { order: -1; }
 }
 @media (prefers-reduced-motion: reduce) { .docs-split-handle::after { transition: none; } }
 @media print { .docs-split-handle { display: none; } }
@@ -4294,6 +4296,20 @@
 .docs-stale-has { display: block; overflow-wrap: anywhere; }
 .docs-stale-has code { font-size: 0.74rem; overflow-wrap: anywhere; white-space: normal; }
 .docs-stale-name code { display: block; margin-bottom: 0.3rem; font-family: "IBM Plex Mono", monospace; font-size: 0.76rem; font-weight: 600; color: #16202b; overflow-wrap: anywhere; }
+/* A public page with no rules leads with the names its docs write that the code no longer has. */
+.docs-names-line { margin: 0.5rem 0 0; color: #9a3412; font-size: 0.9rem; font-weight: 600; }
+.docs-gone h4 { margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 700; color: #16202b; }
+.docs-gone h4 b { padding: 0.05rem 0.45rem; border-radius: 999px; background: #fff7ed; border: 1px solid #fdba74; color: #9a3412; font-size: 0.72rem; }
+.docs-gone-list { list-style: none; margin: 1rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.docs-gone-item { border: 1px solid #e2e8f0; border-left: 3px solid #ea580c; border-radius: 0.5rem; padding: 0.85rem 1rem; background: #fff; min-width: 0; }
+.docs-gone-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.docs-gone-name { font-family: "IBM Plex Mono", monospace; font-size: 0.85rem; font-weight: 600; color: #16202b; overflow-wrap: anywhere; }
+.docs-gone-quote { margin: 0.6rem 0 0; padding-left: 0.75rem; border-left: 2px solid #e2e8f0; color: #334155; font-size: 0.88rem; line-height: 1.55; overflow-wrap: anywhere; }
+.docs-gone-has { margin: 0.5rem 0 0; color: #526071; font-size: 0.82rem; line-height: 1.5; overflow-wrap: anywhere; }
+.docs-gone-has code, .docs-gone-quote code { overflow-wrap: anywhere; white-space: normal; }
+.docs-gone-where { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 1rem; margin: 0.6rem 0 0; font-size: 0.78rem; }
+.docs-gone-where a { display: inline-flex; align-items: center; gap: 0.3rem; color: #57606a; }
+.docs-gone-where a:hover { color: #1f2328; }
 .docs-badge.is-not_read { background: #fff; border-color: #cbd5e1; border-style: dashed; color: #64748b; }
 .docs-badge.is-screened_out,
 .docs-badge.is-retired,

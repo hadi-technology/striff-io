@@ -1015,6 +1015,23 @@ export default function DocsTab({
     [allDocs, staleByDoc]
   );
 
+  /**
+   * A public page whose documents hold no rule. Its rule counts would be a row of zeros, which
+   * says nothing to someone arriving from a link; what it has to show is the names its docs write
+   * that the code no longer has, so those lead. Only once the rules have answered: until then
+   * nobody knows there are none. A truncated answer has rules this page cannot reach.
+   */
+  const publicNoRules = !!source && !!rulesIndex && !rulesIndex.truncated && repoCounts.all === 0;
+  /** Whether the rule counts are shown: on a public page, only once there are rules to count. */
+  const showRuleCounts = !source || (!!rulesIndex && !publicNoRules);
+  /** The names gone under whatever is selected, in the order of the documents that write them. */
+  const scopeStaleFindings = useMemo(
+    () => scopeDocs.flatMap((doc) => staleByDoc.get(doc.path) || []),
+    [scopeDocs, staleByDoc]
+  );
+  /** Whether the pane leads with the names gone, in place of saying it found no rule. */
+  const namesFirst = publicNoRules && scopeKind !== "doc" && scopeStaleFindings.length > 0;
+
   /** What the selection is called, in the export, on paper and in the pane's own heading. */
   const scopeLabel =
     scopeKind === "root" ? repo : scopeKind === "folder" ? `${selected}/` : selected;
@@ -1369,6 +1386,8 @@ export default function DocsTab({
         <i>document{allDocs.length === 1 ? "" : "s"}</i>
       </button>
       {/* Not lit when nothing is filtered: a light on every count says nothing. */}
+      {showRuleCounts && (
+      <>
       <button
         type="button"
         className="docs-tally-item"
@@ -1407,11 +1426,13 @@ export default function DocsTab({
         <b>{repoCounts.unchecked}</b>
         <i>not checked</i>
       </button>
+      </>
+      )}
       {/* Shown only once a reading of the whole repository has looked. Until then there is
           no number to give: a zero would say every doc is current, and nothing has checked.
           Counted apart from the rules, because a doc naming something that is gone is a
           stale doc and not a broken rule. Of the whole repository, like every other count here. */}
-      {staleNames && staleNames.lastSeenMs != null && (
+      {staleNames && staleNames.lastSeenMs != null && !(publicNoRules && repoStale === 0) && (
         <button
           type="button"
           className={`docs-tally-item is-stale${repoStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
@@ -1572,6 +1593,12 @@ export default function DocsTab({
             {source?.lede
               ?? "Pick a doc for its rules, a folder for everything beneath it, or the repository for all of them."}
           </p>
+          {publicNoRules && repoStale > 0 && (
+            <p className="docs-names-line">
+              {repoStale}{staleNames?.truncated ? "+" : ""} name{repoStale === 1 && !staleNames?.truncated ? "" : "s"} in
+              these docs no longer match{repoStale === 1 && !staleNames?.truncated ? "es" : ""} the code.
+            </p>
+          )}
           {catalog && <RevisionLine catalog={catalog} />}
         </div>
         {source?.action ? (
@@ -1628,7 +1655,7 @@ export default function DocsTab({
 
       {catalog && catalog.documents.length > 0 && (
         <div
-          className={`docs-split${resizing ? " is-resizing" : ""}`}
+          className={`docs-split${resizing ? " is-resizing" : ""}${namesFirst ? " is-names-first" : ""}`}
           ref={split}
           style={treeWidth == null ? undefined : ({ "--tree-width": `${treeWidth}px` } as any)}
         >
@@ -1801,7 +1828,50 @@ export default function DocsTab({
                 {rulesLoading && !rulesIndex && (
                   <p className="dashboard-metric-caption">Reading this repository's rules…</p>
                 )}
-                {rulesIndex && scopeRows.length === 0 && (
+                {namesFirst && (
+                  <div className="docs-gone">
+                    <h4>
+                      Names these docs write that the code no longer has
+                      <b>{scopeStaleFindings.length}</b>
+                    </h4>
+                    <p className="docs-stale-note">
+                      Each sentence below names a type the default branch doesn't declare, or
+                      declares somewhere else. Edit the doc so it matches the code, or bring the
+                      type back.
+                    </p>
+                    <ul className="docs-gone-list">
+                      {scopeStaleFindings.map((finding) => (
+                        <li key={`${finding.docPath}:${finding.name}`} className="docs-gone-item">
+                          <div className="docs-gone-head">
+                            <span className={`docs-outcome is-${finding.state === "MOVED" ? "unclear" : "broken"}`}>
+                              {finding.state === "MOVED" ? "Moved" : "Gone"}
+                            </span>
+                            <code className="docs-gone-name">{finding.name}</code>
+                          </div>
+                          {finding.sentence && (
+                            <blockquote className="docs-gone-quote">{withCode(finding.sentence)}</blockquote>
+                          )}
+                          <p className="docs-gone-has">{withCode(staleLine(finding))}</p>
+                          <p className="docs-gone-where">
+                            <button type="button" className="rules-source-link" onClick={() => openDoc(finding.docPath)}>
+                              {finding.docPath}
+                              {finding.sourceLine ? <i>:{finding.sourceLine}</i> : null}
+                            </button>
+                            <a
+                              href={`https://github.com/${owner}/${name}/blob/${branch || "HEAD"}/${finding.docPath}${finding.sourceLine ? `?plain=1#L${finding.sourceLine}` : ""}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <GitHubMark />
+                              View on GitHub
+                            </a>
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {rulesIndex && scopeRows.length === 0 && !namesFirst && (
                   <p className="dashboard-metric-caption">
                     {/* A truncated answer is the one case where an empty scope is not an answer
                         about the scope: the rules exist and this list did not reach them. */}
