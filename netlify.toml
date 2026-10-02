@@ -20,6 +20,14 @@
   to = "/#extension"
   status = 301
 
+# The README badge, /badge/<owner>/<repo>.svg, drawn by striff-api through the badge function. A
+# rewrite, so the address in a README stays striff.io's. Above the repository page's rules; it has
+# three segments, so it could not match them anyway. Files under /badge-examples are served as files.
+[[redirects]]
+  from = "/badge/*"
+  to = "/.netlify/functions/badge/:splat"
+  status = 200
+
 # A public repository's page, at the address GitHub gives the repository. A rewrite, not a
 # redirect: the address stays the repository's. Netlify serves a file that exists at the address
 # before any rule, so the site's own two-part pages (/blog/<post>, /contact/thanks) are untouched.

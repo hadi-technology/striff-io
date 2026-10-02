@@ -256,7 +256,11 @@ export const handler = async (event) => {
 
     let url;
     let init;
-    if (method === "POST") {
+    if (method === "POST" && params.view === "badge-rotate") {
+      // A new key for this repository's README badge; the old address stops showing its counts.
+      url = `${base}/badge/rotate?token=${token}`;
+      init = { method: "POST", headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
+    } else if (method === "POST") {
       // Reading a whole repository: queued, minutes long, and rate-limited by the API. The name on
       // it comes from the token, like every other write.
       const asked = await callerLogin(ghToken);
@@ -281,6 +285,10 @@ export const handler = async (event) => {
         },
         body: JSON.stringify(asked),
       };
+    } else if (params.view === "badge") {
+      // The README badge's key for this repository, and whether a README has shown it yet.
+      url = `${base}/badge?token=${token}`;
+      init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
     } else if (params.view === "rules") {
       url = `${base}/rules?token=${token}`;
       init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };

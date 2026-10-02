@@ -1,3 +1,20 @@
+// The names GitHub could have given a repository, as public-repo-proxy.js checks them.
+const OWNER = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/;
+const NAME = /^[A-Za-z0-9._-]{1,100}$/;
+
+/**
+ * Whether the proxy may ask GitHub this, with the caller's own token: anything under /user/, and
+ * one repository exactly (/repos/<owner>/<repo>), which a public page reads to see whether the
+ * signed-in reader may push to it. Nothing below a repository, so this cannot read its contents.
+ */
+export function allowedPath(path) {
+  if (!path || path.includes("..")) return false;
+  // ".." would let a caller escape the /user/ prefix after URL normalization
+  if (path.startsWith("/user/")) return true;
+  const repo = /^\/repos\/([^/?#]+)\/([^/?#]+)$/.exec(path);
+  return !!repo && OWNER.test(repo[1]) && NAME.test(repo[2]) && repo[2] !== ".";
+}
+
 export const handler = async (event) => {
   const token = parseCookie(event.headers?.cookie || "")["gh_token"];
   if (!token) {
@@ -5,8 +22,7 @@ export const handler = async (event) => {
   }
 
   const path = event.queryStringParameters?.path;
-  // ".." would let a caller escape the /user/ prefix after URL normalization
-  if (!path || !path.startsWith("/user/") || path.includes("..")) {
+  if (!allowedPath(path)) {
     return { statusCode: 400, body: JSON.stringify({ error: "Invalid path" }) };
   }
 

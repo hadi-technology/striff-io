@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import DocsTab, { type DocsSource } from "./DocsTab";
 import ChecksTab from "./ChecksTab";
+import BadgePanel from "./BadgePanel";
+import { badgeImageUrl, badgeLinkUrl, isRootReadme } from "../lib/badgeSnippets.js";
 
 /**
  * A public repository's page: the dashboard's documents and checks views, read-only, for anyone.
@@ -46,7 +48,7 @@ function recordExplainerClick(repo: string) {
   posthog?.capture("explainer_clicked", { source: "report_card", repo });
 }
 
-const SITE_ROUTES = new Set(["blog", "contact", "billing", "dashboard", "demo", "pricing", "privacy", "terms", "cookies", "installed"]);
+const SITE_ROUTES = new Set(["blog", "contact", "billing", "dashboard", "demo", "pricing", "privacy", "terms", "cookies", "installed", "badge", "badge-examples"]);
 
 const OWNER = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/;
 const NAME = /^[A-Za-z0-9._-]{1,100}$/;
@@ -95,6 +97,40 @@ function proxy(owner: string, name: string, view: string, extra: Record<string, 
   return `/.netlify/functions/public-repo-proxy?${query.toString()}`;
 }
 
+/** What a signed-in reader who may push to the repository needs to offer them its badge. */
+interface Maintainer {
+  branch: string;
+  readmePath: string | null;
+}
+
+/**
+ * Whether the signed-in reader, if any, may change this repository, asked of GitHub with their
+ * own token. Null for a visitor, for a reader who may not, and wherever GitHub would not say: the
+ * snippet is an offer to whoever keeps the README, and nobody else is shown it.
+ */
+async function maintainerOf(owner: string, name: string): Promise<Maintainer | null> {
+  try {
+    const status = await fetch("/.netlify/functions/auth-status").then((res) => res.json());
+    if (!status?.authenticated) return null;
+    const res = await fetch(`/.netlify/functions/github-proxy?path=${encodeURIComponent(`/repos/${owner}/${name}`)}`);
+    if (!res.ok) return null;
+    const repo = await res.json();
+    const may = repo?.permissions && (repo.permissions.admin || repo.permissions.maintain || repo.permissions.push);
+    if (!may) return null;
+    let readmePath: string | null = null;
+    try {
+      const catalog = await fetch(proxy(owner, name, "catalog")).then((r) => (r.ok ? r.json() : null));
+      readmePath = (catalog?.documents || []).map((doc: { path: string }) => doc.path).find(isRootReadme) ?? null;
+    } catch {
+      // Without the catalogue the link starts a README, which GitHub turns into editing one if
+      // the repository has it.
+    }
+    return { branch: repo.default_branch || "main", readmePath };
+  } catch {
+    return null;
+  }
+}
+
 function viewFromHash(): View {
   return window.location.hash.replace(/^#/, "") === "checks" ? "checks" : "docs";
 }
@@ -103,6 +139,7 @@ export default function PublicRepo() {
   const [target, setTarget] = useState<{ owner: string; name: string } | null | undefined>(undefined);
   const [loaded, setLoaded] = useState<Loaded>({ kind: "loading" });
   const [view, setView] = useState<View>("docs");
+  const [maintainer, setMaintainer] = useState<Maintainer | null>(null);
 
   useEffect(() => {
     setTarget(repoFromPath(window.location.pathname));
@@ -133,6 +170,7 @@ export default function PublicRepo() {
         const page: PageSummary = await res.json();
         setLoaded({ kind: "page", page });
         document.title = `${page.repoOwner}/${page.repoName} | Striff`;
+        maintainerOf(page.repoOwner, page.repoName).then((found) => current && setMaintainer(found));
       })
       .catch(() => current && setLoaded({ kind: "error" }));
     return () => {
@@ -229,6 +267,28 @@ export default function PublicRepo() {
           {reading && reading.docsTotal > 0 ? ` (${reading.docsDone} of ${reading.docsTotal})` : ""}.
           Their rules appear here as they are read.
         </p>
+      )}
+
+      {/* The badge as a README shows it, linking back here. A preview, so showing it on this page
+          is never counted as a README carrying it. */}
+      <div className="public-repo-badge">
+        <a href={badgeLinkUrl(page.repoOwner, page.repoName)}>
+          <img
+            src={badgeImageUrl(page.repoOwner, page.repoName, { preview: true })}
+            alt={`Striff: architecture docs of ${fullName}`}
+            height={20}
+          />
+        </a>
+      </div>
+
+      {maintainer && (
+        <BadgePanel
+          owner={page.repoOwner}
+          name={page.repoName}
+          branch={maintainer.branch}
+          readmePath={maintainer.readmePath}
+          heading="Add this badge to your README"
+        />
       )}
 
       <div className="demo">
