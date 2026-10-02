@@ -17,7 +17,7 @@ import {
  * a fixed picture of the example repository's counts; the snippet and copying work as anywhere.
  *
  * A private repository's badge carries a key for that repository, and the snippet carries it too:
- * without it the badge would read "not set up" to every reader. Rotating the key is the way to stop
+ * without it the badge would read "checked", with no count, to every reader. Rotating the key is the way to stop
  * a copy of the snippet that went somewhere it should not have.
  */
 
@@ -91,7 +91,7 @@ export default function BadgePanel({
   useEffect(() => () => window.clearTimeout(timer.current), []);
   useEffect(() => setCopied(""), [style, format, token]);
 
-  // A private repository's snippet without its key would put a badge reading "not set up" in the
+  // A private repository's snippet without its key would put a badge with no count, reading "checked", in the
   // README, so none is offered until the key is here.
   const waitingForKey = !!privateRepo && !token;
   const key = privateRepo ? token : null;
@@ -111,7 +111,7 @@ export default function BadgePanel({
 
   async function rotate() {
     if (!onRotate) return;
-    if (!window.confirm("Make a new key? Every README using the current one will show \"not set up\" until it is updated.")) {
+    if (!window.confirm("Make a new key? Every README using the current one will show \"checked\", with no count, until it is updated.")) {
       return;
     }
     setRotating(true);
@@ -129,7 +129,9 @@ export default function BadgePanel({
           <p className="dashboard-kicker">{heading ?? "Add badge to README"}</p>
           <p className="badge-panel-lede">
             Shows how many of this repository's documented rules hold on its default branch
-            {privateRepo ? ", and links to Striff." : ", and links to the page that lists them."}
+            {privateRepo
+              ? ", and links to this repository on your dashboard, for whoever can see it."
+              : ", and links to the page that lists them."}
           </p>
         </div>
         <div className="badge-panel-preview" aria-live="polite">

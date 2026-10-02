@@ -3,6 +3,7 @@ import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab from "./DocsTab";
 import ChecksTab from "./ChecksTab";
 import { EXTENSION_URL } from "./docRules";
+import { PENDING_REPO_KEY, findRepo, repoFromSearch, validRepo, withoutRepoParam } from "../lib/dashboardDeepLink.js";
 
 /** Where the GitHub App is installed on an account: the first one, or one more. */
 const INSTALL_URL = "https://github.com/apps/striff-app/installations/new";
@@ -107,14 +108,37 @@ export default function Dashboard() {
   // Which repository the docs and rules view is showing; set by opening one from Repositories.
   const [openRepo, setOpenRepo] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
+  /** A repository a link asked for that none of this reader's installations covers. */
+  const [unreachableRepo, setUnreachableRepo] = useState<string | null>(null);
 
   useEffect(() => {
     init();
   }, []);
 
+  /**
+   * The repository a link asked for (/dashboard?repo=<owner>/<name>, which a private repository's
+   * README badge links to), or the one kept while the reader signed in. Taken out of the address
+   * at once, so a reload or a shared address does not ask again.
+   */
+  function takeLinkedRepo(): string | null {
+    if (new URLSearchParams(window.location.search).has("repo")) {
+      const named = repoFromSearch(window.location.search);
+      window.history.replaceState({}, "", withoutRepoParam(window.location.href));
+      if (named) return named;
+    }
+    try {
+      const kept = validRepo(window.sessionStorage.getItem(PENDING_REPO_KEY));
+      window.sessionStorage.removeItem(PENDING_REPO_KEY);
+      return kept;
+    } catch {
+      return null;
+    }
+  }
+
   async function init() {
     setError("");
     setLoading(true);
+    const linkedRepo = takeLinkedRepo();
     try {
       const statusRes = await fetch("/.netlify/functions/auth-status");
       // An outage, a cold start or a proxy error page all return HTML here, and .json() then
@@ -126,6 +150,14 @@ export default function Dashboard() {
       }
       const status = await statusRes.json();
       if (!status.authenticated) {
+        // Kept for the round trip through GitHub's sign-in, which lands back on /dashboard bare.
+        if (linkedRepo) {
+          try {
+            window.sessionStorage.setItem(PENDING_REPO_KEY, linkedRepo);
+          } catch {
+            // Without storage the reader lands on the dashboard as it opens by default.
+          }
+        }
         window.location.href = getOAuthUrl();
         return;
       }
@@ -143,6 +175,17 @@ export default function Dashboard() {
         })
       );
       setInstallations(withRepos);
+      if (linkedRepo) {
+        const found = findRepo(withRepos, linkedRepo);
+        if (found) {
+          setAccountId(found.installationId);
+          setOpenRepo(found.fullName);
+          setSection("docs");
+        } else {
+          // Said the same way whether the repository exists or not.
+          setUnreachableRepo(linkedRepo);
+        }
+      }
 
       // Fire-and-forget: reports the user's primary email to the backend for each installation.
       // Covers installs made while already signed in, which never re-run the OAuth callback's
@@ -274,6 +317,12 @@ export default function Dashboard() {
 
   return framed(
     <div className="dashboard-shell">
+      {unreachableRepo && (
+        <p className="dashboard-link-notice" role="status">
+          <span>You don't have access to <code>{unreachableRepo}</code> in Striff.</span>
+          <button type="button" onClick={() => setUnreachableRepo(null)} aria-label="Dismiss">×</button>
+        </p>
+      )}
       {/* Installations */}
       {installations.length === 0 ? (
         <div className="dashboard-empty">

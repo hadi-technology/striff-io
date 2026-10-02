@@ -36,8 +36,8 @@ export function badgeImageUrl(owner, name, options = {}) {
 }
 
 /**
- * Where a click on the badge lands: a public repository's own page, and Striff's home page for a
- * private one, which has no public page; its link would only fail, and would carry its name.
+ * Where a click on the badge lands: a public repository's own page, and for a private one, which
+ * has no public page, the dashboard opened on it, which shows it only to a reader who can see it.
  *
  * @param {string} owner
  * @param {string} name
@@ -45,7 +45,7 @@ export function badgeImageUrl(owner, name, options = {}) {
  */
 export function badgeLinkUrl(owner, name, options = {}) {
   return options.privateRepo
-    ? `${SITE}/`
+    ? `${SITE}/dashboard?repo=${encodeURIComponent(owner)}/${encodeURIComponent(name)}`
     : `${SITE}/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`;
 }
 

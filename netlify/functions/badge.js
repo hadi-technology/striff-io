@@ -2,7 +2,7 @@
 //
 // The badge says how many of a repository's documented rules hold on its default branch, and is
 // drawn by striff-api, which also decides whether the repository has one at all. Every answer it
-// gives is an image with status 200, "not set up" included, so a README never shows a broken
+// gives is an image with status 200, a repository it has no count for included, so a README never shows a broken
 // image for a repository Striff does not know. This function adds nothing to that decision. It
 // checks that the address could name a GitHub repository, passes the style, label and token on,
 // and lets Netlify's CDN keep the answer, so README traffic seldom reaches the API.
@@ -131,7 +131,7 @@ export const handler = async (event) => {
     "X-Content-Type-Options": "nosniff",
   };
   // An answer the API could not settle (GitHub would not say whether the repository is public)
-  // comes marked no-store, and the CDN must not hold it: a provisional "not set up" kept for ten
+  // comes marked no-store, and the CDN must not hold it: a provisional "checked" kept for ten
   // minutes would be a wrong badge in someone's README for that long.
   if (!/no-store|private/i.test(cacheControl)) out["Netlify-CDN-Cache-Control"] = CDN_CACHE;
   const answeredEtag = res.headers.get("etag");
