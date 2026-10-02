@@ -18,8 +18,8 @@ import {
  *
  * The preview is the badge itself, asked for as a preview so that showing it here is never taken
  * for a README carrying it. The variants offered are the ones the repository qualifies for: the
- * count from ten rules held, agent docs only where they give rules. A variant other than the
- * default is named in the preview and in every snippet.
+ * count, first and the default, from ten rules held; agent docs only where they give rules. A
+ * variant other than the default is named in the preview and in every snippet.
  *
  * A private repository's badge carries a key for that repository, and the snippet carries it too:
  * without it the badge would read "checked", with no count, to every reader. Rotating the key is the way to stop
@@ -100,7 +100,8 @@ export default function BadgePanel({
   onClose,
 }: BadgePanelProps) {
   const [style, setStyle] = useState<string>("flat");
-  const [picked, setPicked] = useState<string>(DEFAULT_VARIANT);
+  // What the reader picked; null until they pick, so the preselection follows the repository.
+  const [picked, setPicked] = useState<string | null>(null);
   const [format, setFormat] = useState<Format>("markdown");
   const [copied, setCopied] = useState<"" | "copied" | "failed">("");
   const [rotating, setRotating] = useState(false);
@@ -110,8 +111,10 @@ export default function BadgePanel({
   useEffect(() => setCopied(""), [style, picked, format, token]);
 
   const choices = badgeVariantChoices({ heldRules, agentDocs });
-  // A choice the repository stops qualifying for, another repository's say, falls back to the default.
-  const variant = choices.some((each) => each.id === picked && each.available) ? picked : DEFAULT_VARIANT;
+  // A pick the repository does not qualify for, another repository's say, gives way to the
+  // preselection: the count from ten rules held, how the repository is checked below that.
+  const preselected = choices.find((each) => each.preselected)?.id ?? DEFAULT_VARIANT;
+  const variant = picked && choices.some((each) => each.id === picked && each.available) ? picked : preselected;
   const variantLabel: Record<string, string> = {
     practice: installed ? "Checked on every PR" : "Checked by Striff",
     count: "Rules verified",
@@ -158,7 +161,8 @@ export default function BadgePanel({
         <div>
           <p className="dashboard-kicker">{heading ?? "Add badge to README"}</p>
           <p className="badge-panel-lede">
-            Tells readers that Striff checks this repository's docs against its code
+            Tells readers how many of this repository's documented rules Striff has verified
+            against its code, or, below ten, that Striff checks them
             {privateRepo
               ? ", and links to this repository on your dashboard, for whoever can see it."
               : ", and links to the page that lists the rules it holds the code to."}

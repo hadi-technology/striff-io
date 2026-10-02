@@ -1,8 +1,8 @@
 // Netlify function behind https://striff.io/badge/<owner>/<repo>.svg: the README badge.
 //
-// The badge says that a repository's docs are checked against its code, or, as ?variant= asks,
-// how many of its documented rules hold. It is drawn by striff-api, which also decides whether
-// the repository has one at all. Every answer it gives is an image with status 200, a repository
+// The badge says how many of a repository's documented rules Striff has verified, or below ten
+// that its docs are checked, or what ?variant= asks for. It is drawn by striff-api, which also
+// decides whether the repository has one at all. Every answer it gives is an image with status 200, a repository
 // it has no count for included, so a README never shows a broken image for a repository Striff
 // does not know. This function adds nothing to that decision. It checks that the address could
 // name a GitHub repository, passes the style, label, variant and token on, and lets Netlify's CDN
@@ -22,7 +22,7 @@ const OWNER = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/;
 const NAME = /^[A-Za-z0-9._-]{1,100}$/;
 
 const STYLES = new Set(["flat", "flat-square", "for-the-badge"]);
-// What the badge can say; the API falls back to the default for a repository that does not qualify.
+// What the badge can say; a repository that does not qualify gets how it is checked instead.
 const VARIANTS = new Set(["practice", "count", "agent", "held"]);
 const TOKEN = /^[A-Za-z0-9_-]{1,128}$/;
 // Printable, no control characters, and short enough to draw: the API measures up to this.
@@ -113,7 +113,7 @@ export const handler = async (event) => {
     badge: `${repo.owner}/${repo.name}`.toLowerCase(),
     day: new Date().toISOString().slice(0, 10),
     readme,
-    variant: params.variant && VARIANTS.has(params.variant) ? params.variant : "practice",
+    variant: params.variant && VARIANTS.has(params.variant) ? params.variant : "count",
   }));
   if (!STRIFF_SERVER_KEY) {
     return { statusCode: 500, headers: { "Cache-Control": "no-store" }, body: "Server not configured" };

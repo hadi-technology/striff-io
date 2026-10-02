@@ -86,7 +86,7 @@ test("a README's request is forwarded with the server key and marked as one", as
     badge: "acme/widgets",
     day: new Date().toISOString().slice(0, 10),
     readme: true,
-    variant: "practice",
+    variant: "count",
   });
 });
 
@@ -109,7 +109,7 @@ test("a variant the API draws is passed on and logged; any other is dropped", as
   assert.equal(asked[0].url, "https://api.example/api/v1/public-repos/acme/widgets/badge?variant=agent&from=readme");
   assert.equal(JSON.parse(logged[0]).variant, "agent");
   assert.equal(asked[1].url, "https://api.example/api/v1/public-repos/acme/widgets/badge?from=readme");
-  assert.equal(JSON.parse(logged[1]).variant, "practice");
+  assert.equal(JSON.parse(logged[1]).variant, "count");
 });
 
 test("a preview on Striff's own pages is not counted as a README", async () => {

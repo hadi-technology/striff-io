@@ -59,13 +59,13 @@ test("a Striff page shows the badge from its own origin, as a preview", async ()
     "/badge/acme/secret.svg?style=for-the-badge&token=ab12&preview=1");
 });
 
-test("a variant other than the default is named in the address, the preview and every snippet", async () => {
+test("a variant other than the default count is named in the address, the preview and every snippet", async () => {
   const { badgePreviewPath } = await import("../src/lib/badgeSnippets.js");
-  assert.equal(badgeImageUrl("acme", "widgets", { variant: "practice" }), "https://striff.io/badge/acme/widgets.svg");
-  assert.equal(badgePreviewPath("acme", "widgets", { variant: "practice" }), "/badge/acme/widgets.svg?preview=1");
+  assert.equal(badgeImageUrl("acme", "widgets", { variant: "count" }), "https://striff.io/badge/acme/widgets.svg");
+  assert.equal(badgePreviewPath("acme", "widgets", { variant: "count" }), "/badge/acme/widgets.svg?preview=1");
   assert.equal(badgePreviewPath("acme", "secret", { style: "flat-square", variant: "agent", token: "ab12" }),
     "/badge/acme/secret.svg?style=flat-square&variant=agent&token=ab12&preview=1");
-  for (const variant of ["count", "agent"]) {
+  for (const variant of ["practice", "agent"]) {
     const image = badgeImageUrl("acme", "secret", { style: "for-the-badge", variant, token: "ab12" });
     assert.equal(image, `https://striff.io/badge/acme/secret.svg?style=for-the-badge&variant=${variant}&token=ab12`);
     const link = badgeLinkUrl("acme", "secret", { privateRepo: true });
@@ -75,17 +75,21 @@ test("a variant other than the default is named in the address, the preview and 
       assert.ok(!snippet.includes("utm_"), format);
     }
   }
+  for (const format of ["markdown", "html", "rst", "asciidoc"]) {
+    const snippet = badgeSnippet(format, badgeImageUrl("acme", "widgets", { variant: "count" }), badgeLinkUrl("acme", "widgets"));
+    assert.ok(!snippet.includes("variant="), format);
+  }
 });
 
-test("the count is offered from ten rules held, and agent docs only where they apply", async () => {
+test("rules verified comes first and is preselected from ten rules held; below that practice is", async () => {
   const { badgeVariantChoices } = await import("../src/lib/badgeSnippets.js");
-  const offered = (facts) => Object.fromEntries(badgeVariantChoices(facts)
-    .map((each) => [each.id, `${each.shown ? "shown" : "hidden"}/${each.available ? "on" : "off"}`]));
+  const offered = (facts) => badgeVariantChoices(facts)
+    .map((each) => `${each.id}:${each.shown ? "shown" : "hidden"}/${each.available ? "on" : "off"}${each.preselected ? "*" : ""}`);
   assert.deepEqual(offered({ heldRules: 10, agentDocs: true }),
-    { practice: "shown/on", count: "shown/on", agent: "shown/on" });
+    ["count:shown/on*", "practice:shown/on", "agent:shown/on"]);
   assert.deepEqual(offered({ heldRules: 9, agentDocs: false }),
-    { practice: "shown/on", count: "shown/off", agent: "hidden/off" });
-  assert.deepEqual(offered({ heldRules: 0 }), { practice: "shown/on", count: "shown/off", agent: "hidden/off" });
-  assert.deepEqual(offered({ heldRules: null }), { practice: "shown/on", count: "shown/off", agent: "hidden/off" });
-  assert.deepEqual(offered({}), { practice: "shown/on", count: "shown/off", agent: "hidden/off" });
+    ["count:shown/off", "practice:shown/on*", "agent:hidden/off"]);
+  assert.deepEqual(offered({ heldRules: 0 }), ["count:shown/off", "practice:shown/on*", "agent:hidden/off"]);
+  assert.deepEqual(offered({ heldRules: null }), ["count:shown/off", "practice:shown/on*", "agent:hidden/off"]);
+  assert.deepEqual(offered({}), ["count:shown/off", "practice:shown/on*", "agent:hidden/off"]);
 });

@@ -9,14 +9,15 @@ export const SITE = "https://striff.io";
 export const BADGE_STYLES = ["flat", "flat-square", "for-the-badge"];
 
 /**
- * What the badge can say, the default first: how the repository is checked, how many rules hold
- * (from ten), and that its agent-instruction documents are checked. The badge falls back to the
- * default wherever the repository does not qualify, so a variant in a README never breaks it.
+ * What the badge can say, the default first: how many rules hold (from ten; below that it says
+ * how the repository is checked), how the repository is checked, and that its agent-instruction
+ * documents are checked. The badge falls back to how the repository is checked wherever it does
+ * not qualify, so a variant in a README never breaks it.
  */
-export const BADGE_VARIANTS = ["practice", "count", "agent"];
+export const BADGE_VARIANTS = ["count", "practice", "agent"];
 
 /** The default variant, which an address leaves out. */
-export const DEFAULT_VARIANT = "practice";
+export const DEFAULT_VARIANT = "count";
 
 /** Fewest rules held that the "count" variant draws as a count. */
 export const COUNT_THRESHOLD = 10;
@@ -126,18 +127,20 @@ export function readmeEditUrl(owner, name, branch, readmePath) {
 }
 
 /**
- * Which variants the panel offers a repository, and why one is held back. "count" is offered from
- * {@link COUNT_THRESHOLD} rules held, and held back below it, or while the count is not known;
- * "agent" is offered only where the repository's agent-instruction documents give rules.
+ * Which variants the panel offers a repository, in the order it offers them, and which it
+ * preselects. "count" comes first and is preselected from {@link COUNT_THRESHOLD} rules held; below
+ * that, or while the count is not known, it is held back and "practice" is preselected. "agent" is
+ * offered only where the repository's agent-instruction documents give rules.
  *
  * @param {{ heldRules?: number | null, agentDocs?: boolean }} facts
- * @returns {{ id: string, available: boolean, shown: boolean }[]}
+ * @returns {{ id: string, available: boolean, shown: boolean, preselected: boolean }[]}
  */
 export function badgeVariantChoices(facts = {}) {
   const held = typeof facts.heldRules === "number" ? facts.heldRules : null;
+  const counts = held !== null && held >= COUNT_THRESHOLD;
   return [
-    { id: "practice", available: true, shown: true },
-    { id: "count", available: held !== null && held >= COUNT_THRESHOLD, shown: true },
-    { id: "agent", available: !!facts.agentDocs, shown: !!facts.agentDocs },
+    { id: "count", available: counts, shown: true, preselected: counts },
+    { id: "practice", available: true, shown: true, preselected: !counts },
+    { id: "agent", available: !!facts.agentDocs, shown: !!facts.agentDocs, preselected: false },
   ];
 }

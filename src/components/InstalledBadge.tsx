@@ -109,8 +109,9 @@ export default function InstalledBadge() {
     <section className="installed-badge">
       <h2>Add Striff to your README</h2>
       <p>
-        Your first check runs on your next pull request. Add this badge to your README to show
-        that Striff checks your docs against your code on every pull request.
+        Your first check runs on your next pull request. Add this badge to your README to show how
+        many of your documented rules Striff has verified against your code, or, until there are
+        ten, that it checks them on every pull request.
       </p>
       {offer.kind === "repo" ? (
         <BadgePanel
