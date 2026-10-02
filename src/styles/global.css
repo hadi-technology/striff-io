@@ -4311,6 +4311,8 @@
 .docs-gone-where a { display: inline-flex; align-items: center; gap: 0.3rem; color: #57606a; }
 .docs-gone-where a:hover { color: #1f2328; }
 .docs-badge.is-not_read { background: #fff; border-color: #cbd5e1; border-style: dashed; color: #64748b; }
+.docs-badge.is-updating { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
+.docs-updating-line { margin: 0.5rem 0 0; color: #57606a; font-size: 0.85rem; }
 .docs-badge.is-screened_out,
 .docs-badge.is-retired,
 .docs-badge.is-excluded { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
