@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import InstalledBadge from "../components/InstalledBadge";
 
 const apiBaseUrl = "https://api.striff.io";
 ---
@@ -22,6 +23,8 @@ const apiBaseUrl = "https://api.striff.io";
           Striff will now check your pull requests against your documented rules and post the result as a check.
           Public repositories are free. Private repositories require an active subscription.
         </p>
+
+        <InstalledBadge client:load />
 
         <div id="plan-prompt" class="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6">
           <h2 class="text-lg font-bold text-slate-900">Planning to use private repositories?</h2>

@@ -51,3 +51,10 @@ test("the README is opened in GitHub's editor, or a new one is started", () => {
   assert.equal(readmeEditUrl("acme", "widgets", "release/2.x", null),
     "https://github.com/acme/widgets/new/release/2.x?filename=README.md");
 });
+
+test("a Striff page shows the badge from its own origin, as a preview", async () => {
+  const { badgePreviewPath } = await import("../src/lib/badgeSnippets.js");
+  assert.equal(badgePreviewPath("acme", "widgets"), "/badge/acme/widgets.svg?preview=1");
+  assert.equal(badgePreviewPath("acme", "secret", { style: "for-the-badge", token: "ab12" }),
+    "/badge/acme/secret.svg?style=for-the-badge&token=ab12&preview=1");
+});

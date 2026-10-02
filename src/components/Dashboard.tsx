@@ -1,6 +1,7 @@
 import { createElement, useState, useEffect, useRef } from "react";
 import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab from "./DocsTab";
+import { RepoCardBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import { EXTENSION_URL } from "./docRules";
 import { PENDING_REPO_KEY, findRepo, repoFromSearch, validRepo, withoutRepoParam } from "../lib/dashboardDeepLink.js";
@@ -1157,6 +1158,8 @@ function InstallationCard({
                             )}
                           </span>
                         </button>
+                        {/* The repository's badge, which opens its snippet over this list. */}
+                        <RepoCardBadge installationId={installation.id} repo={repo} />
                         <a
                           href={repo.html_url}
                           target="_blank"

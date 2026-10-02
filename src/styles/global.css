@@ -6711,23 +6711,74 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 /* ---- The README badge ----
    The button that offers it sits in the repository's title row, in the primary shape, so it is
    seen on first load rather than found in a menu. The panel opens under the head. */
-.docs-badge-button {
-  margin-left: 0.4rem;
-  vertical-align: middle;
+.badge-control {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  border: 1px solid #1f2328;
+  vertical-align: middle;
+  min-height: 20px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+.badge-control img { display: block; height: 20px; width: auto; }
+/* A badge-sized place while the image is on its way, so nothing around it moves. */
+.badge-control.is-loading { min-width: 6.5rem; height: 20px; background: #eef2f7; }
+.badge-control.is-loading img { opacity: 0; }
+.badge-control.is-text {
+  border: 1px solid #d0d7de;
   border-radius: 0.5rem;
-  background: #1f2328;
   padding: 0.2rem 0.6rem;
-  color: #fff;
+  color: #1f2328;
   font-size: 0.78rem;
   font-weight: 600;
 }
-.docs-badge-button:hover { background: #2563eb; border-color: #2563eb; }
-.docs-badge-button[aria-expanded="true"] { background: #2563eb; border-color: #2563eb; }
-@media print { .docs-badge-button { display: none; } }
+.badge-control:hover img { filter: brightness(1.08); }
+.badge-control:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.badge-control[aria-expanded="true"] { box-shadow: 0 0 0 2px #bfdbfe; }
+.docs-badge-control { margin-left: 0.4rem; }
+@media print { .badge-control { display: none; } }
+
+/* A repository card's badge: between its face and its link out, or under its name when narrow. */
+.repo-card-badge { flex: none; align-self: center; display: inline-flex; padding: 0 0.35rem; }
+@media (max-width: 520px) {
+  .repo-card { flex-wrap: wrap; }
+  .repo-card-face { flex-basis: calc(100% - 3rem); padding-bottom: 0.35rem; }
+  .repo-card-badge { order: 3; flex-basis: 100%; padding: 0 0.95rem 0.8rem; }
+}
+
+/* The badge panel over the page, opened from a repository card. */
+.badge-dialog-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.35);
+  padding: 8vh 1rem 2rem;
+}
+.badge-dialog {
+  position: relative;
+  width: min(44rem, 100%);
+  border-radius: 0.85rem;
+  outline: none;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+}
+.badge-dialog .badge-panel { margin: 0; padding-right: 2.75rem; }
+.badge-dialog-close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.6rem;
+  border: 0;
+  background: none;
+  color: #64748b;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
 
 .badge-panel {
   margin: 0 0 1.1rem;
@@ -6805,3 +6856,8 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .onboarding-when { color: #57606a; font-weight: 400; }
 
 /* A public page's own badge, as a README shows it, and the snippet for whoever may add it. */
+
+/* The badge, offered on the page GitHub sends someone to after installing the App. */
+.installed-badge { margin-top: 2rem; }
+.installed-badge h2 { color: #0f172a; font-size: 1.125rem; font-weight: 700; }
+.installed-badge > p { margin: 0.5rem 0 1rem; max-width: 42rem; color: #475569; font-size: 0.9rem; line-height: 1.6; }

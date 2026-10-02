@@ -36,6 +36,22 @@ export function badgeImageUrl(owner, name, options = {}) {
 }
 
 /**
+ * The badge as one of Striff's own pages shows it: same-origin, marked a preview so it is never
+ * counted as a README carrying it, in the style asked for, with the key where it needs one.
+ *
+ * @param {string} owner
+ * @param {string} name
+ * @param {{ style?: string, token?: string | null }} [options]
+ */
+export function badgePreviewPath(owner, name, options = {}) {
+  const query = new URLSearchParams();
+  if (options.style && options.style !== "flat") query.set("style", options.style);
+  if (options.token) query.set("token", options.token);
+  query.set("preview", "1");
+  return `/badge/${encodeURIComponent(owner)}/${encodeURIComponent(name)}.svg?${query}`;
+}
+
+/**
  * Where a click on the badge lands: a public repository's own page, and for a private one, which
  * has no public page, the dashboard opened on it, which shows it only to a reader who can see it.
  *

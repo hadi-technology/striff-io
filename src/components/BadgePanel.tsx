@@ -4,6 +4,7 @@ import {
   BADGE_STYLES,
   badgeImageUrl,
   badgeLinkUrl,
+  badgePreviewPath,
   badgeSnippet,
   readmeEditUrl,
 } from "../lib/badgeSnippets.js";
@@ -100,7 +101,7 @@ export default function BadgePanel({
   const snippet = badgeSnippet(format, image, link);
   const preview = sample
     ? `/badge-examples/demo-${style}.svg`
-    : badgeImageUrl(owner, name, { style, token: key, preview: true });
+    : badgePreviewPath(owner, name, { style, token: key });
 
   async function copy() {
     const ok = await copyText(snippet);

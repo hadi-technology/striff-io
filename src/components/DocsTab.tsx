@@ -14,6 +14,7 @@ import RulesTable, {
 import Listing from "./Listing";
 import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
 import BadgePanel from "./BadgePanel";
+import { BadgeControl, badgePreviewPath } from "./BadgeControl";
 import { isRootReadme } from "../lib/badgeSnippets.js";
 
 /**
@@ -488,13 +489,6 @@ interface BadgeInfo {
   seenAtMs: number | null;
   lastSeenAtMs: number | null;
 }
-
-const BadgeMark = () => (
-  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <rect x="1.75" y="4.25" width="12.5" height="7.5" rx="1.5" />
-    <path d="M7 4.25v7.5" />
-  </svg>
-);
 
 const TickMark = () => (
   <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1753,21 +1747,6 @@ export default function DocsTab({
               <GitHubMark />
               GitHub
             </a>
-            {/* The README badge, offered where it is seen first. Not on a public page: whoever
-                reads one is not, as a rule, whoever keeps the repository's README. */}
-            {!source && (
-              <button
-                type="button"
-                className="docs-badge-button"
-                aria-expanded={badgeOpen}
-                aria-controls="docs-badge-panel"
-                onClick={() => setBadgeOpen(!badgeOpen)}
-                title="Put this repository's Striff badge in its README"
-              >
-                <BadgeMark />
-                Add badge to README
-              </button>
-            )}
             {(source?.refreshedAt || source?.badgeUrl) && (
               <span className="docs-refreshed-group">
                 {source.refreshedAt && (
@@ -1790,6 +1769,22 @@ export default function DocsTab({
                 <RefreshMark />
                 Refresh
               </button>
+            )}
+            {/* The repository's own badge is the way to its snippet: clicking it opens the panel.
+                Not on a public page: whoever reads one is not, as a rule, whoever keeps its README. */}
+            {!source && (
+              <BadgeControl
+                className="docs-badge-control"
+                src={sample
+                  ? "/badge-examples/demo-flat.svg"
+                  : currentRepo?.private
+                    ? (badge?.token ? badgePreviewPath(owner, name, badge.token) : null)
+                    : badgePreviewPath(owner, name)}
+                onOpen={() => setBadgeOpen(!badgeOpen)}
+                expanded={badgeOpen}
+                controls="docs-badge-panel"
+                fallback="text"
+              />
             )}
           </div>
           {/* The second sentence used to be there whatever the repository looked like, so a
