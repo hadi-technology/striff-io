@@ -6,6 +6,12 @@ const blog = defineCollection({
     title: z.string(),
     description: z.string(),
     date: z.date(),
+    // The day the post last changed in substance. Feeds the sitemap's lastmod and the article's
+    // dateModified; without it both use the publication date.
+    updated: z.date().optional(),
+    // The page's <title>, when the headline written for readers is not the phrase people search
+    // for. The headline stays on the page, in the feed and in social previews.
+    seoTitle: z.string().optional(),
     ogImage: z.string().optional(),
     // A draft stays in the repository but is never built, listed or linked.
     draft: z.boolean().optional(),

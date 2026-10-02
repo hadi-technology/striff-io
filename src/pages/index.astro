@@ -206,14 +206,99 @@ const plans = [
   }
 ];
 
+/**
+ * The FAQ, as data: the page renders it and the FAQPage structured data repeats it, so the two can
+ * never say different things. Answers are HTML.
+ */
+const faqs: { id?: string; q: string; a: string }[] = [
+  {
+    q: `How does Striff know what my architecture is supposed to look like?`,
+    a: `<strong>You already wrote it down.</strong> Striff catalogues the documents in your repository that make claims about the code, turns those sentences into rules, and checks them against the code your pull request produces, quoting the sentence and linking the file it came from. <em>Nothing is configured and no rule format is invented:</em> your documentation is the rulebook. A rule can be as plain as where a class lives or as sharp as <em>&ldquo;the domain module must not depend on infrastructure&rdquo;</em>. Alongside the rules, every pull request gets a <strong>diagram of what changed</strong> and <strong>review notes</strong> on the components it touched. If your docs make no checkable claim about the code, Striff invents no rules of its own: you still get the diagram and the review notes.`
+  },
+  {
+    q: `Does Striff work with spec-driven development?`,
+    a: `<strong>Yes: it is the check that comes after the spec.</strong> Spec-driven workflows help you write a spec and build from it, and nothing in them checks, on the pull requests that follow, that the code still does what the spec says it does. Striff reads the specs, plans and design docs committed to your repository alongside your <code>AGENTS.md</code>, <code>CLAUDE.md</code> and ADRs, turns each sentence that makes a claim about the structure of the code into a rule, and checks every pull request against it. <em>A sentence that describes work still to come is not held against code nobody has written yet.</em> When a change contradicts the spec, the check quotes the line: that is spec drift, caught while it is still a one-line fix.`
+  },
+  {
+    id: "languages",
+    q: `What languages does Striff support?`,
+    a: `The diagram runs on <strong>Java, TypeScript, Python and C#</strong>. Striff parses source into a full structural model with its own parser, not regex or text matching, so references, inheritance and dependencies resolve the way a compiler sees them. Go is coming.`
+  },
+  {
+    q: `Is it just an LLM wrapper?`,
+    a: `<strong>No, and the architecture is the answer.</strong> Every verdict is produced by <em>deterministic</em> analysis of the structure your change actually creates: the parser builds a model of both revisions, each documented rule is a query over that model, and a rule is held when nothing in the pull request breaks it. The model is <strong>fact-gated</strong>, which means it can rank findings, explain them and write the summary of what your PR did structurally, but it <em>cannot originate one, rename one, or turn "could not answer" into a pass.</em> That last constraint is why a rule Striff cannot answer from the code is left out of the results instead of quietly counted as green.`
+  },
+  {
+    q: `Will it slow down or block my pull requests?`,
+    a: `<strong>No.</strong> Striff runs as a GitHub Check next to your CI and posts its results when the analysis finishes, typically <em>within a few minutes</em>. It never blocks a merge <strong>unless you choose to make the check required</strong>.`
+  },
+  {
+    q: `What do I need to set up?`,
+    a: `<strong>Just install the GitHub App.</strong> It works on public and private repos alike and posts checks automatically on every PR, with <em>no per-developer setup</em>. Plans start at <strong>$29/month</strong>, based on how many repos <em>actually get reviewed</em> each month, not how many you connect. To try Striff on somebody else&rsquo;s public pull request first, use the <a href="#extension" class="font-semibold text-blue-600 hover:underline">browser extension</a>.`
+  },
+  {
+    q: `Do I need to install anything to use the browser extension?`,
+    a: `<strong>No.</strong> The extension runs in your browser on any public pull request you visit, so you can point it at somebody else&rsquo;s repository without touching it, and it is <strong>free on every public pull request</strong>, with no account. The analysis itself runs on Striff&rsquo;s servers. A free GitHub token raises GitHub&rsquo;s rate limits: on a public pull request it is only sent to GitHub; on a private repository or a very large pull request, Striff&rsquo;s servers use it to fetch the code themselves.`
+  },
+  {
+    q: `Does the extension check documented rules too?`,
+    a: `<strong>Yes.</strong> One load brings up the diagram and checks the rules that repository&rsquo;s own documents state. When it finishes, a &ldquo;Findings&rdquo; button with the rule count on it opens the full list beside the diagram. Same pipeline as the GitHub App, on a repository you do not have to own.`
+  },
+  {
+    q: `Is my source code sent to a third party or stored?`,
+    a: `Your code is parsed on Striff's servers <strong>in memory and not persisted</strong>. The AI explanation layer works from the structural model (component names, relationships, metrics, and doc excerpts), <em>not your raw source files</em>. For teams that need full control, <strong>self-hosted deployment</strong> is available on the Enterprise plan.`
+  }
+];
+
+const plainText = (html: string) =>
+  html.replace(/<[^>]+>/g, "").replace(/&rsquo;/g, "\u2019").replace(/&ldquo;/g, "\u201c").replace(/&rdquo;/g, "\u201d").replace(/&amp;/g, "&");
+
+/**
+ * Who Striff is, what it is, and the FAQ, for search engines. "Striff" is also a shop, a
+ * construction part and a surname, so the organisation and the application are named outright.
+ */
+const structuredData = JSON.stringify([
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Striff",
+    url: "https://striff.io/",
+    logo: "https://striff.io/icon-192.png",
+    sameAs: ["https://github.com/hadi-technology", extensionUrl]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Striff",
+    url: "https://striff.io/",
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Web, GitHub",
+    description:
+      "Striff turns the sentences in a repository's specs, AGENTS.md, ADRs and architecture docs into rules and checks every GitHub pull request against them, catching spec drift before the merge.",
+    offers: [
+      { "@type": "Offer", name: "Public repositories", price: "0", priceCurrency: "USD" },
+      { "@type": "Offer", name: "Starter", price: "29", priceCurrency: "USD" }
+    ]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: plainText(faq.q),
+      acceptedAnswer: { "@type": "Answer", text: plainText(faq.a) }
+    }))
+  }
+]).replace(/</g, "\\u003c");
 ---
 
 <BaseLayout
-  title="Striff - Your documented architecture, checked on every pull request"
-  description="Striff reads your AGENTS.md, ADRs and architecture docs, turns each sentence about the code into a checkable rule, and answers it on every GitHub pull request, with a diagram of what changed and review notes on the components it touched."
+  title="Striff - Your specs and architecture docs, checked on every pull request"
+  description="Striff turns the sentences in your specs, AGENTS.md, ADRs and architecture docs into rules and checks every GitHub pull request against them, catching spec drift before the merge."
   canonical="https://striff.io/"
   ogImage="https://striff.io/og-image.png"
 >
+  <script slot="head" type="application/ld+json" is:inline set:html={structuredData} />
   <main>
     <!-- ==================== HERO ==================== -->
     <!-- The product is a GitHub check, so the hero is one, rendered light and at full
@@ -225,8 +310,8 @@ const plans = [
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="hero-copy relative z-10 mx-auto max-w-4xl space-y-5 text-center" data-reveal>
           <h1 class="mx-auto">
-            <span class="sr-only">Your architecture docs, enforced on every pull request.</span>
-            <span aria-hidden="true">Your <span class="h1-rot" data-h1-rot><span class="h1-rot-word is-on">architecture docs</span><span class="h1-rot-word">design docs</span><span class="h1-rot-word">AGENTS.md</span></span>,<br /> <span class="hero-h1-accent">enforced on every pull request</span>.</span>
+            <span class="sr-only">Your specs and architecture docs, enforced on every pull request.</span>
+            <span aria-hidden="true">Your <span class="h1-rot" data-h1-rot><span class="h1-rot-word is-on">specs</span><span class="h1-rot-word">architecture docs</span><span class="h1-rot-word">design docs</span><span class="h1-rot-word">AGENTS.md</span></span>,<br /> <span class="hero-h1-accent">enforced on every pull request</span>.</span>
           </h1>
           <p class="section-subcopy hero-subcopy mx-auto">
             Your docs already state the rules. Striff checks every pull request against them, and <strong>when a change contradicts one, it quotes the sentence, before the merge.</strong>
@@ -317,7 +402,7 @@ const plans = [
               <p class="text-xs font-bold uppercase tracking-[0.2em] text-rose-500">The problem</p>
               <h2 class="mt-3 text-balance">Nobody re-reads the docs on every pull request.</h2>
               <p class="section-subcopy mt-4">
-                Coding agents read your architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. Left unchecked, each merge drifts a little further from what your team agreed, until <strong>every change costs more than it should and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
+                Spec-driven development made your docs the instructions: coding agents read your specs and architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. That gap is spec drift. Left unchecked, each merge drifts a little further from what your team agreed, until <strong>every change costs more than it should and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
               </p>
               <p class="problem-stat">
                 In <a href="/blog/architecture-matters-more-not-less">our survey of 335 open-source repositories</a> that write their architecture down, <strong>63% already hand their coding agents docs to build from</strong>, and <strong>only 8% of those run anything that checks the code still matches.</strong>
@@ -893,38 +978,12 @@ const plans = [
           <h2 class="mt-2 text-balance">Common questions</h2>
         </div>
         <div class="faq-list" data-reveal>
-          <details class="faq-item">
-            <summary class="faq-q">How does Striff know what my architecture is supposed to look like?</summary>
-            <p class="faq-a"><strong>You already wrote it down.</strong> Striff catalogues the documents in your repository that make claims about the code, turns those sentences into rules, and checks them against the code your pull request produces, quoting the sentence and linking the file it came from. <em>Nothing is configured and no rule format is invented:</em> your documentation is the rulebook. A rule can be as plain as where a class lives or as sharp as <em>&ldquo;the domain module must not depend on infrastructure&rdquo;</em>. Alongside the rules, every pull request gets a <strong>diagram of what changed</strong> and <strong>review notes</strong> on the components it touched. If your docs make no checkable claim about the code, Striff invents no rules of its own: you still get the diagram and the review notes.</p>
-          </details>
-          <details class="faq-item" id="languages">
-            <summary class="faq-q">What languages does Striff support?</summary>
-            <p class="faq-a">The diagram runs on <strong>Java, TypeScript, Python and C#</strong>. Striff parses source into a full structural model with its own parser, not regex or text matching, so references, inheritance and dependencies resolve the way a compiler sees them. Go is coming.</p>
-          </details>
-          <details class="faq-item">
-            <summary class="faq-q">Is it just an LLM wrapper?</summary>
-            <p class="faq-a"><strong>No, and the architecture is the answer.</strong> Every verdict is produced by <em>deterministic</em> analysis of the structure your change actually creates: the parser builds a model of both revisions, each documented rule is a query over that model, and a rule is held when nothing in the pull request breaks it. The model is <strong>fact-gated</strong>, which means it can rank findings, explain them and write the summary of what your PR did structurally, but it <em>cannot originate one, rename one, or turn "could not answer" into a pass.</em> That last constraint is why a rule Striff cannot answer from the code is left out of the results instead of quietly counted as green.</p>
-          </details>
-          <details class="faq-item">
-            <summary class="faq-q">Will it slow down or block my pull requests?</summary>
-            <p class="faq-a"><strong>No.</strong> Striff runs as a GitHub Check next to your CI and posts its results when the analysis finishes, typically <em>within a few minutes</em>. It never blocks a merge <strong>unless you choose to make the check required</strong>.</p>
-          </details>
-          <details class="faq-item">
-            <summary class="faq-q">What do I need to set up?</summary>
-            <p class="faq-a"><strong>Just install the GitHub App.</strong> It works on public and private repos alike and posts checks automatically on every PR, with <em>no per-developer setup</em>. Plans start at <strong>$29/month</strong>, based on how many repos <em>actually get reviewed</em> each month, not how many you connect. To try Striff on somebody else&rsquo;s public pull request first, use the <a href="#extension" class="font-semibold text-blue-600 hover:underline">browser extension</a>.</p>
-          </details>
-          <details class="faq-item">
-            <summary class="faq-q">Do I need to install anything to use the browser extension?</summary>
-            <p class="faq-a"><strong>No.</strong> The extension runs in your browser on any public pull request you visit, so you can point it at somebody else&rsquo;s repository without touching it, and it is <strong>free on every public pull request</strong>, with no account. The analysis itself runs on Striff&rsquo;s servers. A free GitHub token raises GitHub&rsquo;s rate limits: on a public pull request it is only sent to GitHub; on a private repository or a very large pull request, Striff&rsquo;s servers use it to fetch the code themselves.</p>
-          </details>
-          <details class="faq-item">
-            <summary class="faq-q">Does the extension check documented rules too?</summary>
-            <p class="faq-a"><strong>Yes.</strong> One load brings up the diagram and checks the rules that repository&rsquo;s own documents state. When it finishes, a &ldquo;Findings&rdquo; button with the rule count on it opens the full list beside the diagram. Same pipeline as the GitHub App, on a repository you do not have to own.</p>
-          </details>
-          <details class="faq-item">
-            <summary class="faq-q">Is my source code sent to a third party or stored?</summary>
-            <p class="faq-a">Your code is parsed on Striff's servers <strong>in memory and not persisted</strong>. The AI explanation layer works from the structural model (component names, relationships, metrics, and doc excerpts), <em>not your raw source files</em>. For teams that need full control, <strong>self-hosted deployment</strong> is available on the Enterprise plan.</p>
-          </details>
+          {faqs.map((faq) => (
+            <details class="faq-item" id={faq.id}>
+              <summary class="faq-q" set:html={faq.q} />
+              <p class="faq-a" set:html={faq.a} />
+            </details>
+          ))}
         </div>
       </div>
     </section>

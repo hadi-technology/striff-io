@@ -11,6 +11,8 @@ import {
   categoryTone,
   formatDate,
   getPublishedPosts,
+  lastModified,
+  postUrl,
   readingMinutes,
   relatedPosts,
 } from "../../lib/blog";
@@ -27,12 +29,13 @@ export async function getStaticPaths() {
 
 const { post, related } = Astro.props;
 const { Content, headings } = await render(post);
-const { title, description, date, ogImage, author, authorRole, authorAvatar, category, cover } = post.data;
+const { title, seoTitle, description, date, ogImage, author, authorRole, authorAvatar, category, cover } = post.data;
 
 const minutes = readingMinutes(post);
-const url = `${SITE}/blog/${post.slug}`;
+const url = postUrl(post.slug);
 const image = ogImage || `${SITE}/og-image.png`;
 const published = date.toISOString();
+const modified = lastModified(post).toISOString();
 const toc = headings.filter((heading) => heading.depth === 2);
 const installUrl = "https://github.com/apps/striff-app/installations/new";
 
@@ -61,6 +64,7 @@ const jsonLd = JSON.stringify({
   headline: title,
   description,
   datePublished: published,
+  dateModified: modified,
   author: authorRole
     ? { "@type": "Person", name: author, jobTitle: authorRole }
     : { "@type": "Organization", name: author, url: SITE },
@@ -77,11 +81,12 @@ const jsonLd = JSON.stringify({
 }).replace(/</g, "\\u003c");
 ---
 
-<BaseLayout title={`${title} · ${BLOG_NAME}`} description={description} canonical={url} ogImage={image} ogType="article" scheme="auto">
+<BaseLayout title={`${seoTitle ?? title} · ${BLOG_NAME}`} ogTitle={title} description={description} canonical={url} ogImage={image} ogType="article" scheme="auto">
   <Fragment slot="head">
     <BlogHead />
     <meta name="author" content={author} />
     <meta property="article:published_time" content={published} />
+    <meta property="article:modified_time" content={modified} />
     <meta property="article:author" content={author} />
     <meta property="article:section" content={category} />
     <meta name="twitter:label1" content="Written by" />

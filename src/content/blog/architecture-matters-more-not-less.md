@@ -1,7 +1,9 @@
 ---
 title: "63% of repositories hand their agents docs to build from. 8% of those check the code still matches."
-description: "Design doc, then plan, then the agent builds it task by task: the companies that make coding agents now tell you to work this way. We surveyed 335 open-source repositories whose docs describe their architecture. 63% already give their agents docs to work from, and only 8% of those run anything that checks the code against them."
+description: "Design doc, then plan, then the agent builds it task by task: spec-driven development is how the companies that make coding agents now tell you to work. We surveyed 335 open-source repositories whose docs describe their architecture. 63% already give their agents docs to work from, and only 8% of those run anything that checks the code against them."
 date: 2026-09-15
+updated: 2026-10-02
+seoTitle: "Spec-driven development and spec drift: 335 repositories surveyed"
 category: "Data & research"
 cover: "survey"
 ---
@@ -58,7 +60,7 @@ Böckeler's [survey of Spec Kit, Kiro and Tessl](https://martinfowler.com/articl
 
 The first level asks nothing of the spec once the task is done. The other two ask it to stay true indefinitely, because every later change is made from it. That is the level most teams in our survey are already at without naming it: 22% keep spec or plan files for agents to build from, and the 63% that hand their agents `AGENTS.md`, `CLAUDE.md` or architecture docs are spec-anchored in practice, whatever toolkit they use. The document outlives the task and the next task starts from it.
 
-So the question a spec-anchored team has to answer is who notices when the spec stops being true. The toolkits answer how to write the spec and how to build from it. None of them answers that. In our survey, 8% of the repositories that hand their agents docs run anything that checks the code against an architecture rule, and no tool in the table above checks a spec against the code it produced. The rest of this post is about that gap.
+So the question a spec-anchored team has to answer is who notices when the spec stops being true. That gap between what the spec says and what the code does is spec drift. The toolkits answer how to write the spec and how to build from it. None of them answers that. In our survey, 8% of the repositories that hand their agents docs run anything that checks the code against an architecture rule, and no tool in the table above checks a spec against the code it produced. The rest of this post is about that gap.
 
 ## Every practice got more load-bearing
 
