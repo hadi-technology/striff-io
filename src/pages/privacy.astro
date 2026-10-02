@@ -3,21 +3,20 @@ import "../styles/global.css";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Privacy Policy - Striff" description="Striff Privacy Policy" canonical="https://striff.io/privacy">
+<BaseLayout title="Privacy Policy - Striff" description="How Striff handles your data: the website, the GitHub App, the dashboard, billing and the browser extension." canonical="https://striff.io/privacy">
   <main class="mx-auto max-w-3xl px-6 py-20">
     <h1 class="mb-8 text-4xl font-bold tracking-tight">Privacy Policy</h1>
 
     <div class="prose prose-slate max-w-none">
-      <p class="text-slate-600">Last updated: April 2026</p>
+      <p class="text-slate-600">Last updated: October 2, 2026</p>
+
+      <p class="mt-4">Striff is operated by HADI Technology ("we", "us"). This policy covers the striff.io website, the Striff GitHub App, the Striff dashboard, billing, and the Striffs for GitHub browser extension.</p>
 
       <section class="mt-8">
         <h2 class="text-2xl font-semibold">1. Information We Collect</h2>
 
-        <h3 class="mt-4 text-xl font-semibold">1.1 Information You Provide</h3>
-        <p>We do not collect personal information through our website. You can browse and learn about Striff without creating an account or providing any personal data.</p>
-
-        <h3 class="mt-4 text-xl font-semibold">1.2 Analytics Data</h3>
-        <p>We use PostHog to analyze how visitors interact with our website. This includes:</p>
+        <h3 class="mt-4 text-xl font-semibold">1.1 The Website</h3>
+        <p>You can browse striff.io without an account. We use PostHog to understand how visitors use the site, which records:</p>
         <ul class="ml-6 list-disc">
           <li>Pages visited and time spent on pages</li>
           <li>Browser type and version</li>
@@ -26,86 +25,109 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           <li>Clicks on buttons and links</li>
           <li>Geographic location (approximate, based on IP address)</li>
         </ul>
+        <p class="mt-2">If you use the contact form, we receive what you enter: your name, email address, company and message.</p>
+
+        <h3 class="mt-4 text-xl font-semibold">1.2 The GitHub App</h3>
+        <p>When you install Striff on a GitHub account or organization, we receive and store:</p>
+        <ul class="ml-6 list-disc">
+          <li><strong>Installation details</strong>: the account's login and type, and which repositories the app may access</li>
+          <li><strong>Pull request details</strong>: the repository, number and commit of each pull request Striff checks, and the GitHub login of its author, which is also counted per month to measure usage</li>
+          <li><strong>Rules from your documentation</strong>: each rule Striff reads from the documents in your repository, with the sentence, file and line it came from</li>
+          <li><strong>Check results</strong>: which rules each pull request kept or broke, the review notes, and the diagram of what it changed (component names and the relationships between them)</li>
+        </ul>
+        <p class="mt-2"><strong>Source code</strong> is fetched from GitHub for each analysis and parsed in memory. A copy is held only until that analysis finishes, and for at most two hours if it never runs. We do not keep your source files.</p>
+
+        <h3 class="mt-4 text-xl font-semibold">1.3 The Dashboard and Billing</h3>
+        <p>You sign in to the dashboard with GitHub. We receive your GitHub username, account ID and primary email address, and check your membership of an organization to confirm you may manage its installation and billing. Your email address is stored as the contact address for the installations you can access, and we use it for a welcome email and for account and billing messages. Your GitHub sign-in token is kept in a secure, HTTP-only cookie in your browser for up to 30 days, so you stay signed in.</p>
+        <p class="mt-2">Payments for private repositories are processed by Stripe. Stripe collects your payment details; we never see or store card numbers. We store the Stripe customer and subscription IDs, the plan, and the subscription's status.</p>
+
+        <h3 class="mt-4 text-xl font-semibold">1.4 The Browser Extension: Striffs for GitHub</h3>
+        <p>The <strong>Striffs for GitHub</strong> Chrome extension processes the following data when you use it on GitHub pull request pages:</p>
+        <ul class="ml-6 list-disc">
+          <li><strong>GitHub PR metadata</strong>: pull request page information needed to generate architectural diagrams</li>
+          <li><strong>Repository content</strong>: file paths and changed-file content from PRs, used to build diagrams</li>
+          <li><strong>GitHub token</strong>: stored locally in your browser and sent with your requests so Striff can read repository data on your behalf; our servers use it per request and do not store it</li>
+          <li><strong>Engagement events</strong>: anonymous usage events (diagram views, interactions) sent to the Striff backend</li>
+        </ul>
+        <p class="mt-2">The extension stores your optional GitHub token and cached diagram data locally in your browser's extension storage, and communicates only with GitHub and the Striff backend (<code class="bg-slate-100 px-1 rounded">api.striff.io</code>). You can clear your saved token and all cached data at any time from the extension's popup menu.</p>
       </section>
 
       <section class="mt-8">
         <h2 class="text-2xl font-semibold">2. How We Use Your Information</h2>
-        <p>We use analytics data to:</p>
         <ul class="ml-6 list-disc">
-          <li>Improve our website content and user experience</li>
-          <li>Understand which features and documentation are most helpful</li>
-          <li>Identify and fix technical issues</li>
-          <li>Make informed decisions about product development</li>
+          <li>To check your pull requests against your documentation and post the results as a GitHub check</li>
+          <li>To show your rules, checks and metrics in the dashboard</li>
+          <li>To bill for private repositories and send account and billing emails</li>
+          <li>To answer messages you send us</li>
+          <li>To improve the website and the product, and to find and fix errors</li>
         </ul>
+        <p class="mt-2">We do not sell your information, use it for advertising, or use your code or documentation to train AI models.</p>
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">3. Cookies and Tracking</h2>
-        <p>We use cookies and similar technologies to collect analytics data. You can:</p>
-        <ul class="ml-6 list-disc">
-          <li>Accept or decline cookies through your browser settings</li>
-          <li>Opt out of analytics by disabling cookies in your browser</li>
-        </ul>
-        <p class="mt-2">Note that disabling cookies may affect your browsing experience on our website.</p>
+        <h2 class="text-2xl font-semibold">3. AI Processing</h2>
+        <p>Striff sends the text of your repository's documentation to a language model provider, which proposes the rules your documents state. Review notes are written from a structural model of the change (component names, relationships and documentation excerpts), not from your source files. Whether a rule holds is decided by Striff's own analysis of your code, not by a language model.</p>
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">4. Data Sharing</h2>
-        <p>We do not sell, trade, or rent your personal information to third parties. We may share data with:</p>
+        <h2 class="text-2xl font-semibold">4. Service Providers</h2>
+        <p>We share data only with providers that help us run Striff, and only what each one needs:</p>
         <ul class="ml-6 list-disc">
-          <li>Service providers who assist in operating our website (e.g., PostHog for analytics)</li>
-          <li>Legal authorities when required by law</li>
+          <li><strong>GitHub</strong>: the source of repository data, and where results are posted</li>
+          <li><strong>DigitalOcean</strong>: hosting for the Striff servers and database</li>
+          <li><strong>A language model provider</strong>: reads documentation text, as described in section 3</li>
+          <li><strong>Stripe</strong>: payment processing</li>
+          <li><strong>Resend</strong>: sending email</li>
+          <li><strong>Sentry</strong>: error monitoring, with personal data collection turned off</li>
+          <li><strong>PostHog</strong>: website analytics</li>
+          <li><strong>Netlify</strong>: hosting for the website and its contact form</li>
         </ul>
+        <p class="mt-2">We may also disclose information to legal authorities when required by law.</p>
       </section>
 
       <section class="mt-8">
         <h2 class="text-2xl font-semibold">5. Data Retention</h2>
-        <p>Analytics data is retained in accordance with PostHog's data retention policies. We do not retain personal information beyond what is necessary for the purposes described in this policy.</p>
-      </section>
-
-      <section class="mt-8">
-        <h2 class="text-2xl font-semibold">6. Browser Extension: Striffs for GitHub</h2>
-        <p>The <strong>Striffs for GitHub</strong> Chrome extension processes the following data when you use it on GitHub pull request pages:</p>
         <ul class="ml-6 list-disc">
-          <li><strong>Github PR metadata</strong>: pull request page information needed to generate architectural diagrams</li>
-          <li><strong>Repository content</strong>: file paths and changed-file content from PRs, used to build diagrams</li>
-          <li><strong>GitHub token</strong>: stored locally in your browser and sent with your requests so Striff can read repository data on your behalf; our servers use it per request and do not store it</li>
-          <li><strong>Engagement events</strong>: anonymous usage events (diagram views, interactions) sent to the Striffs backend</li>
+          <li>Source code: held only until its analysis finishes, at most two hours</li>
+          <li>Installation details, rules and check results: kept while the app is installed, so the dashboard can show your history; deleted on request</li>
+          <li>Billing records: kept as long as tax and accounting law requires</li>
+          <li>Website analytics: retained under PostHog's retention policy</li>
+          <li>Contact form messages: kept as long as needed to answer them</li>
         </ul>
-        <h3 class="mt-4 text-xl font-semibold">Storage</h3>
-        <p>The extension stores your optional GitHub token and cached diagram data locally in your browser's extension storage. No data is sent to third parties beyond the Striffs backend for diagram generation.</p>
-        <h3 class="mt-4 text-xl font-semibold">Network Requests</h3>
-        <p>The extension communicates with:</p>
-        <ul class="ml-6 list-disc">
-          <li>GitHub endpoints needed to fetch pull request data and repository content</li>
-          <li>The Striffs backend (<code class="bg-slate-100 px-1 rounded">api.striff.io</code>) to generate diagrams, fetch configuration, and send engagement events</li>
-        </ul>
-        <h3 class="mt-4 text-xl font-semibold">User Control</h3>
-        <p>You can clear your saved token and all cached data at any time from the extension's popup menu.</p>
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">7. Your Rights</h2>
-        <p>Since we do not collect personal information, you do not need to request data deletion, correction, or access. If you have questions about our analytics practices, please contact us.</p>
+        <h2 class="text-2xl font-semibold">6. Security</h2>
+        <p>All traffic to and from Striff is encrypted with TLS. The GitHub App uses short-lived installation tokens limited to the repositories you chose, and every webhook from GitHub is verified by its signature before it is processed.</p>
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">8. Children's Privacy</h2>
-        <p>Our website is not directed to children under 13. We do not knowingly collect information from children under 13.</p>
+        <h2 class="text-2xl font-semibold">7. Your Rights and Choices</h2>
+        <p>You can ask us to access, correct, export or delete the personal information we hold about you by emailing <a href="mailto:hi@haditechnology.com" class="text-blue-600 hover:text-blue-700">hi@haditechnology.com</a>. Uninstalling the GitHub App stops all further access to your repositories. If you are in the EU, the UK or another region with data protection law, you also have the right to complain to your local data protection authority.</p>
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">9. International Visitors</h2>
-        <p>Our website is operated from the United States. If you are visiting from outside the United States, please be aware that your information may be transferred to and processed in the United States.</p>
+        <h2 class="text-2xl font-semibold">8. Cookies</h2>
+        <p>We use cookies for analytics, to keep you signed in to the dashboard, and to protect sign-in against forged requests. See our <a href="/cookies" class="text-blue-600 hover:text-blue-700">Cookie Policy</a> for details. You can block or delete cookies in your browser settings; the dashboard needs them to keep you signed in.</p>
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">10. Changes to This Policy</h2>
+        <h2 class="text-2xl font-semibold">9. Children's Privacy</h2>
+        <p>Striff is not directed to children under 13. We do not knowingly collect information from children under 13.</p>
+      </section>
+
+      <section class="mt-8">
+        <h2 class="text-2xl font-semibold">10. International Transfers</h2>
+        <p>Striff is operated from the United States, and our service providers may process data in the United States and other countries. By using Striff from outside those countries, your information may be transferred to and processed in them.</p>
+      </section>
+
+      <section class="mt-8">
+        <h2 class="text-2xl font-semibold">11. Changes to This Policy</h2>
         <p>We may update this privacy policy from time to time. We will notify you of any material changes by posting the new policy on this page and updating the "Last updated" date.</p>
       </section>
 
       <section class="mt-8">
-        <h2 class="text-2xl font-semibold">11. Contact Us</h2>
+        <h2 class="text-2xl font-semibold">12. Contact Us</h2>
         <p>For privacy-related inquiries, please email us at <a href="mailto:hi@haditechnology.com" class="text-blue-600 hover:text-blue-700">hi@haditechnology.com</a>.</p>
       </section>
     </div>
