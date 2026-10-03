@@ -46,6 +46,10 @@ import { useEffect, useState } from "react";
  *
  * What it costs us is our problem and is not said out loud: the reader is told how long it takes,
  * which is what they can act on.
+ *
+ * A reading Striff starts on its own when the page is viewed is not one anybody asked for, so it is
+ * never reported: no progress, no note when it finishes, no note when it stops. This behaves as if
+ * there were no reading at all, and the offer stays for documents nothing has read.
  */
 
 export interface Reading {
@@ -62,6 +66,19 @@ export interface Reading {
   docsDone?: number;
   /** The documents being read now; empty between steps. */
   readingPaths?: string[];
+}
+
+/** Who asked for a reading Striff started by itself because the page was viewed. */
+export const AUTOMATIC_READING = "Striff, when the page was viewed";
+
+/** Whether nobody asked for this reading: Striff started it when the page was viewed. */
+export function isAutomatic(reading: Reading | null | undefined): boolean {
+  return reading?.askedBy === AUTOMATIC_READING;
+}
+
+/** The reading a page may report on: a reading somebody asked for, null for any other. */
+export function askedReading(reading: Reading | null | undefined): Reading | null {
+  return reading && !isAutomatic(reading) ? reading : null;
 }
 
 /** A run the server has not finished with. */
@@ -127,7 +144,7 @@ function rememberPress(repo: string, at: number) {
 
 export default function ReadRepository({
   repo,
-  reading,
+  reading: given,
   waiting,
   read,
   busy,
@@ -146,6 +163,7 @@ export default function ReadRepository({
   /** Asks for a reading. Resolves false where the API refused it, so the control can recover. */
   onRead: () => void | boolean | Promise<boolean | void>;
 }) {
+  const reading = askedReading(given);
   // Read on mount, so a reload lands on the same answer the press left behind.
   const [asked, setAsked] = useState<number>(0);
 

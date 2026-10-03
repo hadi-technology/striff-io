@@ -12,7 +12,7 @@ import RulesTable, {
   type RuleFilter,
 } from "./RulesTable";
 import Listing from "./Listing";
-import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
+import ReadRepository, { askedReading, isRunning, type Reading } from "./ReadRepository";
 
 /**
  * One repository's documents, and the rules read from whichever of them is selected.
@@ -70,12 +70,6 @@ interface Doc {
   readChars?: number | null;
   /** How long the doc is, null wherever readChars is. */
   totalChars?: number | null;
-  /** Read under an older rule schema and being read again; its state says NOT_READ meanwhile. */
-  rereading?: boolean;
-  /** The rules it gave when last read, where it is being read again, broken ones included. */
-  lastKnownRuleCount?: number | null;
-  /** Of those, the ones that held on the default branch when last judged there. */
-  lastKnownHeldCount?: number | null;
 }
 
 /** Whether a doc that has been read was read in part and not from all of it. */
@@ -111,12 +105,6 @@ interface Summary {
   excluded: number;
   holdsOnDefaultBranch: number;
   brokenOnDefaultBranch: number;
-  /** How many documents are being read again after a change to how Striff reads rules. */
-  rereading?: number;
-  /** The rules those documents gave when last read, broken ones included. */
-  lastKnownRules?: number | null;
-  /** Of those, the ones that held on the default branch when last judged there. */
-  lastKnownHeld?: number | null;
 }
 
 interface Catalog {
@@ -299,10 +287,6 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
       }
       return `Rules last extracted ${when(doc.lastExtractedMs)}${doc.lastExtractedPullNo ? ` on PR #${doc.lastExtractedPullNo}` : ""}.`;
     case "NOT_READ":
-      if (doc.rereading) {
-        const n = doc.lastKnownRuleCount || 0;
-        return `Updating — ${n} rule${n === 1 ? "" : "s"} last time. Striff is reading this doc again after an improvement to Striff; refreshed rules appear in a few minutes.`;
-      }
       return "Striff hasn't read this doc yet. It reads a doc the first time a pull request changes code the doc talks about.";
     case "SCREENED_OUT":
       if (doc.forced) {
@@ -364,8 +348,7 @@ const DOC_FILTER_TEST: Record<DocFilter, (doc: Doc) => boolean> = {
   // Filled in where the view is, because it is the only thing here that is not a fact about the
   // document on its own: it depends on what a reading of the whole repository reported.
   stale: () => false,
-  // A doc being read again is updating, not unread.
-  notRead: (doc) => doc.state === "NOT_READ" && !doc.rereading,
+  notRead: (doc) => doc.state === "NOT_READ",
   outdated: (doc) => doc.outdated && doc.state === "READ",
   skipped: (doc) => doc.state === "SCREENED_OUT",
   retired: (doc) => doc.state === "RETIRED",
@@ -594,9 +577,7 @@ export interface DocsSource {
   url(view: "" | "rules" | "type-findings", path?: string): string;
   /** What the view says under the repository's name, in place of how to use the tree. */
   lede?: ReactNode;
-  /** When the page was last read, shown beside the repository's name. */
-  refreshedAt?: string;
-  /** The repository's README badge, shown after refreshedAt; same-origin, so its title can be read. */
+  /** The repository's README badge, shown beside its name; same-origin, so its title can be read. */
   badgeUrl?: string;
   /** Something to offer at the head's top right, above the counts. */
   action?: ReactNode;
@@ -1039,12 +1020,19 @@ export default function DocsTab({
 
   const allDocs = catalog?.documents || [];
 
-  /** The stale names of each doc, by the doc's path. */
+  /**
+   * The reading this page reports on: one somebody asked for. A reading Striff started by itself
+   * when the page was viewed is never shown, here or anywhere on the page.
+   */
+  const reading = askedReading(catalog?.reading);
+
   /** The documents the reading in flight is on, empty where none is going. */
   const readingNow = useMemo(
-    () => new Set<string>(isRunning(catalog?.reading) ? catalog?.reading?.readingPaths || [] : []),
-    [catalog?.reading]
+    () => new Set<string>(isRunning(reading) ? reading?.readingPaths || [] : []),
+    [reading]
   );
+
+  /** The stale names of each doc, by the doc's path. */
 
   const staleByDoc = useMemo(() => {
     const byDoc = new Map<string, StaleName[]>();
@@ -1185,32 +1173,12 @@ export default function DocsTab({
   );
 
   /**
-   * Documents read under an older rule schema and being read again. Their rules are not in the
-   * answer until the new reading lands, so the counts carry what they gave last time rather than
-   * a zero that would say the docs hold no rule.
-   */
-  const rereadingNow = (catalog?.summary?.rereading || 0) > 0;
-  const lastKnownRules = rereadingNow ? catalog?.summary?.lastKnownRules || 0 : 0;
-  /**
-   * Of those, the ones that held when last judged. Holding counts only these: a rule that was
-   * broken last time is still a rule, and never a rule that holds.
-   */
-  const lastKnownHeld = rereadingNow ? catalog?.summary?.lastKnownHeld || 0 : 0;
-  /** The rules the scope's documents gave last time, where they are being read again. */
-  const scopeLastKnown = useMemo(
-    () => scopeDocs.reduce((sum, doc) => sum + (doc.rereading ? doc.lastKnownRuleCount || 0 : 0), 0),
-    [scopeDocs]
-  );
-  const scopeRereading = scopeDocs.some((doc) => doc.rereading);
-
-  /**
    * A public page whose documents hold no rule. Its rule counts would be a row of zeros, which
    * says nothing to someone arriving from a link; what it has to show is the names its docs write
    * that the code no longer has, so those lead. Only once the rules have answered: until then
    * nobody knows there are none. A truncated answer has rules this page cannot reach.
    */
-  const publicNoRules = !!source && !!rulesIndex && !rulesIndex.truncated && repoCounts.all === 0
-    && !rereadingNow;
+  const publicNoRules = !!source && !!rulesIndex && !rulesIndex.truncated && repoCounts.all === 0;
   /** Whether the rule counts are shown: on a public page, only once there are rules to count. */
   const showRuleCounts = !source || (!!rulesIndex && !publicNoRules);
   /** The names gone under whatever is selected, in the order of the documents that write them. */
@@ -1426,13 +1394,9 @@ export default function DocsTab({
             {staleByDoc.get(doc.path)!.length} stale
           </span>
         )}
-        {doc.state !== "READ" && !beingRead && (doc.rereading ? (
-          <span className="docs-badge is-updating" title="Being read again after an improvement to Striff.">
-            Updating
-          </span>
-        ) : (
+        {doc.state !== "READ" && !beingRead && (
           <span className={`docs-badge is-${doc.state.toLowerCase()}`}>{STATE_LABEL[doc.state]}</span>
-        ))}
+        )}
         {doc.forced && doc.state !== "READ" && !beingRead && (
           <span className="docs-badge is-forced">Read anyway</span>
         )}
@@ -1588,8 +1552,8 @@ export default function DocsTab({
         title="Every rule read from this repository's documents."
         onClick={() => setRuleFilter("all")}
       >
-        <b>{repoCounts.all + lastKnownRules}</b>
-        <i>rule{repoCounts.all + lastKnownRules === 1 ? "" : "s"}</i>
+        <b>{repoCounts.all}</b>
+        <i>rule{repoCounts.all === 1 ? "" : "s"}</i>
       </button>
       {/* Totals first, then how the rules stand: what holds, what is broken, what nothing
           has checked. */}
@@ -1599,9 +1563,7 @@ export default function DocsTab({
         title={`${STANDING_HELP.holds} Click to show these.`}
         onClick={() => setRuleFilter(ruleFilter === "holds" ? "all" : "holds")}
       >
-        {/* A public page counts among those holding the rules being read again that held when
-            last judged, never the ones that were broken. */}
-        <b>{repoCounts.holds + (source ? lastKnownHeld : 0)}</b>
+        <b>{repoCounts.holds}</b>
         <i>holding</i>
       </button>
       <button
@@ -1702,7 +1664,7 @@ export default function DocsTab({
                     >
                       <span className="docs-palette-main">{marked(doc.path)}</span>
                       <span className="docs-palette-sub">
-                        {doc.ruleCount > 0 ? `${doc.ruleCount} rules` : doc.rereading ? "Updating" : STATE_LABEL[doc.state]}
+                        {doc.ruleCount > 0 ? `${doc.ruleCount} rules` : STATE_LABEL[doc.state]}
                         {doc.brokenRules > 0 ? ` · ${doc.brokenRules} broken` : ""}
                       </span>
                     </button>
@@ -1764,14 +1726,9 @@ export default function DocsTab({
             <GitHubMark />
             GitHub
           </a>
-          {(source?.refreshedAt || source?.badgeUrl) && (
+          {source?.badgeUrl && (
             <span className="docs-refreshed-group">
-              {source.refreshedAt && (
-                <span className="docs-refreshed-chip" title="When Striff last read this repository. This page is not updated after that.">
-                  Last refreshed {source.refreshedAt}
-                </span>
-              )}
-              {source.badgeUrl && <LiveBadge src={source.badgeUrl} />}
+              <LiveBadge src={source.badgeUrl} />
             </span>
           )}
           {/* A public page is a snapshot: loading it again finds the same thing. */}
@@ -1802,11 +1759,6 @@ export default function DocsTab({
             <p className="docs-names-line">
               {repoStale}{staleNames?.truncated ? "+" : ""} name{repoStale === 1 && !staleNames?.truncated ? "" : "s"} in
               these docs no longer match{repoStale === 1 && !staleNames?.truncated ? "es" : ""} the code.
-            </p>
-          )}
-          {rereadingNow && (
-            <p className="docs-updating-line">
-              Updating after an improvement to Striff, refreshed rules appear in a few minutes.
             </p>
           )}
           {catalog && <RevisionLine catalog={catalog} />}
@@ -1900,7 +1852,7 @@ export default function DocsTab({
               {renderNode(tree, 0)}
             </div>
             <div className="docs-tree-foot">
-              {catalog.summary.documents} docs{catalog.lastScanMs ? `, listed ${when(catalog.lastScanMs)}` : ""}
+              {catalog.summary.documents} docs
               {/* Folder rules live above the tree they affect, so an excluded directory is
                   visible without hunting for the folder it was set on. */}
               {(catalog.exclusions || []).some((rule) => rule.folder) && (
@@ -2104,11 +2056,9 @@ export default function DocsTab({
                         about the scope: the rules exist and this list did not reach them. */}
                     {rulesIndex.truncated
                       ? "This repository holds more rules than one list can carry, and the documents before this one fill it. Striff has these; this page cannot reach them yet."
-                      : scopeRereading
-                      ? `Updating — ${scopeLastKnown} rule${scopeLastKnown === 1 ? "" : "s"} last time. Striff is reading these docs again after an improvement to Striff; refreshed rules appear here in a few minutes.`
                       : !scopeDocs.some((doc) => doc.state === "NOT_READ")
                       ? "Striff read these docs and found no rule about the code in them."
-                      : isRunning(catalog?.reading)
+                      : isRunning(reading)
                       ? "Striff is reading these docs now. Their rules appear here as they are read; refresh to see them."
                       : summary && summary.notRead > 0 && !readOnly
                       ? `Nothing here has been read yet. Use Read ${summary.notRead} doc${summary.notRead === 1 ? "" : "s"} now, above, to read ${summary.notRead === 1 ? "it" : "them"} without waiting for a pull request.`

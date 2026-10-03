@@ -201,15 +201,12 @@ export function refreshedAtMs(report) {
 
 /**
  * The counts the page's head shows, worked out the way the page works them out: rules nothing
- * could decide are not counted, rules being read again count as they last stood, and names out of
- * date count only once a reading has looked, and only in documents the page lists.
+ * could decide are not counted, and names out of date count only once a reading has looked, and
+ * only in documents the page lists.
  */
 export function reportFacts(report) {
   const { catalog, rules, staleNames } = report;
   const rows = rules.documents.flatMap((group) => group.rules || []).filter((rule) => standing(rule) !== "unclear");
-  const rereading = (catalog.summary.rereading || 0) > 0;
-  const lastKnownRules = rereading ? catalog.summary.lastKnownRules || 0 : 0;
-  const lastKnownHeld = rereading ? catalog.summary.lastKnownHeld || 0 : 0;
   const listed = new Set(catalog.documents.map((doc) => doc.path));
   const names = staleNames.lastSeenMs != null
     ? staleNames.findings.filter((finding) => listed.has(finding.docPath)).length
@@ -217,8 +214,8 @@ export function reportFacts(report) {
   return {
     documents: catalog.documents.length,
     read: catalog.summary.read || 0,
-    rules: rows.length + lastKnownRules,
-    holds: rows.filter((row) => standing(row) === "holds").length + lastKnownHeld,
+    rules: rows.length,
+    holds: rows.filter((row) => standing(row) === "holds").length,
     broken: rows.filter((row) => standing(row) === "broken").length,
     unchecked: rows.filter((row) => standing(row) === "unchecked").length,
     names,

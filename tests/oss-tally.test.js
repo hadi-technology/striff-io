@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { tallyFrom, loadTallies } from "../src/data/ossTally.js";
 
 const repo = (name, snapshot = { held: 1, broken: 0, outOfDate: 1 }) => ({ owner: "acme", repo: name, snapshot });
-const catalog = (summary) => ({ summary: { rules: 3, holdsOnDefaultBranch: 3, brokenOnDefaultBranch: 0, rereading: 0, ...summary } });
+const catalog = (summary) => ({ summary: { rules: 3, holdsOnDefaultBranch: 3, brokenOnDefaultBranch: 0, ...summary } });
 const findings = (n) => ({ findings: Array.from({ length: n }, (_, i) => ({ name: `T${i}` })) });
 
 /** A fetch that answers each view from `answers[repo][view]`, and records what it was asked. */
@@ -21,14 +21,6 @@ function fakeFetch(answers, asked = []) {
 test("the tally is the default branch's holding and broken rules and the names out of date", () => {
   assert.deepEqual(tallyFrom(catalog({ rules: 56, holdsOnDefaultBranch: 54, brokenOnDefaultBranch: 2 }), findings(1)),
     { held: 54, broken: 2, outOfDate: 1, rules: 56 });
-});
-
-test("while documents are read again, the rules that held last time still count as held", () => {
-  const t = tallyFrom(catalog({ rules: 10, holdsOnDefaultBranch: 10, rereading: 2, lastKnownRules: 7, lastKnownHeld: 6 }), findings(0));
-  assert.equal(t.held, 16);
-  assert.equal(t.rules, 17);
-  const settled = tallyFrom(catalog({ rereading: 0, lastKnownHeld: 6 }), findings(0));
-  assert.equal(settled.held, 3);
 });
 
 test("an answer of another shape is no tally", () => {

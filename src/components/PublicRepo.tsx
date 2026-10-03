@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import DocsTab, { type DocsSource } from "./DocsTab";
 import ChecksTab from "./ChecksTab";
 import BadgePanel from "./BadgePanel";
+import { AUTOMATIC_READING } from "./ReadRepository";
 import { isRootReadme } from "../lib/badgeSnippets.js";
-import { formatDay, freezeClock, thawClock } from "../lib/renderClock.js";
+import { freezeClock, thawClock } from "../lib/renderClock.js";
 import { SITE_ROUTES } from "../lib/siteRoutes.js";
 
 /**
@@ -62,6 +63,8 @@ type View = "docs" | "checks";
 
 interface Reading {
   state: string | null;
+  /** Who asked for it; AUTOMATIC_READING where Striff started it because the page was viewed. */
+  askedBy?: string | null;
   finishedAtMs: number;
   docsTotal: number;
   docsDone: number;
@@ -256,15 +259,10 @@ export default function PublicRepo({ initial }: { initial?: BuiltReport }) {
   const views: View[] = page.claimed ? ["docs", "checks"] : ["docs"];
   const shown: View = views.includes(view) ? view : "docs";
   const reading = page.reading;
-  const readingNow = reading && (reading.state === "queued" || reading.state === "running");
-  // An unclaimed page is never read again after it is published, so it is as old as its last
-  // reading, or as its publishing where no reading finished.
-  const snapshotMs = reading && reading.finishedAtMs > 0 ? reading.finishedAtMs : page.publishedAtMs;
-  const snapshotAt = snapshotMs
-    ? formatDay(snapshotMs, { year: "numeric", month: "short", day: "numeric" })
-    : null;
+  // A reading Striff started by itself because the page was viewed is never reported.
+  const readingNow = reading && reading.askedBy !== AUTOMATIC_READING
+    && (reading.state === "queued" || reading.state === "running");
   const docsSource: DocsSource = {
-    refreshedAt: page.claimed ? undefined : snapshotAt ?? undefined,
     // The repository's own badge, as its README would show it. Same-origin and marked a preview,
     // so showing it here is never counted as a README carrying it.
     badgeUrl: `/badge/${encodeURIComponent(page.repoOwner)}/${encodeURIComponent(page.repoName)}.svg?preview=1`,

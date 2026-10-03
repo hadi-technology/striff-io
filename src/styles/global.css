@@ -4311,8 +4311,6 @@
 .docs-gone-where a { display: inline-flex; align-items: center; gap: 0.3rem; color: #57606a; }
 .docs-gone-where a:hover { color: #1f2328; }
 .docs-badge.is-not_read { background: #fff; border-color: #cbd5e1; border-style: dashed; color: #64748b; }
-.docs-badge.is-updating { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
-.docs-updating-line { margin: 0.5rem 0 0; color: #57606a; font-size: 0.85rem; }
 .docs-badge.is-screened_out,
 .docs-badge.is-retired,
 .docs-badge.is-excluded { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
@@ -5169,23 +5167,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   vertical-align: middle;
 }
 .docs-repo-link:hover { border-color: #cbd5e1; color: #24292f; text-decoration: none; }
-/* When a public page's snapshot was read: a fact about the page, so a chip and not a control. */
-.docs-refreshed-chip {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 0.4rem;
-  border: 1px solid #e8d9a8;
-  border-radius: 999px;
-  background: #fdf6e3;
-  padding: 0.15rem 0.6rem;
-  color: #7a5c12;
-  font-size: 0.75rem;
-  font-weight: 600;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-/* The chip and the repository's badge beside it: one unit after the name, wrapping as one, and
-   the badge under the chip with a small gap where the row is too narrow for both. */
+/* The repository's badge after its name, wrapping as one unit where the row is too narrow. */
 .docs-refreshed-group {
   display: inline-flex;
   flex-wrap: wrap;
@@ -5195,7 +5177,6 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   vertical-align: middle;
   max-width: 100%;
 }
-.docs-refreshed-group .docs-refreshed-chip { margin-left: 0; }
 .docs-live-badge { display: block; height: 20px; width: auto; max-width: 100%; }
 /* A dashboard link asked for a repository this reader's installations do not cover. */
 .dashboard-link-notice {
