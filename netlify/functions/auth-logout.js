@@ -11,12 +11,17 @@
  * un-timed call here would be the worst kind of bug -- press "sign out", wait, and stay signed in
  * because the function timed out before it ever set the header.
  *
+ * Sign-out also deletes what the shared access cache (../lib/access-cache.js) holds for the token,
+ * so a copy of it is not granted from the cache for the minutes that cache would otherwise keep it.
+ * Best-effort and time-boxed like the revoke, and run beside it.
+ *
  * What this deliberately does not do is revoke the authorization grant. Striff stays on the
  * visitor's list of authorized apps, so signing back in is one click rather than a fresh consent
  * screen. Someone who wants Striff to forget them entirely does that from GitHub's own settings.
  */
 
 import { Buffer } from "node:buffer";
+import { accessCache } from "../lib/access-cache.js";
 
 const CLIENT_ID = process.env.GITHUB_OAUTH_CLIENT_ID;
 const CLIENT_SECRET = process.env.GITHUB_OAUTH_CLIENT_SECRET;
@@ -32,6 +37,16 @@ const CLEARED = [
 
 export const handler = async (event) => {
   const token = parseCookie(event.headers?.cookie || "")["gh_token"];
+  await Promise.all([token ? accessCache(event, token).forget() : null, revoke(token)]);
+
+  return {
+    statusCode: 302,
+    headers: { Location: "/" },
+    multiValueHeaders: { "Set-Cookie": CLEARED },
+  };
+};
+
+async function revoke(token) {
   if (token && CLIENT_ID && CLIENT_SECRET) {
     try {
       await fetch(`https://api.github.com/applications/${CLIENT_ID}/token`, {
@@ -52,13 +67,7 @@ export const handler = async (event) => {
       console.error("Could not revoke the access token on sign-out:", e.message);
     }
   }
-
-  return {
-    statusCode: 302,
-    headers: { Location: "/" },
-    multiValueHeaders: { "Set-Cookie": CLEARED },
-  };
-};
+}
 
 function parseCookie(header) {
   const cookies = {};
