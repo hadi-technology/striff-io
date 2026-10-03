@@ -34,7 +34,7 @@ Step 2 sounds like diligence. In practice it is a search problem, and a real exa
 
 Ericsson's ecChronos documents its `core.impl` module class by class. Line 136 of that module's README says that `NodeWorker` *"Calls `RepairScheduler.putConfigurations()` to keep jobs up to date."* Pull request [#1786](https://github.com/Ericsson/ecchronos/pull/1786) touched 27 files and, along the way, handed that call to `SchemaRefresher`. After it, `NodeWorker` does not reference `RepairScheduler` at all.
 
-A reviewer working from the diff sees `NodeWorker.java` lose one field and gain another, which is a clean refactor. Nothing in the diff says that a README in another directory now describes the old design. Finding that out means knowing the sentence exists, which means having read every document that mentions every class on your step 1 list. The pull request merged, and at the time of writing the README still says it. [The full story, and how it was caught, is here](/blog/design-docs-are-enforceable-now).
+A reviewer working from the diff sees `NodeWorker.java` lose one field and gain another, which is a clean refactor. Nothing in the diff says that a README in another directory now describes the old design. Finding that out means knowing the sentence exists, which means having read every document that mentions every class on your step 1 list. The pull request merged, and at the time of writing the README still says it. [The full story, and how it was caught, is here](/blog/design-docs-are-enforceable-now/).
 
 ## The cheat sheet
 
@@ -56,7 +56,7 @@ The compressed version, for pinning next to your review queue:
 </tbody>
 </table>
 </div>
-<p class="bp-figure-caption">Every row here is something that happens in ordinary, well-reviewed pull requests. The first is the one this post opened with: <a href="/blog/design-docs-are-enforceable-now">a README still crediting a class with work a refactor took away from it</a>.</p>
+<p class="bp-figure-caption">Every row here is something that happens in ordinary, well-reviewed pull requests. The first is the one this post opened with: <a href="/blog/design-docs-are-enforceable-now/">a README still crediting a class with work a refactor took away from it</a>.</p>
 </div>
 
 ## The arithmetic
@@ -73,9 +73,9 @@ Suppose a competent structural pass takes fifteen to thirty minutes on a non-tri
 <p class="bp-figure-caption">Arithmetic, not a study: count × twenty minutes, and the twenty is our estimate, not a measurement. Three hundred minutes is five senior-engineer hours a day, and it lands on your most senior people, because they are the only ones holding enough of the documents and the graph in their heads to do steps 2 and 5 to 7 at all.</p>
 </div>
 
-This is why "we will just review more carefully" fails as a strategy at [current shipping volume](/blog/architecture-matters-more-not-less). The checklist is sound, but the budget for it does not exist. Teams skip structural review because it is the only review activity whose cost scales with the size of the codebase rather than the size of the diff, and no amount of caring changes that.
+This is why "we will just review more carefully" fails as a strategy at [current shipping volume](/blog/architecture-matters-more-not-less/). The checklist is sound, but the budget for it does not exist. Teams skip structural review because it is the only review activity whose cost scales with the size of the codebase rather than the size of the diff, and no amount of caring changes that.
 
-Skipping step 2 has a second cost that the chart does not show. Everyone who reads the stale sentence afterward, [a coding agent using it as context](/blog/architecture-matters-more-not-less) included, acts on wrong information. Someone pays for that a second time, later, in a form that is hard to trace back to the doc that caused it.
+Skipping step 2 has a second cost that the chart does not show. Everyone who reads the stale sentence afterward, [a coding agent using it as context](/blog/architecture-matters-more-not-less/) included, acts on wrong information. Someone pays for that a second time, later, in a form that is hard to trace back to the doc that caused it.
 
 ## Which steps a machine can take, and which it cannot
 
@@ -102,4 +102,4 @@ Any tool that claims to automate all seven of these is either overstating what i
 
 <div class="bp-callout bp-callout--mint">Use the checklist either way. If it gets your team to do even steps 1 to 3 on risky changes, this post did its job. Building the graph, counting dependents, tracing paths and re-reading the doc nobody re-reads are mechanical, and a program can do them. Whether the answer is acceptable is still your call.</div>
 
-Step 2 is the one we automate. Striff reads the sentences in your own documentation as rules and [checks them at both revisions of every pull request](/blog/design-docs-are-enforceable-now), and every pull request gets a diagram of the components it touched and how they connect, which is most of step 1 done before you open the diff. If your layering matters, write it down (*"`domain` does not depend on `infrastructure`"*) and step 3 is checked for that rule on every change too. On most pull requests nothing breaks a rule, and the check lists what it looked at. [Install the GitHub App](https://github.com/apps/striff-app/installations/new) and keep the rest of the checklist for the steps that need you.
+Step 2 is the one we automate. Striff reads the sentences in your own documentation as rules and [checks them at both revisions of every pull request](/blog/design-docs-are-enforceable-now/), and every pull request gets a diagram of the components it touched and how they connect, which is most of step 1 done before you open the diff. If your layering matters, write it down (*"`domain` does not depend on `infrastructure`"*) and step 3 is checked for that rule on every change too. On most pull requests nothing breaks a rule, and the check lists what it looked at. [Install the GitHub App](https://github.com/apps/striff-app/installations/new) and keep the rest of the checklist for the steps that need you.

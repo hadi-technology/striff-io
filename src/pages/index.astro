@@ -393,7 +393,7 @@ const structuredData = JSON.stringify([
             <Formula tex={String.raw`\varphi`} /> is the rule compiled to a formula,
             <Formula tex={String.raw`\mathcal{M}`} /> your code parsed at each revision; the
             verdict is whether one satisfies the other. Three of the {heroExampleTally.broken + heroExampleTally.held} rules
-            this repository&rsquo;s docs state. <a href="/demo">The dashboard lists all of them &rarr;</a>
+            this repository&rsquo;s docs state. <a href="/demo/">The dashboard lists all of them &rarr;</a>
           </p>
           <div class="hero-langs" aria-label="Supported languages">
             <span class="hero-langs-label">Works with</span>
@@ -472,7 +472,7 @@ const structuredData = JSON.stringify([
                 Spec-driven development made your docs the instructions: coding agents read your specs and architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. That gap is spec drift. Left unchecked, each merge drifts a little further from what your team agreed, until <strong>every change costs more than it should and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
               </p>
               <p class="problem-stat">
-                In <a href="/blog/architecture-matters-more-not-less">our survey of 335 open-source repositories</a> that write their architecture down, <strong>63% already hand their coding agents docs to build from</strong>, and <strong>only 8% of those run anything that checks the code still matches.</strong>
+                In <a href="/blog/architecture-matters-more-not-less/">our survey of 335 open-source repositories</a> that write their architecture down, <strong>63% already hand their coding agents docs to build from</strong>, and <strong>only 8% of those run anything that checks the code still matches.</strong>
               </p>
               <BlogLink slug="architecture-matters-more-not-less" kicker="Why coding agents make architecture review matter more" class="mt-6" />
             </div>
@@ -865,8 +865,8 @@ const structuredData = JSON.stringify([
             </p>
           </div>
           <div class="teams-head-actions">
-            <a class="btn-primary" href="/demo">Open the dashboard demo</a>
-            <a class="btn-secondary" href="/pricing">Team pricing</a>
+            <a class="btn-primary" href="/demo/">Open the dashboard demo</a>
+            <a class="btn-secondary" href="/pricing/">Team pricing</a>
           </div>
         </div>
 
@@ -901,7 +901,7 @@ const structuredData = JSON.stringify([
                 <p class="teams-panel-eyebrow">{panel.eyebrow}</p>
                 <h3 class="teams-panel-title">{panel.title}</h3>
                 <p class="teams-panel-text">{panel.body}</p>
-                <a class="teams-panel-cta" href={`/demo#${panel.view}`}>{panel.cta} &rarr;</a>
+                <a class="teams-panel-cta" href={`/demo/#${panel.view}`}>{panel.cta} &rarr;</a>
               </div>
             </article>
           ))}
@@ -1013,7 +1013,7 @@ const structuredData = JSON.stringify([
                 <p class="mt-2 text-sm leading-7 text-slate-600">{plan.body}</p>
                 {plan.eyebrow === "Starter" && (
                   <p class="mt-3 text-xs text-slate-400">
-                    <a href="/pricing" class="text-blue-600 hover:underline">Team $59/mo · Scale $149/mo →</a>
+                    <a href="/pricing/" class="text-blue-600 hover:underline">Team $59/mo · Scale $149/mo →</a>
                   </p>
                 )}
               </article>
@@ -1026,7 +1026,7 @@ const structuredData = JSON.stringify([
               </svg>
               Get started
             </a>
-            <a class="btn-secondary" href="/pricing">Team pricing</a>
+            <a class="btn-secondary" href="/pricing/">Team pricing</a>
             <a class="btn-chrome" href="#extension">
               <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="10" />

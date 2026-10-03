@@ -278,13 +278,13 @@ export default function Dashboard() {
         {children}
         {/* The marketing footer is off on this page, and these still have to be reachable. */}
         <footer className="dash-foot">
-          <a href="/privacy">Privacy</a>
+          <a href="/privacy/">Privacy</a>
           <span aria-hidden="true">·</span>
-          <a href="/terms">Terms</a>
+          <a href="/terms/">Terms</a>
           <span aria-hidden="true">·</span>
-          <a href="/cookies">Cookies</a>
+          <a href="/cookies/">Cookies</a>
           <span aria-hidden="true">·</span>
-          <a href="/contact">Contact</a>
+          <a href="/contact/">Contact</a>
           <span aria-hidden="true">·</span>
           <a href="/">striff.io</a>
         </footer>
@@ -498,7 +498,7 @@ function helpUrl(
   }
   if (openRepo) context.set("repo", openRepo);
   if (section) context.set("section", section);
-  return `/contact?${context.toString()}`;
+  return `/contact/?${context.toString()}`;
 }
 
 /**

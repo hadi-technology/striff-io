@@ -50,5 +50,5 @@ export const ossRepos: OssRepo[] = [
 
 /** The repository's public report on striff.io. */
 export function reportPath(r: OssRepo): string {
-  return `/${r.owner}/${r.repo}`;
+  return `/${r.owner}/${r.repo}/`;
 }

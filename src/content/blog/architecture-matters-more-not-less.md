@@ -204,7 +204,7 @@ The mechanism is simple. A diff shows you lines. It does not show you that those
 <text x="484" y="283" font-size="11.5" fill="#7f1d1d">True at the base revision, false after this change</text>
 </g>
 </svg>
-<p class="bp-figure-caption">Ericsson/ecchronos <a href="https://github.com/Ericsson/ecchronos/pull/1786">#1786</a>, a real pull request. The call moved to a new class, <code>SchemaRefresher</code>; the sentence on the right did not move with it. It sits in a file the diff does not contain, so no amount of careful diff-reading surfaces it, and as of September 2026 it is still on <code>master</code>. The next agent asked to work on <code>NodeWorker</code> reads that sentence first. <a href="/blog/design-docs-are-enforceable-now">The whole story</a>.</p>
+<p class="bp-figure-caption">Ericsson/ecchronos <a href="https://github.com/Ericsson/ecchronos/pull/1786">#1786</a>, a real pull request. The call moved to a new class, <code>SchemaRefresher</code>; the sentence on the right did not move with it. It sits in a file the diff does not contain, so no amount of careful diff-reading surfaces it, and as of September 2026 it is still on <code>master</code>. The next agent asked to work on <code>NodeWorker</code> reads that sentence first. <a href="/blog/design-docs-are-enforceable-now/">The whole story</a>.</p>
 </div>
 
 The reviewers of that pull request were not careless. They approved a clean refactor, and the sentence it made false was in a file they had no reason to open.

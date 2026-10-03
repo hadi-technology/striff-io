@@ -47,7 +47,7 @@ A check is built in four steps. Two use a language model, and neither of those c
 
 This also means that when Striff is wrong, it is wrong the way ordinary software is wrong. A bad verdict traces back to a sentence, a rule and two parsed facts, so it can be reproduced, fixed and tested. There is no equivalent for "the model felt confident".
 
-[Ericsson's ecChronos #1786](/blog/design-docs-are-enforceable-now) walks through one such finding end to end: the doc sentence, the rule it became, and the two lookups in the public commit history that anyone can redo themselves in under a minute. This post is about the mechanism that makes that walkthrough trustworthy; that one is about the specific pull request.
+[Ericsson's ecChronos #1786](/blog/design-docs-are-enforceable-now/) walks through one such finding end to end: the doc sentence, the rule it became, and the two lookups in the public commit history that anyone can redo themselves in under a minute. This post is about the mechanism that makes that walkthrough trustworthy; that one is about the specific pull request.
 
 ## What it will not tell you
 
@@ -60,7 +60,7 @@ Being true is not enough to earn a line in your check. The bar is one question: 
 <thead><tr><th>Candidate</th><th>True?</th><th>In your check?</th></tr></thead>
 <tbody>
 <tr><td>"This pull request adds an import"</td><td><span class="bp-yes">✓</span></td><td><span class="bp-no">✗</span> It is a line of the diff. Restating the diff is not analysis.</td></tr>
-<tr><td>"Coupling on this class went up by 4"</td><td><span class="bp-yes">✓</span></td><td><span class="bp-no">✗</span> The number is on the class in the diagram. On its own it implies no action. <a href="/blog/afferent-efferent-coupling-explained">Why a coupling delta is not a finding</a>.</td></tr>
+<tr><td>"Coupling on this class went up by 4"</td><td><span class="bp-yes">✓</span></td><td><span class="bp-no">✗</span> The number is on the class in the diagram. On its own it implies no action. <a href="/blog/afferent-efferent-coupling-explained/">Why a coupling delta is not a finding</a>.</td></tr>
 <tr><td>"This package now depends on that one", when your docs say nothing about either</td><td><span class="bp-yes">✓</span></td><td><span class="bp-no">✗</span> Possibly exactly what you intended. With no rule your team wrote down, a tool can only guess, so the new edge is drawn on the diagram instead.</td></tr>
 <tr><td>"This change made a sentence in your README false"</td><td><span class="bp-yes">✓</span></td><td><span class="bp-yes">✓</span> It needs your docs and the code at both revisions. The diff contains neither, which is why nobody caught it.</td></tr>
 </tbody>
@@ -88,9 +88,9 @@ Striff can therefore miss a rule a compiler would have answered. What it will no
 
 ## What you get out of it
 
-Fewer comments, and every one of them checkable. In [the largest public window we've measured so far](/blog/design-docs-are-enforceable-now), that quietness held up at scale. When a check that quiet says something, it is worth reading.
+Fewer comments, and every one of them checkable. In [the largest public window we've measured so far](/blog/design-docs-are-enforceable-now/), that quietness held up at scale. When a check that quiet says something, it is worth reading.
 
-It also changes what your docs are for. A sentence in your README becomes a rule, checked on every pull request, whether a person or a coding agent wrote the code. [Here is how to write docs Striff can check](/blog/design-docs-are-enforceable-now#writing-docs-that-can-be-checked), though it reads the docs you already have without any changes.
+It also changes what your docs are for. A sentence in your README becomes a rule, checked on every pull request, whether a person or a coding agent wrote the code. [Here is how to write docs Striff can check](/blog/design-docs-are-enforceable-now/#writing-docs-that-can-be-checked), though it reads the docs you already have without any changes.
 
 ## Try it on a pull request you know
 
@@ -98,4 +98,4 @@ The quickest test is a pull request whose history you already know, so you can j
 
 - Your public repositories are free. [Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open a pull request. Rules, diagram and review notes, on every PR.
 - For someone else's public pull request, the [free Chrome extension](/#extension) shows the same review in a tab beside Files changed, without installing anything on the repository.
-- Private repositories start at $29 a month. [See pricing](/pricing).
+- Private repositories start at $29 a month. [See pricing](/pricing/).

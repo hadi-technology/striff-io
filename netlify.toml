@@ -3,10 +3,13 @@
   publish = "dist"
   functions = "netlify/functions"
 
-# Retired posts: send old links to the blog index instead of a 404.
+# Retired posts: send old links to the blog index instead of a 404. Netlify serves a file that
+# exists before any rule, so live posts (and /blog/rss.xml) are untouched; any other /blog/<slug>
+# is a retired post. Without this it would fall through to the repository page's rules below and
+# render an empty repository shell with a 200, which search engines read as a soft 404.
 [[redirects]]
-  from = "/blog/package-dependency-cycles"
-  to = "/blog"
+  from = "/blog/*"
+  to = "/blog/"
   status = 301
 
 # The extension's page became a section of the homepage.
