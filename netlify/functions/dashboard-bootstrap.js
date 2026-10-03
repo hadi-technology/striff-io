@@ -70,6 +70,15 @@ export const handler = async (event) => {
     // As auth-status answers: the client sends the reader to sign in.
     return jsonResponse({ authenticated: false });
   }
+  // A listing GitHub would not give is not an empty one: saying "Striff isn't installed" to someone
+  // whose installations GitHub just failed to list is wrong, so the page is told it could not load.
+  if (listed.failure && listed.items.length === 0) {
+    return {
+      statusCode: 503,
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+      body: JSON.stringify({ error: "github_unavailable" }),
+    };
+  }
   writes.push(cache.rememberLogin(user.login));
   if (listed.complete) {
     writes.push(cache.rememberInstallationIds(listed.items.map((inst) => String(inst.id))));

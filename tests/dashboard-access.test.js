@@ -219,6 +219,18 @@ test("bootstrap shows a listing that failed as before but caches only the comple
   assert.ok(store.data.has(`${hash}/installations`));
 });
 
+test("bootstrap whose installations GitHub would not list says it could not load, not that none exist", async () => {
+  github[TOKEN_A].installations = [installation(7, "acme")];
+  github[TOKEN_A].respond = (u) =>
+    u.pathname === "/user/installations" ? json({ message: "Server Error" }, 502) : null;
+
+  const res = await bootstrap({ headers: cookie(TOKEN_A) });
+
+  assert.equal(res.statusCode, 503);
+  assert.deepEqual(JSON.parse(res.body), { error: "github_unavailable" });
+  assert.ok(!store.data.has(`${sha(TOKEN_A)}/installations`));
+});
+
 test("a cached listing grants that repository without asking GitHub", async () => {
   seed(TOKEN_A, "installations/7/repositories", { names: ["acme/widgets"] });
 
