@@ -12,8 +12,6 @@ const TIMEOUT_MS = 8000;
 
 /**
  * The tally a report's two answers add up to, or null where they are not the shape expected.
- * While documents are being read again their rules are missing from the counts, so the rules
- * that held when last judged are added back, as the report's own page does.
  *
  * @param {any} catalog the catalog view's answer
  * @param {any} typeFindings the type-findings view's answer
@@ -27,10 +25,7 @@ export function tallyFrom(catalog, typeFindings) {
   const holds = count(s.holdsOnDefaultBranch);
   const broken = count(s.brokenOnDefaultBranch);
   if (holds === null || broken === null) return null;
-  const rereading = (s.rereading || 0) > 0;
-  const held = holds + (rereading ? count(s.lastKnownHeld) || 0 : 0);
-  const rules = (count(s.rules) || 0) + (rereading ? count(s.lastKnownRules) || 0 : 0);
-  return { held, broken, outOfDate: findings.length, rules };
+  return { held: holds, broken, outOfDate: findings.length, rules: count(s.rules) || 0 };
 }
 
 /**

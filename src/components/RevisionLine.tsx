@@ -1,36 +1,58 @@
 import { clockNow, formatDay } from "../lib/renderClock.js";
 
 /**
- * Which revision of the repository this page is a view of.
+ * Which revision of the repository this page is a view of, and when Striff last refreshed it.
  *
  * Both views list what is on the **default branch**: the catalogue is written by a scan of that
  * branch, and its counts are counts of it. Rules, though, are read by pull requests, so a document's
  * rules can come from a version that only ever existed on someone's branch. Saying which branch
- * this is, and when it was last listed, is the difference between a list of documents and a list of
- * documents as of something.
+ * this is, and when it was last refreshed, is the difference between a list of documents and a list
+ * of documents as of something.
+ *
+ * "Last refreshed" is the latest moment anything on the page was brought up to date: the documents
+ * listed, a reading of the whole repository finished, or a document's rules extracted. It is the one
+ * date the page shows about itself. Work still in flight is not reported here: what the page shows is
+ * what Striff has, and it says when it had it.
  */
 
 interface Revision {
   defaultBranch: string | null;
   defaultBranchSha: string | null;
   lastScanMs: number | null;
+  reading?: { state: string; finishedAtMs: number } | null;
+  documents?: { lastExtractedMs: number | null }[];
 }
 
-function listedWhen(ms: number | null): string {
-  // Reading a repository nothing has listed asks for it to be listed, so "never" is never the
-  // whole truth by the time anyone reads this line.
-  if (!ms) return "listing its documents now";
+/** The latest of the listing, a finished reading and any document's extraction; null where none. */
+export function lastRefreshedMs(catalog: Revision): number | null {
+  let latest = catalog.lastScanMs || 0;
+  if (catalog.reading?.state === "done" && catalog.reading.finishedAtMs > latest) {
+    latest = catalog.reading.finishedAtMs;
+  }
+  for (const doc of catalog.documents || []) {
+    if (doc.lastExtractedMs && doc.lastExtractedMs > latest) latest = doc.lastExtractedMs;
+  }
+  return latest > 0 ? latest : null;
+}
+
+function ago(ms: number): string {
   const minutes = Math.round((clockNow() - ms) / 60000);
-  if (minutes < 1) return "listed just now";
-  if (minutes < 60) return `listed ${minutes} min ago`;
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `listed ${hours}h ago`;
-  return `listed ${formatDay(ms, { month: "short", day: "numeric" })}`;
+  if (hours < 24) return `${hours}h ago`;
+  return formatDay(ms, { month: "short", day: "numeric" });
+}
+
+function listedTitle(ms: number | null): string {
+  if (!ms) return "Striff has not finished listing this repository's documents.";
+  return `Documents last listed from the default branch ${ago(ms)}.`;
 }
 
 export default function RevisionLine({ catalog }: { catalog: Revision }) {
   const branch = catalog.defaultBranch;
   const sha = catalog.defaultBranchSha;
+  const refreshed = lastRefreshedMs(catalog);
   return (
     <p className="docs-revision">
       <span
@@ -50,7 +72,11 @@ export default function RevisionLine({ catalog }: { catalog: Revision }) {
           {sha.slice(0, 7)}
         </code>
       )}
-      <span className="docs-revision-when">{listedWhen(catalog.lastScanMs)}</span>
+      {refreshed && (
+        <span className="docs-revision-when" title={listedTitle(catalog.lastScanMs)}>
+          Last refreshed {ago(refreshed)}
+        </span>
+      )}
     </p>
   );
 }
