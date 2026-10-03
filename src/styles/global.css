@@ -6885,7 +6885,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .badge-panel-close:hover { background: #f1f5f9; color: #0f172a; }
 .badge-panel-close:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 
-/* ---- Found in open source: a strip under the hero's buttons ----
+/* ---- Found in open source: a strip under the hero's example check ----
    Social proof, in the manner of a logo row: repositories people know, each a link to its public
    report. One quiet line inside the hero's own background: a label and a slowly moving list,
    between two hairlines that fade out at their ends. */
@@ -6894,7 +6894,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   position: relative;
   z-index: 1;
   max-width: 68rem;
-  margin: 1.75rem auto 0;
+  margin: 2.5rem auto 0;
   background:
     var(--proof-line) top / 100% 1px no-repeat,
     var(--proof-line) bottom / 100% 1px no-repeat;
