@@ -274,7 +274,7 @@ export default function PublicRepo({ initial }: { initial?: BuiltReport }) {
            target="_blank" rel="noopener noreferrer">
           Is this yours? Install to manage it
         </a>
-        <p className="public-repo-snapshot">Installed, Striff checks every pull request.</p>
+        <p className="public-repo-snapshot">Once installed, Striff checks every pull request.</p>
       </div>
     ),
     lede: (
