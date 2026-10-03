@@ -3034,9 +3034,9 @@
    banner and first two rows into the first screen on a 900px laptop. */
 .hero-section {
   padding-top: 2.75rem;
-  /* The card needs air under it before the dark band starts, or the two read as
-     one stacked object rather than a hero and the section after it. */
-  padding-bottom: 5.5rem;
+  /* Air under the strip that closes the hero before the next section starts: enough that
+     the two read as separate, not so much that the page seems to end there. */
+  padding-bottom: 3rem;
 }
 
 .hero-copy h1 {
@@ -6887,8 +6887,8 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 
 /* ---- Found in open source: a strip under the hero's example check ----
    Social proof, in the manner of a logo row: repositories people know, each a link to its public
-   report. One quiet line inside the hero's own background: a label and a slowly moving list,
-   between two hairlines that fade out at their ends. */
+   report carrying that report's rules tally, in the colours the check above uses. One calm band
+   inside the hero's own background, between two hairlines that fade out at their ends. */
 .proof-strip {
   --proof-line: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.12) 18%, rgba(15, 23, 42, 0.12) 82%, transparent);
   position: relative;
@@ -6904,7 +6904,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  padding: 0.6rem 0.5rem;
+  padding: 0.85rem 0.5rem;
 }
 
 .proof-strip-label {
@@ -6922,6 +6922,8 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
+  /* Room for an item's outline when focused. */
+  padding: 3px 0;
   /* Items fade in and out at both ends rather than being cut. */
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--proof-fade), #000 calc(100% - var(--proof-fade)), transparent);
   mask-image: linear-gradient(90deg, transparent, #000 var(--proof-fade), #000 calc(100% - var(--proof-fade)), transparent);
@@ -6948,44 +6950,64 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 /* The gap after the last item equals the gap between items, so the seam between the two copies
    is spaced like the rest. */
 .proof-strip-list {
-  --proof-gap: 1.25rem;
+  --proof-gap: 0.85rem;
   display: flex;
   flex: none;
-  align-items: center;
+  align-items: stretch;
   gap: var(--proof-gap);
   margin: 0;
   padding: 0 var(--proof-gap) 0 0;
   list-style: none;
 }
 
+.proof-strip-list > li {
+  display: flex;
+}
+
+/* Each repository is a small card: who it is on the first line, how its rules stand on the
+   second. */
 .proof-item {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 0.25rem 0.7rem 0.25rem 0.3rem;
+  gap: 0.65rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.62);
+  padding: 0.5rem 0.85rem 0.5rem 0.6rem;
   color: #334155;
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-  white-space: nowrap;
   text-decoration: none;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  white-space: nowrap;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
 /* A white square with a hairline edge, so a pale logo still has a shape. */
 .proof-item-avatar {
   flex: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   background: #ffffff;
   outline: 1px solid rgba(15, 23, 42, 0.12);
   outline-offset: -1px;
-  opacity: 0.75;
+  opacity: 0.8;
   transition: opacity 160ms ease;
+}
+
+.proof-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.proof-item-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
 .proof-item-owner {
@@ -7004,10 +7026,61 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   font-variant-numeric: tabular-nums;
 }
 
+/* The tally: the check's own colours, green held, red broken (grey at none), and the names out
+   of date, which are the finding, in the amber badge the report uses for them. */
+.proof-tally {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  line-height: 1;
+}
+
+.proof-tally-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.proof-tally-item b {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.proof-tally-item i {
+  color: #64748b;
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.proof-tally-item.is-held,
+.proof-tally-item.is-held b { color: #17794a; }
+
+.proof-tally-item.is-broken,
+.proof-tally-item.is-broken b { color: #c9313f; }
+
+.proof-tally-item.is-broken.is-none,
+.proof-tally-item.is-broken.is-none b { color: #94a3b8; }
+
+.proof-tally-item.is-stale {
+  border: 1px solid #fdba74;
+  border-radius: 0.3rem;
+  background: #fff7ed;
+  padding: 0.12rem 0.35rem;
+}
+
+.proof-tally-item.is-stale b,
+.proof-tally-item.is-stale i { color: #9a3412; }
+
 .proof-item:hover,
 .proof-item:focus-visible {
-  border-color: #e2e8f0;
-  background: rgba(255, 255, 255, 0.85);
+  border-color: #cbd5e1;
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
   color: var(--ink);
 }
 
@@ -7029,13 +7102,13 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 /* Narrower: the label on one line above a full-width list. */
 @media (max-width: 860px) {
   .proof-strip {
-    margin-top: 1.5rem;
+    margin-top: 1.75rem;
   }
 
   .proof-strip-inner {
     flex-direction: column;
-    gap: 0.4rem;
-    padding: 0.7rem 0;
+    gap: 0.5rem;
+    padding: 0.75rem 0;
   }
 
   .proof-strip-label {
@@ -7047,40 +7120,50 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   }
 }
 
-/* A phone: the list runs to the screen's edges, and each item is two short lines, owner and stars
-   over the repository's name, so two items fit side by side. */
+/* A phone: the list runs to the screen's edges, and each card is narrow enough that two sit side
+   by side. The avatar moves onto the owner's line, the repository's name goes under it and the
+   tally under that; held and broken keep their marks and numbers but drop their words, which the
+   report spells out. */
 @media (max-width: 640px) {
   .proof-strip-viewport {
-    --proof-fade: 32px;
+    --proof-fade: 24px;
     margin: 0 -1.5rem;
   }
 
   .proof-strip-list {
-    --proof-gap: 0.75rem;
+    --proof-gap: 0.5rem;
   }
 
   .proof-item {
-    display: inline-grid;
-    grid-template-areas: "avatar owner stars" "avatar repo repo";
+    display: grid;
+    grid-template-areas:
+      "avatar owner stars"
+      "repo repo repo"
+      "tally tally tally";
     grid-template-columns: auto auto 1fr;
-    column-gap: 0.4rem;
-    row-gap: 0.05rem;
-    border-radius: 0.6rem;
-    padding: 0.3rem 0.55rem 0.3rem 0.35rem;
+    align-items: center;
+    column-gap: 0.35rem;
+    row-gap: 0.2rem;
+    padding: 0.5rem 0.6rem;
   }
 
+  .proof-item-body,
+  .proof-item-head,
   .proof-item-name {
     display: contents;
   }
 
   .proof-item-avatar {
     grid-area: avatar;
-    align-self: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
   }
 
   .proof-item-owner {
     grid-area: owner;
     font-size: 0.7rem;
+    line-height: 1.2;
   }
 
   .proof-item-slash {
@@ -7090,11 +7173,37 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   .proof-item-repo {
     grid-area: repo;
     font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
   }
 
   .proof-item-stars {
     grid-area: stars;
     font-size: 0.68rem;
+  }
+
+  .proof-tally {
+    grid-area: tally;
+    gap: 0.45rem;
+  }
+
+  .proof-tally-item b {
+    font-size: 0.75rem;
+  }
+
+  .proof-tally-item.is-held i,
+  .proof-tally-item.is-broken i {
+    display: none;
+  }
+
+  .proof-tally-item.is-stale {
+    padding: 0.1rem 0.3rem;
+  }
+
+  .proof-tally-item.is-stale i {
+    font-size: 0.56rem;
+    letter-spacing: 0.04em;
   }
 }
 
@@ -7120,14 +7229,11 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   /* The label centred above, the rows centred under it. */
   .proof-strip-inner {
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.6rem;
   }
 
   .proof-strip-viewport {
     align-self: stretch;
-  }
-
-  .proof-strip-viewport {
     -webkit-mask-image: none;
     mask-image: none;
   }
@@ -7137,7 +7243,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
     flex: 1 1 auto;
     grid-template-columns: repeat(3, max-content);
     justify-content: center;
-    gap: 0.15rem var(--proof-gap);
+    gap: 0.6rem var(--proof-gap);
     padding: 0;
   }
 }
