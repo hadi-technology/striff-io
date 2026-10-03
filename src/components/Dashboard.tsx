@@ -385,7 +385,12 @@ export default function Dashboard() {
                     aria-label="Repository"
                     title={openRepo}
                     value={openRepo}
-                    onChange={(event) => setOpenRepo(event.target.value)}
+                    onChange={(event) => {
+                      setOpenRepo(event.target.value);
+                      // Choosing a repository is asking to see it: from an account section that
+                      // shows no repository, open its docs and rules. Checks follows the choice.
+                      if (section !== "docs" && section !== "checks") setSection("docs");
+                    }}
                   >
                     {/* One installation is one account, so every repository here shares an owner
                         and the owner is already named above. */}
