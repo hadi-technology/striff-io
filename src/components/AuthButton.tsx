@@ -51,7 +51,7 @@ export default function AuthButton() {
           <div className="absolute right-0 mt-2 w-44 rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
             <p className="px-4 py-2 text-xs text-slate-500 truncate">{user.login}</p>
             <a
-              href="/dashboard"
+              href="/dashboard/"
               className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
             >
               Dashboard

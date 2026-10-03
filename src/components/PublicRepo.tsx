@@ -48,7 +48,7 @@ function recordInstallClick(repo?: string) {
 /** First path segments that are this site's own pages, never a repository's owner. */
 // The post that explains what a report is: a visitor who lands here from a link in a pull
 // request or an email has not met Striff before.
-const EXPLAINER_POST = "/blog/design-docs-are-enforceable-now";
+const EXPLAINER_POST = "/blog/design-docs-are-enforceable-now/";
 
 function recordExplainerClick(repo: string) {
   const posthog = (window as unknown as { posthog?: { capture: (e: string, p: object) => void } }).posthog;
@@ -244,8 +244,8 @@ export default function PublicRepo({ initial }: { initial?: BuiltReport }) {
              target="_blank" rel="noopener noreferrer">
             Install the GitHub App
           </a>
-          <a className="btn-secondary" href="/dashboard">Sign in</a>
-          <a className="btn-secondary" href="/demo">See an example</a>
+          <a className="btn-secondary" href="/dashboard/">Sign in</a>
+          <a className="btn-secondary" href="/demo/">See an example</a>
         </div>
       </div>
     );

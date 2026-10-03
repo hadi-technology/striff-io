@@ -35,7 +35,7 @@ const Heading = headingLevel === 2 ? "h2" : "h3";
       <time datetime={date.toISOString()}>{formatDate(date, "short")}</time>
       <span>{readingMinutes(post)} min read</span>
     </p>
-    <Heading class="sb-card-title"><a href={`/blog/${post.slug}`}>{title}</a></Heading>
+    <Heading class="sb-card-title"><a href={`/blog/${post.slug}/`}>{title}</a></Heading>
     <p class="sb-card-dek">{description}</p>
     <p class="sb-card-foot" aria-hidden="true">
       <span class="sb-readmore">

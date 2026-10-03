@@ -105,7 +105,7 @@ const jsonLd = JSON.stringify({
           <div class="sb-frame">
             <div class="sb-hero-main">
               <p class="sb-kicker">
-                <a class="sb-kicker-home" href="/blog">{BLOG_NAME}</a>
+                <a class="sb-kicker-home" href="/blog/">{BLOG_NAME}</a>
                 <span class="sb-kicker-sep" aria-hidden="true">/</span>
                 <span class={`sb-cat sb-tone-${categoryTone(category)}`}>{category}</span>
               </p>
@@ -209,7 +209,7 @@ const jsonLd = JSON.stringify({
                   Install the GitHub App
                   <span class="sr-only"> (opens in a new tab)</span>
                 </a>
-                <a class="sb-btn sb-btn--quiet" href="/pricing">See pricing</a>
+                <a class="sb-btn sb-btn--quiet" href="/pricing/">See pricing</a>
               </div>
             </section>
           </div>
@@ -222,7 +222,7 @@ const jsonLd = JSON.stringify({
         <section class="sb-related" aria-labelledby="sb-related-title">
           <div class="sb-section-head">
             <h2 id="sb-related-title" class="sb-label">Keep reading</h2>
-            <a class="sb-section-link" href="/blog">All articles</a>
+            <a class="sb-section-link" href="/blog/">All articles</a>
           </div>
           <div class="sb-grid sb-grid--3">
             {related.map((relatedPost) => <PostCard post={relatedPost} />)}

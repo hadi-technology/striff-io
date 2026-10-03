@@ -126,7 +126,7 @@ export default function InstalledBadge() {
           heading={`For ${offer.repo.full_name}`}
         />
       ) : (
-        <a className="btn-secondary inline-flex justify-center" href="/dashboard#badge">
+        <a className="btn-secondary inline-flex justify-center" href="/dashboard/#badge">
           Open your dashboard to get your badge
         </a>
       )}

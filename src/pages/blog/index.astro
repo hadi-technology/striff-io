@@ -89,7 +89,7 @@ const categories = Array.from(
                 <span>{readingMinutes(featured)} min read</span>
               </p>
             </div>
-            <h2 class="sb-feature-title"><a href={`/blog/${featured.slug}`}>{featured.data.title}</a></h2>
+            <h2 class="sb-feature-title"><a href={`/blog/${featured.slug}/`}>{featured.data.title}</a></h2>
             <p class="sb-feature-dek">{featured.data.description}</p>
             <div class="sb-feature-foot">
               <Byline name={featured.data.author} role={featured.data.authorRole} avatar={featured.data.authorAvatar} size="sm" />
