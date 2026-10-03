@@ -1,0 +1,39 @@
+---
+/**
+ * A published public repository's report, built as a page of its own at /<owner>/<repo>/.
+ *
+ * Built only for the pages striff-api lists as published and up, from the same four reads the live
+ * page makes (see lib/staticReports.js). Netlify serves a file that exists before any rewrite, so
+ * these win over the generic shell (repo.astro), which still answers every address that has no
+ * built page: one unpublished, taken down, published since the build, or that the build could not
+ * read. The island renders the built answers as they are, then reads them again as any visit does.
+ */
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PublicRepo from "../../components/PublicRepo";
+import { reportHead, staticReports } from "../../lib/staticReports.js";
+
+export async function getStaticPaths() {
+  const reports = await staticReports();
+  return reports.map((report) => ({
+    params: { owner: report.page.repoOwner, repo: report.page.repoName },
+    props: { report },
+  }));
+}
+
+const { report } = Astro.props;
+const head = reportHead(report);
+---
+<BaseLayout
+  title={head.title}
+  ogTitle={head.ogTitle}
+  description={head.description}
+  canonical={head.canonical}
+  robots={head.robots}
+>
+  <script slot="head" type="application/ld+json" is:inline set:html={head.jsonLd} />
+  <main class="demo-page text-slate-900">
+    <section class="mx-auto max-w-[95rem] px-6 pt-14 pb-20 md:pt-20">
+      <PublicRepo client:load initial={report} />
+    </section>
+  </main>
+</BaseLayout>

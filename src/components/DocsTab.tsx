@@ -608,6 +608,7 @@ export default function DocsTab({
   openRepo,
   sample,
   source,
+  initial,
 }: {
   installationId: number;
   /** The repositories to pick from; the dashboard's carry whether each is private, and its branch. */
@@ -631,15 +632,26 @@ export default function DocsTab({
    * reader's.
    */
   source?: DocsSource;
+  /**
+   * The answers this view opens on, read when the page was built: it renders them at once, the
+   * same as the built markup, and reads them again quietly once it is on screen.
+   */
+  initial?: {
+    catalog: any;
+    rules: any;
+    staleNames: any;
+  };
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
-  const [catalog, setCatalog] = useState<Catalog | null>(null);
+  const [catalog, setCatalog] = useState<Catalog | null>(initial?.catalog ?? null);
   const [detail, setDetail] = useState<Detail | null>(null);
   /** Every rule of the repository, for the scopes a single document's answer cannot serve. */
-  const [rulesIndex, setRulesIndex] = useState<RepoRules | null>(null);
+  const [rulesIndex, setRulesIndex] = useState<RepoRules | null>(initial?.rules ?? null);
   const [rulesLoading, setRulesLoading] = useState(false);
   /** The names the docs write that the code no longer has, null until a reading has reported. */
-  const [staleNames, setStaleNames] = useState<StaleNames | null>(null);
+  const [staleNames, setStaleNames] = useState<StaleNames | null>(
+    initial && Array.isArray(initial.staleNames?.findings) ? initial.staleNames : null
+  );
   /** What is selected: the empty path is the repository itself, which is where this opens. */
   const [selected, setSelected] = useState<string>("");
   /**
@@ -660,7 +672,13 @@ export default function DocsTab({
   /** Whether this page gave up waiting for a listing that had not arrived. */
   const [listingStale, setListingStale] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set([""]));
+  const [expanded, setExpanded] = useState<Set<string>>(() =>
+    initial
+      ? allFolders(buildTree(initial.catalog?.documents || [], (openRepo || "").split("/")[1] || ""))
+      : new Set([""])
+  );
+  /** Whether the view still shows the answers it was built with, which a first load refreshes. */
+  const seeded = useRef(!!initial);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -724,6 +742,13 @@ export default function DocsTab({
     // refusal reads as "this repository has nothing in it". Nothing is asked until the two agree;
     // the effect above brings the view back to a repository this account has.
     if (repos.length > 0 && !repos.some((each) => each.full_name === repo)) return;
+    // A built page already shows this repository: read it again without taking that away, so
+    // nothing on screen blinks out and back, and an answer that fails leaves it as it was.
+    if (seeded.current) {
+      seeded.current = false;
+      loadCatalog(true);
+      return;
+    }
     // A new repository is read from its root, as a fresh one is.
     setSelected("");
     setDetail(null);
@@ -762,8 +787,8 @@ export default function DocsTab({
    * never in its way: where it cannot be had, the documents are shown without it, and nothing is
    * said about stale names at all, since an empty list would say there are none.
    */
-  async function loadStaleNames(wanted: number) {
-    setStaleNames(null);
+  async function loadStaleNames(wanted: number, keep = false) {
+    if (!keep) setStaleNames(null);
     try {
       const res = await fetch(readUrl("type-findings"));
       if (!res.ok || wanted !== loadedAt.current) return;
@@ -808,7 +833,8 @@ export default function DocsTab({
         return;
       }
       setCatalog(data);
-      loadStaleNames(wanted);
+      // A quiet look keeps the names on screen until the new answer replaces them.
+      loadStaleNames(wanted, quiet);
       setExpanded(allFolders(buildTree(data.documents || [], name)));
       // The documents a listing was waited for bring their rules with them.
       if (quiet && (data.documents || []).length > 0) loadRules();
