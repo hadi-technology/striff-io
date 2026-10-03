@@ -8,7 +8,18 @@
 // and their documents name classes, packages and design decisions. GitHub's
 // /user/installations/{id}/repositories lists only what the caller's own token can see, so asking
 // it is the authorization, and the repository-scoped token is what lets the API trust the answer.
+// That check, and the shared cache that lets an answer GitHub gave a few minutes ago stand in for
+// asking again, are callerSeesRepository in ../lib/github-access.js.
 import crypto from "node:crypto";
+import { accessCache } from "../lib/access-cache.js";
+import {
+  SEES,
+  SEES_NOT,
+  SIGNED_OUT,
+  callerLogin,
+  callerSeesRepository,
+  parseCookie,
+} from "../lib/github-access.js";
 
 const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
@@ -30,149 +41,12 @@ function generateRepoToken(installationId, owner, repo) {
   return `v1.${expiresAt}.${signature}`;
 }
 
-function parseCookie(header) {
-  const cookies = {};
-  for (const pair of (header || "").split(";")) {
-    const [k, ...v] = pair.split("=");
-    cookies[k.trim()] = (v.join("=") || "").trim();
-  }
-  return cookies;
-}
-
 async function readBody(res) {
   const text = await res.text();
   try {
     return JSON.parse(text);
   } catch {
     return { error: text || `Upstream error (${res.status})` };
-  }
-}
-
-// Whether the caller's own token can see this repository under this installation. Paged, because
-// an installation covering more than 100 repositories would otherwise look like one that does not
-// cover the repository at all.
-// Three answers, not two: "yes", "no", and "GitHub would not say". A rate limit, a 5xx or an
-// installation larger than this pages through is not evidence that the caller cannot see the
-// repository, and answering 403 to it tells someone they lack access they actually have.
-const SEES = "yes";
-const SEES_NOT = "no";
-const CANNOT_TELL = "unknown";
-/** GitHub would not accept the caller's own token: expired, revoked, or signed out elsewhere. */
-const SIGNED_OUT = "signed_out";
-
-/**
- * What this token was last told about a repository, and when.
- *
- * Every read of the dashboard re-pages `/user/installations/{id}/repositories` — up to ten calls of
- * a hundred — before anything of ours is touched. Opening a page, opening a document, switching a
- * version and every write each paid that, which is slow, and on a busy tab it is how a person finds
- * GitHub's secondary rate limit. The answer does not change minute to minute, so it is kept for a
- * few, per function instance, keyed by a hash of the token so the token itself is not held.
- */
-const seenCache = new Map();
-const SEEN_TTL_MS = 3 * 60 * 1000;
-
-function seenKey(ghToken, installationId, owner, repo) {
-  return `${crypto.createHash("sha256").update(ghToken).digest("hex").slice(0, 16)}:`
-    + `${installationId}:${owner}/${repo}`.toLowerCase();
-}
-
-async function callerSeesRepository(ghToken, installationId, owner, repo) {
-  const key = seenKey(ghToken, installationId, owner, repo);
-  const remembered = seenCache.get(key);
-  if (remembered && Date.now() - remembered.at < SEEN_TTL_MS) {
-    return remembered.answer;
-  }
-  const answer = await askGitHubIfCallerSees(ghToken, installationId, owner, repo);
-  // Only a definite answer is worth keeping: "could not tell" is the state that should be retried.
-  if (answer !== CANNOT_TELL) {
-    seenCache.set(key, { answer, at: Date.now() });
-    if (seenCache.size > 500) {
-      for (const old of [...seenCache.keys()].slice(0, 100)) seenCache.delete(old);
-    }
-  }
-  return answer;
-}
-
-async function askGitHubIfCallerSees(ghToken, installationId, owner, repo) {
-  const wanted = `${owner}/${repo}`.toLowerCase();
-  for (let page = 1; page <= 10; page += 1) {
-    let res;
-    try {
-      res = await fetch(
-        `https://api.github.com/user/installations/${installationId}/repositories?per_page=100&page=${page}`,
-        {
-          headers: {
-            Authorization: `Bearer ${ghToken}`,
-            Accept: "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-          },
-        }
-      );
-    } catch (e) {
-      return CANNOT_TELL;
-    }
-    // GitHub answers a rate limit with 403 as well as a refusal, and the difference matters: one
-    // says this caller may not see the repository, the other says ask again later. Telling a
-    // person they have lost access because they clicked twice is the worse mistake, so anything
-    // carrying a rate-limit marker is "could not tell".
-    if (res.status === 403 || res.status === 429) {
-      const remaining = res.headers.get("x-ratelimit-remaining");
-      const retryAfter = res.headers.get("retry-after");
-      const body = await res.text().catch(() => "");
-      const limited = res.status === 429 || retryAfter !== null || remaining === "0"
-        || /rate limit|secondary rate|abuse/i.test(body);
-      return limited ? CANNOT_TELL : SEES_NOT;
-    }
-    if (res.status === 401) {
-      // The caller's own token, not the repository: telling someone they lack access to their own
-      // repository when the truth is that their sign-in lapsed sends them looking in the wrong
-      // place.
-      return SIGNED_OUT;
-    }
-    if (!res.ok) {
-      return CANNOT_TELL;
-    }
-    const data = await res.json();
-    const repositories = data.repositories || [];
-    if (repositories.some((r) => (r.full_name || "").toLowerCase() === wanted)) {
-      return SEES;
-    }
-    if (repositories.length < 100) {
-      return SEES_NOT;
-    }
-  }
-  // Ten pages of a hundred and still looking: an installation this large is one this check cannot
-  // finish, which is not the same as one that does not cover the repository.
-  return CANNOT_TELL;
-}
-
-/**
- * Who is asking, as GitHub knows them.
- *
- * The caller says who they are in the request body, and a caller can say anything. An exclusion
- * carries a name into the catalogue as the record of who asked for it, so the name has to come
- * from the token, not from the body.
- *
- * @return the login, or null where GitHub would not say — recorded as nobody rather than as
- *     whoever the request claimed
- */
-async function callerLogin(ghToken) {
-  try {
-    const res = await fetch("https://api.github.com/user", {
-      headers: {
-        Authorization: `Bearer ${ghToken}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    });
-    if (!res.ok) {
-      return null;
-    }
-    const user = await res.json();
-    return typeof user.login === "string" ? user.login : null;
-  } catch {
-    return null;
   }
 }
 
@@ -209,7 +83,8 @@ export const handler = async (event) => {
   }
 
   try {
-    const sees = await callerSeesRepository(ghToken, installationId, owner, repo);
+    const cache = accessCache(event, ghToken);
+    const sees = await callerSeesRepository(cache, ghToken, installationId, owner, repo);
     if (sees === SIGNED_OUT) {
       return {
         statusCode: 401,
@@ -263,7 +138,7 @@ export const handler = async (event) => {
     } else if (method === "POST") {
       // Reading a whole repository: queued, minutes long, and rate-limited by the API. The name on
       // it comes from the token, like every other write.
-      const asked = await callerLogin(ghToken);
+      const asked = await callerLogin(cache, ghToken);
       url = `${base}/baseline?token=${token}${asked ? `&actor=${encodeURIComponent(asked)}` : ""}`;
       init = { method: "POST", headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
     } else if (method === "PATCH") {
@@ -276,7 +151,7 @@ export const handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: "Malformed request" }) };
       }
       // Whoever the body claims, the record says who the token is.
-      asked.actor = await callerLogin(ghToken);
+      asked.actor = await callerLogin(cache, ghToken);
       init = {
         method: "PATCH",
         headers: {

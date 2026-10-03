@@ -757,10 +757,13 @@ export default function DocsTab({
     return `/.netlify/functions/doc-catalog-proxy?${view ? `view=${view}&` : ""}installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}${path != null ? `&path=${encodeURIComponent(path)}` : ""}`;
   }
 
-  /** Both answers this view is built from: what documents exist, and what rules they hold. */
+  /**
+   * Both answers this view is built from: what documents exist, and what rules they hold. Asked
+   * for together; each has its own counter, so an older answer to either never paints over a newer
+   * one.
+   */
   async function reload() {
-    await loadCatalog();
-    await loadRules();
+    await Promise.all([loadCatalog(), loadRules()]);
   }
 
   /**

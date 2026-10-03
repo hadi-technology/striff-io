@@ -150,7 +150,8 @@ export default function Dashboard() {
     setLoading(true);
     const linkedRepo = takeLinkedRepo();
     try {
-      const statusRes = await fetch("/.netlify/functions/auth-status");
+      // Who is signed in, every installation and every repository under each, in one request.
+      const statusRes = await fetch("/.netlify/functions/dashboard-bootstrap");
       // An outage, a cold start or a proxy error page all return HTML here, and .json() then
       // throws a parser message ("Unexpected token '<'...") that used to be shown to the
       // customer verbatim. Decide on the content type instead of guessing from the exception.
@@ -173,17 +174,7 @@ export default function Dashboard() {
       }
       setUser(status.user);
 
-      const installs = await fetchAllPages("/user/installations", "installations");
-      const withRepos = await Promise.all(
-        installs.map(async (inst: Installation) => {
-          try {
-            const repositories = await fetchAllPages(`/user/installations/${inst.id}/repositories`, "repositories");
-            return { ...inst, repositories };
-          } catch {
-            return { ...inst, repositories: [] };
-          }
-        })
-      );
+      const withRepos: Installation[] = Array.isArray(status.installations) ? status.installations : [];
       setInstallations(withRepos);
       if (linkedRepo) {
         const found = findRepo(withRepos, linkedRepo);
@@ -1458,23 +1449,6 @@ function FaqSection() {
 }
 
 /* ─── Utility ───────────────────────────────────────────────────── */
-
-// GitHub caps pages at 100 items; a single fetch silently truncated orgs with >100 repos or
-// users with >100 installations. Follows pages until a short page; capped at 5 (500 items) to
-// bound dashboard load time.
-async function fetchAllPages(path: string, listKey: string): Promise<any[]> {
-  const all: any[] = [];
-  for (let page = 1; page <= 5; page++) {
-    const res = await fetch(
-      "/.netlify/functions/github-proxy?path=" + encodeURIComponent(`${path}?per_page=100&page=${page}`)
-    );
-    const data = await res.json();
-    const items = data[listKey] || [];
-    all.push(...items);
-    if (items.length < 100) break;
-  }
-  return all;
-}
 
 function getOAuthUrl() {
   // Double-submit state: auth-callback compares this cookie against the state GitHub echoes

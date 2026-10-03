@@ -1,7 +1,14 @@
 // Netlify function backing the Dashboard "Metrics" tab: authenticates the caller's gh_token,
-// verifies they actually own the requested installation_id (via GitHub's /user/installations),
-// then proxies to striff-api's org metrics endpoint with the required X-Server-Key + HMAC token.
+// verifies they actually own the requested installation_id (see callerOwnsInstallation in
+// ../lib/github-access.js), then proxies to striff-api's org metrics endpoint with the required
+// X-Server-Key + HMAC token.
+//
+// The ownership check is real authorization, not just authentication: without it, any
+// authenticated user could pass an arbitrary installation_id and read another org's PR volume,
+// flagged repos, and component names.
 import crypto from "node:crypto";
+import { accessCache } from "../lib/access-cache.js";
+import { callerOwnsInstallation, parseCookie } from "../lib/github-access.js";
 
 const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
@@ -20,15 +27,6 @@ function generateToken(installationId) {
   return `v1.${expiresAt}.${signature}`;
 }
 
-function parseCookie(header) {
-  const cookies = {};
-  for (const pair of (header || "").split(";")) {
-    const [k, ...v] = pair.split("=");
-    cookies[k.trim()] = (v.join("=") || "").trim();
-  }
-  return cookies;
-}
-
 // Some API error paths answer in plain text; parsing unconditionally as JSON turned their status
 // into a 500 carrying a parser message. Same helper as billing-proxy.js.
 async function readBody(res) {
@@ -38,29 +36,6 @@ async function readBody(res) {
   } catch {
     return { error: text || `Upstream error (${res.status})` };
   }
-}
-
-// Confirms the caller's own GitHub session actually has access to installationId, by asking
-// GitHub itself which installations the gh_token can see (same API Dashboard.tsx already uses
-// to list installations). This is real authorization, not just authentication: without it, any
-// authenticated user could pass an arbitrary installation_id and read another org's PR volume,
-// flagged repos, and component names -- billing-proxy.js does NOT do this check today (it only
-// verifies a gh_token cookie is present before minting the HMAC token), so there's no existing
-// helper to reuse here.
-async function callerOwnsInstallation(ghToken, installationId) {
-  const res = await fetch("https://api.github.com/user/installations?per_page=100", {
-    headers: {
-      Authorization: `Bearer ${ghToken}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-  });
-  if (!res.ok) {
-    return false;
-  }
-  const data = await res.json();
-  const installations = data.installations || [];
-  return installations.some((inst) => String(inst.id) === String(installationId));
 }
 
 export const handler = async (event) => {
@@ -94,7 +69,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const owns = await callerOwnsInstallation(ghToken, installationId);
+    const owns = await callerOwnsInstallation(accessCache(event, ghToken), ghToken, installationId);
     if (!owns) {
       return { statusCode: 403, body: JSON.stringify({ error: "Not authorized for this installation" }) };
     }
