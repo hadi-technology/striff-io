@@ -1,3 +1,5 @@
+import { clockNow, formatDay } from "../lib/renderClock.js";
+
 /**
  * Which revision of the repository this page is a view of.
  *
@@ -18,12 +20,12 @@ function listedWhen(ms: number | null): string {
   // Reading a repository nothing has listed asks for it to be listed, so "never" is never the
   // whole truth by the time anyone reads this line.
   if (!ms) return "listing its documents now";
-  const minutes = Math.round((Date.now() - ms) / 60000);
+  const minutes = Math.round((clockNow() - ms) / 60000);
   if (minutes < 1) return "listed just now";
   if (minutes < 60) return `listed ${minutes} min ago`;
   const hours = Math.round(minutes / 60);
   if (hours < 24) return `listed ${hours}h ago`;
-  return `listed ${new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+  return `listed ${formatDay(ms, { month: "short", day: "numeric" })}`;
 }
 
 export default function RevisionLine({ catalog }: { catalog: Revision }) {

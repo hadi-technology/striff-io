@@ -30,8 +30,10 @@
 
 # A public repository's page, at the address GitHub gives the repository. A rewrite, not a
 # redirect: the address stays the repository's. Netlify serves a file that exists at the address
-# before any rule, so the site's own two-part pages (/blog/<post>, /contact/thanks) are untouched.
-# Kept last, so every rule above wins.
+# before any rule, so the site's own two-part pages (/blog/<post>, /contact/thanks) are untouched,
+# and so is every published report the build made a page of (src/pages/[owner]/[repo].astro).
+# This shell, never indexed, serves the rest: unpublished, taken down, or published since the
+# last build. Kept last, so every rule above wins.
 [[redirects]]
   from = "/:owner/:repo"
   to = "/repo/index.html"
@@ -41,6 +43,10 @@
   from = "/:owner/:repo/"
   to = "/repo/index.html"
   status = 200
+
+# The fallback rebuild of the public report pages: see netlify/functions/daily-rebuild.js.
+[functions."daily-rebuild"]
+  schedule = "@daily"
 
 [[headers]]
   for = "/dashboard"

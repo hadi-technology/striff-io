@@ -7,6 +7,7 @@
  * end, reintroduced by copying.
  */
 import { createElement, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { formatDay } from "../lib/renderClock.js";
 
 /**
  * What the last pull request to judge a rule said about it.
@@ -90,7 +91,7 @@ export function mark(text: string, term?: string, keyPrefix = "m"): any {
 
 export function when(ms: number | null | undefined): string {
   if (!ms) return "";
-  return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return formatDay(ms, { month: "short", day: "numeric" });
 }
 
 /**
@@ -139,7 +140,18 @@ export function Clamped({ lines = 3, children }: { lines?: number; children: any
     const element = body.current;
     if (!element || open) return;
     // A couple of pixels of slack: sub-pixel line heights make an uncut cell look cut.
-    setCut(element.scrollHeight - element.clientHeight > 2);
+    const measure = () => setCut(element.scrollHeight - element.clientHeight > 2);
+    measure();
+    // A cell measured before the page's fonts arrive, or at another width, measured the wrong
+    // text: a page rendered ahead of time is measured as soon as it hydrates, often before then.
+    let current = true;
+    document.fonts?.ready.then(() => current && measure());
+    const resized = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    resized?.observe(element);
+    return () => {
+      current = false;
+      resized?.disconnect();
+    };
   }, [children, open, lines]);
 
   return (

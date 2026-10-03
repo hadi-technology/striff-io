@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { issueUrl } from "./docIssue";
 import { Clamped, ExtensionNote, mark, withCode, when } from "./docRules";
+import { clockNow, formatDay } from "../lib/renderClock.js";
+import { standing } from "../lib/standing.js";
 
 /**
  * A list of rules, whatever a reader selected to get it.
@@ -51,15 +53,7 @@ export type Row = Rule & { doc: RowDoc };
  */
 export type Standing = "holds" | "broken" | "unchecked" | "unclear";
 
-export function standing(row: { status: string | null; onDefaultBranch: string | null }): Standing {
-  if (row.onDefaultBranch === "HOLDS") return "holds";
-  if (row.onDefaultBranch === "BROKEN") return "broken";
-  if (row.onDefaultBranch === "UNCLEAR") return "unclear";
-  if (row.status === "MAINTAINED" || row.status === "RESTORED") return "holds";
-  if (row.status === "VIOLATED" || row.status === "PRE_EXISTING") return "broken";
-  if (row.status === "UNCLEAR") return "unclear";
-  return "unchecked";
-}
+export { standing };
 
 /** Worst first: what is broken, then what nothing has judged, then what holds. */
 const SEVERITY: Record<Standing, number> = { broken: 0, unchecked: 1, holds: 2, unclear: 3 };
@@ -294,7 +288,7 @@ export default function RulesTable({
         <h1>{scopeLabel} — documented rules</h1>
         <p>
           {shown.length} of {rows.length} rules, printed{" "}
-          {new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+          {formatDay(clockNow(), { year: "numeric", month: "long", day: "numeric" })}
           {filter !== "all" || term !== "" ? " (filtered)" : ""}.
         </p>
       </div>
