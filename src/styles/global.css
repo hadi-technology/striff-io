@@ -6885,189 +6885,285 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .badge-panel-close:hover { background: #f1f5f9; color: #0f172a; }
 .badge-panel-close:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 
-/* ---- Found in open source: a ribbon under the hero ----
-   Three cards, each one stale sentence from a well-known project's docs, the line it is on, what
-   the code has, and a link to that repository's report. Compact on purpose: it is proof, placed
-   where a visitor still deciding whether to scroll will see names they know. */
-.oss-ribbon {
-  border-top: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
-  background: #ffffff;
-  padding: 2.75rem 0 2.5rem;
+/* ---- Found in open source: a strip under the hero's buttons ----
+   Social proof, in the manner of a logo row: repositories people know, each a link to its public
+   report. One quiet line inside the hero's own background: a label and a slowly moving list,
+   between two hairlines that fade out at their ends. */
+.proof-strip {
+  --proof-line: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.12) 18%, rgba(15, 23, 42, 0.12) 82%, transparent);
+  position: relative;
+  z-index: 1;
+  max-width: 68rem;
+  margin: 1.75rem auto 0;
+  background:
+    var(--proof-line) top / 100% 1px no-repeat,
+    var(--proof-line) bottom / 100% 1px no-repeat;
 }
 
-.oss-ribbon-head {
-  max-width: 48rem;
-}
-
-.oss-ribbon-title {
-  margin-top: 0.85rem;
-  font-size: clamp(1.45rem, 2.6vw, 1.9rem);
-  line-height: 1.15;
-  letter-spacing: -0.025em;
-}
-
-.oss-ribbon-sub {
-  margin-top: 0.6rem;
-  max-width: 44rem;
-  color: var(--ink-muted);
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-
-.oss-ribbon-grid {
-  display: grid;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-@media (min-width: 900px) {
-  .oss-ribbon-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-
-.oss-card {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.875rem;
-  background: var(--surface-alt);
-  padding: 1rem 1.1rem 1.05rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.oss-card-head {
+.proof-strip-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  gap: 1.5rem;
+  padding: 0.6rem 0.5rem;
 }
 
-.oss-card-repo {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-width: 0;
-  color: var(--ink);
-  font-size: 0.95rem;
-  letter-spacing: -0.01em;
-  overflow-wrap: anywhere;
-}
-
-.oss-card-repo svg {
+.proof-strip-label {
   flex: none;
   color: #64748b;
-}
-
-.oss-card-name {
-  min-width: 0;
-}
-
-.oss-card-owner {
-  color: var(--ink-muted);
-}
-
-.oss-card-stars {
-  flex: none;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  background: #ffffff;
-  padding: 0.12rem 0.55rem;
-  color: var(--ink-soft);
-  font-size: 0.78rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.oss-card-stars span {
-  color: var(--amber);
-}
-
-.oss-card-label {
-  margin-top: 0.85rem;
-  color: #94a3b8;
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.14em;
-  line-height: 1.4;
+  line-height: 1.45;
   text-transform: uppercase;
 }
 
-.oss-card-quote {
-  margin: 0.35rem 0 0;
-  border-left: 3px solid var(--danger);
-  border-radius: 0 0.375rem 0.375rem 0;
-  background: #ffffff;
-  padding: 0.5rem 0.65rem;
+.proof-strip-viewport {
+  --proof-fade: 48px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  /* Items fade in and out at both ends rather than being cut. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--proof-fade), #000 calc(100% - var(--proof-fade)), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 var(--proof-fade), #000 calc(100% - var(--proof-fade)), transparent);
 }
 
-.oss-card-quote code {
-  display: block;
-  color: var(--ink);
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.8rem;
-  line-height: 1.5;
-  overflow-wrap: break-word;
-}
-
-.oss-card-source {
-  align-self: flex-start;
-  margin-top: 0.35rem;
-  color: var(--ink-muted);
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.72rem;
-  overflow-wrap: anywhere;
-  text-decoration: underline;
-  text-decoration-color: #cbd5e1;
-  text-underline-offset: 2px;
-}
-
-.oss-card-source:hover {
-  color: var(--brand);
-  text-decoration-color: currentColor;
-}
-
-.oss-card-code {
-  margin-top: 0.3rem;
-  color: var(--ink-soft);
-  font-size: 0.875rem;
-  line-height: 1.55;
-}
-
-.oss-card-code code {
-  border-radius: 0.25rem;
-  background: #e2e8f0;
-  padding: 0.05rem 0.3rem;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.78rem;
-  overflow-wrap: anywhere;
-}
-
-.oss-card-cta {
-  margin-top: auto;
-  padding-top: 0.9rem;
-  color: var(--brand);
-  font-size: 0.875rem;
-  font-weight: 700;
-}
-
-.oss-card-cta:hover {
-  color: var(--brand-deep);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.oss-ribbon-foot {
+.proof-strip-rail {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1rem;
-  margin-top: 1.5rem;
+  width: max-content;
+  animation: proof-strip-scroll 60s linear infinite;
 }
 
-.oss-ribbon-note {
-  color: var(--ink-muted);
+/* Stopped while anything in it is pointed at or focused, so a link never moves out from under a
+   reader. */
+.proof-strip-viewport:hover .proof-strip-rail,
+.proof-strip-viewport:focus-within .proof-strip-rail {
+  animation-play-state: paused;
+}
+
+@keyframes proof-strip-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* The gap after the last item equals the gap between items, so the seam between the two copies
+   is spaced like the rest. */
+.proof-strip-list {
+  --proof-gap: 1.25rem;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--proof-gap);
+  margin: 0;
+  padding: 0 var(--proof-gap) 0 0;
+  list-style: none;
+}
+
+.proof-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem 0.25rem 0.3rem;
+  color: #334155;
   font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+/* A white square with a hairline edge, so a pale logo still has a shape. */
+.proof-item-avatar {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: #ffffff;
+  outline: 1px solid rgba(15, 23, 42, 0.12);
+  outline-offset: -1px;
+  opacity: 0.75;
+  transition: opacity 160ms ease;
+}
+
+.proof-item-owner {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.proof-item-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.proof-item:hover,
+.proof-item:focus-visible {
+  border-color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+}
+
+.proof-item:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.proof-item:hover .proof-item-avatar,
+.proof-item:focus-visible .proof-item-avatar {
+  opacity: 1;
+}
+
+.proof-item:hover .proof-item-stars span,
+.proof-item:focus-visible .proof-item-stars span {
+  color: var(--amber);
+}
+
+/* Narrower: the label on one line above a full-width list. */
+@media (max-width: 860px) {
+  .proof-strip {
+    margin-top: 1.5rem;
+  }
+
+  .proof-strip-inner {
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.7rem 0;
+  }
+
+  .proof-strip-label {
+    text-align: center;
+  }
+
+  .proof-strip-viewport {
+    align-self: stretch;
+  }
+}
+
+/* A phone: the list runs to the screen's edges, and each item is two short lines, owner and stars
+   over the repository's name, so two items fit side by side. */
+@media (max-width: 640px) {
+  .proof-strip-viewport {
+    --proof-fade: 32px;
+    margin: 0 -1.5rem;
+  }
+
+  .proof-strip-list {
+    --proof-gap: 0.75rem;
+  }
+
+  .proof-item {
+    display: inline-grid;
+    grid-template-areas: "avatar owner stars" "avatar repo repo";
+    grid-template-columns: auto auto 1fr;
+    column-gap: 0.4rem;
+    row-gap: 0.05rem;
+    border-radius: 0.6rem;
+    padding: 0.3rem 0.55rem 0.3rem 0.35rem;
+  }
+
+  .proof-item-name {
+    display: contents;
+  }
+
+  .proof-item-avatar {
+    grid-area: avatar;
+    align-self: center;
+  }
+
+  .proof-item-owner {
+    grid-area: owner;
+    font-size: 0.7rem;
+  }
+
+  .proof-item-slash {
+    display: none;
+  }
+
+  .proof-item-repo {
+    grid-area: repo;
+    font-size: 0.82rem;
+  }
+
+  .proof-item-stars {
+    grid-area: stars;
+    font-size: 0.68rem;
+  }
+}
+
+/* No motion: one still copy of the list. Wide enough, it is two rows of three under the label;
+   narrower, one row that the reader swipes, so the strip keeps its height. */
+@media (prefers-reduced-motion: reduce) {
+  .proof-strip-rail {
+    width: auto;
+    animation: none;
+  }
+
+  .proof-strip-list[aria-hidden="true"] {
+    display: none;
+  }
+
+  .proof-item,
+  .proof-item-avatar {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (min-width: 861px) {
+  /* The label centred above, the rows centred under it. */
+  .proof-strip-inner {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .proof-strip-viewport {
+    align-self: stretch;
+  }
+
+  .proof-strip-viewport {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .proof-strip-list {
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-columns: repeat(3, max-content);
+    justify-content: center;
+    gap: 0.15rem var(--proof-gap);
+    padding: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (max-width: 860px) {
+  .proof-strip-viewport {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - var(--proof-fade)), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - var(--proof-fade)), transparent);
+  }
+
+  .proof-strip-viewport::-webkit-scrollbar {
+    display: none;
+  }
+
+  .proof-strip-list {
+    padding-left: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (max-width: 640px) {
+  .proof-strip-list {
+    padding-left: 1.5rem;
+  }
 }
 
 /* The striff-lib link is one pill line wide, which is wider than a phone. There it wraps inside a
