@@ -256,7 +256,9 @@ export function reportHead(report, site = SITE) {
   const name = report.page.repoName;
   const full = `${owner}/${name}`;
   const facts = reportFacts(report);
-  const canonical = `${site}/${owner}/${name}/`;
+  // Netlify serves every built page at its lower-cased path and redirects other spellings there,
+  // so the canonical address, the sitemap and og:url name the address a crawler ends up on.
+  const canonical = `${site}/${owner.toLowerCase()}/${name.toLowerCase()}/`;
   const namesPart = facts.names > 0
     ? `${facts.names}${facts.namesTruncated ? "+" : ""} ${facts.names === 1 && !facts.namesTruncated ? "name" : "names"} in the docs no longer ${facts.names === 1 && !facts.namesTruncated ? "matches" : "match"} the code.`
     : "";
