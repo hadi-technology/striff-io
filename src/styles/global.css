@@ -6887,8 +6887,8 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 
 /* ---- Found in open source: a strip under the hero's buttons ----
    Social proof, in the manner of a logo row: repositories people know, each a link to its public
-   report. One quiet line inside the hero's own background: a label, a slowly moving list, a small
-   link to install, between two hairlines that fade out at their ends. */
+   report. One quiet line inside the hero's own background: a label and a slowly moving list,
+   between two hairlines that fade out at their ends. */
 .proof-strip {
   --proof-line: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.12) 18%, rgba(15, 23, 42, 0.12) 82%, transparent);
   position: relative;
@@ -6909,7 +6909,6 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 
 .proof-strip-label {
   flex: none;
-  max-width: 10rem;
   color: #64748b;
   font-size: 0.68rem;
   font-weight: 700;
@@ -7027,23 +7026,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   color: var(--amber);
 }
 
-.proof-strip-cta {
-  flex: none;
-  color: var(--ink-muted);
-  font-size: 0.8rem;
-  font-weight: 600;
-  white-space: nowrap;
-  text-decoration: underline;
-  text-decoration-color: #cbd5e1;
-  text-underline-offset: 3px;
-}
-
-.proof-strip-cta:hover {
-  color: var(--brand);
-  text-decoration-color: currentColor;
-}
-
-/* Narrower: the label on one line above a full-width list, the link centred below. */
+/* Narrower: the label on one line above a full-width list. */
 @media (max-width: 860px) {
   .proof-strip {
     margin-top: 1.5rem;
@@ -7056,7 +7039,6 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   }
 
   .proof-strip-label {
-    max-width: none;
     text-align: center;
   }
 
@@ -7135,16 +7117,14 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 }
 
 @media (prefers-reduced-motion: reduce) and (min-width: 861px) {
-  /* The label goes on one line above, which leaves the rows room for three across. */
+  /* The label centred above, the rows centred under it. */
   .proof-strip-inner {
-    flex-wrap: wrap;
-    row-gap: 0.35rem;
+    flex-direction: column;
+    gap: 0.35rem;
   }
 
-  .proof-strip-label {
-    flex-basis: 100%;
-    max-width: none;
-    text-align: center;
+  .proof-strip-viewport {
+    align-self: stretch;
   }
 
   .proof-strip-viewport {
