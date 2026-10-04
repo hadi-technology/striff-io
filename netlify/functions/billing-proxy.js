@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import { accessCache } from "../lib/access-cache.js";
+import { callerOwnsInstallation, parseCookie } from "../lib/github-access.js";
 
 const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
@@ -28,35 +30,11 @@ function generateToken(installationId) {
   return `v1.${expiresAt}.${signature}`;
 }
 
-function parseCookie(header) {
-  const cookies = {};
-  for (const pair of (header || "").split(";")) {
-    const [k, ...v] = pair.split("=");
-    cookies[k.trim()] = (v.join("=") || "").trim();
-  }
-  return cookies;
-}
-
 // Authorization, not just authentication: the striff-api billing endpoints trust any request
-// carrying a valid HMAC token, so the ownership check must happen here before minting one.
-// Without it, any signed-in user could read another org's billing status or open its Stripe
-// portal (and cancel its subscription) by passing an arbitrary installation_id. Same check as
-// metrics-proxy.js — kept as a local copy because every file in this directory deploys as its
-// own public endpoint, which makes sharing a module here more fragile than the duplication.
-async function callerOwnsInstallation(ghToken, installationId) {
-  const res = await fetch("https://api.github.com/user/installations?per_page=100", {
-    headers: {
-      Authorization: `Bearer ${ghToken}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-  });
-  if (!res.ok) {
-    return false;
-  }
-  const data = await readBody(res);
-  return (data.installations || []).some((inst) => String(inst.id) === String(installationId));
-}
+// carrying a valid HMAC token, so the ownership check (callerOwnsInstallation in
+// ../lib/github-access.js) must happen here before minting one. Without it, any signed-in user
+// could read another org's billing status or open its Stripe portal (and cancel its subscription)
+// by passing an arbitrary installation_id.
 
 export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -87,7 +65,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const owns = await callerOwnsInstallation(token, installationId);
+    const owns = await callerOwnsInstallation(accessCache(event, token), token, installationId);
     if (!owns) {
       return { statusCode: 403, body: JSON.stringify({ error: "Not authorized for this installation" }) };
     }
