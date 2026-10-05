@@ -25,22 +25,6 @@ const VIEWS = {
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
 /**
- * Whether the request says it is a tool's (a card snapshot, an operator's script) rather than a
- * reader's: then striff-api is told so, and the view starts no re-reading of the page. Said by the
- * X-Striff-No-Refresh header, or by no_refresh=1 for a caller that cannot set one.
- *
- * @param {{ headers?: Record<string, string | undefined>,
- *           queryStringParameters?: Record<string, string | undefined> | null }} event
- */
-export function noRefresh(event) {
-  const headers = event.headers || {};
-  const header = headers["x-striff-no-refresh"] ?? headers["X-Striff-No-Refresh"];
-  const param = (event.queryStringParameters || {}).no_refresh;
-  const says = (value) => value != null && value !== "" && value !== "0" && value !== "false";
-  return says(header) || says(param);
-}
-
-/**
  * The API path a request is for, or null where the request names no page the site reads.
  *
  * @param {Record<string, string | undefined>} params the request's query parameters
@@ -89,9 +73,6 @@ export const handler = async (event) => {
   }
   try {
     const headers = { "X-Server-Key": STRIFF_SERVER_KEY, Accept: "application/json" };
-    if (noRefresh(event)) {
-      headers["X-Striff-No-Refresh"] = "1";
-    }
     const res = await fetch(`${STRIFF_API_BASE}${path}`, { headers });
     return {
       statusCode: res.status,

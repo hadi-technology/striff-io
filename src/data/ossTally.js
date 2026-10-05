@@ -3,8 +3,7 @@
 //
 // Each repository costs two reads through the public page's proxy: the document catalog, for the
 // rules that hold and are broken on the default branch, and the type findings, for the names the
-// docs write that the code no longer has. Both always carry no_refresh=1, so a build never starts
-// a re-reading of anyone's report. A read that fails, times out or answers something unexpected
+// docs write that the code no longer has. A read that fails, times out or answers something unexpected
 // leaves that repository on its hand-taken snapshot; the build never fails over this.
 
 const PROXY = "https://striff.io/.netlify/functions/public-repo-proxy";
@@ -36,7 +35,7 @@ export function tallyFrom(catalog, typeFindings) {
  * @param {string} view
  */
 async function readView(fetchImpl, r, view) {
-  const query = new URLSearchParams({ owner: r.owner, repo: r.repo, view, no_refresh: "1" });
+  const query = new URLSearchParams({ owner: r.owner, repo: r.repo, view });
   const response = await fetchImpl(`${PROXY}?${query}`, {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(TIMEOUT_MS),

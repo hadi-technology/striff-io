@@ -50,24 +50,22 @@ test("the build reads striff-api with the server key, or a site's proxy with a g
   assert.equal(sourceFromEnv({ STRIFF_SERVER_KEY: "k", STRIFF_STATIC_REPORTS: "0" }), null);
 });
 
-test("every read is the live page's own view, and says it is a tool's", () => {
+test("every read is the live page's own view", () => {
   const api = viewRequest(API, "acme", "widgets", "type-findings");
   assert.equal(api.url, "https://api.example/api/v1/public-repos/acme/widgets/doc-catalog/type-findings");
-  assert.equal(api.headers["X-Striff-No-Refresh"], "1");
   assert.equal(api.headers["X-Server-Key"], "server-key");
   const proxy = viewRequest({ kind: "proxy", base: "https://striff.io" }, "acme", "widgets", "rules");
-  assert.equal(proxy.url, "https://striff.io/.netlify/functions/public-repo-proxy?owner=acme&repo=widgets&view=rules&no_refresh=1");
-  assert.equal(proxy.headers["X-Striff-No-Refresh"], "1");
+  assert.equal(proxy.url, "https://striff.io/.netlify/functions/public-repo-proxy?owner=acme&repo=widgets&view=rules");
 });
 
-test("a page is built from its four answers, and every request asks for no re-reading", async () => {
+test("a page is built from its four answers", async () => {
   const { fetchImpl, asked } = fakeApi({ "acme/widgets": answers("acme", "widgets") });
   const { reports, skipped } = await loadReports({ source: API, fetchImpl, log: quiet, now: 42, retryDelayMs: 0 });
   assert.equal(reports.length, 1);
   assert.equal(skipped.length, 0);
   assert.equal(reports[0].builtAtMs, 42);
   assert.equal(reports[0].page.repoName, "widgets");
-  assert.ok(asked.length === 5 && asked.every((each) => each.headers["X-Striff-No-Refresh"] === "1"));
+  assert.equal(asked.length, 5);
 });
 
 test("a page striff-api has none for, or that a read fails for, is not built, and the build goes on", async () => {
