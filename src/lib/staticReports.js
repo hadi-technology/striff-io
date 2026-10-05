@@ -4,8 +4,7 @@
  * Which pages there are is striff-api's answer: the published pages that are up. Each is then read
  * through exactly the views the live page reads (the page summary, the catalogue, the rules and the
  * names out of date), at the same API paths the site's proxy forwards to, so a built page shows
- * nothing the live one would not. Every read says it is a tool's (X-Striff-No-Refresh), so a build
- * never starts a re-reading.
+ * nothing the live one would not.
  *
  * A page is built only from four good answers. A page striff-api has none for (taken down,
  * unpublished, made private) is not built, and a page any read fails for is not built either; both
@@ -66,13 +65,13 @@ export function viewRequest(source, owner, name, view) {
   if (source.kind === "api") {
     return {
       url: source.base + apiPathFor({ owner, repo: name, view }),
-      headers: { "X-Server-Key": source.key, Accept: "application/json", "X-Striff-No-Refresh": "1" },
+      headers: { "X-Server-Key": source.key, Accept: "application/json" },
     };
   }
-  const query = new URLSearchParams({ owner, repo: name, view, no_refresh: "1" });
+  const query = new URLSearchParams({ owner, repo: name, view });
   return {
     url: `${source.base}/.netlify/functions/public-repo-proxy?${query.toString()}`,
-    headers: { Accept: "application/json", "X-Striff-No-Refresh": "1" },
+    headers: { Accept: "application/json" },
   };
 }
 
@@ -106,7 +105,7 @@ async function readJson(fetchImpl, url, headers, retryDelayMs = 1000) {
 async function listPages(source, fetchImpl, retryDelayMs) {
   if (source.kind === "proxy") return source.list;
   const answer = await readJson(fetchImpl, `${source.base}/api/v1/public-repos/published`,
-    { "X-Server-Key": source.key, Accept: "application/json", "X-Striff-No-Refresh": "1" }, retryDelayMs);
+    { "X-Server-Key": source.key, Accept: "application/json" }, retryDelayMs);
   if (!Array.isArray(answer?.pages)) throw new ReadFailed("the list has no pages", 0);
   return answer.pages;
 }

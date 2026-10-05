@@ -29,13 +29,6 @@ test("an answer of another shape is no tally", () => {
   assert.equal(tallyFrom(catalog({}), {}), null);
 });
 
-test("every read asks for no re-reading", async () => {
-  const asked = [];
-  await loadTallies([repo("a")], { fetchImpl: fakeFetch({ a: { catalog: catalog({}), "type-findings": findings(1) } }, asked), log: () => {} });
-  assert.equal(asked.length, 2);
-  for (const u of asked) assert.equal(u.searchParams.get("no_refresh"), "1");
-});
-
 test("a report that cannot be read keeps its snapshot, and the rest stay live", async () => {
   const logged = [];
   const out = await loadTallies([repo("a", { held: 9, broken: 0, outOfDate: 2 }), repo("b"), repo("c")], {
