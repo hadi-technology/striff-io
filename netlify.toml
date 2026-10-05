@@ -2,6 +2,10 @@
   command = "npm run build"
   publish = "dist"
   functions = "netlify/functions"
+  # Production deploys once a day (netlify/functions/daily-deploy.js) or by hand through the build
+  # hook, not on every merge to main: a production build that a build hook did not start is
+  # cancelled. Netlify never applies this to a build hook's build. Deploy previews still build.
+  ignore = '[ "$CONTEXT" = "production" ]'
 
 # Retired posts: send old links to the blog index instead of a 404. Netlify serves a file that
 # exists before any rule, so live posts (and /blog/rss.xml) are untouched; any other /blog/<slug>
@@ -49,8 +53,8 @@
   to = "/repo/index.html"
   status = 200
 
-# The fallback rebuild of the public report pages: see netlify/functions/daily-rebuild.js.
-[functions."daily-rebuild"]
+# The daily production deploy: see netlify/functions/daily-deploy.js.
+[functions."daily-deploy"]
   schedule = "@daily"
 
 [[headers]]
