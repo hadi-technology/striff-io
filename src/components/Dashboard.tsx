@@ -7,7 +7,7 @@ import { EXTENSION_URL } from "./docRules";
 import { PENDING_REPO_KEY, findRepo, repoFromSearch, validRepo, withoutRepoParam } from "../lib/dashboardDeepLink.js";
 
 /** Where the GitHub App is installed on an account: the first one, or one more. */
-const INSTALL_URL = "https://github.com/apps/striff-app/installations/new";
+const INSTALL_URL = "https://github.com/apps/striffs/installations/new";
 
 const OAUTH_CLIENT_ID =
   typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_GITHUB_OAUTH_CLIENT_ID

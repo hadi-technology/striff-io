@@ -29,7 +29,7 @@ import { SITE_ROUTES } from "../lib/siteRoutes.js";
  * then is shown as gone, and one that cannot be reached keeps what was built.
  */
 
-const INSTALL_URL = "https://github.com/apps/striff-app/installations/new";
+const INSTALL_URL = "https://github.com/apps/striffs/installations/new";
 
 /**
  * The install link on a report page. GitHub hands `state` back to the setup page after the
