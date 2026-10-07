@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { issueUrl } from "./docIssue";
-import { Clamped, ExtensionNote, mark, withCode, when } from "./docRules";
+import { Clamped, ExtensionNote, mark, plainText, withCode, when } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
 import { standing } from "../lib/standing.js";
 
@@ -153,8 +153,8 @@ export default function RulesTable({
     const matchesFilter = (row: Row) => (filter === "all" ? true : standing(row) === filter);
     const matchesTerm = (row: Row) =>
       term === "" ||
-      (row.statement || "").replace(/`/g, "").toLowerCase().includes(term) ||
-      (row.quote || "").toLowerCase().includes(term) ||
+      plainText(row.statement).toLowerCase().includes(term) ||
+      plainText(row.quote).toLowerCase().includes(term) ||
       row.doc.path.toLowerCase().includes(term);
     const byDocument = (a: Row, b: Row) =>
       a.doc.path === b.doc.path
@@ -162,7 +162,7 @@ export default function RulesTable({
         : a.doc.path.localeCompare(b.doc.path);
     const compare = (a: Row, b: Row) => {
       if (sort.key === "rule") {
-        const plain = (row: Row) => (row.statement || "").replace(/`/g, "").toLowerCase();
+        const plain = (row: Row) => plainText(row.statement).toLowerCase();
         return plain(a).localeCompare(plain(b)) || byDocument(a, b);
       }
       if (sort.key === "outcome") {
@@ -211,8 +211,8 @@ export default function RulesTable({
         [
           csvCell(row.doc.path),
           csvCell(row.sourceLine ?? ""),
-          csvCell(row.statement),
-          csvCell(row.quote),
+          csvCell(plainText(row.statement)),
+          csvCell(plainText(row.quote)),
           csvCell(STANDING_LABEL[standing(row)]),
           csvCell(row.pullNo ? `#${row.pullNo}` : ""),
           csvCell(row.judgedAtMs ? new Date(row.judgedAtMs).toISOString().slice(0, 10) : ""),
