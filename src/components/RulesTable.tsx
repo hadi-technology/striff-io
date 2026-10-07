@@ -72,6 +72,14 @@ export const STANDING_HELP: Record<Standing, string> = {
   unclear: "Striff could not tell.",
 };
 
+/** What an empty table says when a count, not a search, emptied it. */
+const NONE_STANDING: Record<Standing, string> = {
+  broken: "No rule here is broken.",
+  holds: "No rule here holds yet.",
+  unchecked: "Every rule here has been checked.",
+  unclear: "No rule here is one Striff couldn't check.",
+};
+
 /** Which rules a reader asked to see, where they followed a count to them. */
 export type RuleFilter = "all" | Standing;
 
@@ -417,8 +425,12 @@ export default function RulesTable({
         </tbody>
       </table>
 
+      {/* Says what is hiding the rules. A count followed to an empty table, with nothing typed in
+          the search, used to answer "no rule here matches that" -- to a question nobody asked. */}
       {shown.length === 0 && (
-        <p className="dashboard-metric-caption">No rule here matches that.</p>
+        <p className="dashboard-metric-caption">
+          {term === "" && filter !== "all" ? NONE_STANDING[filter] : "No rule here matches that."}
+        </p>
       )}
 
       {/* One document's count is already stated above its own table, so this line is only worth a

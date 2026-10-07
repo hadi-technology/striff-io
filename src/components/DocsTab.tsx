@@ -374,6 +374,11 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
       if (doc.outdated) {
         return `Edited on the default branch since Striff last read it. These rules come from the ${when(doc.lastExtractedMs)} version${doc.lastExtractedPullNo ? ` (PR #${doc.lastExtractedPullNo})` : ""}, and refresh on the next pull request that changes code this doc talks about.`;
       }
+      if (!doc.lastExtractedMs && !doc.ruleCount) {
+        // Read, and nothing in it states a rule, so there is no extraction to date. The line under
+        // this one says so; this one saying "Striff has rules for this doc" contradicted it.
+        return "Striff has read this doc.";
+      }
       if (!doc.lastExtractedMs) {
         // A repository read before Striff kept a catalogue: the rules are real, the date is not
         // known, and inventing one would be worse than saying so.
@@ -1988,7 +1993,7 @@ export default function DocsTab({
               {renderNode(tree, 0)}
             </div>
             <div className="docs-tree-foot">
-              {catalog.summary.documents} docs
+              {catalog.summary.documents} doc{catalog.summary.documents === 1 ? "" : "s"}
               {/* Folder rules live above the tree they affect, so an excluded directory is
                   visible without hunting for the folder it was set on. */}
               {(catalog.exclusions || []).some((rule) => rule.folder) && (
