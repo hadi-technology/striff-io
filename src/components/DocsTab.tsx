@@ -1520,7 +1520,7 @@ export default function DocsTab({
           and its docs are listed as soon as Striff has read the repository.
         </p>
         <a
-          href="https://github.com/apps/striff-app/installations/new"
+          href="https://github.com/apps/striffs/installations/new"
           className="dashboard-button dashboard-button-primary mt-4 inline-block"
           target="_blank"
           rel="noopener noreferrer"

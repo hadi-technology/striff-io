@@ -19,7 +19,7 @@
  * event for them.
  */
 
-const INSTALL_URL_FRAGMENT = "github.com/apps/striff-app";
+const INSTALL_URL_FRAGMENT = "github.com/apps/striffs";
 const EXTENSION_URL_FRAGMENT = "chromewebstore.google.com";
 
 function capture(event, props) {
