@@ -5,6 +5,7 @@ import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import { EXTENSION_URL } from "./docRules";
 import { PENDING_REPO_KEY, findRepo, repoFromSearch, validRepo, withoutRepoParam } from "../lib/dashboardDeepLink.js";
+import { signInUrl } from "../lib/githubSignIn.js";
 
 /** Where the GitHub App is installed on an account: the first one, or one more. */
 const INSTALL_URL = "https://github.com/apps/striffs/installations/new";
@@ -96,7 +97,7 @@ function signInAgain(onBlocked: () => void) {
   } catch {
     // Storage unavailable: redirect anyway.
   }
-  window.location.href = getOAuthUrl();
+  window.location.href = signInUrl(OAUTH_CLIENT_ID);
 }
 
 export default function Dashboard() {
@@ -169,7 +170,7 @@ export default function Dashboard() {
             // Without storage the reader lands on the dashboard as it opens by default.
           }
         }
-        window.location.href = getOAuthUrl();
+        window.location.href = signInUrl(OAUTH_CLIENT_ID);
         return;
       }
       setUser(status.user);
@@ -1446,24 +1447,4 @@ function FaqSection() {
       )}
     </div>
   );
-}
-
-/* ─── Utility ───────────────────────────────────────────────────── */
-
-function getOAuthUrl() {
-  // Double-submit state: auth-callback compares this cookie against the state GitHub echoes
-  // back, so a forged callback URL can't log the visitor into an attacker's account.
-  const state = crypto.randomUUID();
-  document.cookie = `gh_oauth_state=${state}; path=/; max-age=600; secure; samesite=lax`;
-  const params = new URLSearchParams({
-    client_id: OAUTH_CLIENT_ID,
-    scope: "read:user,user:email",
-    redirect_uri: `${window.location.origin}/.netlify/functions/auth-callback`,
-    state,
-    // GitHub remembers who was signed in and hands the token straight back, so someone who has
-    // just signed out is signed back into the same account without being asked. Asking for the
-    // account picker makes signing in mean choosing, which is what the button appears to offer.
-    prompt: "select_account",
-  });
-  return `https://github.com/login/oauth/authorize?${params}`;
 }

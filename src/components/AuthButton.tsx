@@ -1,4 +1,5 @@
 import { createElement, useState, useEffect, useRef } from "react";
+import { signInUrl } from "../lib/githubSignIn.js";
 
 interface User {
   login: string;
@@ -73,23 +74,12 @@ export default function AuthButton() {
       ? import.meta.env.PUBLIC_GITHUB_OAUTH_CLIENT_ID
       : "";
 
-  // Double-submit state: auth-callback compares this cookie against the state GitHub echoes
-  // back, so the URL is built on click rather than at render.
+  // The URL is built on click rather than at render: it carries a fresh state, and asks for
+  // GitHub's account picker only after a sign-out (see ../lib/githubSignIn.js).
   function startOAuth(e: { preventDefault: () => void }) {
     e.preventDefault();
     if (!clientId) return;
-    const state = crypto.randomUUID();
-    document.cookie = `gh_oauth_state=${state}; path=/; max-age=600; secure; samesite=lax`;
-    const params = new URLSearchParams({
-      client_id: clientId,
-      scope: "read:user,user:email",
-      redirect_uri: `${window.location.origin}/.netlify/functions/auth-callback`,
-      state,
-      // See getOAuthUrl in Dashboard: without this, signing out and back in silently returns the
-      // same account, because GitHub still has the session and the app is already authorized.
-      prompt: "select_account",
-    });
-    window.location.href = `https://github.com/login/oauth/authorize?${params}`;
+    window.location.href = signInUrl(clientId);
   }
 
   return (

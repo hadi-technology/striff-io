@@ -1,7 +1,8 @@
 // Everything the dashboard needs before it can draw anything, in one request: who is signed in,
 // every installation their token sees, and every repository under each. GitHub is asked with the
 // caller's own token, the same way auth-status and github-proxy ask it, and the questions that do
-// not depend on each other are asked together.
+// not depend on each other are asked together. The session is read through ../lib/github-session.js,
+// which renews an expired access token from the refresh token.
 //
 // What GitHub answered completely is written to the shared access cache (../lib/access-cache.js),
 // so the proxies the dashboard calls next can authorize from it instead of asking GitHub again.
@@ -10,11 +11,11 @@
 import { accessCache } from "../lib/access-cache.js";
 import {
   DASHBOARD_PAGES,
-  fetchUser,
   listInstallationRepositories,
   listInstallations,
-  parseCookie,
+  whoIs,
 } from "../lib/github-access.js";
+import { TOKEN_REFUSED, withGitHubSession } from "../lib/github-session.js";
 
 /** At most this many installations' repositories are asked for at once. */
 const CONCURRENCY = 8;
@@ -52,33 +53,36 @@ async function mapLimited(items, limit, fn) {
   return results;
 }
 
-export const handler = async (event) => {
-  const token = parseCookie(event.headers?.cookie)["gh_token"];
-  if (!token) {
-    return jsonResponse({ authenticated: false });
-  }
+const UNAVAILABLE = {
+  statusCode: 503,
+  headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+  body: JSON.stringify({ error: "github_unavailable" }),
+};
 
+export const handler = async (event) =>
+  withGitHubSession(event, (token) => bootstrap(event, token), {
+    // As auth-status answers: the client sends the reader to sign in.
+    signedOut: () => jsonResponse({ authenticated: false }),
+    unavailable: () => UNAVAILABLE,
+  });
+
+async function bootstrap(event, token) {
   const cache = accessCache(event, token);
   const writes = [];
 
   // The user and the installation list do not depend on each other.
-  const [user, listed] = await Promise.all([
-    fetchUser(token),
+  const [who, listed] = await Promise.all([
+    whoIs(token),
     listInstallations(token, DASHBOARD_PAGES),
   ]);
-  if (!user) {
-    // As auth-status answers: the client sends the reader to sign in.
-    return jsonResponse({ authenticated: false });
-  }
+  if (who.failure === "signed_out") return TOKEN_REFUSED;
+  // GitHub not saying who this is is an outage, not a sign-out: sending the reader to sign in again
+  // would not help, and would show them GitHub's sign-in for nothing.
+  if (!who.user) return UNAVAILABLE;
+  const user = who.user;
   // A listing GitHub would not give is not an empty one: saying "Striff isn't installed" to someone
   // whose installations GitHub just failed to list is wrong, so the page is told it could not load.
-  if (listed.failure && listed.items.length === 0) {
-    return {
-      statusCode: 503,
-      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-      body: JSON.stringify({ error: "github_unavailable" }),
-    };
-  }
+  if (listed.failure && listed.items.length === 0) return UNAVAILABLE;
   writes.push(cache.rememberLogin(user.login));
   if (listed.complete) {
     writes.push(cache.rememberInstallationIds(listed.items.map((inst) => String(inst.id))));
@@ -98,7 +102,7 @@ export const handler = async (event) => {
   await Promise.all(writes);
 
   return jsonResponse({ authenticated: true, user, installations });
-};
+}
 
 function jsonResponse(data) {
   return {
