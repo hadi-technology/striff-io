@@ -4343,6 +4343,10 @@
 .docs-rule-line { width: 3.4rem; color: #1d4ed8; font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; font-weight: 600; }
 .docs-rule-quote { font-family: "Source Serif 4", ui-serif, Georgia, serif; font-size: 0.9rem; line-height: 1.5; color: #0f172a; }
 .docs-rule-statement { color: #1e293b; line-height: 1.5; }
+/* A link a document wrote, kept as one where it goes somewhere on the web: the sentence's own
+   colour, told apart by its underline, so a quote does not read as a row of buttons. */
+.docs-doc-link { color: inherit; text-decoration: underline; text-decoration-color: #94a3b8; text-underline-offset: 0.15em; }
+.docs-doc-link:hover { text-decoration-color: currentColor; }
 
 .docs-outcome { display: inline-flex; border: 1px solid; border-radius: 999px; padding: 0.1rem 0.45rem; font-size: 0.72rem; font-weight: 650; white-space: nowrap; }
 .docs-outcome.is-maintained, .docs-outcome.is-restored { background: #eaf8f0; border-color: #bfe6cf; color: #17794a; }

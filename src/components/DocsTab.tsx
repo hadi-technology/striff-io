@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { staleNameIssueUrl } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { Clamped, mark, snippet, useWatch, withCode, when } from "./docRules";
+import { Clamped, mark, plainText, snippet, useWatch, withCode, when } from "./docRules";
 import RulesTable, {
   pathStem,
   standing,
@@ -373,6 +373,11 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
     case "READ":
       if (doc.outdated) {
         return `Edited on the default branch since Striff last read it. These rules come from the ${when(doc.lastExtractedMs)} version${doc.lastExtractedPullNo ? ` (PR #${doc.lastExtractedPullNo})` : ""}, and refresh on the next pull request that changes code this doc talks about.`;
+      }
+      if (!doc.lastExtractedMs && !doc.ruleCount) {
+        // Read, and nothing in it states a rule, so there is no extraction to date. The line under
+        // this one says so; this one saying "Striff has rules for this doc" contradicted it.
+        return "Striff has read this doc.";
       }
       if (!doc.lastExtractedMs) {
         // A repository read before Striff kept a catalogue: the rules are real, the date is not
@@ -1364,8 +1369,8 @@ export default function DocsTab({
     .filter(
       (rule) =>
         term !== "" &&
-        ((rule.statement || "").replace(/`/g, "").toLowerCase().includes(term) ||
-          (rule.quote || "").toLowerCase().includes(term))
+        (plainText(rule.statement).toLowerCase().includes(term) ||
+          plainText(rule.quote).toLowerCase().includes(term))
     )
     .slice(0, 8);
 
@@ -1819,16 +1824,18 @@ export default function DocsTab({
                       }}
                     >
                       <span className="docs-palette-main">
-                        {marked((rule.statement || "").replace(/`/g, ""))}
+                        {marked(plainText(rule.statement))}
                       </span>
                       {/* A rule can match on the sentence it was read from, which the line above
                           does not show: without this the result looks like one that should not be
-                          in the list. */}
+                          in the list. It is the sentence as a reader sees it, without its Markdown:
+                          a window cut from the raw text can open a mark it never closes, and a
+                          result is a button, which a link inside it cannot be. */}
                       {rule.quote
-                        && !(rule.statement || "").replace(/`/g, "").toLowerCase().includes(term)
-                        && rule.quote.toLowerCase().includes(term) && (
+                        && !plainText(rule.statement).toLowerCase().includes(term)
+                        && plainText(rule.quote).toLowerCase().includes(term) && (
                           <span className="docs-palette-quote">
-                            “{marked(snippet(rule.quote, term))}”
+                            “{marked(snippet(plainText(rule.quote), term))}”
                           </span>
                         )}
                       <span className="docs-palette-sub">
@@ -1986,7 +1993,7 @@ export default function DocsTab({
               {renderNode(tree, 0)}
             </div>
             <div className="docs-tree-foot">
-              {catalog.summary.documents} docs
+              {catalog.summary.documents} doc{catalog.summary.documents === 1 ? "" : "s"}
               {/* Folder rules live above the tree they affect, so an excluded directory is
                   visible without hunting for the folder it was set on. */}
               {(catalog.exclusions || []).some((rule) => rule.folder) && (

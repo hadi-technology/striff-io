@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { issueUrl } from "./docIssue";
-import { Clamped, ExtensionNote, mark, withCode, when } from "./docRules";
+import { Clamped, ExtensionNote, mark, plainText, withCode, when } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
 import { standing } from "../lib/standing.js";
 
@@ -70,6 +70,14 @@ export const STANDING_HELP: Record<Standing, string> = {
   holds: "The code keeps this rule.",
   unchecked: "Nothing has judged this rule against the code yet.",
   unclear: "Striff could not tell.",
+};
+
+/** What an empty table says when a count, not a search, emptied it. */
+const NONE_STANDING: Record<Standing, string> = {
+  broken: "No rule here is broken.",
+  holds: "No rule here holds yet.",
+  unchecked: "Every rule here has been checked.",
+  unclear: "No rule here is one Striff couldn't check.",
 };
 
 /** Which rules a reader asked to see, where they followed a count to them. */
@@ -153,8 +161,8 @@ export default function RulesTable({
     const matchesFilter = (row: Row) => (filter === "all" ? true : standing(row) === filter);
     const matchesTerm = (row: Row) =>
       term === "" ||
-      (row.statement || "").replace(/`/g, "").toLowerCase().includes(term) ||
-      (row.quote || "").toLowerCase().includes(term) ||
+      plainText(row.statement).toLowerCase().includes(term) ||
+      plainText(row.quote).toLowerCase().includes(term) ||
       row.doc.path.toLowerCase().includes(term);
     const byDocument = (a: Row, b: Row) =>
       a.doc.path === b.doc.path
@@ -162,7 +170,7 @@ export default function RulesTable({
         : a.doc.path.localeCompare(b.doc.path);
     const compare = (a: Row, b: Row) => {
       if (sort.key === "rule") {
-        const plain = (row: Row) => (row.statement || "").replace(/`/g, "").toLowerCase();
+        const plain = (row: Row) => plainText(row.statement).toLowerCase();
         return plain(a).localeCompare(plain(b)) || byDocument(a, b);
       }
       if (sort.key === "outcome") {
@@ -211,8 +219,8 @@ export default function RulesTable({
         [
           csvCell(row.doc.path),
           csvCell(row.sourceLine ?? ""),
-          csvCell(row.statement),
-          csvCell(row.quote),
+          csvCell(plainText(row.statement)),
+          csvCell(plainText(row.quote)),
           csvCell(STANDING_LABEL[standing(row)]),
           csvCell(row.pullNo ? `#${row.pullNo}` : ""),
           csvCell(row.judgedAtMs ? new Date(row.judgedAtMs).toISOString().slice(0, 10) : ""),
@@ -417,8 +425,12 @@ export default function RulesTable({
         </tbody>
       </table>
 
+      {/* Says what is hiding the rules. A count followed to an empty table, with nothing typed in
+          the search, used to answer "no rule here matches that" -- to a question nobody asked. */}
       {shown.length === 0 && (
-        <p className="dashboard-metric-caption">No rule here matches that.</p>
+        <p className="dashboard-metric-caption">
+          {term === "" && filter !== "all" ? NONE_STANDING[filter] : "No rule here matches that."}
+        </p>
       )}
 
       {/* One document's count is already stated above its own table, so this line is only worth a
