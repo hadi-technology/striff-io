@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { accessCache } from "../lib/access-cache.js";
-import { callerOwnsInstallation, parseCookie } from "../lib/github-access.js";
+import { SEES, SIGNED_OUT, callerSeesInstallation } from "../lib/github-access.js";
+import { TOKEN_REFUSED, withGitHubSession } from "../lib/github-session.js";
 
 const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
@@ -31,7 +32,7 @@ function generateToken(installationId) {
 }
 
 // Authorization, not just authentication: the striff-api billing endpoints trust any request
-// carrying a valid HMAC token, so the ownership check (callerOwnsInstallation in
+// carrying a valid HMAC token, so the ownership check (callerSeesInstallation in
 // ../lib/github-access.js) must happen here before minting one. Without it, any signed-in user
 // could read another org's billing status or open its Stripe portal (and cancel its subscription)
 // by passing an arbitrary installation_id.
@@ -39,11 +40,6 @@ function generateToken(installationId) {
 export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
-  }
-
-  const token = parseCookie(event.headers?.cookie)["gh_token"];
-  if (!token) {
-    return { statusCode: 401, body: JSON.stringify({ error: "Not authenticated" }) };
   }
 
   let body;
@@ -64,9 +60,15 @@ export const handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: "Server not configured: SERVER_KEY missing" }) };
   }
 
+  // The session is read through ../lib/github-session.js, which renews an expired access token.
+  return withGitHubSession(event, (token) => proxy(event, token, action, installationId, plan));
+};
+
+async function proxy(event, token, action, installationId, plan) {
   try {
-    const owns = await callerOwnsInstallation(accessCache(event, token), token, installationId);
-    if (!owns) {
+    const owns = await callerSeesInstallation(accessCache(event, token), token, installationId);
+    if (owns === SIGNED_OUT) return TOKEN_REFUSED;
+    if (owns !== SEES) {
       return { statusCode: 403, body: JSON.stringify({ error: "Not authorized for this installation" }) };
     }
 
@@ -163,7 +165,7 @@ export const handler = async (event) => {
     console.error("billing-proxy error:", e.message);
     return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
   }
-};
+}
 
 function capitalize(str) {
   if (!str) return str;

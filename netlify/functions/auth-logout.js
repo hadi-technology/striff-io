@@ -18,10 +18,18 @@
  * What this deliberately does not do is revoke the authorization grant. Striff stays on the
  * visitor's list of authorized apps, so signing back in is one click rather than a fresh consent
  * screen. Someone who wants Striff to forget them entirely does that from GitHub's own settings.
+ *
+ * Both session cookies go (../lib/github-session.js): the access token's and the refresh token's,
+ * which would otherwise renew the session on the next request. And a marker the page can read is
+ * left for a day, gh_signed_out: the next sign-in then asks GitHub's account picker, so signing out
+ * and back in can mean choosing another account rather than silently returning the same one. The
+ * callback clears it once someone has signed in.
  */
 
 import { Buffer } from "node:buffer";
 import { accessCache } from "../lib/access-cache.js";
+import { parseCookie } from "../lib/github-access.js";
+import { ACCESS_COOKIE, clearedSessionCookies, signedOutMarker } from "../lib/github-session.js";
 
 const CLIENT_ID = process.env.GITHUB_OAUTH_CLIENT_ID;
 const CLIENT_SECRET = process.env.GITHUB_OAUTH_CLIENT_SECRET;
@@ -29,20 +37,21 @@ const CLIENT_SECRET = process.env.GITHUB_OAUTH_CLIENT_SECRET;
 /** Longest the revoke may take before sign-out stops waiting for it and clears the cookie. */
 const REVOKE_TIMEOUT_MS = 2500;
 
-/** Cookies cleared on the way out, each written the same way it was set. */
-const CLEARED = [
-  "gh_token=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0",
+/** Cookies cleared on the way out, each written the same way it was set, and the marker left. */
+const ON_SIGN_OUT = [
+  ...clearedSessionCookies(),
   "gh_oauth_state=; Secure; SameSite=Lax; Path=/; Max-Age=0",
+  signedOutMarker(),
 ];
 
 export const handler = async (event) => {
-  const token = parseCookie(event.headers?.cookie || "")["gh_token"];
+  const token = parseCookie(event.headers?.cookie)[ACCESS_COOKIE];
   await Promise.all([token ? accessCache(event, token).forget() : null, revoke(token)]);
 
   return {
     statusCode: 302,
     headers: { Location: "/" },
-    multiValueHeaders: { "Set-Cookie": CLEARED },
+    multiValueHeaders: { "Set-Cookie": ON_SIGN_OUT },
   };
 };
 
@@ -67,13 +76,4 @@ async function revoke(token) {
       console.error("Could not revoke the access token on sign-out:", e.message);
     }
   }
-}
-
-function parseCookie(header) {
-  const cookies = {};
-  for (const pair of header.split(";")) {
-    const [k, ...v] = pair.split("=");
-    cookies[k.trim()] = (v.join("=") || "").trim();
-  }
-  return cookies;
 }

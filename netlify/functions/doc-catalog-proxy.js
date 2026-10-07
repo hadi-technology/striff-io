@@ -1,5 +1,5 @@
-// Netlify function backing the dashboard's "Docs & rules" view: authenticates the caller's
-// gh_token, verifies their own GitHub session can see the requested repository under the requested
+// Netlify function backing the dashboard's "Docs & rules" view: authenticates the caller's GitHub
+// session (../lib/github-session.js, which renews an expired access token), verifies their own GitHub session can see the requested repository under the requested
 // installation, then proxies to striff-api's document catalogue with X-Server-Key and a token that
 // names both.
 //
@@ -18,8 +18,8 @@ import {
   SIGNED_OUT,
   callerLogin,
   callerSeesRepository,
-  parseCookie,
 } from "../lib/github-access.js";
+import { TOKEN_REFUSED, withGitHubSession } from "../lib/github-session.js";
 
 const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
@@ -56,11 +56,6 @@ export const handler = async (event) => {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  const ghToken = parseCookie(event.headers?.cookie)["gh_token"];
-  if (!ghToken) {
-    return { statusCode: 401, body: JSON.stringify({ error: "Not authenticated" }) };
-  }
-
   const params = event.queryStringParameters || {};
   const installationId = params.installation_id;
   const owner = params.owner;
@@ -82,19 +77,40 @@ export const handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: "Server not configured" }) };
   }
 
+  return withGitHubSession(event, (ghToken) => proxy(event, ghToken, params), {
+    signedOut: () => ({
+      statusCode: 401,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        error: "github_sign_in_expired",
+        message: "Your GitHub sign-in has expired. Sign in again to see this repository.",
+      }),
+    }),
+    unavailable: () => verificationUnavailable(),
+  });
+};
+
+// Retryable, and said so: the caller may well have access, and a 403 would tell them they do not.
+function verificationUnavailable() {
+  return {
+    statusCode: 503,
+    headers: { "Content-Type": "application/json", "Retry-After": "5" },
+    body: JSON.stringify({
+      error: "verification_unavailable",
+      message: "GitHub didn't answer whether you can see this repository. Try again shortly.",
+    }),
+  };
+}
+
+async function proxy(event, ghToken, params) {
+  const method = event.httpMethod;
+  const installationId = params.installation_id;
+  const owner = params.owner;
+  const repo = params.repo;
   try {
     const cache = accessCache(event, ghToken);
     const sees = await callerSeesRepository(cache, ghToken, installationId, owner, repo);
-    if (sees === SIGNED_OUT) {
-      return {
-        statusCode: 401,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          error: "github_sign_in_expired",
-          message: "Your GitHub sign-in has expired. Sign in again to see this repository.",
-        }),
-      };
-    }
+    if (sees === SIGNED_OUT) return TOKEN_REFUSED;
     if (sees === SEES_NOT) {
       // Deliberately the same answer whether the repository is invisible or absent: which private
       // repositories an installation covers is itself something not to hand out.
@@ -112,18 +128,7 @@ export const handler = async (event) => {
         }),
       };
     }
-    if (sees !== SEES) {
-      // Retryable, and said so: the caller may well have access, and a 403 would tell them they do
-      // not.
-      return {
-        statusCode: 503,
-        headers: { "Content-Type": "application/json", "Retry-After": "5" },
-        body: JSON.stringify({
-          error: "verification_unavailable",
-          message: "GitHub didn't answer whether you can see this repository. Try again shortly.",
-        }),
-      };
-    }
+    if (sees !== SEES) return verificationUnavailable();
 
     const token = generateRepoToken(installationId, owner, repo);
     const base = `${STRIFF_API_BASE}/api/v1/organizations/${encodeURIComponent(installationId)}`
@@ -197,4 +202,4 @@ export const handler = async (event) => {
     console.error("doc-catalog-proxy error:", e.message);
     return { statusCode: 500, body: JSON.stringify({ error: "Failed to load documents" }) };
   }
-};
+}

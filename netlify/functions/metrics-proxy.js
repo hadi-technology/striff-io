@@ -1,6 +1,6 @@
-// Netlify function backing the Dashboard "Metrics" tab: authenticates the caller's gh_token,
-// verifies they actually own the requested installation_id (see callerOwnsInstallation in
-// ../lib/github-access.js), then proxies to striff-api's org metrics endpoint with the required
+// Netlify function backing the Dashboard "Metrics" tab: authenticates the caller's GitHub session
+// (../lib/github-session.js, which renews an expired access token), verifies they actually own the
+// requested installation_id (see callerSeesInstallation in ../lib/github-access.js), then proxies to striff-api's org metrics endpoint with the required
 // X-Server-Key + HMAC token.
 //
 // The ownership check is real authorization, not just authentication: without it, any
@@ -8,7 +8,8 @@
 // flagged repos, and component names.
 import crypto from "node:crypto";
 import { accessCache } from "../lib/access-cache.js";
-import { callerOwnsInstallation, parseCookie } from "../lib/github-access.js";
+import { SEES, SIGNED_OUT, callerSeesInstallation } from "../lib/github-access.js";
+import { TOKEN_REFUSED, withGitHubSession } from "../lib/github-session.js";
 
 const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
@@ -43,11 +44,6 @@ export const handler = async (event) => {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  const ghToken = parseCookie(event.headers?.cookie)["gh_token"];
-  if (!ghToken) {
-    return { statusCode: 401, body: JSON.stringify({ error: "Not authenticated" }) };
-  }
-
   const installationId = event.queryStringParameters?.installation_id;
   if (!installationId) {
     return { statusCode: 400, body: JSON.stringify({ error: "Missing installation_id" }) };
@@ -68,9 +64,14 @@ export const handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: "Server not configured: SERVER_KEY missing" }) };
   }
 
+  return withGitHubSession(event, (ghToken) => proxy(event, ghToken, installationId, months, badges));
+};
+
+async function proxy(event, ghToken, installationId, months, badges) {
   try {
-    const owns = await callerOwnsInstallation(accessCache(event, ghToken), ghToken, installationId);
-    if (!owns) {
+    const owns = await callerSeesInstallation(accessCache(event, ghToken), ghToken, installationId);
+    if (owns === SIGNED_OUT) return TOKEN_REFUSED;
+    if (owns !== SEES) {
       return { statusCode: 403, body: JSON.stringify({ error: "Not authorized for this installation" }) };
     }
 
@@ -94,4 +95,4 @@ export const handler = async (event) => {
     console.error("metrics-proxy error:", e.message);
     return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
   }
-};
+}

@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { TOKEN_REFUSED, withGitHubSession } from "../lib/github-session.js";
 
 const STRIFF_BILLING_AUTH_SECRET = process.env.STRIFF_BILLING_AUTH_SECRET;
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
@@ -26,14 +27,14 @@ export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
-  const token = parseCookie(event.headers?.cookie || "")["gh_token"];
-  if (!token) {
-    return { statusCode: 401, body: JSON.stringify({ error: "Not authenticated" }) };
-  }
   if (!STRIFF_BILLING_AUTH_SECRET || !STRIFF_SERVER_KEY) {
     return { statusCode: 500, body: JSON.stringify({ error: "Server not configured" }) };
   }
+  // The session is read through ../lib/github-session.js, which renews an expired access token.
+  return withGitHubSession(event, sync);
+};
 
+async function sync(token) {
   try {
     const emailsRes = await fetch("https://api.github.com/user/emails", {
       headers: {
@@ -42,6 +43,7 @@ export const handler = async (event) => {
         "X-GitHub-Api-Version": "2022-11-28",
       },
     });
+    if (emailsRes.status === 401) return TOKEN_REFUSED;
     const emails = await emailsRes.json();
     const primaryEmail = Array.isArray(emails) ? emails.find((e) => e.primary)?.email : null;
     if (!primaryEmail) {
@@ -73,13 +75,4 @@ export const handler = async (event) => {
   } catch (e) {
     return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
   }
-};
-
-function parseCookie(header) {
-  const cookies = {};
-  for (const pair of header.split(";")) {
-    const [k, ...v] = pair.split("=");
-    cookies[k.trim()] = (v.join("=") || "").trim();
-  }
-  return cookies;
 }

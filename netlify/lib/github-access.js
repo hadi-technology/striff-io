@@ -15,6 +15,8 @@ const PAGE_SIZE = 100;
 export const DASHBOARD_PAGES = 5;
 /** The pages an authorization check reads before it says it cannot tell. */
 export const CHECK_PAGES = 10;
+/** Longest the question "who is this?" may take before it counts as GitHub not answering. */
+const USER_TIMEOUT_MS = 8000;
 
 export function parseCookie(header) {
   const cookies = {};
@@ -34,21 +36,43 @@ function githubHeaders(token) {
 }
 
 /**
+ * The signed-in user, as GitHub knows the token, or why GitHub would not say. The two failures are
+ * kept apart because they mean opposite things: a token GitHub refuses is a session that has ended
+ * (or that a refresh can renew), while no answer at all is GitHub being down, and must not sign
+ * anyone out.
+ *
+ * @return { user } with the user's login, avatar and name; or { failure } where failure is
+ *     "signed_out" (GitHub answered 401 to the token) or "error" (anything else)
+ */
+export async function whoIs(token) {
+  let res;
+  try {
+    res = await fetch(`${GITHUB_API}/user`, {
+      headers: githubHeaders(token),
+      signal: AbortSignal.timeout(USER_TIMEOUT_MS),
+    });
+  } catch {
+    return { failure: "error" };
+  }
+  if (res.status === 401) return { failure: "signed_out" };
+  if (!res.ok) return { failure: "error" };
+  try {
+    const user = await res.json();
+    if (!user || typeof user.login !== "string") return { failure: "error" };
+    return { user: { login: user.login, avatar_url: user.avatar_url, name: user.name } };
+  } catch {
+    return { failure: "error" };
+  }
+}
+
+/**
  * The signed-in user, as GitHub knows the token.
  *
  * @return the user's login, avatar and name, or null where GitHub would not say (a token it does
  *     not accept, or no answer at all)
  */
 export async function fetchUser(token) {
-  try {
-    const res = await fetch(`${GITHUB_API}/user`, { headers: githubHeaders(token) });
-    if (!res.ok) return null;
-    const user = await res.json();
-    if (!user || typeof user.login !== "string") return null;
-    return { login: user.login, avatar_url: user.avatar_url, name: user.name };
-  } catch {
-    return null;
-  }
+  return (await whoIs(token)).user || null;
 }
 
 /**
@@ -140,32 +164,35 @@ export function listInstallationRepositories(token, installationId, maxPages) {
     maxPages);
 }
 
-/**
- * Whether the caller's own token sees this installation.
- *
- * A fresh cached list that names it answers yes. Otherwise GitHub is asked, through every page,
- * and a complete answer is cached. Anything GitHub would not answer is "no", as before.
- *
- * @param cache the access cache for this same token
- * @param installationId digits only; callers validate it
- */
-export async function callerOwnsInstallation(cache, token, installationId) {
-  const wanted = String(installationId);
-  const cached = await cache.installationIds();
-  if (cached && cached.includes(wanted)) return true;
-
-  const listed = await listInstallations(token, CHECK_PAGES);
-  const ids = listed.items.map((inst) => String(inst.id));
-  if (listed.complete) await cache.rememberInstallationIds(ids);
-  return ids.includes(wanted);
-}
-
 export const SEES = "yes";
 export const SEES_NOT = "no";
 /** GitHub would not say: a rate limit, an outage, or a listing longer than this pages through. */
 export const CANNOT_TELL = "unknown";
 /** GitHub would not accept the caller's own token: expired, revoked, or signed out elsewhere. */
 export const SIGNED_OUT = "signed_out";
+
+/**
+ * Whether the caller's own token sees this installation.
+ *
+ * A fresh cached list that names it answers SEES. Otherwise GitHub is asked, through every page,
+ * and a complete answer is cached. GitHub refusing the token itself is SIGNED_OUT, so the caller
+ * can renew the session and ask again; anything else GitHub would not answer is SEES_NOT, as
+ * before.
+ *
+ * @param cache the access cache for this same token
+ * @param installationId digits only; callers validate it
+ */
+export async function callerSeesInstallation(cache, token, installationId) {
+  const wanted = String(installationId);
+  const cached = await cache.installationIds();
+  if (cached && cached.includes(wanted)) return SEES;
+
+  const listed = await listInstallations(token, CHECK_PAGES);
+  const ids = listed.items.map((inst) => String(inst.id));
+  if (listed.complete) await cache.rememberInstallationIds(ids);
+  if (ids.includes(wanted)) return SEES;
+  return listed.failure === "signed_out" ? SIGNED_OUT : SEES_NOT;
+}
 
 /**
  * Whether the caller's own token sees this repository under this installation.
