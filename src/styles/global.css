@@ -4370,6 +4370,18 @@
 }
 .docs-rule-quote .github-inline-code { background: #e8edf4; font-size: 0.82em; }
 
+/* The words of a sentence its rule checks, in bold over a light highlighter stroke, and the rest of
+   the sentence a step quieter, so a verdict reads as a verdict on those words and not on everything
+   the sentence says. The stroke tells them from words the document itself set in bold. */
+.docs-rule-quote .docs-rule-checked {
+  font-weight: 650;
+  color: #0f172a;
+  box-shadow: inset 0 -0.42em 0 #dbeafe;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.docs-rule-quote .docs-rule-unchecked { color: #526175; }
+
 /* ---- Dashboard documents: the file explorer ----
    Folders open and close, documents sit under them, and every row carries the same menu, so an
    action is where the thing is rather than only in the pane. */

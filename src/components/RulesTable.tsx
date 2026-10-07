@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { issueUrl } from "./docIssue";
-import { Clamped, ExtensionNote, mark, plainText, withCode, when } from "./docRules";
+import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
 import { standing } from "../lib/standing.js";
 
@@ -35,6 +35,10 @@ export interface Rule {
   pullNo: string | null;
   judgedAtMs: number | null;
   onDefaultBranch: string | null;
+  /** Where in `quote` the words the rule checks begin; absent where the whole sentence is shown plain. */
+  checkedFrom?: number | null;
+  /** One past where those words end. */
+  checkedTo?: number | null;
 }
 
 /** One rule with the document it came from, which is how every scope reads them. */
@@ -363,7 +367,7 @@ export default function RulesTable({
                 )}
               </td>
               <td className="docs-rule-quote">
-                <Clamped lines={4}>{withCode(row.quote, term)}</Clamped>
+                <Clamped lines={4}>{withChecked(row.quote, row.checkedFrom, row.checkedTo, term)}</Clamped>
               </td>
               <td className="docs-rule-statement">
                 <Clamped lines={4}>{withCode(row.statement, term)}</Clamped>

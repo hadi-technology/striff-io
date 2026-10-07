@@ -120,3 +120,11 @@ test("nothing, or no text, is nothing", () => {
   assert.equal(plainText(null), "");
   assert.deepEqual(inlineRuns(undefined).runs, []);
 });
+
+test("a range ending inside an emphasis run, and one straddling a whole run, keep the run's style", () => {
+  const raw = "x _y z_ w";
+  assert.deepEqual(shape(raw, { from: 0, to: raw.indexOf(" z") }),
+    ["x |hit", "y|em|hit", " z|em", " w"]);
+  assert.deepEqual(shape(raw, { from: 0, to: raw.indexOf(" w") }),
+    ["x |hit", "y z|em|hit", " w"]);
+});
