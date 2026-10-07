@@ -21,8 +21,10 @@ import { useEffect, useState } from "react";
  * - asked for, or a run already going → no button, and "In progress" beside a dot that pulses,
  *   with how many documents are left to read. A greyed button still read as something to press,
  *   and its label as an offer still open.
- * - everything read → nothing at all, which is how a finished reading reports itself
- * - stopped, or going so long that nothing is coming → the button again, and why
+ * - nothing waiting → nothing at all, which is how a finished reading reports itself; or, where
+ *   there is a reason worth saying, that reason and no button
+ * - stopped, or going so long that nothing is coming, with documents still waiting → the button
+ *   again, and why
  *
  * Being out of service has to survive a refresh, or it is not out of service. The run record is the
  * real answer and it says "queued" within the same request the press makes — but a reload in that
@@ -36,13 +38,24 @@ import { useEffect, useState } from "react";
  * all again would be a button whose only use is spending money on an answer Striff mostly has, so
  * it goes away once its job is done.
  *
- * There is one gate, and it is the count beside the button: documents nothing has read. A reading
- * is expensive to serve -- a parse of the repository and a model call for every document whose
- * rules are not already held -- and what buys that is rules that do not yet exist. There used to be
- * a second gate, a four-hour interval since the branch was last judged, and it produced a
- * contradiction anyone could see: the page offered to read three documents and the run answered
- * that the rules already carried a recent reading. Both were true; neither was about those three
- * documents, and merges move that clock without a reader touching anything.
+ * There is one gate, and it is the count beside the button: documents waiting to be read. That is
+ * the documents nothing has read, and the read ones waiting to be read again -- after Striff changes
+ * how it reads, say, a document is shown with the rules it last gave and is still work for a
+ * reading. It is the same count the server refuses a reading on, and it has to be: gated on fewer,
+ * the button hid exactly where a reading would have changed rules; gated on anything looser, it was
+ * offered on a repository still being listed, on one with no documents, and on one in a language
+ * Striff does not read, and pressing it was answered that every document had been read, which on
+ * those repositories is false. A reading is expensive to serve -- a parse of the repository and a
+ * model call for every document whose rules are not already held -- and what buys that is rules
+ * that do not yet exist or are out of date. There used to be a second gate, a four-hour interval
+ * since the branch was last judged, and it produced a contradiction anyone could see: the page
+ * offered to read three documents and the run answered that the rules already carried a recent
+ * reading. Both were true; neither was about those three documents, and merges move that clock
+ * without a reader touching anything.
+ *
+ * Where there is nothing a reading could do and that needs saying -- the code is in a language
+ * Striff does not read, or the server has just refused a reading for one of its reasons -- the
+ * reason is said in the button's place, plainly, and there is no button.
  *
  * What it costs us is our problem and is not said out loud: the reader is told how long it takes,
  * which is what they can act on.
@@ -146,7 +159,7 @@ export default function ReadRepository({
   repo,
   reading: given,
   waiting,
-  read,
+  closed,
   busy,
   onRead,
 }: {
@@ -154,10 +167,17 @@ export default function ReadRepository({
   repo: string;
   /** Where the last reading got to, null where none was ever asked for. */
   reading: Reading | null;
-  /** Documents Striff can read here that it has not read. */
+  /**
+   * Documents a reading would read: those nothing has read, and those waiting to be read again.
+   * Zero wherever there is nothing for one to do, including a repository still being listed.
+   */
   waiting: number;
-  /** Documents whose rules it holds. */
-  read: number;
+  /**
+   * Why a reading could do nothing here, said in the button's place; null where it might. Wins
+   * over the count, since it is the server's answer or a fact about the code, and the count can be
+   * a page load old.
+   */
+  closed?: string | null;
   /** Whether another request is in flight from this page. */
   busy?: boolean;
   /** Asks for a reading. Resolves false where the API refused it, so the control can recover. */
@@ -207,13 +227,7 @@ export default function ReadRepository({
   const justFinished = reading?.state === "done"
     && reading.finishedAtMs > 0
     && Date.now() - reading.finishedAtMs < JUST_FINISHED_MS;
-  const nothingToRead = waiting === 0 && read > 0;
-
-  // Everything is read and nothing went wrong: there is no work to offer and nothing to report.
-  // This is also how a reading that worked reports itself — the button it was pressed on is gone.
-  if (nothingToRead && !stopped && !justFinished && !inProgress) {
-    return null;
-  }
+  const nothingToRead = waiting === 0 || !!closed;
 
   if (nothingToRead && justFinished && !inProgress) {
     return (
@@ -261,15 +275,22 @@ export default function ReadRepository({
     );
   }
 
+  // Nothing waits, so there is no work to offer. This is also how a reading that worked reports
+  // itself, once its note has had its few minutes -- the button it was pressed on is gone. A
+  // reading that stopped is not offered again here either: "Try again" on a repository where
+  // nothing waits is a press the server refuses.
+  if (nothingToRead) {
+    return closed ? (
+      <span className="read-repo">
+        <span className="read-repo-note">{closed}</span>
+      </span>
+    ) : null;
+  }
+
   // "Read 3" beside a count of documents read could be a count itself. It has to name what it does
   // to what, in the fewest words that still say it: read documents, here, now.
-  const offer = waiting > 0
-    ? `Read ${waiting} doc${waiting === 1 ? "" : "s"} now`
-    : "Read these docs now";
-  const label = stopped ? "Try again" : offer;
-  const help = waiting > 0
-    ? "Reads the documents Striff has not read yet and checks every rule it finds against your default branch. Takes a few minutes."
-    : "Reads every document in this repository and checks every rule it finds against your default branch. Takes a few minutes.";
+  const label = stopped ? "Try again" : `Read ${waiting} doc${waiting === 1 ? "" : "s"} now`;
+  const help = "Reads the documents waiting to be read and checks every rule it finds against your default branch. Takes a few minutes.";
 
   return (
     <span className="read-repo">

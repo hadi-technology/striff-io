@@ -105,6 +105,12 @@ interface Summary {
   excluded: number;
   holdsOnDefaultBranch: number;
   brokenOnDefaultBranch: number;
+  /**
+   * Read documents waiting to be read again, after Striff changed how it reads, say. Each is
+   * shown with the rules it last gave, so it is in none of the counts above that say it waits.
+   * Absent from an older server, and then nothing is known to wait.
+   */
+  waitingToBeReadAgain?: number;
 }
 
 interface Catalog {
@@ -116,12 +122,92 @@ interface Catalog {
   defaultBranchSha: string | null;
   lastScanMs: number | null;
   /** What came of the last attempt to list this repository, null where none is recorded. */
-  lastAttempt: { atMs: number; outcome: string; reason: string | null; documents: number } | null;
+  lastAttempt: {
+    atMs: number;
+    outcome: string;
+    reason: string | null;
+    documents: number;
+    /**
+     * True where the listing saw the whole default branch and none of it is in a language Striff
+     * reads, false where some of it is, null or absent where that is not known.
+     */
+    codeNotRead?: boolean | null;
+  } | null;
   /** Where the last whole-repository reading got to, null where none was asked for. */
   reading: Reading | null;
   summary: Summary;
   documents: Doc[];
   exclusions: Exclusion[];
+}
+
+/**
+ * What is said of a repository whose code is in no language Striff reads. Its documents are
+ * listed, and could be read, but no rule in them could be checked against code Striff has no
+ * model of, so they are not -- and that is a fact about Striff, not about the documents.
+ */
+const CODE_NOT_READ =
+  "Striff reads Java, Python, TypeScript and C#; this repository has no code in them, so its docs aren't checked.";
+
+/** The screen a document is set aside by where the repository's code is in no language Striff reads. */
+const CODE_NOT_READ_SCREEN = "code_not_read";
+
+/**
+ * Whether the repository's code is in no language Striff reads, by the same two signs the server
+ * refuses a reading on: the listing saw no such code, or a reading set every document aside for it.
+ */
+function isCodeNotRead(catalog: Catalog): boolean {
+  const documents = catalog.documents || [];
+  return catalog.lastAttempt?.codeNotRead === true
+    || (documents.length > 0 && documents.every((doc) => doc.screenedBy === CODE_NOT_READ_SCREEN));
+}
+
+/**
+ * Documents a reading of the whole repository would read: those nothing has read, and those
+ * waiting to be read again. The same count the server refuses a reading on, so the button is
+ * offered exactly where a press would be taken. A repository still being listed, or listed with
+ * no documents, has none.
+ */
+function waitingToRead(summary: Summary): number {
+  return summary.notRead + (summary.waitingToBeReadAgain || 0);
+}
+
+/**
+ * What a refused reading is told, by the code the server gave. Each is said here rather than
+ * passed through, so it is true of the case it covers: the server once answered every refusal
+ * with "Striff has read every document it can read here", which on a repository in a language
+ * Striff does not read, or one with no documents, is not so.
+ *
+ * @return the sentence, and whether nothing a reading could do here will change while this page is
+ *     open, so the offer goes and the sentence takes its place. A repository not listed yet will
+ *     be, and its page says so already; what this says then is said once, with the other errors.
+ */
+function refusalOf(code: string | undefined, fallback: string | undefined): { message: string; final: boolean } {
+  switch (code) {
+    case "nothing_to_read":
+      return {
+        message: "Striff has read every document it can read here, so a reading has nothing to do. Pull requests and merges keep its rules current.",
+        final: true,
+      };
+    case "nothing_readable":
+      return {
+        message: "None of these docs can be read for rules: each was skipped by a screen, says it is no longer current, was excluded, or could not be read, as the list shows.",
+        final: true,
+      };
+    case "code_not_read":
+      return { message: CODE_NOT_READ, final: true };
+    case "no_documents":
+      return {
+        message: "Striff found no document it reads in this repository, so there is nothing to read.",
+        final: true,
+      };
+    case "not_listed":
+      return {
+        message: "Striff hasn't listed this repository's documents yet, so there is nothing to read yet.",
+        final: false,
+      };
+    default:
+      return { message: fallback || "Couldn't ask Striff to read this repository.", final: false };
+  }
 }
 
 /** Every rule of the repository, grouped by the document it was read from. */
@@ -274,6 +360,14 @@ function stateLine(doc: Doc, covering?: Exclusion | null): string {
   return stateLineOf(doc, covering) + partLine(doc);
 }
 
+/**
+ * Why a screen skipped a doc, as a reader is told it. The reason is stored as "screen: why"; the
+ * screen's name is for the logs, not a reader, wherever the reason is shown.
+ */
+function screenWhy(reason: string): string {
+  return reason.replace(/^[a-z_]+:\s*/, "");
+}
+
 function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
   switch (doc.state) {
     case "READ":
@@ -290,11 +384,10 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
       return "Striff hasn't read this doc yet. It reads a doc the first time a pull request changes code the doc talks about.";
     case "SCREENED_OUT":
       if (doc.forced) {
-        return `A screen judged this doc holds no rule to check${doc.screenReason ? ` (${doc.screenReason})` : ""}. ${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
+        return `A screen judged this doc holds no rule to check${doc.screenReason ? ` (${screenWhy(doc.screenReason)})` : ""}. ${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
       }
-      // The reason is stored as "screen: why"; the screen's name is for the logs, not a reader.
       return doc.screenReason
-        ? `Skipped: ${doc.screenReason.replace(/^[a-z_]+:\s*/, "")}`
+        ? `Skipped: ${screenWhy(doc.screenReason)}`
         : "A screen judged this doc holds no rule that could be checked against code.";
     case "RETIRED":
       return doc.retiredReason
@@ -666,6 +759,12 @@ export default function DocsTab({
   // What a failed write or a failed document read said, shown where it happened.
   const [actionError, setActionError] = useState("");
   const [asking, setAsking] = useState(false);
+  /**
+   * Why the server just refused a reading of this repository, where the refusal means there is
+   * nothing for one to do; null otherwise. It takes the button's place until another repository
+   * is opened: offering it again would only be refused again.
+   */
+  const [readRefused, setReadRefused] = useState<string | null>(null);
   /** Which document was asked for last; an older answer never paints over a newer one. */
   const openedAt = useRef(0);
   /** The same for the catalogue and the rules: switching twice must not land on the first one. */
@@ -738,6 +837,7 @@ export default function DocsTab({
     setRulesIndex(null);
     setStaleNames(null);
     setActionError("");
+    setReadRefused(null);
     reload();
   }, [repo, installationId, repos.length]);
 
@@ -989,6 +1089,25 @@ export default function DocsTab({
         `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
         { method: "POST" }
       );
+      if (res.status === 409) {
+        const answer = await res.json().catch(() => ({}));
+        // A reading already going is what the press asked for: the control goes on saying so,
+        // which is true even of a reading Striff started by itself and this page does not report.
+        if (answer.error === "already_reading") {
+          await reload();
+          return true;
+        }
+        const refusal = refusalOf(answer.error, answer.message);
+        if (refusal.final) {
+          setReadRefused(refusal.message);
+        } else {
+          setActionError(refusal.message);
+        }
+        // The counts the button was offered on were a page load old; these are the ones the
+        // server refused on.
+        await reload();
+        return false;
+      }
       if (!res.ok) {
         const answer = await res.json().catch(() => ({}));
         setActionError(answer.message || answer.error || "Couldn't ask Striff to read this repository.");
@@ -1532,6 +1651,18 @@ export default function DocsTab({
   }
 
   const summary = catalog?.summary;
+  // Whether the repository's code is in no language Striff reads, so no document in it is checked.
+  // Said only of a repository with documents: of one without, "its docs aren't checked" would be
+  // about docs it does not have, and the page already says it found none.
+  const codeNotRead = !!catalog && allDocs.length > 0 && isCodeNotRead(catalog);
+  // What a reading could read. Nothing while the repository is still being listed or has no
+  // documents, since there are none to count.
+  const readWaiting = summary ? waitingToRead(summary) : 0;
+  // Why a reading could do nothing here, said in the button's place. Code Striff does not read wins
+  // over documents waiting, as it does on the server: a reading of them would check nothing.
+  const readClosed = readRefused || (codeNotRead ? CODE_NOT_READ : null);
+  /** Whether the read button is on offer above, for the sentences that point at it. */
+  const readOffered = !readOnly && readWaiting > 0 && !readClosed;
 
   /** The repository's counts, beside the heading. */
   const tally = summary && (
@@ -1608,12 +1739,12 @@ export default function DocsTab({
         <ReadRepository
           repo={repo}
           reading={catalog.reading}
-          /* Documents nothing has read, which is the only work a reading does. The old
-             sum subtracted the states it knew about and so counted documents a reading
-             could not finish as waiting for ever, leaving the control offered on a
-             repository where it had nothing left to achieve. */
-          waiting={summary.notRead}
-          read={summary.read}
+          /* Documents waiting to be read, which is the only work a reading does: see
+             waitingToRead. The old sum subtracted the states it knew about and so counted
+             documents a reading could not finish as waiting for ever, leaving the control
+             offered on a repository where it had nothing left to achieve. */
+          waiting={readWaiting}
+          closed={readClosed}
           busy={asking || busy}
           onRead={readRepository}
         />
@@ -2059,12 +2190,16 @@ export default function DocsTab({
                         about the scope: the rules exist and this list did not reach them. */}
                     {rulesIndex.truncated
                       ? "This repository holds more rules than one list can carry, and the documents before this one fill it. Striff has these; this page cannot reach them yet."
+                      : codeNotRead
+                      // Not "found no rule": nothing looked, because there is no code it reads.
+                      ? CODE_NOT_READ
                       : !scopeDocs.some((doc) => doc.state === "NOT_READ")
                       ? "Striff read these docs and found no rule about the code in them."
                       : isRunning(reading)
                       ? "Striff is reading these docs now. Their rules appear here as they are read; refresh to see them."
-                      : summary && summary.notRead > 0 && !readOnly
-                      ? `Nothing here has been read yet. Use Read ${summary.notRead} doc${summary.notRead === 1 ? "" : "s"} now, above, to read ${summary.notRead === 1 ? "it" : "them"} without waiting for a pull request.`
+                      // Points at the button only where the button is there, with its number.
+                      : readOffered
+                      ? `Nothing here has been read yet. Use Read ${readWaiting} doc${readWaiting === 1 ? "" : "s"} now, above, to read ${readWaiting === 1 ? "it" : "them"} without waiting for a pull request.`
                       : "Nothing here has been read yet. Striff reads a doc the first time a pull request changes code that doc talks about."}
                   </p>
                 )}
