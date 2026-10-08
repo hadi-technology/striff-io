@@ -105,6 +105,28 @@ function runElement(run: any, ranged: boolean, key: number) {
 }
 
 /**
+ * A rule's sentence, read as the document wrote it, with the words the rule checks in bold.
+ *
+ * The API sends those words as UTF-16 offsets into the raw quote, Markdown and all, and only where
+ * it verified that the sentence writes them. {@link inlineMarkdown} applies them per visible
+ * character, so a span that starts inside the document's own bold, or straddles it, never cuts a
+ * pair of marks. No span, or one that does not fit, shows the sentence plain.
+ *
+ * @param text the sentence as the API sent it
+ * @param checkedFrom where the checked words begin
+ * @param checkedTo one past where they end
+ * @param term what is being searched for
+ */
+export function withChecked(
+  text: string | null | undefined,
+  checkedFrom: number | null | undefined,
+  checkedTo: number | null | undefined,
+  term?: string
+) {
+  return inlineMarkdown(text, { term, from: checkedFrom, to: checkedTo });
+}
+
+/**
  * A sentence or a rule as the API sends it, read as the document wrote it.
  *
  * Kept under its old name for the places that only ever wanted code and a search: they get the
