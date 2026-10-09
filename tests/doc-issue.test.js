@@ -25,7 +25,7 @@ test("a prompt for a name the code lacks checks first, edits docs only and opens
   assert.match(prompt, /report that the finding is wrong/);
   assert.match(prompt, /Do not recreate the type/);
   assert.match(prompt, /Edit documentation only/);
-  assert.match(prompt, /Found by Striff/);
+  assert.doesNotMatch(prompt, /pull request|push|fork|remote|Striff \(https/i);
 });
 
 test("a prompt for a renamed name says what to write instead", () => {
@@ -64,4 +64,5 @@ test("a prompt for a broken rule checks first and changes no code on its own", (
   assert.match(prompt, /Read pull request #427/);
   assert.match(prompt, /Edit documentation only/);
   assert.match(prompt, /do not change any code/);
+  assert.doesNotMatch(prompt, /open a pull request|push|fork|remote/i);
 });

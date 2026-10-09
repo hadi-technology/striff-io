@@ -112,7 +112,7 @@ export function staleNameIssueUrl(
  * Written from the same finding as {@link staleNameIssueUrl}, and as careful about what Striff
  * knows: the agent checks the finding before it edits, because a name missing from what Striff
  * read is not proof the name is missing from the code, and it stops if the finding is wrong. It
- * edits documentation only.
+ * edits documentation only, and says nothing about how the change is shipped: that is the team's.
  *
  * @param owner the repository's owner
  * @param repo the repository's name
@@ -169,7 +169,6 @@ export function staleNamePrompt(
     `1. Check the finding first. Search the current tree for \`${simple}\` as an exact token: a class, interface, enum, record or type in any language this repository uses, including generated, Kotlin or test sources. If it is declared where the document says, stop, change nothing, and report that the finding is wrong.`,
     `2. If the finding holds: ${fix}`,
     "3. Edit documentation only. Do not change source code.",
-    `4. Open a pull request with the change. In its description, quote the sentence above and end with: "Found by Striff (https://striff.io)."`,
   ].join("\n");
 }
 
@@ -180,7 +179,7 @@ export function staleNamePrompt(
  * from the sentence by a model. So the agent first checks whether the code really breaks what the
  * sentence says, and stops if it does not. Where the doc is what went out of date, it edits the
  * doc. Where the code moved away from a rule the doc still means, it changes no code: it reports
- * what broke it and proposes the fix, for a person to decide.
+ * what broke it and proposes the fix, for a person to decide. How a change is shipped is the team's.
  *
  * @param owner the repository's owner
  * @param repo the repository's name
@@ -216,8 +215,8 @@ export function brokenRulePrompt(
     "Steps:",
     "1. Check the finding first. Read the sentence and the code it talks about on the current branch, and decide whether the code really breaks what the sentence says. The rule was read from the sentence automatically and may not say quite what the sentence means. If the code keeps what the sentence says, stop, change nothing, and report that the finding is wrong.",
     `2. If the code breaks it, work out which side is out of date.${rule.pullNo ? ` Read pull request #${rule.pullNo} to see whether the change was meant.` : ""}`,
-    "3. If the code changed on purpose and the doc no longer describes it, edit the sentence so it describes the code as it is now. Edit documentation only, and open a pull request. In its description, quote the sentence above and end with: \"Found by Striff (https://striff.io).\"",
-    "4. If the doc still describes what is intended and the code drifted from it, do not change any code. Report which change broke the rule and the smallest code change that would restore it, and ask before making it.",
+    "3. If the code changed on purpose and the doc no longer describes it, edit the sentence so it describes the code as it is now. Edit documentation only.",
+    "4. If the doc still describes what is intended and the code drifted from it, do not change any code. Report which change broke the rule and the smallest code change that would restore it.",
   ].join("\n");
 }
 
