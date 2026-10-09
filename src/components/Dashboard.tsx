@@ -9,6 +9,8 @@ import { signInUrl } from "../lib/githubSignIn.js";
 
 /** Where the GitHub App is installed on an account: the first one, or one more. */
 const INSTALL_URL = "https://github.com/apps/striffs/installations/new";
+/** Where the account last looked at is kept, so a reload opens on it. */
+const LAST_ACCOUNT_KEY = "striff.lastAccount";
 
 const OAUTH_CLIENT_ID =
   typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_GITHUB_OAUTH_CLIENT_ID
@@ -179,6 +181,17 @@ export default function Dashboard() {
 
       const withRepos: Installation[] = Array.isArray(status.installations) ? status.installations : [];
       setInstallations(withRepos);
+      // The account last looked at, so a reload stays on it; a link or a checkout below overrides it.
+      const rememberedAccount = (() => {
+        try {
+          return Number(window.localStorage.getItem(LAST_ACCOUNT_KEY));
+        } catch {
+          return NaN;
+        }
+      })();
+      if (withRepos.some((inst) => inst.id === rememberedAccount)) {
+        setAccountId(rememberedAccount);
+      }
       if (linkedRepo) {
         const found = findRepo(withRepos, linkedRepo);
         if (found) {
@@ -241,6 +254,15 @@ export default function Dashboard() {
       setOpenRepo(wanted.full_name);
     }
   }, [current?.id, current?.repositories?.length]);
+
+  useEffect(() => {
+    if (!current) return;
+    try {
+      window.localStorage.setItem(LAST_ACCOUNT_KEY, String(current.id));
+    } catch {
+      // A browser that will not remember is no reason to fail: the first account is the default.
+    }
+  }, [current?.id]);
 
   useEffect(() => {
     if (!current || !openRepo) return;
