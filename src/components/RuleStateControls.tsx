@@ -22,7 +22,10 @@ export function RuleSwitch({
   ignoredBy,
   disabledReason,
   onToggle,
+  vertical = false,
 }: {
+  /** Whether it stands upright with no visible label, as in a row's corner; its state is in its title. */
+  vertical?: boolean;
   ignored: boolean;
   ignoredBy?: string | null;
   /** Why the switch cannot be used, or null where it can. */
@@ -42,13 +45,13 @@ export function RuleSwitch({
       role="switch"
       aria-checked={!ignored}
       aria-label={`Check pull requests against this rule: ${ignored ? "off" : "on"}`}
-      className={`rule-switch${ignored ? " is-off" : ""}`}
+      className={`rule-switch${ignored ? " is-off" : ""}${vertical ? " is-vertical" : ""}`}
       disabled={!!reason}
       title={title}
       onClick={() => onToggle(!ignored)}
     >
       <span className="rule-switch-track" aria-hidden="true"><span className="rule-switch-knob" /></span>
-      <span className="rule-switch-label">{ignored ? "Ignored" : "Active"}</span>
+      {!vertical && <span className="rule-switch-label">{ignored ? "Ignored" : "Active"}</span>}
     </button>
   );
 }
