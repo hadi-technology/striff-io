@@ -7532,10 +7532,11 @@ button.check-verdict { cursor: pointer; }
 }
 
 /* A finding tracked in an open GitHub issue: the issue in place of the button, GitHub's green mark. */
-.finding-action.is-tracked { border-color: #b7e1c1; background: #f4fbf6; color: #1f2328; }
-.finding-action.is-tracked .finding-tracked-icon { color: #1a7f37; }
-.finding-action.is-tracked:hover { border-color: #1a7f37; background: #eaf6ed; color: #116329; box-shadow: 0 2px 6px rgba(26, 127, 55, 0.14); }
-.finding-action.is-tracked:hover .finding-tracked-icon { color: #116329; }
+/* Pink, not GitHub's green (an issue's state) or purple (a closed issue): this says "tracked". */
+.finding-action.is-tracked { border-color: #f5c2dd; background: #fff0f7; color: #1f2328; }
+.finding-action.is-tracked .finding-tracked-icon { color: #bf3989; }
+.finding-action.is-tracked:hover { border-color: #bf3989; background: #ffe3f1; color: #99286e; box-shadow: 0 2px 6px rgba(191, 57, 137, 0.16); }
+.finding-action.is-tracked:hover .finding-tracked-icon { color: #99286e; }
 /* A closed issue: a quiet line under the buttons, and where it was closed as not planned, the way to
    stop checking the rule. */
 .finding-issue-note {
