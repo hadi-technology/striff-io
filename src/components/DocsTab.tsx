@@ -1,6 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
+import type { FindingIssue } from "./findingIssue.ts";
 import FlagFinding from "./FlagFinding";
 import { NOT_ADMIN, ScopeIgnore } from "./RuleStateControls";
 import { applyRuleStates, ignoreCounts } from "../lib/ruleStates.js";
@@ -267,6 +268,8 @@ interface StaleName {
   removedByMessage?: string | null;
   removedAtMs?: number | null;
   removedByUrl?: string | null;
+  /** The GitHub issue the stale name is tracked in, where the server knows of one. */
+  issue?: FindingIssue | null;
 }
 
 interface StaleNames {
@@ -2361,6 +2364,7 @@ export default function DocsTab({
                     truncated={!!rulesIndex.truncated}
                     onOpenDoc={(path) => openDoc(path)}
                     issues={!source && takesIssues}
+                    readOnly={!!source}
                     demo={!!sample}
                     repositoryIgnored={!!rulesIndex?.ignoredPaths?.some((entry) => entry.prefix && entry.path === "")}
                     ruleStates={source ? undefined : {
@@ -2467,6 +2471,7 @@ export default function DocsTab({
                     filter={ruleFilter}
                     docCount={1}
                     issues={!source && takesIssues}
+                    readOnly={!!source}
                     demo={!!sample}
                     repositoryIgnored={!!rulesIndex?.ignoredPaths?.some((entry) => entry.prefix && entry.path === "")}
                     ruleStates={source ? undefined : {
@@ -2543,13 +2548,15 @@ export default function DocsTab({
                               <span className="docs-outcome-when">
                                 first seen {when(finding.firstSeenMs)}
                               </span>
-                              {!source && (
+                              {(!source || finding.issue) && (
                                 <FindingActions
-                                  issueUrl={takesIssues
+                                  issueUrl={takesIssues && !source
                                     ? staleNameIssueUrl(owner, name, selected, finding, branch || "main")
                                     : null}
-                                  prompt={staleNamePrompt(owner, name, selected, finding, branch || "main")}
+                                  prompt={source ? undefined : staleNamePrompt(owner, name, selected, finding, branch || "main")}
                                   demo={!!sample}
+                                  issue={finding.issue}
+                                  readOnly={!!source}
                                 />
                               )}
                             </td>

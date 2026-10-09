@@ -7530,3 +7530,31 @@ button.check-verdict { cursor: pointer; }
 @media (max-width: 860px) {
   .rules-table tr.in-sentence:not(.sentence-first) { padding-left: 0.75rem; border-left: 2px solid #e2e8f0; }
 }
+
+/* A finding tracked in an open GitHub issue: the issue in place of the button, GitHub's green mark. */
+.finding-action.is-tracked { border-color: #b7e1c1; background: #f4fbf6; color: #1f2328; }
+.finding-action.is-tracked .finding-tracked-icon { color: #1a7f37; }
+.finding-action.is-tracked:hover { border-color: #1a7f37; background: #eaf6ed; color: #116329; box-shadow: 0 2px 6px rgba(26, 127, 55, 0.14); }
+.finding-action.is-tracked:hover .finding-tracked-icon { color: #116329; }
+/* A closed issue: a quiet line under the buttons, and where it was closed as not planned, the way to
+   stop checking the rule. */
+.finding-issue-note {
+  flex-basis: 100%;
+  font-size: 0.72rem;
+  color: #57606a;
+  cursor: default;
+}
+.finding-issue-note a { color: #57606a; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.finding-issue-note a:hover { color: #2563eb; }
+.finding-issue-ignore {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #2563eb;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.finding-issue-ignore:hover { text-decoration: underline; text-underline-offset: 2px; }
+.finding-issue-ignore:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 2px; }
+@media print { .finding-issue-ignore { display: none; } }

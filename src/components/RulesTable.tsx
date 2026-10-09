@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { brokenRulePrompt, issueUrl } from "./docIssue";
 import FindingActions from "./FindingActions";
+import type { FindingIssue } from "./findingIssue.ts";
 import FlagFinding from "./FlagFinding";
 import { IGNORED_BY_HINT, RuleSwitch } from "./RuleStateControls";
 import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
@@ -46,6 +47,8 @@ export interface Rule {
   ignored?: boolean;
   /** What ignored it: the rule itself, its doc, a folder above it, or the doc being excluded. */
   ignoredBy?: "rule" | "document" | "folder" | "excluded" | null;
+  /** The GitHub issue the rule is tracked in, where the server knows of one. */
+  issue?: FindingIssue | null;
 }
 
 /** One rule with the document it came from, which is how every scope reads them. */
@@ -166,6 +169,7 @@ export default function RulesTable({
   truncated,
   onOpenDoc,
   issues = true,
+  readOnly = false,
   demo = false,
   ruleStates,
   repositoryIgnored = false,
@@ -192,6 +196,8 @@ export default function RulesTable({
   onOpenDoc?: (path: string) => void;
   /** Whether a broken rule offers to open an issue; a public page's reader is not the repository's. */
   issues?: boolean;
+  /** Whether the reader can only look, as on a public page: a rule's issue shows, no button does. */
+  readOnly?: boolean;
   /** Whether these are the demo's rules, about a repository that does not exist on GitHub. */
   demo?: boolean;
   /** The Active/Ignored switch on each row; absent where nothing can be changed. */
@@ -566,11 +572,20 @@ export default function RulesTable({
                     not checked on {branch || "the branch"} yet
                   </span>
                 )}
-                {issues && !row.ignored && standing(row) === "broken" && (
+                {!row.ignored && standing(row) === "broken" && (!readOnly || row.issue) && (
                   <FindingActions
-                    issueUrl={issueUrl(owner, name, row.doc.path, row, branch)}
-                    prompt={brokenRulePrompt(owner, name, row.doc.path, row, branch)}
+                    issueUrl={issues && !readOnly ? issueUrl(owner, name, row.doc.path, row, branch) : null}
+                    prompt={readOnly ? undefined : brokenRulePrompt(owner, name, row.doc.path, row, branch)}
                     demo={demo}
+                    issue={row.issue}
+                    readOnly={readOnly}
+                    onIgnore={ruleStates && !ruleStates.disabledReason
+                      ? async () => {
+                          setStateError((was) => ({ ...was, [row.factId]: "" }));
+                          const failed = await ruleStates.set(row, true);
+                          if (failed) setStateError((was) => ({ ...was, [row.factId]: failed }));
+                        }
+                      : null}
                   />
                 )}
                 {ruleStates && stateError[row.factId] && (
