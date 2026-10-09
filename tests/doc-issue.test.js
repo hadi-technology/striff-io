@@ -42,4 +42,6 @@ test("the issue link opens on the repository's default branch", () => {
 
   assert.equal(url.pathname, "/objectionary/eo/issues/new");
   assert.match(url.searchParams.get("body"), /blob\/master\/eo-maven-plugin\/README\.md#L108/);
+  assert.match(url.searchParams.get("body"),
+    /Opened from the \[Striff dashboard\]\(https:\/\/striff\.io\/\?utm_source=github/);
 });

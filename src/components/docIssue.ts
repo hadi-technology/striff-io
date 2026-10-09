@@ -99,7 +99,7 @@ export function staleNameIssueUrl(
       ? `**What would close this:** edit the doc to write \`${finding.renamedTo}\`.`
       : "**What would close this:** edit the doc so it stops naming it, or bring it back.",
     "",
-    "_Found by [Striff](https://striff.io), reading the default branch._"
+    `<sub>Found by Striff on the default branch. Opened from the [Striff dashboard](${DASHBOARD_LINK}).</sub>`
   );
   return `https://github.com/${owner}/${repo}/issues/new?title=${encodeURIComponent(
     title
@@ -172,6 +172,10 @@ export function staleNamePrompt(
     `4. Open a pull request with the change. In its description, quote the sentence above and end with: "Found by Striff (https://striff.io)."`,
   ].join("\n");
 }
+
+/** Where an issue's footer points: the site, tagged so an issue that brings a reader back is counted. */
+const DASHBOARD_LINK =
+  "https://striff.io/?utm_source=github&utm_medium=issue&utm_campaign=dashboard_issue";
 
 /** GitHub's own limit is generous, but a URL this long is a sign the quote ran away. */
 const MAX_QUOTE = 600;
@@ -253,7 +257,7 @@ export function issueUrl(
     "",
     "Either is a fix. Striff re-reads a doc on the next pull request that changes code the doc talks about, so an edited sentence becomes the new rule then.",
     "",
-    "<sub>Opened from the Striff dashboard.</sub>",
+    `<sub>Opened from the [Striff dashboard](${DASHBOARD_LINK}).</sub>`,
   ].join("\n");
 
   const params = new URLSearchParams({ title, body });
