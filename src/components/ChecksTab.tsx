@@ -56,7 +56,8 @@ function verdictOf(check: Check, whose: "your" | "its" = "your"): { label: strin
   // the verdict says so rather than reading as a clean pass the check itself did not give.
   if (check.rulesAlreadyBroken > 0) {
     return {
-      label: `Keeps ${whose} rules\n${check.rulesAlreadyBroken} already broken`,
+      // The count is on the line beside the verdict; the pill stays one short phrase.
+      label: "No new breaks",
       tone: "is-prior",
       help: `This change breaks none of the rules it touches, and ${check.rulesAlreadyBroken} of them were already broken before it.`,
     };
