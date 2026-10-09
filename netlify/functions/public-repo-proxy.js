@@ -19,6 +19,7 @@ const VIEWS = {
   catalog: "/doc-catalog",
   rules: "/doc-catalog/rules",
   "type-findings": "/doc-catalog/type-findings",
+  "finding-issues": "/doc-catalog/finding-issues",
   doc: "/doc-catalog/doc",
 };
 

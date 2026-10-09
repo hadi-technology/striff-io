@@ -49,3 +49,66 @@ export function ruleMarker(factId: string): string {
 export function staleNameMarker(docPath: string, name: string): string {
   return `<!-- striff:finding stale-name:${docPath}:${name} -->`;
 }
+
+/** The issues a repository's findings are tracked in, as the API answers them, apart from the rules. */
+export interface FindingIssuesAnswer {
+  rules?: { factId: string; issue: FindingIssue | null }[];
+  staleNames?: { docPath: string; name: string; issue: FindingIssue | null }[];
+  complete?: boolean;
+}
+
+/** An answer, kept for looking findings up: by rule, and by doc and name. */
+export interface IssueIndex {
+  rules: Map<string, FindingIssue>;
+  staleNames: Map<string, FindingIssue>;
+}
+
+const staleKey = (docPath: string, name: string) => `${docPath}\u0000${name}`;
+
+/**
+ * The issues an answer names, by finding; null where the answer is missing or not an answer, so a
+ * failed or empty read changes nothing on the page.
+ */
+export function issueIndex(answer: unknown): IssueIndex | null {
+  if (!answer || typeof answer !== "object") return null;
+  const { rules, staleNames } = answer as FindingIssuesAnswer;
+  const index: IssueIndex = { rules: new Map(), staleNames: new Map() };
+  for (const entry of Array.isArray(rules) ? rules : []) {
+    if (entry && typeof entry.factId === "string" && entry.issue) index.rules.set(entry.factId, entry.issue);
+  }
+  for (const entry of Array.isArray(staleNames) ? staleNames : []) {
+    if (entry && typeof entry.docPath === "string" && typeof entry.name === "string" && entry.issue) {
+      index.staleNames.set(staleKey(entry.docPath, entry.name), entry.issue);
+    }
+  }
+  return index.rules.size === 0 && index.staleNames.size === 0 ? null : index;
+}
+
+/**
+ * The rows with the issue each is tracked in, where the index names one. A row the index does not
+ * name keeps whatever it carried; with no index, the same array comes back, so nothing re-renders.
+ */
+export function withRuleIssues<T extends { factId: string; issue?: FindingIssue | null }>(
+  rows: T[],
+  index: IssueIndex | null
+): T[] {
+  if (!index || index.rules.size === 0) return rows;
+  let changed = false;
+  const out = rows.map((row) => {
+    const issue = index.rules.get(row.factId);
+    if (!issue || issue === row.issue) return row;
+    changed = true;
+    return { ...row, issue };
+  });
+  return changed ? out : rows;
+}
+
+/** A stale name with the issue it is tracked in, where the index names one; itself otherwise. */
+export function withStaleNameIssue<T extends { name: string; issue?: FindingIssue | null }>(
+  finding: T,
+  docPath: string,
+  index: IssueIndex | null
+): T {
+  const issue = index?.staleNames.get(staleKey(docPath, finding.name));
+  return issue && issue !== finding.issue ? { ...finding, issue } : finding;
+}

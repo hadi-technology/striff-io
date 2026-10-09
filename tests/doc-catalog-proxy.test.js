@@ -134,3 +134,13 @@ test("a GitHub that will not answer is a no", async () => {
 
   assert.equal(res.statusCode, 403);
 });
+
+test("the issues the findings are tracked in are read from their own API path", async () => {
+  const res = await request("GET", "finding-issues");
+
+  assert.equal(res.statusCode, 200);
+  const call = apiCalls().find((a) => a.url.includes("/finding-issues"));
+  assert.ok(call, JSON.stringify(asked.map((a) => a.url)));
+  assert.match(call.url, /\/api\/v1\/organizations\/7\/repos\/acme\/widgets\/doc-catalog\/finding-issues\?token=/);
+  assert.equal(call.init.headers["X-Server-Key"], "server-key");
+});
