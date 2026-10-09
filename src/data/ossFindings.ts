@@ -16,7 +16,7 @@ export interface OssTally {
   /** Rules that are broken on its default branch. */
   broken: number;
   /** Names the docs write that the code no longer has: the finding. */
-  outOfDate: number;
+  staleNames: number;
 }
 
 export interface OssRepo {
@@ -35,17 +35,17 @@ export const snapshotAsOf = "2026-10-03";
 
 export const ossRepos: OssRepo[] = [
   { owner: "scikit-learn", repo: "scikit-learn", stars: "67k", avatar: "/oss-avatars/scikit-learn.png",
-    snapshot: { held: 54, broken: 0, outOfDate: 1 } },
+    snapshot: { held: 54, broken: 0, staleNames: 1 } },
   { owner: "Lightning-AI", repo: "pytorch-lightning", stars: "31k", avatar: "/oss-avatars/lightning-ai.png",
-    snapshot: { held: 7, broken: 0, outOfDate: 1 } },
+    snapshot: { held: 7, broken: 0, staleNames: 1 } },
   { owner: "celery", repo: "celery", stars: "29k", avatar: "/oss-avatars/celery.png",
-    snapshot: { held: 29, broken: 0, outOfDate: 1 } },
+    snapshot: { held: 29, broken: 0, staleNames: 1 } },
   { owner: "dotnet", repo: "BenchmarkDotNet", stars: "11.5k", avatar: "/oss-avatars/dotnet.png",
-    snapshot: { held: 8, broken: 0, outOfDate: 1 } },
+    snapshot: { held: 8, broken: 0, staleNames: 1 } },
   { owner: "apache", repo: "storm", stars: "6.7k", avatar: "/oss-avatars/apache.png",
-    snapshot: { held: 90, broken: 0, outOfDate: 5 } },
+    snapshot: { held: 90, broken: 0, staleNames: 5 } },
   { owner: "Netflix", repo: "mantis", stars: "1.5k", avatar: "/oss-avatars/netflix.png",
-    snapshot: { held: 60, broken: 0, outOfDate: 2 } },
+    snapshot: { held: 60, broken: 0, staleNames: 2 } },
 ];
 
 /** The repository's public report on striff.io. */

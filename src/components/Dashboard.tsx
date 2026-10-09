@@ -312,7 +312,7 @@ export default function Dashboard() {
           </a>
         </div>
         <p className="dashboard-error-foot">
-          Reviews keep running on your pull requests whether or not this page loads. Nothing here
+          Checks keep running on your pull requests whether or not this page loads. Nothing here
           affects the checks Striff posts on GitHub.
         </p>
       </div>
@@ -429,7 +429,7 @@ export default function Dashboard() {
                     onClick={() => setSection("docs")}
                   >
                     <NavIcon name="docs" />
-                    <span>Docs &amp; Rules</span>
+                    <span>Docs &amp; rules</span>
                   </button>
                   <button
                     type="button"
@@ -1049,7 +1049,7 @@ function InstallationCard({
               onClick={() => setInstallTab("docs")}
               className={`dashboard-tab ${installTab === "docs" ? "dashboard-tab-active" : ""}`}
             >
-              Docs &amp; Rules
+              Docs &amp; rules
             </button>
             <button
               onClick={() => setInstallTab("metrics")}
@@ -1097,7 +1097,7 @@ function InstallationCard({
                   rel="noopener noreferrer"
                   className="dashboard-button dashboard-button-secondary"
                 >
-                  Manage repos
+                  Manage repositories
                 </a>
               </div>
 
@@ -1111,7 +1111,7 @@ function InstallationCard({
                   <path d="M8 7.25v3.5M8 5.1v.05" />
                 </svg>
                 <div>
-                  <p className="repo-coverage-title">Striff reviews every pull request in these repositories</p>
+                  <p className="repo-coverage-title">Striff checks every pull request in these repositories</p>
                   <p className="repo-coverage-body">
                     Each pull request opened or updated in a repository below receives a Striff check
                     on GitHub, with a diagram of its architectural changes and any conflicts with
@@ -1121,7 +1121,7 @@ function InstallationCard({
                       : ""}{" "}
                     To add or remove repositories, use{" "}
                     <a href={manageReposUrl} target="_blank" rel="noopener noreferrer">
-                      Manage repos
+                      Manage repositories
                     </a>.
                   </p>
                 </div>
@@ -1156,9 +1156,9 @@ function InstallationCard({
                               {repo.private ? "Private" : "Public"}
                             </span>
                             {isActive && (
-                              <span className="repo-card-active" title="Striff is analyzing pull requests here">
+                              <span className="repo-card-active" title="Striff checks pull requests here">
                                 <span className="repo-card-pulse" aria-hidden="true" />
-                                Analyzing
+                                Checking
                               </span>
                             )}
                           </span>
@@ -1171,7 +1171,7 @@ function InstallationCard({
                           rel="noopener noreferrer"
                           className="repo-card-gh"
                           aria-label={`${repo.full_name} on GitHub`}
-                          title="Open on GitHub"
+                          title="View on GitHub"
                         >
                           <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true">
                             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
@@ -1214,7 +1214,7 @@ function InstallationCard({
                   <p className="mt-3 px-3 py-6 text-center text-sm text-slate-500">
                     Couldn't load billing info.{" "}
                     <button onClick={fetchBillingInfo} className="font-semibold text-blue-600 hover:underline">
-                      Retry
+                      Try again
                     </button>
                   </p>
                 ) : (
@@ -1229,7 +1229,7 @@ function InstallationCard({
                       disabled={billingState !== "idle"}
                       className="dashboard-button dashboard-button-primary disabled:opacity-50"
                     >
-                      {billingState === "loading" ? "Loading..." : "Manage billing"}
+                      {billingState === "loading" ? "Loading…" : "Manage billing"}
                     </button>
                     <p className="text-sm text-slate-500">
                       Invoices, payment methods, and cancellation are handled in the Stripe portal.
@@ -1240,7 +1240,7 @@ function InstallationCard({
                 <div className="dashboard-plan-picker mt-3">
                   <h3 className="text-sm font-bold text-slate-900">Choose a plan</h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    Private repo analysis requires a paid plan. Public repos are always free.
+                    Private repositories need a paid plan. Public repositories are always free.
                   </p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-3">
                     {PLANS.map((plan) => (
@@ -1253,7 +1253,7 @@ function InstallationCard({
                           disabled={checkoutLoading === plan.id}
                           className="mt-3 w-full rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                         >
-                          {checkoutLoading === plan.id ? "Loading..." : "Subscribe"}
+                          {checkoutLoading === plan.id ? "Loading…" : "Subscribe"}
                         </button>
                       </div>
                     ))}
@@ -1367,7 +1367,7 @@ function FaqSection() {
     },
     {
       q: "How do I enable Striff on private repositories?",
-      a: "Open the <b>Repositories</b> tab on your installation card and click <b>\"Manage repos\"</b> to open GitHub\u2019s App settings, where you can grant Striff access to specific private repositories. Then pick a plan in the <b>Billing</b> tab to enable analysis on private pull requests.",
+      a: "Open the <b>Repositories</b> tab on your installation card and click <b>\"Manage repositories\"</b> to open GitHub\u2019s App settings, where you can grant Striff access to specific private repositories. Then pick a plan in the <b>Billing</b> tab to enable analysis on private pull requests.",
     },
     {
       q: "When will I be charged?",
@@ -1387,7 +1387,7 @@ function FaqSection() {
     },
     {
       q: "What does Striff actually do on my pull requests?",
-      a: "For each PR, Striff reads the architecture your repository already documents \u2014 ARCHITECTURE.md, ADRs, READMEs and design notes \u2014 turns each sentence about the code into a rule, and checks it against both revisions of the change, quoting the sentence and the line it came from. Alongside the rules it posts a <b>diagram of what changed</b> and <b>AI review notes</b> on the components the PR touched. Results appear as a single <b>GitHub check-run</b>. Install the <a href=\"/#extension\" class=\"font-semibold text-blue-600 hover:underline\">browser extension</a> to see the same review beside the dependency diagram.",
+      a: "For each PR, Striff reads the architecture your repository already documents \u2014 ARCHITECTURE.md, ADRs, READMEs and design notes \u2014 turns each sentence about the code into a rule, and checks it against both revisions of the change, quoting the sentence and the line it came from. Alongside the rules it posts a <b>diagram of what changed</b> and <b>AI notes</b> on the components the PR touched. Results appear as a single <b>GitHub check-run</b>. Install the <a href=\"/#extension\" class=\"font-semibold text-blue-600 hover:underline\">browser extension</a> to see the same review beside the dependency diagram.",
     },
     {
       q: "What is the browser extension?",

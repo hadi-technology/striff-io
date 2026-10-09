@@ -107,7 +107,7 @@ export default function InstalledBadge() {
   if (!offer || offer.kind === "none") return null;
   return (
     <section className="installed-badge">
-      <h2>Add Striff to your README</h2>
+      <h2>Add the Striff badge to your README</h2>
       <p>
         Your first check runs on your next pull request. Add this badge to your README to show how
         many of your documented rules Striff has verified against your code, or, until there are

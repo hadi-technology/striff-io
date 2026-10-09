@@ -169,7 +169,7 @@ export default function BadgePanel({
             against its code, or, below ten, that Striff checks them
             {privateRepo
               ? ", and links to this repository on your dashboard, for whoever can see it."
-              : ", and links to the page that lists the rules it holds the code to."}
+              : ", and links to the page that lists the rules it checks the code against."}
           </p>
         </div>
         <div className="badge-panel-preview" aria-live="polite">

@@ -88,7 +88,7 @@ export function staleNameIssueUrl(
     );
   } else if (finding.historicalPath) {
     lines.push(
-      `**What the code has:** nothing by that name. The repository once held \`${finding.historicalPath}\` and does not now.`
+      `**What the code has:** nothing by that name. The repository once had \`${finding.historicalPath}\` and does not now.`
     );
   } else {
     lines.push("**What the code has:** nothing by that name.");
@@ -148,7 +148,7 @@ export function staleNamePrompt(
     fix = `Replace \`${simple}\` with \`${finding.renamedTo}\` in this passage, and check that any code sample around it still reads correctly.`;
   } else {
     found = `Nothing on \`${branch}\` declares \`${finding.name}\`.${
-      finding.historicalPath ? ` The repository once held \`${finding.historicalPath}\` and does not now.` : ""
+      finding.historicalPath ? ` The repository once had \`${finding.historicalPath}\` and does not now.` : ""
     }${
       finding.removedByUrl
         ? ` It was removed by ${finding.removedByUrl}${finding.removedByMessage ? ` ("${plain(finding.removedByMessage).slice(0, 120)}")` : ""}.`
@@ -273,8 +273,8 @@ export function issueUrl(
 
   const happened =
     rule.status === "VIOLATED"
-      ? `The code kept this rule before ${rule.pullNo ? `#${rule.pullNo}` : "the last change checked"} and not after${rule.judgedAtMs ? `, checked on ${on(rule.judgedAtMs)}` : ""}.`
-      : `The code was already not keeping this rule when ${rule.pullNo ? `#${rule.pullNo}` : "it was last checked"} was checked${rule.judgedAtMs ? `, on ${on(rule.judgedAtMs)}` : ""}, so that change is not what broke it.`;
+      ? `The code kept this rule before ${rule.pullNo ? `PR #${rule.pullNo}` : "the last change checked"} and not after${rule.judgedAtMs ? `, checked on ${on(rule.judgedAtMs)}` : ""}.`
+      : `The code was already not keeping this rule when ${rule.pullNo ? `PR #${rule.pullNo}` : "it was last checked"} was checked${rule.judgedAtMs ? `, on ${on(rule.judgedAtMs)}` : ""}, so that change is not what broke it.`;
 
   const onBranch =
     rule.onDefaultBranch === "BROKEN"
@@ -282,14 +282,14 @@ export function issueUrl(
       : rule.onDefaultBranch === "HOLDS"
       ? "On the default branch today, the code does keep it — so this may already be fixed."
       : rule.onDefaultBranch === "UNCLEAR"
-      ? "Striff could not tell how it stands on the default branch."
-      : "Nothing has judged it against the default branch yet.";
+      ? "Striff couldn't check how it stands on the default branch."
+      : "It hasn't been checked against the default branch yet.";
 
   const body = [
     `A rule written in [\`${where}\`](${link}) is not being kept by the code.`,
     "",
     "### The sentence in the doc",
-    quote ? `> ${quote}` : "_The extraction kept no sentence for this rule._",
+    quote ? `> ${quote}` : "_Striff kept no sentence for this rule._",
     "",
     "### The rule Striff read from it",
     `\`${statement}\``,

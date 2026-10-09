@@ -191,7 +191,7 @@ function refusalOf(code: string | undefined, fallback: string | undefined): { me
       };
     case "nothing_readable":
       return {
-        message: "None of these docs can be read for rules: each was skipped by a screen, says it is no longer current, was excluded, or could not be read, as the list shows.",
+        message: "None of these docs can be read for rules: each was skipped, says it is no longer current, was excluded, or couldn't be read, as the list shows.",
         final: true,
       };
     case "code_not_read":
@@ -203,7 +203,7 @@ function refusalOf(code: string | undefined, fallback: string | undefined): { me
       };
     case "not_listed":
       return {
-        message: "Striff hasn't listed this repository's documents yet, so there is nothing to read yet.",
+        message: "Striff hasn't found this repository's docs yet, so there is nothing to read yet.",
         final: false,
       };
     default:
@@ -276,7 +276,7 @@ function staleLine(finding: StaleName): string {
   }
   const hint = nearHint(finding);
   if (finding.historicalPath) {
-    return `The repository once held \`${finding.historicalPath}\`. It doesn't now.${hint}`;
+    return `The repository once had \`${finding.historicalPath}\`. It doesn't now.${hint}`;
   }
   return `${finding.namespace ? `\`${finding.namespace}\`` : "Its package"} declares nothing by this name.${hint}`;
 }
@@ -385,16 +385,16 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
         // known, and inventing one would be worse than saying so.
         return "Striff has rules for this doc from a reading it made before it kept a record of when. They refresh on the next pull request that changes code this doc talks about.";
       }
-      return `Rules last extracted ${when(doc.lastExtractedMs)}${doc.lastExtractedPullNo ? ` on PR #${doc.lastExtractedPullNo}` : ""}.`;
+      return `Rules last read ${when(doc.lastExtractedMs)}${doc.lastExtractedPullNo ? ` on PR #${doc.lastExtractedPullNo}` : ""}.`;
     case "NOT_READ":
       return "Striff hasn't read this doc yet. It reads a doc the first time a pull request changes code the doc talks about.";
     case "SCREENED_OUT":
       if (doc.forced) {
-        return `A screen judged this doc holds no rule to check${doc.screenReason ? ` (${screenWhy(doc.screenReason)})` : ""}. ${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
+        return `Striff skipped this doc: it found no rule in it to check${doc.screenReason ? ` (${screenWhy(doc.screenReason)})` : ""}. ${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
       }
       return doc.screenReason
         ? `Skipped: ${screenWhy(doc.screenReason)}`
-        : "A screen judged this doc holds no rule that could be checked against code.";
+        : "Striff skipped this doc: it found no rule in it that could be checked against code.";
     case "RETIRED":
       return doc.retiredReason
         ? `This doc says it is no longer current: ${doc.retiredReason}`
@@ -483,11 +483,11 @@ const SUMMARY_PARTS: { key: DocFilter; label: string; help: string }[] = [
   { key: "stale", label: "with stale names", help: "Documents with a stale name: one the default branch no longer declares, or declares somewhere else." },
   { key: "notRead", label: "not read", help: "Documents Striff hasn't read yet, so any rule in them is not counted here." },
   { key: "outdated", label: "edited since read", help: "Documents edited on the default branch since Striff read them, so their rules come from an older version." },
-  { key: "unreadable", label: "couldn't read", help: "Documents Striff could not finish reading. That isn't counted as “no rules”." },
-  { key: "skipped", label: "skipped", help: "Documents a screen judged hold no rule that could be checked against code." },
+  { key: "unreadable", label: "couldn't read", help: "Documents Striff couldn't finish reading. That isn't counted as “no rules”." },
+  { key: "skipped", label: "skipped", help: "Documents Striff skipped because it found no rule in them that could be checked against code." },
   { key: "retired", label: "retired", help: "Documents that say they are no longer current, so their rules aren't checked." },
   { key: "excluded", label: "excluded", help: "Documents this repository asked Striff not to read." },
-  { key: "forced", label: "read anyway", help: "Documents a screen skipped that this repository asked Striff to read regardless." },
+  { key: "forced", label: "read anyway", help: "Documents Striff skipped that this repository asked it to read regardless." },
 ];
 
 /** One node of the document tree: the repository, a folder holding more, or a document. */
@@ -1479,7 +1479,7 @@ export default function DocsTab({
               target="_blank"
               rel="noopener noreferrer"
             >
-              Open on GitHub
+              View on GitHub
             </a>
           </span>
         )}
@@ -1521,7 +1521,7 @@ export default function DocsTab({
             className="docs-badge is-stale"
             title="Stale names in this doc: gone, moved or renamed in the code."
           >
-            {staleByDoc.get(doc.path)!.length} stale
+            {staleByDoc.get(doc.path)!.length} stale name{staleByDoc.get(doc.path)!.length === 1 ? "" : "s"}
           </span>
         )}
         {doc.state !== "READ" && !beingRead && (
@@ -1644,7 +1644,7 @@ export default function DocsTab({
       <div className="dashboard-empty">
         <p className="text-slate-600">
           This account has no repository Striff can see yet. Add one to the installation on GitHub,
-          and its docs are listed as soon as Striff has read the repository.
+          and its docs appear as soon as Striff has read the repository.
         </p>
         <a
           href="https://github.com/apps/striffs/installations/new"
@@ -1683,7 +1683,7 @@ export default function DocsTab({
         onClick={() => setFilter("all")}
       >
         <b>{allDocs.length}</b>
-        <i>document{allDocs.length === 1 ? "" : "s"}</i>
+        <i>doc{allDocs.length === 1 ? "" : "s"}</i>
       </button>
       {/* Not lit when nothing is filtered: a light on every count says nothing. */}
       {showRuleCounts && (
@@ -1706,7 +1706,7 @@ export default function DocsTab({
         onClick={() => setRuleFilter(ruleFilter === "holds" ? "all" : "holds")}
       >
         <b>{repoCounts.holds}</b>
-        <i>holding</i>
+        <i>hold{repoCounts.holds === 1 ? "s" : ""}</i>
       </button>
       <button
         type="button"
@@ -1724,7 +1724,7 @@ export default function DocsTab({
         onClick={() => setRuleFilter(ruleFilter === "unchecked" ? "all" : "unchecked")}
       >
         <b>{repoCounts.unchecked}</b>
-        <i>not checked</i>
+        <i>not checked yet</i>
       </button>
       </>
       )}
@@ -1774,7 +1774,7 @@ export default function DocsTab({
                 autoFocus
                 type="search"
                 value={query}
-                placeholder="Search documents and the rules read from them"
+                placeholder="Search docs and the rules read from them"
                 onChange={(event) => setQuery(event.target.value)}
               />
               <kbd>Esc</kbd>
@@ -1793,7 +1793,7 @@ export default function DocsTab({
               )}
               {docHits.length > 0 && (
                 <div className="docs-palette-group">
-                  <p className="dashboard-kicker">Documents</p>
+                  <p className="dashboard-kicker">Docs</p>
                   {docHits.map((doc) => (
                     <button
                       key={doc.path}
@@ -1857,7 +1857,7 @@ export default function DocsTab({
       {/* The title row spans the page: the description, counts and install button share the
           row below it, so a long repository name keeps its chips and badge on one line. */}
       <div className="docs-head-top">
-        <p className="dashboard-kicker">Docs &amp; Rules</p>
+        <p className="dashboard-kicker">Docs &amp; rules</p>
         <div className="docs-title">
           <span className="docs-title-name">{repo}</span>
           <a
@@ -1923,8 +1923,8 @@ export default function DocsTab({
           {catalog.lastAttempt?.outcome === "failed" ? (
             <>
               <p className="text-slate-600">
-                Striff could not read this repository to list its documents. Nothing about it is
-                known yet — this is not a repository with no documents.
+                Striff couldn't read this repository's doc list. Nothing about it is known yet,
+                and this is not a repository with no docs.
               </p>
               {catalog.lastAttempt.reason && (
                 <p className="docs-attempt-reason">{catalog.lastAttempt.reason}</p>
@@ -1948,7 +1948,7 @@ export default function DocsTab({
             </p>
           ) : (
             <Listing
-              what="this repository's documents"
+              what="this repository's docs"
               stale={listingStale}
               onLookAgain={() => {
                 setListingStale(false);
@@ -2028,7 +2028,7 @@ export default function DocsTab({
             className="docs-split-handle"
             role="separator"
             aria-orientation="vertical"
-            aria-label="Width of the document tree"
+            aria-label="Width of the doc tree"
             aria-valuemin={TREE_MIN}
             aria-valuemax={treeMax()}
             aria-valuenow={Math.round(treeWidth ?? treeNow())}
@@ -2113,7 +2113,7 @@ export default function DocsTab({
                     title="Every document here, whatever state it is in."
                     onClick={() => setFilter("all")}
                   >
-                    {scopeDocs.length} document{scopeDocs.length === 1 ? "" : "s"}
+                    {scopeDocs.length} doc{scopeDocs.length === 1 ? "" : "s"}
                   </button>
                   {scopeSummary.map((part) => (
                     <span key={part.key}>
@@ -2199,7 +2199,7 @@ export default function DocsTab({
                     {/* A truncated answer is the one case where an empty scope is not an answer
                         about the scope: the rules exist and this list did not reach them. */}
                     {rulesIndex.truncated
-                      ? "This repository holds more rules than one list can carry, and the documents before this one fill it. Striff has these; this page cannot reach them yet."
+                      ? "This repository has more rules than one list can carry, and the documents before this one fill it. Striff has these; this page cannot reach them yet."
                       : codeNotRead
                       // Not "found no rule": nothing looked, because there is no code it reads.
                       ? CODE_NOT_READ
@@ -2266,7 +2266,7 @@ export default function DocsTab({
                     title={`Open ${selected} on GitHub${branch ? `, at ${branch}` : ""}`}
                   >
                     <GitHubMark />
-                    Open on GitHub
+                    View on GitHub
                   </a>
                   <span className="docs-pane-actions">{rowMenu(selected, detail.document, false, "pane")}</span>
                 </div>
@@ -2294,18 +2294,18 @@ export default function DocsTab({
                   <p className="docs-rule-count">
                     {detail.rules.length === 0 ? (
                       <>
-                        <b>0 rules</b> extracted from this doc. Striff read it and found nothing in
+                        <b>0 rules</b> read from this doc. Striff read it and found nothing in
                         it that states a rule about the code.
                       </>
                     ) : (
                       <>
                         <b>{detail.rules.length} rule{detail.rules.length === 1 ? "" : "s"}</b>{" "}
-                        extracted from this doc
+                        read from this doc
                         {scopeRows.length < detail.rules.length && (
                           <>
                             {", "}
-                            {detail.rules.length - scopeRows.length} of which nothing has been able
-                            to judge yet, so {detail.rules.length - scopeRows.length === 1 ? "it is" : "they are"}{" "}
+                            {detail.rules.length - scopeRows.length} of which haven't been checked
+                            yet, so {detail.rules.length - scopeRows.length === 1 ? "it is" : "they are"}{" "}
                             not listed
                           </>
                         )}
@@ -2369,7 +2369,7 @@ export default function DocsTab({
                                     || `https://github.com/${owner}/${name}/commit/${finding.removedBySha}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  title={`${finding.state === "RENAMED" ? "Renamed" : "Removed"} by ${finding.removedBySha.slice(0, 7)}${finding.removedByMessage ? `: ${finding.removedByMessage}` : ""}${finding.removedAtMs ? `, ${when(finding.removedAtMs)}` : ""}`}
+                                  title={`${finding.state === "RENAMED" ? "Renamed" : "Gone"} since ${finding.removedBySha.slice(0, 7)}${finding.removedByMessage ? `: ${finding.removedByMessage}` : ""}${finding.removedAtMs ? `, ${when(finding.removedAtMs)}` : ""}`}
                                 >
                                   {staleLabel(finding)} in <code>{finding.removedBySha.slice(0, 7)}</code>
                                 </a>

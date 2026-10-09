@@ -14,7 +14,7 @@ const TIMEOUT_MS = 8000;
  *
  * @param {any} catalog the catalog view's answer
  * @param {any} typeFindings the type-findings view's answer
- * @returns {{ held: number, broken: number, outOfDate: number, rules: number } | null}
+ * @returns {{ held: number, broken: number, staleNames: number, rules: number } | null}
  */
 export function tallyFrom(catalog, typeFindings) {
   const s = catalog && catalog.summary;
@@ -24,7 +24,7 @@ export function tallyFrom(catalog, typeFindings) {
   const holds = count(s.holdsOnDefaultBranch);
   const broken = count(s.brokenOnDefaultBranch);
   if (holds === null || broken === null) return null;
-  return { held: holds, broken, outOfDate: findings.length, rules: count(s.rules) || 0 };
+  return { held: holds, broken, staleNames: findings.length, rules: count(s.rules) || 0 };
 }
 
 /**
@@ -49,10 +49,10 @@ async function readView(fetchImpl, r, view) {
  * whose live report has neither a rule nor a finding is left out: there is nothing on it to see.
  * One whose report could not be read keeps its snapshot.
  *
- * @template {{ owner: string, repo: string, snapshot: { held: number, broken: number, outOfDate: number } }} R
+ * @template {{ owner: string, repo: string, snapshot: { held: number, broken: number, staleNames: number } }} R
  * @param {R[]} repos
  * @param {{ fetchImpl?: typeof fetch, log?: (message: string) => void }} [options]
- * @returns {Promise<Array<R & { tally: { held: number, broken: number, outOfDate: number, rules?: number }, live: boolean }>>}
+ * @returns {Promise<Array<R & { tally: { held: number, broken: number, staleNames: number, rules?: number }, live: boolean }>>}
  */
 export async function loadTallies(repos, options = {}) {
   const fetchImpl = options.fetchImpl || globalThis.fetch;
@@ -71,5 +71,5 @@ export async function loadTallies(repos, options = {}) {
       return { ...r, tally: r.snapshot, live: false };
     }
   }));
-  return read.filter((r) => !r.live || r.tally.rules + r.tally.outOfDate > 0);
+  return read.filter((r) => !r.live || r.tally.rules + r.tally.staleNames > 0);
 }

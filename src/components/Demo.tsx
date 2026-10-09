@@ -28,7 +28,7 @@ import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
  */
 type View = "docs" | "checks" | "metrics";
 const VIEWS: { id: View; label: string }[] = [
-  { id: "docs", label: "Docs & Rules" },
+  { id: "docs", label: "Docs & rules" },
   { id: "checks", label: "Checks" },
   { id: "metrics", label: "Metrics" },
 ];
@@ -79,7 +79,7 @@ export default function Demo() {
         <p className="demo-note">
           <span className="demo-chip">Example</span>
           {view === "metrics"
-            ? "An invented organisation, in the real dashboard. Nothing here can be changed."
+            ? "An invented organization, in the real dashboard. Nothing here can be changed."
             : "An invented repository, in the real dashboard. Nothing here can be changed."}
         </p>
       </div>

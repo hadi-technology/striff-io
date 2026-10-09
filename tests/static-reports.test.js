@@ -110,7 +110,7 @@ test("the head names the repository and its counts, points at itself and never s
   assert.equal(head.title, "acme/widgets: 2 documented rules checked against the code | Striff");
   assert.equal(head.canonical, "https://striff.io/acme/widgets/");
   assert.equal(head.robots, "index,follow");
-  assert.match(head.description, /^Striff read 2 docs in acme\/widgets and checked the 2 rules they state against the code: 1 holds, 1 broken\. 1 name in the docs no longer matches the code\. Public, read-only report, last refreshed Oct 2, 2026\.$/);
+  assert.match(head.description, /^Striff read 2 docs in acme\/widgets and checked the 2 rules they state against the code: 1 holds, 1 broken\. 1 stale name in the docs\. Public, read-only report, last read Oct 2, 2026\.$/);
   assert.doesNotMatch(head.description, /install|every pull request/i);
   const ld = JSON.parse(head.jsonLd);
   assert.equal(ld["@type"], "WebPage");

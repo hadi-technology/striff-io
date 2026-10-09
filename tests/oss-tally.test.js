@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { tallyFrom, loadTallies } from "../src/data/ossTally.js";
 
-const repo = (name, snapshot = { held: 1, broken: 0, outOfDate: 1 }) => ({ owner: "acme", repo: name, snapshot });
+const repo = (name, snapshot = { held: 1, broken: 0, staleNames: 1 }) => ({ owner: "acme", repo: name, snapshot });
 const catalog = (summary) => ({ summary: { rules: 3, holdsOnDefaultBranch: 3, brokenOnDefaultBranch: 0, ...summary } });
 const findings = (n) => ({ findings: Array.from({ length: n }, (_, i) => ({ name: `T${i}` })) });
 
@@ -20,7 +20,7 @@ function fakeFetch(answers, asked = []) {
 
 test("the tally is the default branch's holding and broken rules and the stale names", () => {
   assert.deepEqual(tallyFrom(catalog({ rules: 56, holdsOnDefaultBranch: 54, brokenOnDefaultBranch: 2 }), findings(1)),
-    { held: 54, broken: 2, outOfDate: 1, rules: 56 });
+    { held: 54, broken: 2, staleNames: 1, rules: 56 });
 });
 
 test("an answer of another shape is no tally", () => {
@@ -31,7 +31,7 @@ test("an answer of another shape is no tally", () => {
 
 test("a report that cannot be read keeps its snapshot, and the rest stay live", async () => {
   const logged = [];
-  const out = await loadTallies([repo("a", { held: 9, broken: 0, outOfDate: 2 }), repo("b"), repo("c")], {
+  const out = await loadTallies([repo("a", { held: 9, broken: 0, staleNames: 2 }), repo("b"), repo("c")], {
     fetchImpl: fakeFetch({
       a: { catalog: new Error("timed out"), "type-findings": findings(1) },
       b: { catalog: catalog({ holdsOnDefaultBranch: 4 }), "type-findings": findings(3) },
@@ -39,7 +39,7 @@ test("a report that cannot be read keeps its snapshot, and the rest stay live", 
     }),
     log: (m) => logged.push(m),
   });
-  assert.deepEqual(out.map((r) => [r.repo, r.live, r.tally.held, r.tally.outOfDate]),
+  assert.deepEqual(out.map((r) => [r.repo, r.live, r.tally.held, r.tally.staleNames]),
     [["a", false, 9, 2], ["b", true, 4, 3], ["c", false, 1, 1]]);
   assert.equal(logged.length, 2);
 });

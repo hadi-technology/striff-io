@@ -73,8 +73,8 @@ export const STANDING_LABEL: Record<Standing, string> = {
 export const STANDING_HELP: Record<Standing, string> = {
   broken: "The code does not keep this rule.",
   holds: "The code keeps this rule.",
-  unchecked: "Nothing has judged this rule against the code yet.",
-  unclear: "Striff could not tell.",
+  unchecked: "This rule hasn't been checked against the code yet.",
+  unclear: "Striff couldn't check this rule.",
 };
 
 /** What an empty table says when a count, not a search, emptied it. */
@@ -220,7 +220,7 @@ export default function RulesTable({
 
   /** The list as it stands on screen, as a file: what is filtered out is not in it. */
   function downloadCsv() {
-    const header = ["Document", "Line", "Rule", "Sentence", "Outcome", "Pull request", "Judged", "On default branch"];
+    const header = ["Doc", "Line", "Rule", "Sentence", "Outcome", "Pull request", "Checked", "On default branch"];
     const lines = [header.map(csvCell).join(",")];
     for (const row of shown) {
       lines.push(
@@ -232,7 +232,7 @@ export default function RulesTable({
           csvCell(STANDING_LABEL[standing(row)]),
           csvCell(row.pullNo ? `#${row.pullNo}` : ""),
           csvCell(row.judgedAtMs ? new Date(row.judgedAtMs).toISOString().slice(0, 10) : ""),
-          csvCell(row.onDefaultBranch ? "judged against the default branch" : "judged on a pull request"),
+          csvCell(row.onDefaultBranch ? "checked against the default branch" : "checked on a pull request"),
         ].join(",")
       );
     }
@@ -388,7 +388,28 @@ export default function RulesTable({
                     rel="noopener noreferrer"
                     title={`Pull request #${row.pullNo} broke this rule.`}
                   >
-                    Broken by #{row.pullNo}
+                    Broken by PR #{row.pullNo}
+                  </a>
+                ) : standing(row) === "broken" && row.status === "PRE_EXISTING" ? (
+                  // Broken, and not by the pull request that last checked it: the same "already
+                  // broken" the Checks and Metrics tabs count, so one word means one thing.
+                  <span
+                    className="docs-outcome is-broken"
+                    title={row.pullNo
+                      ? `The code was already not keeping this rule before PR #${row.pullNo}.`
+                      : "The code was already not keeping this rule when it was first checked."}
+                  >
+                    Already broken
+                  </span>
+                ) : standing(row) === "holds" && row.status === "RESTORED" && row.pullNo ? (
+                  <a
+                    className="docs-outcome is-holds is-link"
+                    href={`https://github.com/${owner}/${name}/pull/${row.pullNo}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`The code was not keeping this rule until pull request #${row.pullNo} restored it.`}
+                  >
+                    Restored by PR #{row.pullNo}
                   </a>
                 ) : (
                   <span className={`docs-outcome is-${standing(row)}`} title={STANDING_HELP[standing(row)]}>
@@ -400,7 +421,7 @@ export default function RulesTable({
                 {row.pullNo && (
                   <span
                     className="docs-outcome-when"
-                    title={`Last judged on PR #${row.pullNo}, ${when(row.judgedAtMs)}.`}
+                    title={`Last checked on PR #${row.pullNo}, ${when(row.judgedAtMs)}.`}
                   >
                     PR #{row.pullNo} · {when(row.judgedAtMs)}
                   </span>
@@ -408,7 +429,7 @@ export default function RulesTable({
                 {row.pullNo && !row.onDefaultBranch && (
                   <span
                     className="docs-outcome-branch"
-                    title="A pull request judged this rule. Nothing has judged it against the default branch yet."
+                    title="A pull request checked this rule. It hasn't been checked against the default branch yet."
                   >
                     not checked on {branch || "the branch"} yet
                   </span>
@@ -444,7 +465,7 @@ export default function RulesTable({
         {truncated && (
           <>
             {" · "}
-            <b>This repository holds more rules than one answer carries; these are the first of
+            <b>This repository has more rules than one answer carries; these are the first of
             them, by document, so a document later in the repository may have rules this list
             does not reach.</b>
           </>

@@ -78,7 +78,7 @@ export default function FindingActions({
         <span className="finding-action-label">
           <span className={copy === "idle" ? undefined : "is-hidden"}>Copy agent prompt</span>
           <span className={copy === "idle" ? "is-hidden" : undefined}>
-            {copy === "failed" ? "Could not copy" : "Copied"}
+            {copy === "failed" ? "Couldn't copy" : "Copied"}
           </span>
         </span>
       </button>}

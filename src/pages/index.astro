@@ -57,14 +57,14 @@ const githubAppUrl = "https://github.com/apps/striffs/installations/new";
 /** The strip's repositories, each with its report's rules tally as of this build. */
 const ossShown = await loadTallies(ossRepos);
 /** What a screen reader hears for one repository's tally. */
-const tallyWords = (t: { held: number; broken: number; outOfDate: number }) =>
-  `${t.held} rule${t.held === 1 ? "" : "s"} held, ${t.broken} broken, ${t.outOfDate} stale name${t.outOfDate === 1 ? "" : "s"}`;
+const tallyWords = (t: { held: number; broken: number; staleNames: number }) =>
+  `${t.held} rule${t.held === 1 ? "" : "s"} held, ${t.broken} broken, ${t.staleNames} stale name${t.staleNames === 1 ? "" : "s"}`;
 
 // The browser extension's homepage section.
 const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
 const extensionVideoId = "YR_DYyJwM-k";
 const extensionHighlights = [
-  { icon: "diagram", color: "blue", point: "An interactive dependency diagram of any public pull request" },
+  { icon: "diagram", color: "blue", point: "An interactive diagram of any public pull request" },
   { icon: "sparkle", color: "amber", point: "Its documented rules checked, one click from the diagram" },
   { icon: "comment", color: "emerald", point: "Comment straight from the diagram" },
   { icon: "bolt", color: "rose", point: "Works on repositories you do not own" }
@@ -173,7 +173,7 @@ const realCheckRules = [
 const teamsPanels = [
   {
     view: "docs",
-    eyebrow: "Docs & Rules",
+    eyebrow: "Docs & rules",
     title: "Every rule your docs state, for a repository, a folder or one file",
     body: "Your architecture docs, ADRs and agent instructions as a tree. Pick a document for its own rules, a folder for every rule beneath it, or the repository for all of them: the sentence each rule came from, the rule it became, and whether the default branch still keeps it. Sort, search and export what you picked.",
     cta: "Open the docs and rules"
@@ -229,7 +229,7 @@ const plans = [
 const faqs: { id?: string; q: string; a: string }[] = [
   {
     q: `How does Striff know what my architecture is supposed to look like?`,
-    a: `<strong>You already wrote it down.</strong> Striff catalogues the documents in your repository that make claims about the code, turns those sentences into rules, and checks them against the code your pull request produces, quoting the sentence and linking the file it came from. <em>Nothing is configured and no rule format is invented:</em> your documentation is the rulebook. A rule can be as plain as where a class lives or as sharp as <em>&ldquo;the domain module must not depend on infrastructure&rdquo;</em>. Alongside the rules, every pull request gets a <strong>diagram of what changed</strong> and <strong>review notes</strong> on the components it touched. If your docs make no checkable claim about the code, Striff invents no rules of its own: you still get the diagram and the review notes.`
+    a: `<strong>You already wrote it down.</strong> Striff reads the documents in your repository that make claims about the code, turns those sentences into rules, and checks them against the code your pull request produces, quoting the sentence and linking the file it came from. <em>Nothing is configured and no rule format is invented:</em> your documentation is the rulebook. A rule can be as plain as where a class lives or as sharp as <em>&ldquo;the domain module must not depend on infrastructure&rdquo;</em>. Alongside the rules, every pull request gets a <strong>diagram of what changed</strong> and <strong>review notes</strong> on the components it touched. If your docs make no checkable claim about the code, Striff invents no rules of its own: you still get the diagram and the review notes.`
   },
   {
     q: `Does Striff work with spec-driven development?`,
@@ -445,7 +445,7 @@ const structuredData = JSON.stringify([
                                 <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.06 1.06L6.94 8 4.97 9.97a.75.75 0 1 0 1.06 1.06L8 9.06l1.97 1.97a.75.75 0 1 0 1.06-1.06L9.06 8l1.97-1.97a.75.75 0 0 0-1.06-1.06L8 6.94Z"/></svg>
                                 <b>{r.tally.broken}</b><i>broken</i>
                               </span>
-                              <span class="proof-tally-item is-stale"><b>{r.tally.outOfDate}</b><i>stale names</i></span>
+                              <span class="proof-tally-item is-stale"><b>{r.tally.staleNames}</b><i>stale names</i></span>
                             </span>
                           </span>
                         </a>
@@ -572,7 +572,7 @@ const structuredData = JSON.stringify([
             </div>
 
             <div class="ghcheck-body">
-              <h3 class="ghcheck-h">Documented Rules</h3>
+              <h3 class="ghcheck-h">Documented rules</h3>
               <p class="ghcheck-note">Rules read from this repository&rsquo;s own docs and checked against the dependency graph this PR produces.</p>
 
               <div class="ghcheck-table-wrap">
@@ -631,9 +631,9 @@ const structuredData = JSON.stringify([
               </figure>
 
               <p class="ghcheck-caption">
-                Every check carries a <b>structural diff diagram</b>. It draws the part of your
+                Every check carries a <b>diagram</b>. It draws the part of your
                 architecture that the pull request touched, in UML class notation: a box for each
-                class, its members inside it, and a line for each dependency between them. Colour
+                class, its members inside it, and a line for each dependency between them. Color
                 marks what the change added, removed and altered. Drag it to pan, or open it full
                 size.
               </p>
@@ -861,7 +861,7 @@ const structuredData = JSON.stringify([
             <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For teams</p>
             <h2 class="mt-3 text-balance">Every rule your docs state, and which repositories still keep them.</h2>
             <p class="section-subcopy mt-4">
-              The check reads one pull request at a time. The dashboard is the same reading of your documents, added up across the organisation: each sentence that makes a claim about the code, the rule it became, whether the default branch keeps it, and which repositories and pull requests broke one this month.
+              The check reads one pull request at a time. The dashboard is the same reading of your documents, added up across the organization: each sentence that makes a claim about the code, the rule it became, whether the default branch keeps it, and which repositories and pull requests broke one this month.
             </p>
           </div>
           <div class="teams-head-actions">

@@ -302,7 +302,7 @@ export default function MetricsTab({
   if (!data || data.months.length === 0) {
     return (
       <div className="dashboard-empty">
-        <p className="text-slate-600">No metrics yet -- check back after Striff has analyzed a few pull requests.</p>
+        <p className="text-slate-600">No metrics yet. Check back after Striff has analyzed a few pull requests.</p>
       </div>
     );
   }
@@ -332,7 +332,7 @@ export default function MetricsTab({
   // Coverage divides by webhooks *received*, not PRs analyzed -- the denominator here is the count
   // of PR-check webhook events GitHub sent, independent of whether analysis completed.
   const coverageRate = (m: MonthlyMetrics) => ratePct(m.prsAnalyzedCount, m.prCheckWebhooksReceivedCount);
-  // "Checked" is held + violated + pre-existing: rules Striff could not answer are not in the backend
+  // "Checked" is held + violated + pre-existing: rules Striff couldn't check are not in the backend
   // counts at all, so the rate is over rules that actually got a verdict.
   const docChecked = (m: MonthlyMetrics) =>
     (m.docRulesHeldCount ?? 0) + (m.docRulesViolatedCount ?? 0) + (m.docRulesPreExistingCount ?? 0);
@@ -444,7 +444,7 @@ export default function MetricsTab({
       has: hasDocData,
       label: "Documented rules held",
       description:
-        "Share of documented-rule checks where the pull request kept the rule: nothing in it broke the rule. Checked is held plus broken plus already broken; rules Striff could not answer are left out rather than counted as a pass.",
+        "Share of documented-rule checks where the pull request kept the rule: nothing in it broke the rule. Checked is held plus broken plus already broken; rules Striff couldn't check are left out rather than counted as a pass.",
       render: () =>
         hasDocData ? (
           <>
@@ -510,7 +510,7 @@ export default function MetricsTab({
       has: windowWebhooksReceived > 0,
       label: "Coverage",
       description:
-        "Share of GitHub PR-check webhook events (opened, updated, reopened) that completed analysis, over the last 6 months. Below 100% may mean PRs were skipped -- check billing status or repo connection.",
+        "Share of GitHub PR-check webhook events (opened, updated, reopened) that completed analysis, over the last 6 months. Below 100% may mean PRs were skipped: check billing status or the repository connection.",
       render: () => {
         // Months before this metric shipped have no webhook-receipt data at all (there is no
         // backfill) -- show "no data" rather than a misleading 0%.
@@ -599,7 +599,7 @@ export default function MetricsTab({
       has: hasDocData && rulePrs.length > 0,
       label: "PRs that broke a rule",
       description:
-        "This month's recent pull requests that broke at least one documented rule, the most rules broken first -- click through to see each rule and the sentence it came from.",
+        "This month's recent pull requests that broke at least one documented rule, the most rules broken first. Click through to see each rule and the sentence it came from.",
       wide: true,
       render: () => (
         <>
@@ -679,7 +679,7 @@ export default function MetricsTab({
               {i < all.length - 1 ? ", " : ""}
             </span>
           ))}
-          . These appear once Striff has analysed pull requests that produce them.
+          . These appear once Striff has analyzed pull requests that produce them.
         </p>
       )}
     </div>

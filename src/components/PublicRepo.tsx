@@ -223,7 +223,7 @@ export default function PublicRepo({ initial }: { initial?: BuiltReport }) {
   if (loaded.kind === "error") {
     return (
       <div className="dashboard-empty">
-        <p className="text-slate-600">Striff could not be reached just now. Try again in a moment.</p>
+        <p className="text-slate-600">Striff couldn't be reached just now. Try again in a moment.</p>
       </div>
     );
   }
@@ -234,7 +234,7 @@ export default function PublicRepo({ initial }: { initial?: BuiltReport }) {
       <div className="demo-cta">
         <div>
           <p className="demo-cta-title">
-            {named ? <>Striff hasn't analysed <code className="github-inline-code">{named}</code>.</> : "There's no page here."}
+            {named ? <>Striff hasn't analyzed <code className="github-inline-code">{named}</code>.</> : "There's no page here."}
           </p>
           <p className="demo-cta-sub">
             Striff reads the documents in a repository, turns the sentences that make claims about
@@ -327,7 +327,7 @@ export default function PublicRepo({ initial }: { initial?: BuiltReport }) {
                   className={`demo-tab${shown === v ? " is-on" : ""}`}
                   onClick={() => show(v)}
                 >
-                  {v === "docs" ? "Docs & Rules" : "Checks"}
+                  {v === "docs" ? "Docs & rules" : "Checks"}
                 </button>
               ))}
             </div>

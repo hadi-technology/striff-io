@@ -45,8 +45,8 @@ function ago(ms: number): string {
 }
 
 function listedTitle(ms: number | null): string {
-  if (!ms) return "Striff has not finished listing this repository's documents.";
-  return `Documents last listed from the default branch ${ago(ms)}.`;
+  if (!ms) return "Striff hasn't finished reading this repository's doc list.";
+  return `Docs last read from the default branch ${ago(ms)}.`;
 }
 
 export default function RevisionLine({ catalog }: { catalog: Revision }) {
@@ -57,7 +57,7 @@ export default function RevisionLine({ catalog }: { catalog: Revision }) {
     <p className="docs-revision">
       <span
         className="docs-revision-branch"
-        title="Everything on this page is the default branch. Striff lists a repository's documents from that branch, and counts them there."
+        title="Everything on this page is the default branch. Striff reads a repository's docs from that branch, and counts them there."
       >
         <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <circle cx="4.5" cy="3.5" r="1.75" />
@@ -68,13 +68,13 @@ export default function RevisionLine({ catalog }: { catalog: Revision }) {
         {branch || "default branch"}
       </span>
       {sha && (
-        <code className="docs-revision-sha" title="The commit that branch pointed at when Striff last listed its documents.">
+        <code className="docs-revision-sha" title="The commit that branch pointed at when Striff last read its docs.">
           {sha.slice(0, 7)}
         </code>
       )}
       {refreshed && (
         <span className="docs-revision-when" title={listedTitle(catalog.lastScanMs)}>
-          Last refreshed {ago(refreshed)}
+          Last read {ago(refreshed)}
         </span>
       )}
     </p>
