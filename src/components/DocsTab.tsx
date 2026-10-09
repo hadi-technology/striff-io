@@ -2368,7 +2368,7 @@ export default function DocsTab({
                       // Not "found no rule": nothing looked, because there is no code it reads.
                       ? CODE_NOT_READ
                       : !scopeDocs.some((doc) => doc.state === "NOT_READ")
-                      ? "Striff read these docs and found no rule about the code in them."
+                      ? "Striff read these docs and found no architectural rule in them."
                       : isRunning(reading)
                       ? "Striff is reading these docs now. Their rules appear here as they are read; refresh to see them."
                       // Points at the button only where the button is there, with its number.
@@ -2465,8 +2465,8 @@ export default function DocsTab({
                   <p className="docs-rule-count">
                     {detail.rules.length === 0 ? (
                       <>
-                        <b>0 rules</b> read from this doc. Striff read it and found nothing in
-                        it that states a rule about the code.
+                        <b>0 rules</b> read from this doc. Striff read it and found no
+                        architectural rule in it.
                       </>
                     ) : (
                       <>
