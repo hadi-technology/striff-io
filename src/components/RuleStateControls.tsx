@@ -146,7 +146,7 @@ export function ScopeIgnore({
       {asking !== null && (
         <div ref={panel} className="finding-flag-panel scope-ignore-panel" role="dialog" aria-labelledby={titleId}>
           {!none && !all && (
-            <p className="finding-flag-hint">{ignored} of the {total} rules in {where} are ignored now.</p>
+            <p className="finding-flag-hint">{ignored} of the {total} rules in {where} {ignored === 1 ? "is" : "are"} ignored now.</p>
           )}
           {(none || !all) && (
             <>
