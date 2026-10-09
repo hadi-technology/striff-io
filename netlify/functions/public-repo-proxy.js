@@ -3,7 +3,8 @@
 // Whether a repository has a page, and what it shows, is decided by striff-api: it asks GitHub
 // whether the repository is public on every read, and answers the same 404 for any repository
 // without a page. This function adds nothing to that decision. It only forwards the reads the page
-// makes, with the server key, and refuses anything else: no writes, no path it does not know.
+// makes, with the server key, and refuses anything else: no writes, no path it does not know. A
+// reader's view may let striff-api read the page's documents again; a tool's never does.
 
 const STRIFF_SERVER_KEY = process.env.STRIFF_SERVER_KEY;
 const STRIFF_API_BASE = process.env.STRIFF_API_BASE_URL || "https://api.striff.io";
@@ -71,9 +72,8 @@ export const handler = async (event) => {
     return { statusCode: 500, headers: JSON_HEADERS, body: JSON.stringify({ error: "Server not configured" }) };
   }
   try {
-    const res = await fetch(`${STRIFF_API_BASE}${path}`, {
-      headers: { "X-Server-Key": STRIFF_SERVER_KEY, Accept: "application/json" },
-    });
+    const headers = { "X-Server-Key": STRIFF_SERVER_KEY, Accept: "application/json" };
+    const res = await fetch(`${STRIFF_API_BASE}${path}`, { headers });
     return {
       statusCode: res.status,
       // A page is the same for everyone who opens it, so a minute of it may be shared; a refusal

@@ -2,20 +2,25 @@ import { useEffect, useRef, useState } from "react";
 import {
   BADGE_FORMATS,
   BADGE_STYLES,
+  COUNT_THRESHOLD,
+  DEFAULT_VARIANT,
   badgeImageUrl,
   badgeLinkUrl,
   badgePreviewPath,
   badgeSnippet,
+  badgeVariantChoices,
   readmeEditUrl,
 } from "../lib/badgeSnippets.js";
 
 /**
- * The README badge for one repository: what it looks like, in the style picked, and the snippet
- * that puts it in a README, ready to copy in whichever markup the README is written in.
+ * The README badge for one repository: what it looks like, in the variant and style picked, and
+ * the snippet that puts it in a README, ready to copy in whichever markup the README is written in.
  *
  * The preview is the badge itself, asked for as a preview so that showing it here is never taken
- * for a README carrying it. On the demo there is no real repository to ask about, so the preview is
- * a fixed picture of the example repository's counts; the snippet and copying work as anywhere.
+ * for a README carrying it. The variants offered are the ones the repository qualifies for: the
+ * count, first and the default, from ten rules held; agent docs only where they give rules. A
+ * variant other than the default is named in the preview and in every snippet, except a practice
+ * chosen below ten rules, which the default draws the same and outgrows at ten.
  *
  * A private repository's badge carries a key for that repository, and the snippet carries it too:
  * without it the badge would read "checked", with no count, to every reader. Rotating the key is the way to stop
@@ -35,8 +40,15 @@ export interface BadgePanelProps {
   token?: string | null;
   /** Whether the repository is private; its snippet is withheld until the key has arrived. */
   privateRepo?: boolean;
-  /** A fixed preview, for the demo, in place of asking for the badge. */
-  sample?: boolean;
+  /**
+   * Whether an installation covers the repository, so its pull requests are checked. A page
+   * published without one has its default badge say "checked by Striff" instead.
+   */
+  installed?: boolean;
+  /** Rules the badge counts as held; null or absent while not known. */
+  heldRules?: number | null;
+  /** Whether the repository's agent-instruction documents give rules, so "agent docs" applies. */
+  agentDocs?: boolean;
   /** Asks for a new key; given only where the reader may. */
   onRotate?: () => Promise<void>;
   /** Why the key could not be had, where it could not. */
@@ -80,31 +92,46 @@ export default function BadgePanel({
   readmePath,
   token,
   privateRepo,
-  sample,
+  installed = true,
+  heldRules,
+  agentDocs,
   onRotate,
   tokenError,
   heading,
   onClose,
 }: BadgePanelProps) {
   const [style, setStyle] = useState<string>("flat");
+  // What the reader picked; null until they pick, so the preselection follows the repository.
+  const [picked, setPicked] = useState<string | null>(null);
   const [format, setFormat] = useState<Format>("markdown");
   const [copied, setCopied] = useState<"" | "copied" | "failed">("");
   const [rotating, setRotating] = useState(false);
   const timer = useRef<number | undefined>(undefined);
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
-  useEffect(() => setCopied(""), [style, format, token]);
+  useEffect(() => setCopied(""), [style, picked, format, token]);
+
+  const choices = badgeVariantChoices({ heldRules, agentDocs });
+  // A pick the repository does not qualify for, another repository's say, gives way to the
+  // preselection: the count from ten rules held, how the repository is checked below that.
+  const preselected = choices.find((each) => each.preselected)?.id ?? DEFAULT_VARIANT;
+  const variant = picked && choices.some((each) => each.id === picked && each.available) ? picked : preselected;
+  const variantLabel: Record<string, string> = {
+    practice: installed ? "Checked on every PR" : "Checked by Striff",
+    count: "Rules verified",
+    agent: "Agent docs",
+  };
 
   // A private repository's snippet without its key would put a badge with no count, reading "checked", in the
   // README, so none is offered until the key is here.
   const waitingForKey = !!privateRepo && !token;
   const key = privateRepo ? token : null;
-  const image = badgeImageUrl(owner, name, { style, token: key });
+  // What the address names: the choice's own variant, or the default where that draws the same.
+  const addressed = choices.find((each) => each.id === variant)?.address ?? DEFAULT_VARIANT;
+  const image = badgeImageUrl(owner, name, { style, variant: addressed, token: key });
   const link = badgeLinkUrl(owner, name, { privateRepo: !!privateRepo });
   const snippet = badgeSnippet(format, image, link);
-  const preview = sample
-    ? `/badge-examples/demo-${style}.svg`
-    : badgePreviewPath(owner, name, { style, token: key });
+  const preview = badgePreviewPath(owner, name, { style, variant: addressed, token: key });
 
   async function copy() {
     const ok = await copyText(snippet);
@@ -137,10 +164,11 @@ export default function BadgePanel({
         <div>
           <p className="dashboard-kicker">{heading ?? "Add badge to README"}</p>
           <p className="badge-panel-lede">
-            Shows how many of this repository's documented rules hold on its default branch
+            Tells readers how many of this repository's documented rules Striff has verified
+            against its code, or, below ten, that Striff checks them
             {privateRepo
               ? ", and links to this repository on your dashboard, for whoever can see it."
-              : ", and links to the page that lists them."}
+              : ", and links to the page that lists the rules it holds the code to."}
           </p>
         </div>
         <div className="badge-panel-preview" aria-live="polite">
@@ -151,6 +179,28 @@ export default function BadgePanel({
               <img src={preview} alt="This repository's Striff badge" height={style === "for-the-badge" ? 28 : 20} />
             </a>
           )}
+        </div>
+      </div>
+
+      <div className="badge-panel-row">
+        <span className="badge-panel-label">Says</span>
+        <div className="badge-panel-choices" role="radiogroup" aria-label="What the badge says">
+          {choices.filter((each) => each.shown).map((each) => (
+            <button
+              key={each.id}
+              type="button"
+              role="radio"
+              aria-checked={variant === each.id}
+              className={`badge-panel-choice${variant === each.id ? " is-on" : ""}`}
+              disabled={!each.available}
+              onClick={() => setPicked(each.id)}
+            >
+              {variantLabel[each.id]}
+              {each.id === "count" && !each.available && typeof heldRules === "number" && (
+                <span className="badge-panel-choice-hint"> · available at {COUNT_THRESHOLD} rules</span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 

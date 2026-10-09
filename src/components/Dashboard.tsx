@@ -1,13 +1,14 @@
 import { createElement, useState, useEffect, useRef } from "react";
 import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab from "./DocsTab";
-import { RepoCardBadge } from "./BadgeControl";
+import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import { EXTENSION_URL } from "./docRules";
 import { PENDING_REPO_KEY, findRepo, repoFromSearch, validRepo, withoutRepoParam } from "../lib/dashboardDeepLink.js";
+import { signInUrl } from "../lib/githubSignIn.js";
 
 /** Where the GitHub App is installed on an account: the first one, or one more. */
-const INSTALL_URL = "https://github.com/apps/striff-app/installations/new";
+const INSTALL_URL = "https://github.com/apps/striffs/installations/new";
 
 const OAUTH_CLIENT_ID =
   typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_GITHUB_OAUTH_CLIENT_ID
@@ -96,7 +97,7 @@ function signInAgain(onBlocked: () => void) {
   } catch {
     // Storage unavailable: redirect anyway.
   }
-  window.location.href = getOAuthUrl();
+  window.location.href = signInUrl(OAUTH_CLIENT_ID);
 }
 
 export default function Dashboard() {
@@ -111,6 +112,15 @@ export default function Dashboard() {
   const [accountId, setAccountId] = useState<number | null>(null);
   /** A repository a link asked for that none of this reader's installations covers. */
   const [unreachableRepo, setUnreachableRepo] = useState<string | null>(null);
+  /**
+   * Whether the selected repository's badge panel is open over the page. The welcome email and
+   * the post-install page link to /dashboard#badge, which opens it on arrival.
+   */
+  const [badgeOpen, setBadgeOpen] = useState(false);
+
+  useEffect(() => {
+    if (window.location.hash === "#badge") setBadgeOpen(true);
+  }, []);
 
   useEffect(() => {
     init();
@@ -141,7 +151,8 @@ export default function Dashboard() {
     setLoading(true);
     const linkedRepo = takeLinkedRepo();
     try {
-      const statusRes = await fetch("/.netlify/functions/auth-status");
+      // Who is signed in, every installation and every repository under each, in one request.
+      const statusRes = await fetch("/.netlify/functions/dashboard-bootstrap");
       // An outage, a cold start or a proxy error page all return HTML here, and .json() then
       // throws a parser message ("Unexpected token '<'...") that used to be shown to the
       // customer verbatim. Decide on the content type instead of guessing from the exception.
@@ -159,22 +170,12 @@ export default function Dashboard() {
             // Without storage the reader lands on the dashboard as it opens by default.
           }
         }
-        window.location.href = getOAuthUrl();
+        window.location.href = signInUrl(OAUTH_CLIENT_ID);
         return;
       }
       setUser(status.user);
 
-      const installs = await fetchAllPages("/user/installations", "installations");
-      const withRepos = await Promise.all(
-        installs.map(async (inst: Installation) => {
-          try {
-            const repositories = await fetchAllPages(`/user/installations/${inst.id}/repositories`, "repositories");
-            return { ...inst, repositories };
-          } catch {
-            return { ...inst, repositories: [] };
-          }
-        })
-      );
+      const withRepos: Installation[] = Array.isArray(status.installations) ? status.installations : [];
       setInstallations(withRepos);
       if (linkedRepo) {
         const found = findRepo(withRepos, linkedRepo);
@@ -269,13 +270,13 @@ export default function Dashboard() {
         {children}
         {/* The marketing footer is off on this page, and these still have to be reachable. */}
         <footer className="dash-foot">
-          <a href="/privacy">Privacy</a>
+          <a href="/privacy/">Privacy</a>
           <span aria-hidden="true">·</span>
-          <a href="/terms">Terms</a>
+          <a href="/terms/">Terms</a>
           <span aria-hidden="true">·</span>
-          <a href="/cookies">Cookies</a>
+          <a href="/cookies/">Cookies</a>
           <span aria-hidden="true">·</span>
-          <a href="/contact">Contact</a>
+          <a href="/contact/">Contact</a>
           <span aria-hidden="true">·</span>
           <a href="/">striff.io</a>
         </footer>
@@ -376,7 +377,12 @@ export default function Dashboard() {
                     aria-label="Repository"
                     title={openRepo}
                     value={openRepo}
-                    onChange={(event) => setOpenRepo(event.target.value)}
+                    onChange={(event) => {
+                      setOpenRepo(event.target.value);
+                      // Choosing a repository is asking to see it: from an account section that
+                      // shows no repository, open its docs and rules. Checks follows the choice.
+                      if (section !== "docs" && section !== "checks") setSection("docs");
+                    }}
                   >
                     {/* One installation is one account, so every repository here shares an owner
                         and the owner is already named above. */}
@@ -391,6 +397,26 @@ export default function Dashboard() {
                     {openRepo.split("/")[1] || openRepo}
                   </p>
                 )}
+                {/* The selected repository's README badge, in view whichever section is open;
+                    clicking it opens the panel with its snippet over the page. */}
+                {(() => {
+                  const selected = (current.repositories || []).find((r) => r.full_name === openRepo);
+                  return selected ? (
+                    <SideBadge
+                      key={selected.full_name}
+                      installationId={current.id}
+                      repo={selected}
+                      open={badgeOpen}
+                      onOpen={() => setBadgeOpen(true)}
+                      onClose={() => {
+                        setBadgeOpen(false);
+                        if (window.location.hash === "#badge") {
+                          window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+                        }
+                      }}
+                    />
+                  ) : null;
+                })()}
                 <nav className="dash-nav">
                   {/* One item, because there is one view: the document tree, and the rules of
                       whatever it has selected. Rules used to be a second item showing the same
@@ -429,6 +455,10 @@ export default function Dashboard() {
                 setOpenRepo(fullName);
                 setSection("docs");
               }}
+              onOfferBadge={(fullName) => {
+                setOpenRepo(fullName);
+                setBadgeOpen(true);
+              }}
             />
           </div>
         </div>
@@ -465,7 +495,7 @@ function helpUrl(
   }
   if (openRepo) context.set("repo", openRepo);
   if (section) context.set("section", section);
-  return `/contact?${context.toString()}`;
+  return `/contact/?${context.toString()}`;
 }
 
 /**
@@ -744,6 +774,7 @@ function InstallationCard({
   onSection,
   openRepo,
   onOpenRepo,
+  onOfferBadge,
 }: {
   installation: Installation;
   onError: (msg: string) => void;
@@ -753,6 +784,8 @@ function InstallationCard({
   onSection?: (section: Section) => void;
   openRepo?: string | null;
   onOpenRepo?: (fullName: string) => void;
+  /** Selects a repository and opens its badge panel. */
+  onOfferBadge?: (fullName: string) => void;
 }) {
   const repos = installation.repositories || [];
   const privateRepos = repos.filter((r) => r.private);
@@ -837,12 +870,11 @@ function InstallationCard({
     }
   }
 
-  /** Opens the docs view on a repository, a public one where there is one, with the badge panel. */
+  /** Selects a repository, a public one where there is one, and opens its badge panel. */
   function offerBadge() {
     const target = publicRepos[0] || repos[0];
-    if (!target || !onOpenRepo) return;
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#badge`);
-    onOpenRepo(target.full_name);
+    if (!target || !onOfferBadge) return;
+    onOfferBadge(target.full_name);
   }
 
   async function fetchBillingInfo() {
@@ -1415,41 +1447,4 @@ function FaqSection() {
       )}
     </div>
   );
-}
-
-/* ─── Utility ───────────────────────────────────────────────────── */
-
-// GitHub caps pages at 100 items; a single fetch silently truncated orgs with >100 repos or
-// users with >100 installations. Follows pages until a short page; capped at 5 (500 items) to
-// bound dashboard load time.
-async function fetchAllPages(path: string, listKey: string): Promise<any[]> {
-  const all: any[] = [];
-  for (let page = 1; page <= 5; page++) {
-    const res = await fetch(
-      "/.netlify/functions/github-proxy?path=" + encodeURIComponent(`${path}?per_page=100&page=${page}`)
-    );
-    const data = await res.json();
-    const items = data[listKey] || [];
-    all.push(...items);
-    if (items.length < 100) break;
-  }
-  return all;
-}
-
-function getOAuthUrl() {
-  // Double-submit state: auth-callback compares this cookie against the state GitHub echoes
-  // back, so a forged callback URL can't log the visitor into an attacker's account.
-  const state = crypto.randomUUID();
-  document.cookie = `gh_oauth_state=${state}; path=/; max-age=600; secure; samesite=lax`;
-  const params = new URLSearchParams({
-    client_id: OAUTH_CLIENT_ID,
-    scope: "read:user,user:email",
-    redirect_uri: `${window.location.origin}/.netlify/functions/auth-callback`,
-    state,
-    // GitHub remembers who was signed in and hands the token straight back, so someone who has
-    // just signed out is signed back into the same account without being asked. Asking for the
-    // account picker makes signing in mean choosing, which is what the button appears to offer.
-    prompt: "select_account",
-  });
-  return `https://github.com/login/oauth/authorize?${params}`;
 }

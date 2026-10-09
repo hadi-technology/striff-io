@@ -3034,9 +3034,9 @@
    banner and first two rows into the first screen on a 900px laptop. */
 .hero-section {
   padding-top: 2.75rem;
-  /* The card needs air under it before the dark band starts, or the two read as
-     one stacked object rather than a hero and the section after it. */
-  padding-bottom: 5.5rem;
+  /* Air under the strip that closes the hero before the next section starts: enough that
+     the two read as separate, not so much that the page seems to end there. */
+  padding-bottom: 3rem;
 }
 
 .hero-copy h1 {
@@ -4311,8 +4311,6 @@
 .docs-gone-where a { display: inline-flex; align-items: center; gap: 0.3rem; color: #57606a; }
 .docs-gone-where a:hover { color: #1f2328; }
 .docs-badge.is-not_read { background: #fff; border-color: #cbd5e1; border-style: dashed; color: #64748b; }
-.docs-badge.is-updating { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
-.docs-updating-line { margin: 0.5rem 0 0; color: #57606a; font-size: 0.85rem; }
 .docs-badge.is-screened_out,
 .docs-badge.is-retired,
 .docs-badge.is-excluded { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
@@ -4345,6 +4343,10 @@
 .docs-rule-line { width: 3.4rem; color: #1d4ed8; font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; font-weight: 600; }
 .docs-rule-quote { font-family: "Source Serif 4", ui-serif, Georgia, serif; font-size: 0.9rem; line-height: 1.5; color: #0f172a; }
 .docs-rule-statement { color: #1e293b; line-height: 1.5; }
+/* A link a document wrote, kept as one where it goes somewhere on the web: the sentence's own
+   colour, told apart by its underline, so a quote does not read as a row of buttons. */
+.docs-doc-link { color: inherit; text-decoration: underline; text-decoration-color: #94a3b8; text-underline-offset: 0.15em; }
+.docs-doc-link:hover { text-decoration-color: currentColor; }
 
 .docs-outcome { display: inline-flex; border: 1px solid; border-radius: 999px; padding: 0.1rem 0.45rem; font-size: 0.72rem; font-weight: 650; white-space: nowrap; }
 .docs-outcome.is-maintained, .docs-outcome.is-restored { background: #eaf8f0; border-color: #bfe6cf; color: #17794a; }
@@ -4367,6 +4369,18 @@
   border-radius: 0.28rem;
 }
 .docs-rule-quote .github-inline-code { background: #e8edf4; font-size: 0.82em; }
+
+/* The words of a sentence its rule checks, in bold over a light highlighter stroke, and the rest of
+   the sentence a step quieter, so a verdict reads as a verdict on those words and not on everything
+   the sentence says. The stroke tells them from words the document itself set in bold. */
+.docs-rule-quote .docs-rule-checked {
+  font-weight: 650;
+  color: #0f172a;
+  box-shadow: inset 0 -0.42em 0 #dbeafe;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.docs-rule-quote .docs-rule-unchecked { color: #526175; }
 
 /* ---- Dashboard documents: the file explorer ----
    Folders open and close, documents sit under them, and every row carries the same menu, so an
@@ -5169,23 +5183,7 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   vertical-align: middle;
 }
 .docs-repo-link:hover { border-color: #cbd5e1; color: #24292f; text-decoration: none; }
-/* When a public page's snapshot was read: a fact about the page, so a chip and not a control. */
-.docs-refreshed-chip {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 0.4rem;
-  border: 1px solid #e8d9a8;
-  border-radius: 999px;
-  background: #fdf6e3;
-  padding: 0.15rem 0.6rem;
-  color: #7a5c12;
-  font-size: 0.75rem;
-  font-weight: 600;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-/* The chip and the repository's badge beside it: one unit after the name, wrapping as one, and
-   the badge under the chip with a small gap where the row is too narrow for both. */
+/* The repository's badge after its name, wrapping as one unit where the row is too narrow. */
 .docs-refreshed-group {
   display: inline-flex;
   flex-wrap: wrap;
@@ -5195,7 +5193,6 @@ button.docs-tally-item.is-on i { color: #1f2328; }
   vertical-align: middle;
   max-width: 100%;
 }
-.docs-refreshed-group .docs-refreshed-chip { margin-left: 0; }
 .docs-live-badge { display: block; height: 20px; width: auto; max-width: 100%; }
 /* A dashboard link asked for a repository this reader's installations do not cover. */
 .dashboard-link-notice {
@@ -6738,8 +6735,13 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .badge-control:hover img { filter: brightness(1.08); }
 .badge-control:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 .badge-control[aria-expanded="true"] { box-shadow: 0 0 0 2px #bfdbfe; }
-.docs-badge-control { margin-left: 0.4rem; }
 @media print { .badge-control { display: none; } }
+
+/* The selected repository's badge in the side panel, under the picker: as wide as the panel
+   allows and no wider, so a long message scales down rather than wrapping or running out. */
+.dash-repo-badge { display: flex; max-width: 100%; padding: 0 10px 0.35rem; }
+.dash-repo-badge .badge-control { max-width: 100%; }
+.dash-repo-badge .badge-control img { max-width: 100%; height: auto; max-height: 20px; }
 
 /* A repository card's badge: between its face and its link out, or under its name when narrow. */
 .repo-card-badge { flex: none; align-self: center; display: inline-flex; padding: 0 0.35rem; }
@@ -6807,6 +6809,8 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 }
 .badge-panel-choice:hover { border-color: #cbd5e1; color: #24292f; }
 .badge-panel-choice.is-on { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
+.badge-panel-choice:disabled { border-style: dashed; background: #f8fafc; color: #8a95a1; cursor: not-allowed; }
+.badge-panel-choice-hint { font-weight: 500; }
 .badge-panel-snippet {
   margin: 0.8rem 0 0;
   overflow-x: auto;
@@ -6877,3 +6881,399 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 }
 .badge-panel-close:hover { background: #f1f5f9; color: #0f172a; }
 .badge-panel-close:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+
+/* ---- Found in open source: a strip under the hero's example check ----
+   Social proof, in the manner of a logo row: repositories people know, each a link to its public
+   report carrying that report's rules tally, in the colours the check above uses. One calm band
+   inside the hero's own background, between two hairlines that fade out at their ends. */
+.proof-strip {
+  --proof-line: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.12) 18%, rgba(15, 23, 42, 0.12) 82%, transparent);
+  position: relative;
+  z-index: 1;
+  max-width: 68rem;
+  margin: 2.5rem auto 0;
+  background:
+    var(--proof-line) top / 100% 1px no-repeat,
+    var(--proof-line) bottom / 100% 1px no-repeat;
+}
+
+.proof-strip-inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.85rem 0.5rem;
+}
+
+.proof-strip-label {
+  flex: none;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.proof-strip-viewport {
+  --proof-fade: 48px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  /* Room for an item's outline when focused. */
+  padding: 3px 0;
+  /* Items fade in and out at both ends rather than being cut. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--proof-fade), #000 calc(100% - var(--proof-fade)), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 var(--proof-fade), #000 calc(100% - var(--proof-fade)), transparent);
+}
+
+.proof-strip-rail {
+  display: flex;
+  width: max-content;
+  animation: proof-strip-scroll 60s linear infinite;
+}
+
+/* Stopped while anything in it is pointed at or focused, so a link never moves out from under a
+   reader. */
+.proof-strip-viewport:hover .proof-strip-rail,
+.proof-strip-viewport:focus-within .proof-strip-rail {
+  animation-play-state: paused;
+}
+
+@keyframes proof-strip-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* The gap after the last item equals the gap between items, so the seam between the two copies
+   is spaced like the rest. */
+.proof-strip-list {
+  --proof-gap: 0.85rem;
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  gap: var(--proof-gap);
+  margin: 0;
+  padding: 0 var(--proof-gap) 0 0;
+  list-style: none;
+}
+
+.proof-strip-list > li {
+  display: flex;
+}
+
+/* Each repository is a small card: who it is on the first line, how its rules stand on the
+   second. */
+.proof-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.62);
+  padding: 0.5rem 0.85rem 0.5rem 0.6rem;
+  color: #334155;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+/* A white square with a hairline edge, so a pale logo still has a shape. */
+.proof-item-avatar {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: #ffffff;
+  outline: 1px solid rgba(15, 23, 42, 0.12);
+  outline-offset: -1px;
+  opacity: 0.8;
+  transition: opacity 160ms ease;
+}
+
+.proof-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.proof-item-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.proof-item-owner {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.proof-item-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The tally: the check's own colours, green held, red broken (grey at none), and the names out
+   of date, which are the finding, in the amber badge the report uses for them. */
+.proof-tally {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  line-height: 1;
+}
+
+.proof-tally-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.proof-tally-item b {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.proof-tally-item i {
+  color: #64748b;
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.proof-tally-item.is-held,
+.proof-tally-item.is-held b { color: #17794a; }
+
+.proof-tally-item.is-broken,
+.proof-tally-item.is-broken b { color: #c9313f; }
+
+.proof-tally-item.is-broken.is-none,
+.proof-tally-item.is-broken.is-none b { color: #94a3b8; }
+
+.proof-tally-item.is-stale {
+  border: 1px solid #fdba74;
+  border-radius: 0.3rem;
+  background: #fff7ed;
+  padding: 0.12rem 0.35rem;
+}
+
+.proof-tally-item.is-stale b,
+.proof-tally-item.is-stale i { color: #9a3412; }
+
+.proof-item:hover,
+.proof-item:focus-visible {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+}
+
+.proof-item:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.proof-item:hover .proof-item-avatar,
+.proof-item:focus-visible .proof-item-avatar {
+  opacity: 1;
+}
+
+.proof-item:hover .proof-item-stars span,
+.proof-item:focus-visible .proof-item-stars span {
+  color: var(--amber);
+}
+
+/* Narrower: the label on one line above a full-width list. */
+@media (max-width: 860px) {
+  .proof-strip {
+    margin-top: 1.75rem;
+  }
+
+  .proof-strip-inner {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 0;
+  }
+
+  .proof-strip-label {
+    text-align: center;
+  }
+
+  .proof-strip-viewport {
+    align-self: stretch;
+  }
+}
+
+/* A phone: the list runs to the screen's edges, and each card is narrow enough that two sit side
+   by side. The avatar moves onto the owner's line, the repository's name goes under it and the
+   tally under that; held and broken keep their marks and numbers but drop their words, which the
+   report spells out. */
+@media (max-width: 640px) {
+  .proof-strip-viewport {
+    --proof-fade: 24px;
+    margin: 0 -1.5rem;
+  }
+
+  .proof-strip-list {
+    --proof-gap: 0.5rem;
+  }
+
+  .proof-item {
+    display: grid;
+    grid-template-areas:
+      "avatar owner stars"
+      "repo repo repo"
+      "tally tally tally";
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    column-gap: 0.35rem;
+    row-gap: 0.2rem;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .proof-item-body,
+  .proof-item-head,
+  .proof-item-name {
+    display: contents;
+  }
+
+  .proof-item-avatar {
+    grid-area: avatar;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+  }
+
+  .proof-item-owner {
+    grid-area: owner;
+    font-size: 0.7rem;
+    line-height: 1.2;
+  }
+
+  .proof-item-slash {
+    display: none;
+  }
+
+  .proof-item-repo {
+    grid-area: repo;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  .proof-item-stars {
+    grid-area: stars;
+    font-size: 0.68rem;
+  }
+
+  .proof-tally {
+    grid-area: tally;
+    gap: 0.45rem;
+  }
+
+  .proof-tally-item b {
+    font-size: 0.75rem;
+  }
+
+  .proof-tally-item.is-held i,
+  .proof-tally-item.is-broken i {
+    display: none;
+  }
+
+  .proof-tally-item.is-stale {
+    padding: 0.1rem 0.3rem;
+  }
+
+  .proof-tally-item.is-stale i {
+    font-size: 0.56rem;
+    letter-spacing: 0.04em;
+  }
+}
+
+/* No motion: one still copy of the list. Wide enough, it is two rows of three under the label;
+   narrower, one row that the reader swipes, so the strip keeps its height. */
+@media (prefers-reduced-motion: reduce) {
+  .proof-strip-rail {
+    width: auto;
+    animation: none;
+  }
+
+  .proof-strip-list[aria-hidden="true"] {
+    display: none;
+  }
+
+  .proof-item,
+  .proof-item-avatar {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (min-width: 861px) {
+  /* The label centred above, the rows centred under it. */
+  .proof-strip-inner {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .proof-strip-viewport {
+    align-self: stretch;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .proof-strip-list {
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-columns: repeat(3, max-content);
+    justify-content: center;
+    gap: 0.6rem var(--proof-gap);
+    padding: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (max-width: 860px) {
+  .proof-strip-viewport {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - var(--proof-fade)), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - var(--proof-fade)), transparent);
+  }
+
+  .proof-strip-viewport::-webkit-scrollbar {
+    display: none;
+  }
+
+  .proof-strip-list {
+    padding-left: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (max-width: 640px) {
+  .proof-strip-list {
+    padding-left: 1.5rem;
+  }
+}
+
+/* The striff-lib link is one pill line wide, which is wider than a phone. There it wraps inside a
+   rounded box instead of pushing the page sideways. */
+@media (max-width: 640px) {
+  .oss-link {
+    max-width: 100%;
+    border-radius: 0.9rem;
+  }
+}

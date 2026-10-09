@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import DocsTab, { type DocsSource } from "./DocsTab";
 import ChecksTab from "./ChecksTab";
 import BadgePanel from "./BadgePanel";
+import { AUTOMATIC_READING } from "./ReadRepository";
 import { isRootReadme } from "../lib/badgeSnippets.js";
+import { freezeClock, thawClock } from "../lib/renderClock.js";
+import { SITE_ROUTES } from "../lib/siteRoutes.js";
 
 /**
  * A public repository's page: the dashboard's documents and checks views, read-only, for anyone.
@@ -19,9 +22,14 @@ import { isRootReadme } from "../lib/badgeSnippets.js";
  * A repository that installed Striff has every pull request checked, and its page lists them.
  * Nothing on either can be changed, and a finding that a person has not yet checked is left out,
  * never shown as a rule that holds.
+ *
+ * A published page is also built ahead of time with what these reads answered then (`initial`), so
+ * its content is in the HTML for a reader or a search engine without script. It renders that at
+ * once, exactly as built, and then reads the page again as any visit does: a page that is gone by
+ * then is shown as gone, and one that cannot be reached keeps what was built.
  */
 
-const INSTALL_URL = "https://github.com/apps/striff-app/installations/new";
+const INSTALL_URL = "https://github.com/apps/striffs/installations/new";
 
 /**
  * The install link on a report page. GitHub hands `state` back to the setup page after the
@@ -41,14 +49,12 @@ function recordInstallClick(repo?: string) {
 /** First path segments that are this site's own pages, never a repository's owner. */
 // The post that explains what a report is: a visitor who lands here from a link in a pull
 // request or an email has not met Striff before.
-const EXPLAINER_POST = "/blog/design-docs-are-enforceable-now";
+const EXPLAINER_POST = "/blog/design-docs-are-enforceable-now/";
 
 function recordExplainerClick(repo: string) {
   const posthog = (window as unknown as { posthog?: { capture: (e: string, p: object) => void } }).posthog;
   posthog?.capture("explainer_clicked", { source: "report_card", repo });
 }
-
-const SITE_ROUTES = new Set(["blog", "contact", "billing", "dashboard", "demo", "pricing", "privacy", "terms", "cookies", "installed", "badge", "badge-examples"]);
 
 const OWNER = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/;
 const NAME = /^[A-Za-z0-9._-]{1,100}$/;
@@ -57,6 +63,8 @@ type View = "docs" | "checks";
 
 interface Reading {
   state: string | null;
+  /** Who asked for it; AUTOMATIC_READING where Striff started it because the page was viewed. */
+  askedBy?: string | null;
   finishedAtMs: number;
   docsTotal: number;
   docsDone: number;
@@ -68,6 +76,8 @@ interface PageSummary {
   claimed: boolean;
   publishedAtMs: number | null;
   reading: Reading | null;
+  /** What decides which badge variants the page's maintainers are offered. */
+  badge?: { heldRules: number; agentDocs: boolean } | null;
 }
 
 type Loaded =
@@ -135,11 +145,32 @@ function viewFromHash(): View {
   return window.location.hash.replace(/^#/, "") === "checks" ? "checks" : "docs";
 }
 
-export default function PublicRepo() {
+/** What a page was built with: the four reads the live page makes, and when they were made. */
+export interface BuiltReport {
+  page: PageSummary;
+  catalog: unknown;
+  rules: unknown;
+  staleNames: unknown;
+  builtAtMs: number;
+}
+
+export default function PublicRepo({ initial }: { initial?: BuiltReport }) {
   const [target, setTarget] = useState<{ owner: string; name: string } | null | undefined>(undefined);
-  const [loaded, setLoaded] = useState<Loaded>({ kind: "loading" });
+  const [loaded, setLoaded] = useState<Loaded>(
+    initial ? { kind: "page", page: initial.page } : { kind: "loading" }
+  );
   const [view, setView] = useState<View>("docs");
   const [maintainer, setMaintainer] = useState<Maintainer | null>(null);
+  // Until the built markup is hydrated, dates and "now" are the build's: see renderClock.
+  const [hydrated, setHydrated] = useState(!initial);
+  const built = useRef(initial);
+  if (initial && !hydrated) freezeClock(initial.builtAtMs);
+
+  useEffect(() => {
+    if (!initial) return;
+    thawClock();
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     setTarget(repoFromPath(window.location.pathname));
@@ -164,15 +195,17 @@ export default function PublicRepo() {
           return;
         }
         if (!res.ok) {
-          setLoaded({ kind: "error" });
+          // A built page stays as built rather than giving way to an error.
+          if (!built.current) setLoaded({ kind: "error" });
           return;
         }
         const page: PageSummary = await res.json();
         setLoaded({ kind: "page", page });
-        document.title = `${page.repoOwner}/${page.repoName} | Striff`;
+        // A built page's title was written for it, and is kept.
+        if (!built.current) document.title = `${page.repoOwner}/${page.repoName} | Striff`;
         maintainerOf(page.repoOwner, page.repoName).then((found) => current && setMaintainer(found));
       })
-      .catch(() => current && setLoaded({ kind: "error" }));
+      .catch(() => current && !built.current && setLoaded({ kind: "error" }));
     return () => {
       current = false;
     };
@@ -214,8 +247,8 @@ export default function PublicRepo() {
              target="_blank" rel="noopener noreferrer">
             Install the GitHub App
           </a>
-          <a className="btn-secondary" href="/dashboard">Sign in</a>
-          <a className="btn-secondary" href="/demo">See an example</a>
+          <a className="btn-secondary" href="/dashboard/">Sign in</a>
+          <a className="btn-secondary" href="/demo/">See an example</a>
         </div>
       </div>
     );
@@ -226,15 +259,10 @@ export default function PublicRepo() {
   const views: View[] = page.claimed ? ["docs", "checks"] : ["docs"];
   const shown: View = views.includes(view) ? view : "docs";
   const reading = page.reading;
-  const readingNow = reading && (reading.state === "queued" || reading.state === "running");
-  // An unclaimed page is never read again after it is published, so it is as old as its last
-  // reading, or as its publishing where no reading finished.
-  const snapshotMs = reading && reading.finishedAtMs > 0 ? reading.finishedAtMs : page.publishedAtMs;
-  const snapshotAt = snapshotMs
-    ? new Date(snapshotMs).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
-    : null;
+  // A reading Striff started by itself because the page was viewed is never reported.
+  const readingNow = reading && reading.askedBy !== AUTOMATIC_READING
+    && (reading.state === "queued" || reading.state === "running");
   const docsSource: DocsSource = {
-    refreshedAt: page.claimed ? undefined : snapshotAt ?? undefined,
     // The repository's own badge, as its README would show it. Same-origin and marked a preview,
     // so showing it here is never counted as a README carrying it.
     badgeUrl: `/badge/${encodeURIComponent(page.repoOwner)}/${encodeURIComponent(page.repoName)}.svg?preview=1`,
@@ -244,7 +272,7 @@ export default function PublicRepo() {
            target="_blank" rel="noopener noreferrer">
           Is this yours? Install to manage it
         </a>
-        <p className="public-repo-snapshot">Installed, Striff checks every pull request.</p>
+        <p className="public-repo-snapshot">Once installed, Striff checks every pull request.</p>
       </div>
     ),
     lede: (
@@ -278,6 +306,9 @@ export default function PublicRepo() {
           name={page.repoName}
           branch={maintainer.branch}
           readmePath={maintainer.readmePath}
+          installed={page.claimed}
+          heldRules={page.badge?.heldRules ?? null}
+          agentDocs={!!page.badge?.agentDocs}
           heading="Add this badge to your README"
         />
       )}
@@ -313,6 +344,11 @@ export default function PublicRepo() {
               repos={[{ full_name: fullName }]}
               openRepo={fullName}
               source={docsSource}
+              initial={built.current && {
+                catalog: built.current.catalog,
+                rules: built.current.rules,
+                staleNames: built.current.staleNames,
+              }}
             />
           )}
           {shown === "checks" && (

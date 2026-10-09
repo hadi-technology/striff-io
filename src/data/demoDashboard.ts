@@ -113,6 +113,15 @@ function rule(
   };
 }
 
+/**
+ * A demo rule with the words of its sentence it checks, as the API sends them: offsets into the
+ * quote, so the documents view shows those words in bold inside the whole sentence.
+ */
+function checking<T extends { quote: string }>(row: T, words: string) {
+  const from = row.quote.indexOf(words);
+  return from < 0 ? row : { ...row, checkedFrom: from, checkedTo: from + words.length };
+}
+
 const HOLDS = (line: number, statement: string, quote: string, pr = "412", days = 15) =>
   rule(line, statement, quote, "MAINTAINED", "HOLDS", pr, days);
 
@@ -120,13 +129,15 @@ const rulesByDoc: Record<string, ReturnType<typeof rule>[]> = {
   "AGENTS.md": [
     HOLDS(12, "Nothing in `checkout` depends on `legacy`", "Never import from `legacy/` in new code; use the equivalents in `core/`."),
     HOLDS(19, "Only `checkout.store` depends on `org.hibernate`", "Persistence lives in the store package. No other package imports the ORM."),
-    rule(27, "Nothing in `checkout.web` depends on `checkout.store`",
+    checking(rule(27, "Nothing in `checkout.web` depends on `checkout.store`",
       "Controllers never reach the store directly; everything goes through a service, and the service is the only thing that knows a database exists. This is the rule we break most often under time pressure, and it is the one that costs most to put back, because by the time anyone notices there are a dozen controllers holding a repository and no service layer worth the name.",
-      "VIOLATED", "BROKEN", "427", 12),
+      "VIOLATED", "BROKEN", "427", 12), "Controllers never reach the store directly"),
   ],
   "ARCHITECTURE.md": [
-    HOLDS(21, "Only `billing` depends on `com.stripe`", "Only the billing module talks to the Stripe SDK; everything else goes through PaymentGateway.", "398", 21),
-    HOLDS(38, "Every class in `billing.providers` implements `PaymentGateway`", "Every payment provider implements PaymentGateway.", "398", 21),
+    checking(HOLDS(21, "Only `billing` depends on `com.stripe`", "Only the billing module talks to the Stripe SDK; everything else goes through PaymentGateway.", "398", 21),
+      "Only the billing module talks to the Stripe SDK"),
+    checking(HOLDS(38, "Every class in `billing.providers` implements `PaymentGateway`", "**Providers are plug-ins.** Every payment provider implements `PaymentGateway` ([see the ADR](docs/adr/0007-payments.md)), and _nothing_ else does.", "398", 21),
+      "Every payment provider implements `PaymentGateway`"),
     HOLDS(52, "Nothing in `web` depends on `billing.internal`", "The web layer sees the billing API and nothing behind it.", "398", 21),
   ],
   "docs/adr/0007-payments.md": [

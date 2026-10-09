@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import { parseCookie } from "../lib/github-access.js";
+import { clearedSignedOutMarker, sessionCookies } from "../lib/github-session.js";
 
 const CLIENT_ID = process.env.GITHUB_OAUTH_CLIENT_ID;
 const CLIENT_SECRET = process.env.GITHUB_OAUTH_CLIENT_SECRET;
@@ -26,9 +28,9 @@ export const handler = async (event) => {
   }
 
   // CSRF check: the state GitHub echoes back must match the cookie set when the sign-in
-  // flow started (see getOAuthUrl / AuthButton).
+  // flow started (see signInUrl in src/lib/githubSignIn.js).
   const state = event.queryStringParameters?.state;
-  const cookieState = parseCookie(event.headers?.cookie || "")["gh_oauth_state"];
+  const cookieState = parseCookie(event.headers?.cookie)["gh_oauth_state"];
   if (!state || !cookieState || state !== cookieState) {
     return { statusCode: 400, body: "Invalid OAuth state — please start sign-in again from striff.io" };
   }
@@ -105,16 +107,11 @@ export const handler = async (event) => {
     }
   }
 
-  // Set httpOnly cookie and redirect to dashboard
-  const cookie = [
-    `gh_token=${accessToken}`,
-    "HttpOnly",
-    "Secure",
-    "SameSite=Lax",
-    "Path=/",
-    "Max-Age=2592000", // 30 days
-  ].join("; ");
-
+  // The session's cookies, and redirect to dashboard. GitHub gives a GitHub App's sign-in an access
+  // token that expires (expires_in, eight hours) and a refresh token (refresh_token_expires_in, about
+  // six months) that renews it; both are kept, each for as long as GitHub says it is valid, so the
+  // visitor stays signed in while their grant is (see ../lib/github-session.js). The sign-out marker
+  // has done its job once someone signs in, so it goes too.
   return {
     statusCode: 302,
     headers: {
@@ -122,18 +119,10 @@ export const handler = async (event) => {
     },
     multiValueHeaders: {
       "Set-Cookie": [
-        cookie,
+        ...sessionCookies(tokenData),
         "gh_oauth_state=; Path=/; Max-Age=0; Secure; SameSite=Lax",
+        clearedSignedOutMarker(),
       ],
     },
   };
 };
-
-function parseCookie(header) {
-  const cookies = {};
-  for (const pair of header.split(";")) {
-    const [k, ...v] = pair.split("=");
-    cookies[k.trim()] = (v.join("=") || "").trim();
-  }
-  return cookies;
-}

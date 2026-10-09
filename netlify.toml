@@ -2,11 +2,20 @@
   command = "npm run build"
   publish = "dist"
   functions = "netlify/functions"
+  # Production deploys once a day (netlify/functions/daily-deploy.js) or by hand through the build
+  # hook, not on every merge to main: a production build that a build hook did not start is
+  # cancelled. Netlify never applies this to a build hook's build. Deploy previews still build.
+  ignore = '[ "$CONTEXT" = "production" ]'
 
-# Retired posts: send old links to the blog index instead of a 404.
+# Retired posts: send old links to the blog index instead of a 404. Netlify serves a file that
+# exists before any rule, so live posts (and /blog/rss.xml) are untouched; any other /blog/<slug>
+# is a retired post. Without this it would fall through to the repository page's rules below and
+# render an empty repository shell with a 200, which search engines read as a soft 404. A
+# placeholder, not a splat: Netlify ignores trailing slashes when matching and a splat may be
+# empty, so /blog/* would match its own target and loop, which Netlify answers with a 404.
 [[redirects]]
-  from = "/blog/package-dependency-cycles"
-  to = "/blog"
+  from = "/blog/:slug"
+  to = "/blog/"
   status = 301
 
 # The extension's page became a section of the homepage.
@@ -30,8 +39,10 @@
 
 # A public repository's page, at the address GitHub gives the repository. A rewrite, not a
 # redirect: the address stays the repository's. Netlify serves a file that exists at the address
-# before any rule, so the site's own two-part pages (/blog/<post>, /contact/thanks) are untouched.
-# Kept last, so every rule above wins.
+# before any rule, so the site's own two-part pages (/blog/<post>, /contact/thanks) are untouched,
+# and so is every published report the build made a page of (src/pages/[owner]/[repo].astro).
+# This shell, never indexed, serves the rest: unpublished, taken down, or published since the
+# last build. Kept last, so every rule above wins.
 [[redirects]]
   from = "/:owner/:repo"
   to = "/repo/index.html"
@@ -41,6 +52,10 @@
   from = "/:owner/:repo/"
   to = "/repo/index.html"
   status = 200
+
+# The daily production deploy: see netlify/functions/daily-deploy.js.
+[functions."daily-deploy"]
+  schedule = "@daily"
 
 [[headers]]
   for = "/dashboard"

@@ -3,7 +3,7 @@
  * The site footer: the logo and the one-line pitch with the two ways in (the GitHub App and the
  * blog's feed), the site map in three columns, and the legal line. Dark on every page.
  */
-const installUrl = "https://github.com/apps/striff-app/installations/new";
+const installUrl = "https://github.com/apps/striffs/installations/new";
 const githubUrl = "https://github.com/hadi-technology/striff-lib";
 const year = new Date().getFullYear();
 
@@ -13,7 +13,7 @@ const columns: { title: string; links: FooterLink[] }[] = [
     title: "Product",
     links: [
       { label: "For teams", href: "/#teams" },
-      { label: "Pricing", href: "/pricing" },
+      { label: "Pricing", href: "/pricing/" },
       { label: "Chrome extension", href: "/#extension" },
       { label: "GitHub App", href: installUrl, external: true },
     ],
@@ -21,18 +21,18 @@ const columns: { title: string; links: FooterLink[] }[] = [
   {
     title: "Resources",
     links: [
-      { label: "Blog", href: "/blog" },
+      { label: "Blog", href: "/blog/" },
       { label: "RSS feed", href: "/blog/rss.xml" },
       { label: "GitHub", href: githubUrl, ariaLabel: "Striff GitHub" },
-      { label: "Contact", href: "/contact" },
+      { label: "Contact", href: "/contact/" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "Privacy", href: "/privacy" },
-      { label: "Terms", href: "/terms" },
-      { label: "Cookies", href: "/cookies" },
+      { label: "Privacy", href: "/privacy/" },
+      { label: "Terms", href: "/terms/" },
+      { label: "Cookies", href: "/cookies/" },
     ],
   },
 ];

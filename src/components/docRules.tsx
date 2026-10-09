@@ -6,7 +6,11 @@
  * calling the same status different things, which is the confusion the labels were rewritten to
  * end, reintroduced by copying.
  */
-import { createElement, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createElement, Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { inlineRuns, plainText } from "../lib/docMarkdown.js";
+import { formatDay } from "../lib/renderClock.js";
+
+export { plainText };
 
 /**
  * What the last pull request to judge a rule said about it.
@@ -40,20 +44,96 @@ export const ON_BRANCH_LABEL: Record<string, string> = {
 };
 
 /**
- * A sentence or a rule as the API sends it, with backticked names as code.
+ * A customer's sentence as it reads in the document: its inline Markdown as styles, not marks.
  *
- * The API writes a name the way the document did, in backticks; rendering them literally leaves
- * the marks on screen. Split rather than set HTML: the text is a customer's own document, and it
- * is never trusted as markup.
+ * The API sends a document's words as the document wrote them -- `**bold**`, `_emphasis_`,
+ * `` `code` ``, `[links](to/a/file.md)`, entities -- and showing that string as it is puts the
+ * marks on screen. This is the one place any of it is turned into something a reader sees, so a
+ * quote, a rule, a stale name's sentence and a public page all read a document the same way. The
+ * reading itself is {@link inlineRuns}, which builds elements from what it read and never sets
+ * HTML: the text is a customer's own document, and it is never trusted as markup. A link keeps its
+ * text; only one to an http or https address is a link, and it carries nothing back to this page.
+ *
+ * @param text the text as the API sent it
+ * @param options `term`: what is being searched for, marked wherever it occurs, across styles.
+ *   `from`/`to`: the words to set in bold, as UTF-16 offsets into `text` -- the raw string,
+ *   Markdown and all -- with the rest of the sentence a step quieter. A range that does not fit the
+ *   text emphasises nothing, so a sentence without one reads as before.
+ * @return the elements to render, or null for no text
+ */
+export function inlineMarkdown(
+  text: string | null | undefined,
+  options: { term?: string; from?: number | null; to?: number | null } = {}
+) {
+  if (!text) return null;
+  const { runs, links, ranged } = inlineRuns(text, options);
+  const out: any[] = [];
+  let index = 0;
+  while (index < runs.length) {
+    const link = runs[index].link;
+    const group: any[] = [];
+    do {
+      group.push(runElement(runs[index], ranged, index));
+      index++;
+    } while (link >= 0 && index < runs.length && runs[index].link === link);
+    const href = link >= 0 ? links[link].href : null;
+    if (href) {
+      out.push(createElement("a", {
+        key: `l${index}`, href, target: "_blank", rel: "noopener nofollow", className: "docs-doc-link",
+      }, group));
+    } else {
+      out.push(...group);
+    }
+  }
+  return out;
+}
+
+/** One run of the same style, wrapped from the inside out: search mark, code, emphasis, strong, range. */
+function runElement(run: any, ranged: boolean, key: number) {
+  let node: any = run.mark ? createElement("mark", { key: "m" }, run.text) : run.text;
+  if (run.code) node = createElement("code", { key: "c", className: "github-inline-code" }, node);
+  if (run.em) node = createElement("em", { key: "e" }, node);
+  if (run.strong) node = createElement("strong", { key: "s" }, node);
+  if (ranged) {
+    node = run.hit
+      ? createElement("strong", { key, className: "docs-rule-checked" }, node)
+      : createElement("span", { key, className: "docs-rule-unchecked" }, node);
+  } else {
+    node = createElement(Fragment, { key }, node);
+  }
+  return node;
+}
+
+/**
+ * A rule's sentence, read as the document wrote it, with the words the rule checks in bold.
+ *
+ * The API sends those words as UTF-16 offsets into the raw quote, Markdown and all, and only where
+ * it verified that the sentence writes them. {@link inlineMarkdown} applies them per visible
+ * character, so a span that starts inside the document's own bold, or straddles it, never cuts a
+ * pair of marks. No span, or one that does not fit, shows the sentence plain.
+ *
+ * @param text the sentence as the API sent it
+ * @param checkedFrom where the checked words begin
+ * @param checkedTo one past where they end
+ * @param term what is being searched for
+ */
+export function withChecked(
+  text: string | null | undefined,
+  checkedFrom: number | null | undefined,
+  checkedTo: number | null | undefined,
+  term?: string
+) {
+  return inlineMarkdown(text, { term, from: checkedFrom, to: checkedTo });
+}
+
+/**
+ * A sentence or a rule as the API sends it, read as the document wrote it.
+ *
+ * Kept under its old name for the places that only ever wanted code and a search: they get the
+ * rest of the document's Markdown read the same way, through {@link inlineMarkdown}.
  */
 export function withCode(text: string | null | undefined, term?: string) {
-  if (!text) return null;
-  return text.split(/`([^`]+)`/g).map((part, index) =>
-    index % 2 === 1
-      ? createElement("code", { key: index, className: "github-inline-code" },
-          mark(part, term, `c${index}`))
-      : mark(part, term, `p${index}`)
-  );
+  return inlineMarkdown(text, { term });
 }
 
 /**
@@ -90,7 +170,7 @@ export function mark(text: string, term?: string, keyPrefix = "m"): any {
 
 export function when(ms: number | null | undefined): string {
   if (!ms) return "";
-  return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return formatDay(ms, { month: "short", day: "numeric" });
 }
 
 /**
@@ -139,7 +219,18 @@ export function Clamped({ lines = 3, children }: { lines?: number; children: any
     const element = body.current;
     if (!element || open) return;
     // A couple of pixels of slack: sub-pixel line heights make an uncut cell look cut.
-    setCut(element.scrollHeight - element.clientHeight > 2);
+    const measure = () => setCut(element.scrollHeight - element.clientHeight > 2);
+    measure();
+    // A cell measured before the page's fonts arrive, or at another width, measured the wrong
+    // text: a page rendered ahead of time is measured as soon as it hydrates, often before then.
+    let current = true;
+    document.fonts?.ready.then(() => current && measure());
+    const resized = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    resized?.observe(element);
+    return () => {
+      current = false;
+      resized?.disconnect();
+    };
   }, [children, open, lines]);
 
   return (

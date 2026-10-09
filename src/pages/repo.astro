@@ -4,7 +4,9 @@
  * its own for (see netlify.toml); PublicRepo reads which repository from the address.
  *
  * Never indexed: a page whose repository did not install Striff must not turn up in a search as
- * if it had, and the address that serves it is one page for every repository.
+ * if it had, and the address that serves it is one page for every repository. A published page
+ * the build could read is built as a page of its own, with its content and its own address, and
+ * indexed ([owner]/[repo].astro); this shell serves every other.
  */
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PublicRepo from "../components/PublicRepo";

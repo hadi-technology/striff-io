@@ -90,3 +90,4 @@ test("an API that cannot be reached is a 502, not an empty page", async () => {
 
   assert.equal(res.statusCode, 502);
 });
+

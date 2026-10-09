@@ -10,6 +10,8 @@ import { Image } from "astro:assets";
 import dashDocsRules from "../assets/dash-docs-rules.webp";
 import dashChecks from "../assets/dash-checks.webp";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
+import { ossRepos, reportPath } from "../data/ossFindings";
+import { loadTallies } from "../data/ossTally.js";
 
 // ---- Problem-section visualization: agents doing the work ----
 // Every push, PR and merge in the feed is authored by an agent, and the side branches in
@@ -50,7 +52,13 @@ const activityFeed = [
   { agent: "ollama", text: "pushed 2 commits", time: "23m ago" }
 ];
 
-const githubAppUrl = "https://github.com/apps/striff-app/installations/new";
+const githubAppUrl = "https://github.com/apps/striffs/installations/new";
+
+/** The strip's repositories, each with its report's rules tally as of this build. */
+const ossShown = await loadTallies(ossRepos);
+/** What a screen reader hears for one repository's tally. */
+const tallyWords = (t: { held: number; broken: number; outOfDate: number }) =>
+  `${t.held} rule${t.held === 1 ? "" : "s"} held, ${t.broken} broken, ${t.outOfDate} name${t.outOfDate === 1 ? "" : "s"} out of date`;
 
 // The browser extension's homepage section.
 const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
@@ -385,7 +393,7 @@ const structuredData = JSON.stringify([
             <Formula tex={String.raw`\varphi`} /> is the rule compiled to a formula,
             <Formula tex={String.raw`\mathcal{M}`} /> your code parsed at each revision; the
             verdict is whether one satisfies the other. Three of the {heroExampleTally.broken + heroExampleTally.held} rules
-            this repository&rsquo;s docs state. <a href="/demo">The dashboard lists all of them &rarr;</a>
+            this repository&rsquo;s docs state. <a href="/demo/">The dashboard lists all of them &rarr;</a>
           </p>
           <div class="hero-langs" aria-label="Supported languages">
             <span class="hero-langs-label">Works with</span>
@@ -396,13 +404,64 @@ const structuredData = JSON.stringify([
               </span>
             ))}
           </div>
-
         </div>
+
+        <!-- Found in open source: repositories people know, each with its report's rules tally and
+             linking to the report, which is the case study. Under the example check, so a reader
+             knows what Striff does before following a link to a report. The repositories are
+             static (src/data/ossFindings.ts); the tallies are read from the live reports when the
+             site is built (src/data/ossTally.js). The list scrolls slowly and stops under a pointer
+             or keyboard focus, and with reduced motion it stands still. The second copy of the list
+             exists only to make the loop seamless, so it is hidden from assistive technology and
+             the tab order. -->
+        <section id="found-in-oss" class="proof-strip" aria-labelledby="proof-strip-label" data-reveal>
+          <div class="proof-strip-inner">
+            <p id="proof-strip-label" class="proof-strip-label">Recent findings in</p>
+            <div class="proof-strip-viewport">
+              <div class="proof-strip-rail">
+                {[false, true].map((copy) => (
+                  <ul class="proof-strip-list" aria-hidden={copy ? "true" : undefined} aria-labelledby={copy ? undefined : "proof-strip-label"}>
+                    {ossShown.map((r) => (
+                      <li>
+                        <a
+                          class="proof-item"
+                          href={reportPath(r)}
+                          tabindex={copy ? -1 : undefined}
+                          aria-label={copy ? undefined : `${r.owner}/${r.repo}, ${r.stars} stars: ${tallyWords(r.tally)}`}
+                          title={`Read Striff's report on ${r.owner}/${r.repo}`}
+                        >
+                          <img class="proof-item-avatar" src={r.avatar} alt="" width="24" height="24" decoding="async" />
+                          <span class="proof-item-body">
+                            <span class="proof-item-head">
+                              <span class="proof-item-name"><span class="proof-item-owner">{r.owner}<span class="proof-item-slash">/</span></span><span class="proof-item-repo">{r.repo}</span></span>
+                              <span class="proof-item-stars">{r.stars}<span aria-hidden="true"> &#9733;</span></span>
+                            </span>
+                            <span class="proof-tally">
+                              <span class="proof-tally-item is-held">
+                                <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.751.751 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.751.751 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0Z"/></svg>
+                                <b>{r.tally.held}</b><i>held</i>
+                              </span>
+                              <span class={`proof-tally-item is-broken${r.tally.broken === 0 ? " is-none" : ""}`}>
+                                <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.06 1.06L6.94 8 4.97 9.97a.75.75 0 1 0 1.06 1.06L8 9.06l1.97 1.97a.75.75 0 1 0 1.06-1.06L9.06 8l1.97-1.97a.75.75 0 0 0-1.06-1.06L8 6.94Z"/></svg>
+                                <b>{r.tally.broken}</b><i>broken</i>
+                              </span>
+                              <span class="proof-tally-item is-stale"><b>{r.tally.outOfDate}</b><i>out of date</i></span>
+                            </span>
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
 
     <!-- ==================== PROBLEM ==================== -->
-    <section id="problem" class="scroll-mt-24 bg-slate-100/60 pb-16 pt-14">
+    <section id="problem" class="scroll-mt-24 bg-slate-100/60 pb-16 pt-10">
       <div class="mx-auto max-w-[90rem] px-6" data-reveal>
         <div class="rounded-3xl bg-white p-6 shadow-xl border border-slate-200 md:p-8">
           <div class="problem-split">
@@ -413,7 +472,7 @@ const structuredData = JSON.stringify([
                 Spec-driven development made your docs the instructions: coding agents read your specs and architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. That gap is spec drift. Left unchecked, each merge drifts a little further from what your team agreed, until <strong>every change costs more than it should and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
               </p>
               <p class="problem-stat">
-                In <a href="/blog/architecture-matters-more-not-less">our survey of 335 open-source repositories</a> that write their architecture down, <strong>63% already hand their coding agents docs to build from</strong>, and <strong>only 8% of those run anything that checks the code still matches.</strong>
+                In <a href="/blog/architecture-matters-more-not-less/">our survey of 335 open-source repositories</a> that write their architecture down, <strong>63% already hand their coding agents docs to build from</strong>, and <strong>only 8% of those run anything that checks the code still matches.</strong>
               </p>
               <BlogLink slug="architecture-matters-more-not-less" kicker="Why coding agents make architecture review matter more" class="mt-6" />
             </div>
@@ -806,8 +865,8 @@ const structuredData = JSON.stringify([
             </p>
           </div>
           <div class="teams-head-actions">
-            <a class="btn-primary" href="/demo">Open the dashboard demo</a>
-            <a class="btn-secondary" href="/pricing">Team pricing</a>
+            <a class="btn-primary" href="/demo/">Open the dashboard demo</a>
+            <a class="btn-secondary" href="/pricing/">Team pricing</a>
           </div>
         </div>
 
@@ -842,7 +901,7 @@ const structuredData = JSON.stringify([
                 <p class="teams-panel-eyebrow">{panel.eyebrow}</p>
                 <h3 class="teams-panel-title">{panel.title}</h3>
                 <p class="teams-panel-text">{panel.body}</p>
-                <a class="teams-panel-cta" href={`/demo#${panel.view}`}>{panel.cta} &rarr;</a>
+                <a class="teams-panel-cta" href={`/demo/#${panel.view}`}>{panel.cta} &rarr;</a>
               </div>
             </article>
           ))}
@@ -954,7 +1013,7 @@ const structuredData = JSON.stringify([
                 <p class="mt-2 text-sm leading-7 text-slate-600">{plan.body}</p>
                 {plan.eyebrow === "Starter" && (
                   <p class="mt-3 text-xs text-slate-400">
-                    <a href="/pricing" class="text-blue-600 hover:underline">Team $59/mo · Scale $149/mo →</a>
+                    <a href="/pricing/" class="text-blue-600 hover:underline">Team $59/mo · Scale $149/mo →</a>
                   </p>
                 )}
               </article>
@@ -967,7 +1026,7 @@ const structuredData = JSON.stringify([
               </svg>
               Get started
             </a>
-            <a class="btn-secondary" href="/pricing">Team pricing</a>
+            <a class="btn-secondary" href="/pricing/">Team pricing</a>
             <a class="btn-chrome" href="#extension">
               <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="10" />

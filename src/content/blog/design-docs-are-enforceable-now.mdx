@@ -58,7 +58,7 @@ The fix is one word in the README, and on the pull request that caused it that i
 
 Every rule Striff reads gets one of four verdicts. It held, so nothing in this change breaks it. It was violated, so this change broke it. It was already broken before this change, which is reported but never blamed on the author in front of you. Or it was restored, broken before and true after. A rule the parser cannot answer, because the code it names is generated, or lives where a source parse cannot see it, is left out rather than shown as passing. Striff never reports a pass it did not compute.
 
-The mechanism is the reason the verdicts can be trusted. The model only proposes rules; a proposed rule that names a class the parsed code does not contain is dropped before evaluation, so the model cannot invent a violation by inventing a name. The program that evaluates the rules cannot add a finding. [How every claim traces back to your docs or your code](/blog/grounded-ai-findings) covers that in detail, and [the rule language and its limits](https://mfadhel.com/striff-io-ml-infrastructure/) are written up by the founder.
+The mechanism is the reason the verdicts can be trusted. The model only proposes rules; a proposed rule that names a class the parsed code does not contain is dropped before evaluation, so the model cannot invent a violation by inventing a name. The program that evaluates the rules cannot add a finding. [How every claim traces back to your docs or your code](/blog/grounded-ai-findings/) covers that in detail, and [the rule language and its limits](https://mfadhel.com/striff-io-ml-infrastructure/) are written up by the founder.
 
 ## How often it fires
 
@@ -126,4 +126,4 @@ Name real things: `NodeWorker` is checkable, and "the worker" only is if one cla
 
 ## Where to start
 
-[Install the GitHub App](https://github.com/apps/striff-app/installations/new) and open your next pull request. Striff reads the docs you already have and checks the rules it finds in them, free on public repositories, with nothing to write and nothing to configure. For a public pull request in somebody else's repository, [the browser extension](/#extension) does the same in a tab beside Files changed.
+[Install the GitHub App](https://github.com/apps/striffs/installations/new) and open your next pull request. Striff reads the docs you already have and checks the rules it finds in them, free on public repositories, with nothing to write and nothing to configure. For a public pull request in somebody else's repository, [the browser extension](/#extension) does the same in a tab beside Files changed.

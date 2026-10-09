@@ -23,7 +23,14 @@ interface Repo {
 type Offer =
   | { kind: "none" }
   | { kind: "dashboard" }
-  | { kind: "repo"; repo: Repo; token: string | null; readmePath: string | null };
+  | {
+      kind: "repo";
+      repo: Repo;
+      token: string | null;
+      readmePath: string | null;
+      heldRules: number | null;
+      agentDocs: boolean;
+    };
 
 async function json(url: string): Promise<any> {
   const res = await fetch(url);
@@ -41,9 +48,16 @@ async function offerFor(installationId: string): Promise<Offer> {
   if (!repo) return { kind: "dashboard" };
   const [owner, name] = repo.full_name.split("/");
   const catalogUrl = (view: string) => `/.netlify/functions/doc-catalog-proxy?${view ? `view=${view}&` : ""}installation_id=${encodeURIComponent(installationId)}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`;
+  // The key a private repository's badge needs, and for any repository what decides which badge
+  // variants it is offered. A public repository's badge works without this answer.
   let token: string | null = null;
+  let badge: any = null;
+  try {
+    badge = await json(catalogUrl("badge"));
+  } catch {
+    if (repo.private) return { kind: "dashboard" };
+  }
   if (repo.private) {
-    const badge = await json(catalogUrl("badge"));
     if (!badge?.token) return { kind: "dashboard" };
     token = badge.token;
   }
@@ -57,7 +71,14 @@ async function offerFor(installationId: string): Promise<Offer> {
   } catch {
     // The guess stands.
   }
-  return { kind: "repo", repo, token, readmePath };
+  return {
+    kind: "repo",
+    repo,
+    token,
+    readmePath,
+    heldRules: typeof badge?.heldRules === "number" ? badge.heldRules : null,
+    agentDocs: !!badge?.agentDocs,
+  };
 }
 
 export default function InstalledBadge() {
@@ -88,8 +109,9 @@ export default function InstalledBadge() {
     <section className="installed-badge">
       <h2>Add Striff to your README</h2>
       <p>
-        Your first check runs on your next pull request. Add this badge to your README and it will
-        show how many of your documented rules hold on the default branch.
+        Your first check runs on your next pull request. Add this badge to your README to show how
+        many of your documented rules Striff has verified against your code, or, until there are
+        ten, that it checks them on every pull request.
       </p>
       {offer.kind === "repo" ? (
         <BadgePanel
@@ -98,11 +120,13 @@ export default function InstalledBadge() {
           branch={offer.repo.default_branch || "main"}
           readmePath={offer.readmePath}
           privateRepo={offer.repo.private}
+          heldRules={offer.heldRules}
+          agentDocs={offer.agentDocs}
           token={offer.token}
           heading={`For ${offer.repo.full_name}`}
         />
       ) : (
-        <a className="btn-secondary inline-flex justify-center" href="/dashboard#badge">
+        <a className="btn-secondary inline-flex justify-center" href="/dashboard/#badge">
           Open your dashboard to get your badge
         </a>
       )}

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { issueUrl } from "./docIssue";
-import { Clamped, ExtensionNote, mark, withCode, when } from "./docRules";
+import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
+import { clockNow, formatDay } from "../lib/renderClock.js";
+import { standing } from "../lib/standing.js";
 
 /**
  * A list of rules, whatever a reader selected to get it.
@@ -33,6 +35,10 @@ export interface Rule {
   pullNo: string | null;
   judgedAtMs: number | null;
   onDefaultBranch: string | null;
+  /** Where in `quote` the words the rule checks begin; absent where the whole sentence is shown plain. */
+  checkedFrom?: number | null;
+  /** One past where those words end. */
+  checkedTo?: number | null;
 }
 
 /** One rule with the document it came from, which is how every scope reads them. */
@@ -51,15 +57,7 @@ export type Row = Rule & { doc: RowDoc };
  */
 export type Standing = "holds" | "broken" | "unchecked" | "unclear";
 
-export function standing(row: { status: string | null; onDefaultBranch: string | null }): Standing {
-  if (row.onDefaultBranch === "HOLDS") return "holds";
-  if (row.onDefaultBranch === "BROKEN") return "broken";
-  if (row.onDefaultBranch === "UNCLEAR") return "unclear";
-  if (row.status === "MAINTAINED" || row.status === "RESTORED") return "holds";
-  if (row.status === "VIOLATED" || row.status === "PRE_EXISTING") return "broken";
-  if (row.status === "UNCLEAR") return "unclear";
-  return "unchecked";
-}
+export { standing };
 
 /** Worst first: what is broken, then what nothing has judged, then what holds. */
 const SEVERITY: Record<Standing, number> = { broken: 0, unchecked: 1, holds: 2, unclear: 3 };
@@ -76,6 +74,14 @@ export const STANDING_HELP: Record<Standing, string> = {
   holds: "The code keeps this rule.",
   unchecked: "Nothing has judged this rule against the code yet.",
   unclear: "Striff could not tell.",
+};
+
+/** What an empty table says when a count, not a search, emptied it. */
+const NONE_STANDING: Record<Standing, string> = {
+  broken: "No rule here is broken.",
+  holds: "No rule here holds yet.",
+  unchecked: "Every rule here has been checked.",
+  unclear: "No rule here is one Striff couldn't check.",
 };
 
 /** Which rules a reader asked to see, where they followed a count to them. */
@@ -159,8 +165,8 @@ export default function RulesTable({
     const matchesFilter = (row: Row) => (filter === "all" ? true : standing(row) === filter);
     const matchesTerm = (row: Row) =>
       term === "" ||
-      (row.statement || "").replace(/`/g, "").toLowerCase().includes(term) ||
-      (row.quote || "").toLowerCase().includes(term) ||
+      plainText(row.statement).toLowerCase().includes(term) ||
+      plainText(row.quote).toLowerCase().includes(term) ||
       row.doc.path.toLowerCase().includes(term);
     const byDocument = (a: Row, b: Row) =>
       a.doc.path === b.doc.path
@@ -168,7 +174,7 @@ export default function RulesTable({
         : a.doc.path.localeCompare(b.doc.path);
     const compare = (a: Row, b: Row) => {
       if (sort.key === "rule") {
-        const plain = (row: Row) => (row.statement || "").replace(/`/g, "").toLowerCase();
+        const plain = (row: Row) => plainText(row.statement).toLowerCase();
         return plain(a).localeCompare(plain(b)) || byDocument(a, b);
       }
       if (sort.key === "outcome") {
@@ -217,8 +223,8 @@ export default function RulesTable({
         [
           csvCell(row.doc.path),
           csvCell(row.sourceLine ?? ""),
-          csvCell(row.statement),
-          csvCell(row.quote),
+          csvCell(plainText(row.statement)),
+          csvCell(plainText(row.quote)),
           csvCell(STANDING_LABEL[standing(row)]),
           csvCell(row.pullNo ? `#${row.pullNo}` : ""),
           csvCell(row.judgedAtMs ? new Date(row.judgedAtMs).toISOString().slice(0, 10) : ""),
@@ -294,7 +300,7 @@ export default function RulesTable({
         <h1>{scopeLabel} — documented rules</h1>
         <p>
           {shown.length} of {rows.length} rules, printed{" "}
-          {new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+          {formatDay(clockNow(), { year: "numeric", month: "long", day: "numeric" })}
           {filter !== "all" || term !== "" ? " (filtered)" : ""}.
         </p>
       </div>
@@ -361,7 +367,7 @@ export default function RulesTable({
                 )}
               </td>
               <td className="docs-rule-quote">
-                <Clamped lines={4}>{withCode(row.quote, term)}</Clamped>
+                <Clamped lines={4}>{withChecked(row.quote, row.checkedFrom, row.checkedTo, term)}</Clamped>
               </td>
               <td className="docs-rule-statement">
                 <Clamped lines={4}>{withCode(row.statement, term)}</Clamped>
@@ -423,8 +429,12 @@ export default function RulesTable({
         </tbody>
       </table>
 
+      {/* Says what is hiding the rules. A count followed to an empty table, with nothing typed in
+          the search, used to answer "no rule here matches that" -- to a question nobody asked. */}
       {shown.length === 0 && (
-        <p className="dashboard-metric-caption">No rule here matches that.</p>
+        <p className="dashboard-metric-caption">
+          {term === "" && filter !== "all" ? NONE_STANDING[filter] : "No rule here matches that."}
+        </p>
       )}
 
       {/* One document's count is already stated above its own table, so this line is only worth a

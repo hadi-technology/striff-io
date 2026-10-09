@@ -14,12 +14,12 @@ const currentFor = (section: string) => (path === section ? "page" : within(sect
 
 const navLinks = [
   { label: "For Teams", href: "/#teams", section: "" },
-  { label: "Pricing", href: "/pricing", section: "/pricing" },
-  { label: "Blog", href: "/blog", section: "/blog" },
-  { label: "Contact", href: "/contact", section: "/contact" },
+  { label: "Pricing", href: "/pricing/", section: "/pricing" },
+  { label: "Blog", href: "/blog/", section: "/blog" },
+  { label: "Contact", href: "/contact/", section: "/contact" },
 ];
 const inBlog = within("/blog");
-const installUrl = "https://github.com/apps/striff-app/installations/new";
+const installUrl = "https://github.com/apps/striffs/installations/new";
 const extensionHref = "/#extension";
 // On the dashboard the call to action is already answered: "Add an account" in the bar installs
 // on another account, and someone with no installation at all is met by an install button in the
@@ -40,7 +40,7 @@ const isDashboard = path === "/dashboard" || path.startsWith("/dashboard/") || p
       {inBlog && (
         <>
           <span class="sh-slash" aria-hidden="true"></span>
-          <a class="sh-section" href="/blog" aria-current={path === "/blog" ? "page" : undefined}>Blog</a>
+          <a class="sh-section" href="/blog/" aria-current={path === "/blog" ? "page" : undefined}>Blog</a>
         </>
       )}
     </div>
@@ -121,7 +121,7 @@ const isDashboard = path === "/dashboard" || path.startsWith("/dashboard/") || p
         <span aria-hidden="true">·</span>
         <a href="https://github.com/hadi-technology/striff-lib">GitHub</a>
         <span aria-hidden="true">·</span>
-        <a href="/privacy">Privacy</a>
+        <a href="/privacy/">Privacy</a>
       </p>
     </div>
   </div>

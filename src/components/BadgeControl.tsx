@@ -75,6 +75,10 @@ export function BadgeControl({
 interface BadgeInfo {
   token: string | null;
   seenAtMs: number | null;
+  /** Rules the badge counts as held, which decides whether "rules verified" is offered. */
+  heldRules?: number | null;
+  /** Whether "agent docs" applies to the repository. */
+  agentDocs?: boolean;
 }
 
 function proxy(installationId: number, fullName: string, view?: string): string {
@@ -132,6 +136,56 @@ export function RepoCardBadge({
           otherwise hold the dialog inside itself. */}
       {open && createPortal(
         <BadgeDialog installationId={installationId} repo={repo} onClose={() => setOpen(false)} />,
+        document.body
+      )}
+    </span>
+  );
+}
+
+/**
+ * The selected repository's badge in the dashboard's side panel, under the repository picker, so
+ * it is in view whichever section is open. Clicking it opens the badge panel over the page. Keyed
+ * by repository where it is used, so a new selection starts again with that repository's key.
+ * Where a private repository's key cannot be had, the entry says what it does in words, so the
+ * panel, which says why, is still reachable.
+ */
+export function SideBadge({
+  installationId,
+  repo,
+  open,
+  onOpen,
+  onClose,
+}: {
+  installationId: number;
+  repo: { full_name: string; private?: boolean; default_branch?: string };
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+}) {
+  const [owner, name] = repo.full_name.split("/");
+  const { token, failed, place } = useKeyWhenVisible(installationId, repo.full_name, !!repo.private);
+  return (
+    <span className="dash-repo-badge" ref={place}>
+      {failed ? (
+        <button
+          type="button"
+          className="badge-control is-text"
+          onClick={onOpen}
+          aria-expanded={open}
+          aria-haspopup="dialog"
+        >
+          Add badge to README
+        </button>
+      ) : (
+        <BadgeControl
+          src={repo.private ? (token ? badgePreviewPath(owner, name, token) : null) : badgePreviewPath(owner, name)}
+          onOpen={onOpen}
+          expanded={open}
+          fallback="text"
+        />
+      )}
+      {open && createPortal(
+        <BadgeDialog installationId={installationId} repo={repo} onClose={onClose} />,
         document.body
       )}
     </span>
@@ -218,6 +272,8 @@ export function BadgeDialog({
           branch={readme?.branch || repo.default_branch || "main"}
           readmePath={readme?.path ?? null}
           privateRepo={!!repo.private}
+          heldRules={info?.heldRules ?? null}
+          agentDocs={!!info?.agentDocs}
           token={info?.token ?? null}
           tokenError={error}
           onRotate={repo.private ? rotate : undefined}

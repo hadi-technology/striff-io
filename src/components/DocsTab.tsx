@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { staleNameIssueUrl } from "./docIssue";
 import RevisionLine from "./RevisionLine";
-import { Clamped, mark, snippet, useWatch, withCode, when } from "./docRules";
+import { Clamped, mark, plainText, snippet, useWatch, withCode, when } from "./docRules";
 import RulesTable, {
   pathStem,
   standing,
@@ -12,10 +12,7 @@ import RulesTable, {
   type RuleFilter,
 } from "./RulesTable";
 import Listing from "./Listing";
-import ReadRepository, { isRunning, type Reading } from "./ReadRepository";
-import BadgePanel from "./BadgePanel";
-import { BadgeControl, badgePreviewPath } from "./BadgeControl";
-import { isRootReadme } from "../lib/badgeSnippets.js";
+import ReadRepository, { askedReading, isRunning, type Reading } from "./ReadRepository";
 
 /**
  * One repository's documents, and the rules read from whichever of them is selected.
@@ -73,10 +70,6 @@ interface Doc {
   readChars?: number | null;
   /** How long the doc is, null wherever readChars is. */
   totalChars?: number | null;
-  /** Read under an older rule schema and being read again; its state says NOT_READ meanwhile. */
-  rereading?: boolean;
-  /** The rules it gave when last read, where it is being read again. */
-  lastKnownRuleCount?: number | null;
 }
 
 /** Whether a doc that has been read was read in part and not from all of it. */
@@ -112,10 +105,12 @@ interface Summary {
   excluded: number;
   holdsOnDefaultBranch: number;
   brokenOnDefaultBranch: number;
-  /** How many documents are being read again after a change to how Striff reads rules. */
-  rereading?: number;
-  /** The rules those documents gave when last read. */
-  lastKnownRules?: number | null;
+  /**
+   * Read documents waiting to be read again, after Striff changed how it reads, say. Each is
+   * shown with the rules it last gave, so it is in none of the counts above that say it waits.
+   * Absent from an older server, and then nothing is known to wait.
+   */
+  waitingToBeReadAgain?: number;
 }
 
 interface Catalog {
@@ -127,12 +122,92 @@ interface Catalog {
   defaultBranchSha: string | null;
   lastScanMs: number | null;
   /** What came of the last attempt to list this repository, null where none is recorded. */
-  lastAttempt: { atMs: number; outcome: string; reason: string | null; documents: number } | null;
+  lastAttempt: {
+    atMs: number;
+    outcome: string;
+    reason: string | null;
+    documents: number;
+    /**
+     * True where the listing saw the whole default branch and none of it is in a language Striff
+     * reads, false where some of it is, null or absent where that is not known.
+     */
+    codeNotRead?: boolean | null;
+  } | null;
   /** Where the last whole-repository reading got to, null where none was asked for. */
   reading: Reading | null;
   summary: Summary;
   documents: Doc[];
   exclusions: Exclusion[];
+}
+
+/**
+ * What is said of a repository whose code is in no language Striff reads. Its documents are
+ * listed, and could be read, but no rule in them could be checked against code Striff has no
+ * model of, so they are not -- and that is a fact about Striff, not about the documents.
+ */
+const CODE_NOT_READ =
+  "Striff reads Java, Python, TypeScript and C#; this repository has no code in them, so its docs aren't checked.";
+
+/** The screen a document is set aside by where the repository's code is in no language Striff reads. */
+const CODE_NOT_READ_SCREEN = "code_not_read";
+
+/**
+ * Whether the repository's code is in no language Striff reads, by the same two signs the server
+ * refuses a reading on: the listing saw no such code, or a reading set every document aside for it.
+ */
+function isCodeNotRead(catalog: Catalog): boolean {
+  const documents = catalog.documents || [];
+  return catalog.lastAttempt?.codeNotRead === true
+    || (documents.length > 0 && documents.every((doc) => doc.screenedBy === CODE_NOT_READ_SCREEN));
+}
+
+/**
+ * Documents a reading of the whole repository would read: those nothing has read, and those
+ * waiting to be read again. The same count the server refuses a reading on, so the button is
+ * offered exactly where a press would be taken. A repository still being listed, or listed with
+ * no documents, has none.
+ */
+function waitingToRead(summary: Summary): number {
+  return summary.notRead + (summary.waitingToBeReadAgain || 0);
+}
+
+/**
+ * What a refused reading is told, by the code the server gave. Each is said here rather than
+ * passed through, so it is true of the case it covers: the server once answered every refusal
+ * with "Striff has read every document it can read here", which on a repository in a language
+ * Striff does not read, or one with no documents, is not so.
+ *
+ * @return the sentence, and whether nothing a reading could do here will change while this page is
+ *     open, so the offer goes and the sentence takes its place. A repository not listed yet will
+ *     be, and its page says so already; what this says then is said once, with the other errors.
+ */
+function refusalOf(code: string | undefined, fallback: string | undefined): { message: string; final: boolean } {
+  switch (code) {
+    case "nothing_to_read":
+      return {
+        message: "Striff has read every document it can read here, so a reading has nothing to do. Pull requests and merges keep its rules current.",
+        final: true,
+      };
+    case "nothing_readable":
+      return {
+        message: "None of these docs can be read for rules: each was skipped by a screen, says it is no longer current, was excluded, or could not be read, as the list shows.",
+        final: true,
+      };
+    case "code_not_read":
+      return { message: CODE_NOT_READ, final: true };
+    case "no_documents":
+      return {
+        message: "Striff found no document it reads in this repository, so there is nothing to read.",
+        final: true,
+      };
+    case "not_listed":
+      return {
+        message: "Striff hasn't listed this repository's documents yet, so there is nothing to read yet.",
+        final: false,
+      };
+    default:
+      return { message: fallback || "Couldn't ask Striff to read this repository.", final: false };
+  }
 }
 
 /** Every rule of the repository, grouped by the document it was read from. */
@@ -150,16 +225,27 @@ interface RepoRules {
 interface StaleName {
   docPath: string;
   name: string;
-  /** ABSENT where the code declares nothing by the name, MOVED where it declares it elsewhere. */
+  /**
+   * ABSENT where the code declares nothing by the name, RENAMED where it declares it once in
+   * another case (renamedTo), MOVED where it declares it elsewhere.
+   */
   state: string;
   sentence: string | null;
   sourceLine: number | null;
   namespace: string | null;
   /** A file the repository's history holds for it, where that is what shows it was here. */
   historicalPath: string | null;
-  /** Other types the package holds, where that is what shows it is missing. */
+  /**
+   * Other names the package holds, where that is what shows it is missing. The first few in
+   * alphabetical order, so not a list for a reader: nearNames is.
+   */
   siblings: string[];
   packageSize: number | null;
+  /** For a renamed name: the spelling the code declares now, and the file declaring it. */
+  renamedTo?: string | null;
+  renamedToPath?: string | null;
+  /** Names the package declares that read as near this one, best first; empty where none does. */
+  nearNames?: string[];
   movedToNamespace: string | null;
   movedToPath: string | null;
   firstSeenMs: number;
@@ -184,12 +270,46 @@ function staleLine(finding: StaleName): string {
   if (finding.state === "MOVED") {
     return `The code declares it in \`${finding.movedToNamespace}\`${finding.movedToPath ? `, at \`${finding.movedToPath}\`` : ""}, not in ${finding.namespace ? `\`${finding.namespace}\`` : "the package this doc writes"}.`;
   }
-  if (finding.historicalPath) {
-    return `The repository once held \`${finding.historicalPath}\`. It doesn't now.`;
+  if (finding.state === "RENAMED" && finding.renamedTo) {
+    return `Renamed: \`${simpleName(finding.name)}\` is now \`${finding.renamedTo}\`${finding.renamedToPath ? `, at \`${finding.renamedToPath}\`` : ""}.`;
   }
-  const shown = (finding.siblings || []).slice(0, 3).join(", ");
-  const more = finding.packageSize && finding.packageSize > 3 ? ", …" : "";
-  return `${finding.namespace ? `\`${finding.namespace}\`` : "Its package"} holds ${finding.packageSize || (finding.siblings || []).length} type${(finding.packageSize || 0) === 1 ? "" : "s"}${shown ? ` (${shown}${more})` : ""} and none by this name.`;
+  const hint = nearHint(finding);
+  if (finding.historicalPath) {
+    return `The repository once held \`${finding.historicalPath}\`. It doesn't now.${hint}`;
+  }
+  return `${finding.namespace ? `\`${finding.namespace}\`` : "Its package"} declares nothing by this name.${hint}`;
+}
+
+/**
+ * The names the package declares that read as near a missing one, or nothing. Never a list of
+ * whatever the package holds: an unrelated name beside a missing one is noise.
+ */
+function nearHint(finding: StaleName): string {
+  const near = finding.nearNames || [];
+  if (near.length === 0) return "";
+  const lower = simpleName(finding.name).toLowerCase();
+  const sameName = near.filter((name) => name.toLowerCase() === lower);
+  if (sameName.length > 1) {
+    return ` Several types share this name in other capitalisations: ${sameName.map((name) => `\`${name}\``).join(", ")}.`;
+  }
+  return ` Closest ${near.length === 1 ? "name" : "names"} there: ${near.map((name) => `\`${name}\``).join(", ")}.`;
+}
+
+/** A name without the package a doc writes before it. */
+function simpleName(name: string): string {
+  return name.slice(name.lastIndexOf(".") + 1);
+}
+
+/** The word a name's badge carries. */
+function staleLabel(finding: StaleName): string {
+  if (finding.state === "MOVED") return "Moved";
+  if (finding.state === "RENAMED") return "Renamed";
+  return "Gone";
+}
+
+/** A moved or renamed name is still in the code; only a gone one is marked as broken. */
+function staleTone(finding: StaleName): string {
+  return finding.state === "MOVED" || finding.state === "RENAMED" ? "unclear" : "broken";
 }
 
 /** One thing this repository has asked Striff not to read: a document, or a folder of them. */
@@ -240,11 +360,24 @@ function stateLine(doc: Doc, covering?: Exclusion | null): string {
   return stateLineOf(doc, covering) + partLine(doc);
 }
 
+/**
+ * Why a screen skipped a doc, as a reader is told it. The reason is stored as "screen: why"; the
+ * screen's name is for the logs, not a reader, wherever the reason is shown.
+ */
+function screenWhy(reason: string): string {
+  return reason.replace(/^[a-z_]+:\s*/, "");
+}
+
 function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
   switch (doc.state) {
     case "READ":
       if (doc.outdated) {
         return `Edited on the default branch since Striff last read it. These rules come from the ${when(doc.lastExtractedMs)} version${doc.lastExtractedPullNo ? ` (PR #${doc.lastExtractedPullNo})` : ""}, and refresh on the next pull request that changes code this doc talks about.`;
+      }
+      if (!doc.lastExtractedMs && !doc.ruleCount) {
+        // Read, and nothing in it states a rule, so there is no extraction to date. The line under
+        // this one says so; this one saying "Striff has rules for this doc" contradicted it.
+        return "Striff has read this doc.";
       }
       if (!doc.lastExtractedMs) {
         // A repository read before Striff kept a catalogue: the rules are real, the date is not
@@ -253,18 +386,13 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
       }
       return `Rules last extracted ${when(doc.lastExtractedMs)}${doc.lastExtractedPullNo ? ` on PR #${doc.lastExtractedPullNo}` : ""}.`;
     case "NOT_READ":
-      if (doc.rereading) {
-        const n = doc.lastKnownRuleCount || 0;
-        return `Updating — ${n} rule${n === 1 ? "" : "s"} last time. Striff is reading this doc again after an improvement to Striff; refreshed rules appear in a few minutes.`;
-      }
       return "Striff hasn't read this doc yet. It reads a doc the first time a pull request changes code the doc talks about.";
     case "SCREENED_OUT":
       if (doc.forced) {
-        return `A screen judged this doc holds no rule to check${doc.screenReason ? ` (${doc.screenReason})` : ""}. ${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
+        return `A screen judged this doc holds no rule to check${doc.screenReason ? ` (${screenWhy(doc.screenReason)})` : ""}. ${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
       }
-      // The reason is stored as "screen: why"; the screen's name is for the logs, not a reader.
       return doc.screenReason
-        ? `Skipped: ${doc.screenReason.replace(/^[a-z_]+:\s*/, "")}`
+        ? `Skipped: ${screenWhy(doc.screenReason)}`
         : "A screen judged this doc holds no rule that could be checked against code.";
     case "RETIRED":
       return doc.retiredReason
@@ -318,8 +446,7 @@ const DOC_FILTER_TEST: Record<DocFilter, (doc: Doc) => boolean> = {
   // Filled in where the view is, because it is the only thing here that is not a fact about the
   // document on its own: it depends on what a reading of the whole repository reported.
   stale: () => false,
-  // A doc being read again is updating, not unread.
-  notRead: (doc) => doc.state === "NOT_READ" && !doc.rereading,
+  notRead: (doc) => doc.state === "NOT_READ",
   outdated: (doc) => doc.outdated && doc.state === "READ",
   skipped: (doc) => doc.state === "SCREENED_OUT",
   retired: (doc) => doc.state === "RETIRED",
@@ -333,7 +460,7 @@ const FILTER_CHIPS: { key: DocFilter; label: string; dot: string; always: boolea
   { key: "results", label: "With results", dot: "", always: false },
   { key: "all", label: "All", dot: "", always: true },
   { key: "broken", label: "Broken", dot: "broken", always: true },
-  { key: "stale", label: "Names gone", dot: "stale", always: false },
+  { key: "stale", label: "Names out of date", dot: "stale", always: false },
   { key: "notRead", label: "Not read", dot: "unread", always: true },
   { key: "outdated", label: "Edited since", dot: "outdated", always: false },
   { key: "unreadable", label: "Couldn't read", dot: "broken", always: false },
@@ -481,15 +608,6 @@ export const RefreshMark = () => (
   </svg>
 );
 
-/** What the API says of a repository's README badge. */
-interface BadgeInfo {
-  /** The key a private repository's badge carries. */
-  token: string | null;
-  /** When a README first asked for the badge; null until one has. */
-  seenAtMs: number | null;
-  lastSeenAtMs: number | null;
-}
-
 const TickMark = () => (
   <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="m3.5 8.5 3 3 6-7" />
@@ -557,9 +675,7 @@ export interface DocsSource {
   url(view: "" | "rules" | "type-findings", path?: string): string;
   /** What the view says under the repository's name, in place of how to use the tree. */
   lede?: ReactNode;
-  /** When the page was last read, shown beside the repository's name. */
-  refreshedAt?: string;
-  /** The repository's README badge, shown after refreshedAt; same-origin, so its title can be read. */
+  /** The repository's README badge, shown beside its name; same-origin, so its title can be read. */
   badgeUrl?: string;
   /** Something to offer at the head's top right, above the counts. */
   action?: ReactNode;
@@ -571,6 +687,7 @@ export default function DocsTab({
   openRepo,
   sample,
   source,
+  initial,
 }: {
   installationId: number;
   /** The repositories to pick from; the dashboard's carry whether each is private, and its branch. */
@@ -594,15 +711,26 @@ export default function DocsTab({
    * reader's.
    */
   source?: DocsSource;
+  /**
+   * The answers this view opens on, read when the page was built: it renders them at once, the
+   * same as the built markup, and reads them again quietly once it is on screen.
+   */
+  initial?: {
+    catalog: any;
+    rules: any;
+    staleNames: any;
+  };
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
-  const [catalog, setCatalog] = useState<Catalog | null>(null);
+  const [catalog, setCatalog] = useState<Catalog | null>(initial?.catalog ?? null);
   const [detail, setDetail] = useState<Detail | null>(null);
   /** Every rule of the repository, for the scopes a single document's answer cannot serve. */
-  const [rulesIndex, setRulesIndex] = useState<RepoRules | null>(null);
+  const [rulesIndex, setRulesIndex] = useState<RepoRules | null>(initial?.rules ?? null);
   const [rulesLoading, setRulesLoading] = useState(false);
   /** The names the docs write that the code no longer has, null until a reading has reported. */
-  const [staleNames, setStaleNames] = useState<StaleNames | null>(null);
+  const [staleNames, setStaleNames] = useState<StaleNames | null>(
+    initial && Array.isArray(initial.staleNames?.findings) ? initial.staleNames : null
+  );
   /** What is selected: the empty path is the repository itself, which is where this opens. */
   const [selected, setSelected] = useState<string>("");
   /**
@@ -623,30 +751,35 @@ export default function DocsTab({
   /** Whether this page gave up waiting for a listing that had not arrived. */
   const [listingStale, setListingStale] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set([""]));
+  const [expanded, setExpanded] = useState<Set<string>>(() =>
+    initial
+      ? allFolders(buildTree(initial.catalog?.documents || [], (openRepo || "").split("/")[1] || ""))
+      : new Set([""])
+  );
+  /** Whether the view still shows the answers it was built with, which a first load refreshes. */
+  const seeded = useRef(!!initial);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
   // What a failed write or a failed document read said, shown where it happened.
   const [actionError, setActionError] = useState("");
   const [asking, setAsking] = useState(false);
+  /**
+   * Why the server just refused a reading of this repository, where the refusal means there is
+   * nothing for one to do; null otherwise. It takes the button's place until another repository
+   * is opened: offering it again would only be refused again.
+   */
+  const [readRefused, setReadRefused] = useState<string | null>(null);
   /** Which document was asked for last; an older answer never paints over a newer one. */
   const openedAt = useRef(0);
   /** The same for the catalogue and the rules: switching twice must not land on the first one. */
   const loadedAt = useRef(0);
   const rulesAt = useRef(0);
 
-  /** Whether the README badge's panel is open, and what the API says of this repository's badge. */
-  const [badgeOpen, setBadgeOpen] = useState(false);
-  const [badge, setBadge] = useState<BadgeInfo | null>(null);
-  const [badgeError, setBadgeError] = useState("");
-  const badgeAt = useRef(0);
-
   /** What the view is showing right now, for the listing wait to look at before it reloads. */
   const catalogRef = useRef<Catalog | null>(null);
 
   const [owner, name] = repo.split("/");
-  const currentRepo = repos.find((each) => each.full_name === repo);
   catalogRef.current = catalog;
   const branch = catalog?.defaultBranch || null;
 
@@ -680,11 +813,6 @@ export default function DocsTab({
     if (openRepo && openRepo !== repo) setRepo(openRepo);
   }, [openRepo]);
 
-  // The welcome email and the installation card's checklist send a reader to /dashboard#badge.
-  useEffect(() => {
-    if (!source && window.location.hash === "#badge") setBadgeOpen(true);
-  }, []);
-
   // A repository belongs to one account. Switching account while this view holds the last one's
   // repository asks the API about a pair that does not exist — an installation and a repository
   // from different accounts — which is refused, correctly, and reads as "no documents".
@@ -699,6 +827,13 @@ export default function DocsTab({
     // refusal reads as "this repository has nothing in it". Nothing is asked until the two agree;
     // the effect above brings the view back to a repository this account has.
     if (repos.length > 0 && !repos.some((each) => each.full_name === repo)) return;
+    // A built page already shows this repository: read it again without taking that away, so
+    // nothing on screen blinks out and back, and an answer that fails leaves it as it was.
+    if (seeded.current) {
+      seeded.current = false;
+      loadCatalog(true);
+      return;
+    }
     // A new repository is read from its root, as a fresh one is.
     setSelected("");
     setDetail(null);
@@ -707,8 +842,8 @@ export default function DocsTab({
     setRulesIndex(null);
     setStaleNames(null);
     setActionError("");
+    setReadRefused(null);
     reload();
-    loadBadge();
   }, [repo, installationId, repos.length]);
 
   useEffect(() => {
@@ -728,50 +863,12 @@ export default function DocsTab({
   }
 
   /**
-   * This repository's badge: its key, and whether a README has shown it yet. Asked for on the
-   * dashboard only; the demo has nothing to ask about, and a public page offers no key.
+   * Both answers this view is built from: what documents exist, and what rules they hold. Asked
+   * for together; each has its own counter, so an older answer to either never paints over a newer
+   * one.
    */
-  async function loadBadge() {
-    const wanted = ++badgeAt.current;
-    setBadge(null);
-    setBadgeError("");
-    if (readOnly || !owner || !name) return;
-    try {
-      const res = await fetch(`/.netlify/functions/doc-catalog-proxy?view=badge&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`);
-      const data = await res.json().catch(() => ({}));
-      if (wanted !== badgeAt.current) return;
-      if (!res.ok) {
-        setBadgeError(data.message || data.error || "Couldn't get this repository's badge key.");
-        return;
-      }
-      setBadge(data);
-    } catch {
-      if (wanted === badgeAt.current) setBadgeError("Couldn't get this repository's badge key.");
-    }
-  }
-
-  /** A new key for this repository's badge; a README holding the old one stops showing counts. */
-  async function rotateBadge() {
-    const wanted = ++badgeAt.current;
-    try {
-      const res = await fetch(`/.netlify/functions/doc-catalog-proxy?view=badge-rotate&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`, { method: "POST" });
-      const data = await res.json().catch(() => ({}));
-      if (wanted !== badgeAt.current) return;
-      if (!res.ok) {
-        setBadgeError(data.message || data.error || "Couldn't make a new key.");
-        return;
-      }
-      setBadgeError("");
-      setBadge(data);
-    } catch {
-      if (wanted === badgeAt.current) setBadgeError("Couldn't make a new key.");
-    }
-  }
-
-  /** Both answers this view is built from: what documents exist, and what rules they hold. */
   async function reload() {
-    await loadCatalog();
-    await loadRules();
+    await Promise.all([loadCatalog(), loadRules()]);
   }
 
   /**
@@ -779,8 +876,8 @@ export default function DocsTab({
    * never in its way: where it cannot be had, the documents are shown without it, and nothing is
    * said about stale names at all, since an empty list would say there are none.
    */
-  async function loadStaleNames(wanted: number) {
-    setStaleNames(null);
+  async function loadStaleNames(wanted: number, keep = false) {
+    if (!keep) setStaleNames(null);
     try {
       const res = await fetch(readUrl("type-findings"));
       if (!res.ok || wanted !== loadedAt.current) return;
@@ -825,7 +922,8 @@ export default function DocsTab({
         return;
       }
       setCatalog(data);
-      loadStaleNames(wanted);
+      // A quiet look keeps the names on screen until the new answer replaces them.
+      loadStaleNames(wanted, quiet);
       setExpanded(allFolders(buildTree(data.documents || [], name)));
       // The documents a listing was waited for bring their rules with them.
       if (quiet && (data.documents || []).length > 0) loadRules();
@@ -996,6 +1094,25 @@ export default function DocsTab({
         `/.netlify/functions/doc-catalog-proxy?installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
         { method: "POST" }
       );
+      if (res.status === 409) {
+        const answer = await res.json().catch(() => ({}));
+        // A reading already going is what the press asked for: the control goes on saying so,
+        // which is true even of a reading Striff started by itself and this page does not report.
+        if (answer.error === "already_reading") {
+          await reload();
+          return true;
+        }
+        const refusal = refusalOf(answer.error, answer.message);
+        if (refusal.final) {
+          setReadRefused(refusal.message);
+        } else {
+          setActionError(refusal.message);
+        }
+        // The counts the button was offered on were a page load old; these are the ones the
+        // server refused on.
+        await reload();
+        return false;
+      }
       if (!res.ok) {
         const answer = await res.json().catch(() => ({}));
         setActionError(answer.message || answer.error || "Couldn't ask Striff to read this repository.");
@@ -1030,12 +1147,19 @@ export default function DocsTab({
 
   const allDocs = catalog?.documents || [];
 
-  /** The stale names of each doc, by the doc's path. */
+  /**
+   * The reading this page reports on: one somebody asked for. A reading Striff started by itself
+   * when the page was viewed is never shown, here or anywhere on the page.
+   */
+  const reading = askedReading(catalog?.reading);
+
   /** The documents the reading in flight is on, empty where none is going. */
   const readingNow = useMemo(
-    () => new Set<string>(isRunning(catalog?.reading) ? catalog?.reading?.readingPaths || [] : []),
-    [catalog?.reading]
+    () => new Set<string>(isRunning(reading) ? reading?.readingPaths || [] : []),
+    [reading]
   );
+
+  /** The stale names of each doc, by the doc's path. */
 
   const staleByDoc = useMemo(() => {
     const byDoc = new Map<string, StaleName[]>();
@@ -1176,27 +1300,12 @@ export default function DocsTab({
   );
 
   /**
-   * Documents read under an older rule schema and being read again. Their rules are not in the
-   * answer until the new reading lands, so the counts carry what they gave last time rather than
-   * a zero that would say the docs hold no rule.
-   */
-  const rereadingNow = (catalog?.summary?.rereading || 0) > 0;
-  const lastKnownRules = rereadingNow ? catalog?.summary?.lastKnownRules || 0 : 0;
-  /** The rules the scope's documents gave last time, where they are being read again. */
-  const scopeLastKnown = useMemo(
-    () => scopeDocs.reduce((sum, doc) => sum + (doc.rereading ? doc.lastKnownRuleCount || 0 : 0), 0),
-    [scopeDocs]
-  );
-  const scopeRereading = scopeDocs.some((doc) => doc.rereading);
-
-  /**
    * A public page whose documents hold no rule. Its rule counts would be a row of zeros, which
    * says nothing to someone arriving from a link; what it has to show is the names its docs write
    * that the code no longer has, so those lead. Only once the rules have answered: until then
    * nobody knows there are none. A truncated answer has rules this page cannot reach.
    */
-  const publicNoRules = !!source && !!rulesIndex && !rulesIndex.truncated && repoCounts.all === 0
-    && !rereadingNow;
+  const publicNoRules = !!source && !!rulesIndex && !rulesIndex.truncated && repoCounts.all === 0;
   /** Whether the rule counts are shown: on a public page, only once there are rules to count. */
   const showRuleCounts = !source || (!!rulesIndex && !publicNoRules);
   /** The names gone under whatever is selected, in the order of the documents that write them. */
@@ -1260,8 +1369,8 @@ export default function DocsTab({
     .filter(
       (rule) =>
         term !== "" &&
-        ((rule.statement || "").replace(/`/g, "").toLowerCase().includes(term) ||
-          (rule.quote || "").toLowerCase().includes(term))
+        (plainText(rule.statement).toLowerCase().includes(term) ||
+          plainText(rule.quote).toLowerCase().includes(term))
     )
     .slice(0, 8);
 
@@ -1407,18 +1516,14 @@ export default function DocsTab({
         {staleByDoc.has(doc.path) && (
           <span
             className="docs-badge is-stale"
-            title="Names this doc writes that the code no longer has."
+            title="Names this doc writes that no longer match the code: gone, moved or renamed."
           >
-            {staleByDoc.get(doc.path)!.length} gone
+            {staleByDoc.get(doc.path)!.length} stale
           </span>
         )}
-        {doc.state !== "READ" && !beingRead && (doc.rereading ? (
-          <span className="docs-badge is-updating" title="Being read again after an improvement to Striff.">
-            Updating
-          </span>
-        ) : (
+        {doc.state !== "READ" && !beingRead && (
           <span className={`docs-badge is-${doc.state.toLowerCase()}`}>{STATE_LABEL[doc.state]}</span>
-        ))}
+        )}
         {doc.forced && doc.state !== "READ" && !beingRead && (
           <span className="docs-badge is-forced">Read anyway</span>
         )}
@@ -1539,7 +1644,7 @@ export default function DocsTab({
           and its docs are listed as soon as Striff has read the repository.
         </p>
         <a
-          href="https://github.com/apps/striff-app/installations/new"
+          href="https://github.com/apps/striffs/installations/new"
           className="dashboard-button dashboard-button-primary mt-4 inline-block"
           target="_blank"
           rel="noopener noreferrer"
@@ -1551,6 +1656,18 @@ export default function DocsTab({
   }
 
   const summary = catalog?.summary;
+  // Whether the repository's code is in no language Striff reads, so no document in it is checked.
+  // Said only of a repository with documents: of one without, "its docs aren't checked" would be
+  // about docs it does not have, and the page already says it found none.
+  const codeNotRead = !!catalog && allDocs.length > 0 && isCodeNotRead(catalog);
+  // What a reading could read. Nothing while the repository is still being listed or has no
+  // documents, since there are none to count.
+  const readWaiting = summary ? waitingToRead(summary) : 0;
+  // Why a reading could do nothing here, said in the button's place. Code Striff does not read wins
+  // over documents waiting, as it does on the server: a reading of them would check nothing.
+  const readClosed = readRefused || (codeNotRead ? CODE_NOT_READ : null);
+  /** Whether the read button is on offer above, for the sentences that point at it. */
+  const readOffered = !readOnly && readWaiting > 0 && !readClosed;
 
   /** The repository's counts, beside the heading. */
   const tally = summary && (
@@ -1574,8 +1691,8 @@ export default function DocsTab({
         title="Every rule read from this repository's documents."
         onClick={() => setRuleFilter("all")}
       >
-        <b>{repoCounts.all + lastKnownRules}</b>
-        <i>rule{repoCounts.all + lastKnownRules === 1 ? "" : "s"}</i>
+        <b>{repoCounts.all}</b>
+        <i>rule{repoCounts.all === 1 ? "" : "s"}</i>
       </button>
       {/* Totals first, then how the rules stand: what holds, what is broken, what nothing
           has checked. */}
@@ -1585,8 +1702,7 @@ export default function DocsTab({
         title={`${STANDING_HELP.holds} Click to show these.`}
         onClick={() => setRuleFilter(ruleFilter === "holds" ? "all" : "holds")}
       >
-        {/* A public page shows only rules that hold, so the rules being read again held. */}
-        <b>{repoCounts.holds + (source ? lastKnownRules : 0)}</b>
+        <b>{repoCounts.holds}</b>
         <i>holding</i>
       </button>
       <button
@@ -1617,23 +1733,23 @@ export default function DocsTab({
         <button
           type="button"
           className={`docs-tally-item is-stale${repoStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
-          title={`Names your docs write that the code no longer has. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
+          title={`Names your docs write that no longer match the code: gone, moved or renamed. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
           onClick={() => setFilter(filter === "stale" ? "all" : "stale")}
         >
           <b>{repoStale}{staleNames.truncated ? "+" : ""}</b>
-          <i>names gone</i>
+          <i>names out of date</i>
         </button>
       )}
       {catalog && !readOnly && (
         <ReadRepository
           repo={repo}
           reading={catalog.reading}
-          /* Documents nothing has read, which is the only work a reading does. The old
-             sum subtracted the states it knew about and so counted documents a reading
-             could not finish as waiting for ever, leaving the control offered on a
-             repository where it had nothing left to achieve. */
-          waiting={summary.notRead}
-          read={summary.read}
+          /* Documents waiting to be read, which is the only work a reading does: see
+             waitingToRead. The old sum subtracted the states it knew about and so counted
+             documents a reading could not finish as waiting for ever, leaving the control
+             offered on a repository where it had nothing left to achieve. */
+          waiting={readWaiting}
+          closed={readClosed}
           busy={asking || busy}
           onRead={readRepository}
         />
@@ -1687,7 +1803,7 @@ export default function DocsTab({
                     >
                       <span className="docs-palette-main">{marked(doc.path)}</span>
                       <span className="docs-palette-sub">
-                        {doc.ruleCount > 0 ? `${doc.ruleCount} rules` : doc.rereading ? "Updating" : STATE_LABEL[doc.state]}
+                        {doc.ruleCount > 0 ? `${doc.ruleCount} rules` : STATE_LABEL[doc.state]}
                         {doc.brokenRules > 0 ? ` · ${doc.brokenRules} broken` : ""}
                       </span>
                     </button>
@@ -1708,16 +1824,18 @@ export default function DocsTab({
                       }}
                     >
                       <span className="docs-palette-main">
-                        {marked((rule.statement || "").replace(/`/g, ""))}
+                        {marked(plainText(rule.statement))}
                       </span>
                       {/* A rule can match on the sentence it was read from, which the line above
                           does not show: without this the result looks like one that should not be
-                          in the list. */}
+                          in the list. It is the sentence as a reader sees it, without its Markdown:
+                          a window cut from the raw text can open a mark it never closes, and a
+                          result is a button, which a link inside it cannot be. */}
                       {rule.quote
-                        && !(rule.statement || "").replace(/`/g, "").toLowerCase().includes(term)
-                        && rule.quote.toLowerCase().includes(term) && (
+                        && !plainText(rule.statement).toLowerCase().includes(term)
+                        && plainText(rule.quote).toLowerCase().includes(term) && (
                           <span className="docs-palette-quote">
-                            “{marked(snippet(rule.quote, term))}”
+                            “{marked(snippet(plainText(rule.quote), term))}”
                           </span>
                         )}
                       <span className="docs-palette-sub">
@@ -1749,14 +1867,9 @@ export default function DocsTab({
             <GitHubMark />
             GitHub
           </a>
-          {(source?.refreshedAt || source?.badgeUrl) && (
+          {source?.badgeUrl && (
             <span className="docs-refreshed-group">
-              {source.refreshedAt && (
-                <span className="docs-refreshed-chip" title="When Striff last read this repository. This page is not updated after that.">
-                  Last refreshed {source.refreshedAt}
-                </span>
-              )}
-              {source.badgeUrl && <LiveBadge src={source.badgeUrl} />}
+              <LiveBadge src={source.badgeUrl} />
             </span>
           )}
           {/* A public page is a snapshot: loading it again finds the same thing. */}
@@ -1771,22 +1884,6 @@ export default function DocsTab({
               <RefreshMark />
               Refresh
             </button>
-          )}
-          {/* The repository's own badge is the way to its snippet: clicking it opens the panel.
-              Not on a public page: whoever reads one is not, as a rule, whoever keeps its README. */}
-          {!source && (
-            <BadgeControl
-              className="docs-badge-control"
-              src={sample
-                ? "/badge-examples/demo-flat.svg"
-                : currentRepo?.private
-                  ? (badge?.token ? badgePreviewPath(owner, name, badge.token) : null)
-                  : badgePreviewPath(owner, name)}
-              onOpen={() => setBadgeOpen(!badgeOpen)}
-              expanded={badgeOpen}
-              controls="docs-badge-panel"
-              fallback="text"
-            />
           )}
         </div>
       </div>
@@ -1805,11 +1902,6 @@ export default function DocsTab({
               these docs no longer match{repoStale === 1 && !staleNames?.truncated ? "es" : ""} the code.
             </p>
           )}
-          {rereadingNow && (
-            <p className="docs-updating-line">
-              Updating after an improvement to Striff, refreshed rules appear in a few minutes.
-            </p>
-          )}
           {catalog && <RevisionLine catalog={catalog} />}
         </div>
         {source?.action ? (
@@ -1819,23 +1911,6 @@ export default function DocsTab({
           </div>
         ) : tally}
       </div>
-
-      {badgeOpen && !source && (
-        <div id="docs-badge-panel">
-          <BadgePanel
-            owner={owner}
-            name={name}
-            branch={branch || currentRepo?.default_branch || "main"}
-            readmePath={(catalog?.documents || []).find((doc) => isRootReadme(doc.path))?.path ?? null}
-            privateRepo={!sample && !!currentRepo?.private}
-            token={badge?.token ?? null}
-            tokenError={badgeError}
-            sample={!!sample}
-            onRotate={sample ? undefined : rotateBadge}
-            onClose={() => setBadgeOpen(false)}
-          />
-        </div>
-      )}
 
       {loading && <p className="dashboard-metric-caption">Loading documents...</p>}
       {error && <p className="dashboard-inline-error">{error}</p>}
@@ -1918,7 +1993,7 @@ export default function DocsTab({
               {renderNode(tree, 0)}
             </div>
             <div className="docs-tree-foot">
-              {catalog.summary.documents} docs{catalog.lastScanMs ? `, listed ${when(catalog.lastScanMs)}` : ""}
+              {catalog.summary.documents} doc{catalog.summary.documents === 1 ? "" : "s"}
               {/* Folder rules live above the tree they affect, so an excluded directory is
                   visible without hunting for the folder it was set on. */}
               {(catalog.exclusions || []).some((rule) => rule.folder) && (
@@ -2071,15 +2146,32 @@ export default function DocsTab({
                       {scopeStaleFindings.map((finding) => (
                         <li key={`${finding.docPath}:${finding.name}`} className="docs-gone-item">
                           <div className="docs-gone-head">
-                            <span className={`docs-outcome is-${finding.state === "MOVED" ? "unclear" : "broken"}`}>
-                              {finding.state === "MOVED" ? "Moved" : "Gone"}
+                            <span className={`docs-outcome is-${staleTone(finding)}`}>
+                              {staleLabel(finding)}
                             </span>
                             <code className="docs-gone-name">{finding.name}</code>
                           </div>
                           {finding.sentence && (
                             <blockquote className="docs-gone-quote">{withCode(finding.sentence)}</blockquote>
                           )}
-                          <p className="docs-gone-has">{withCode(staleLine(finding))}</p>
+                          <p className="docs-gone-has">
+                            {withCode(staleLine(finding))}
+                            {/* The commit that renamed the file, where history named one. */}
+                            {finding.state === "RENAMED" && finding.removedBySha ? (
+                              <>
+                                {" "}
+                                <a
+                                  href={finding.removedByUrl
+                                    || `https://github.com/${owner}/${name}/commit/${finding.removedBySha}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={finding.removedByMessage || undefined}
+                                >
+                                  Renamed in <code>{finding.removedBySha.slice(0, 7)}</code>
+                                </a>
+                              </>
+                            ) : null}
+                          </p>
                           <p className="docs-gone-where">
                             <button type="button" className="rules-source-link" onClick={() => openDoc(finding.docPath)}>
                               {finding.docPath}
@@ -2105,14 +2197,16 @@ export default function DocsTab({
                         about the scope: the rules exist and this list did not reach them. */}
                     {rulesIndex.truncated
                       ? "This repository holds more rules than one list can carry, and the documents before this one fill it. Striff has these; this page cannot reach them yet."
-                      : scopeRereading
-                      ? `Updating — ${scopeLastKnown} rule${scopeLastKnown === 1 ? "" : "s"} last time. Striff is reading these docs again after an improvement to Striff; refreshed rules appear here in a few minutes.`
+                      : codeNotRead
+                      // Not "found no rule": nothing looked, because there is no code it reads.
+                      ? CODE_NOT_READ
                       : !scopeDocs.some((doc) => doc.state === "NOT_READ")
                       ? "Striff read these docs and found no rule about the code in them."
-                      : isRunning(catalog?.reading)
+                      : isRunning(reading)
                       ? "Striff is reading these docs now. Their rules appear here as they are read; refresh to see them."
-                      : summary && summary.notRead > 0 && !readOnly
-                      ? `Nothing here has been read yet. Use Read ${summary.notRead} doc${summary.notRead === 1 ? "" : "s"} now, above, to read ${summary.notRead === 1 ? "it" : "them"} without waiting for a pull request.`
+                      // Points at the button only where the button is there, with its number.
+                      : readOffered
+                      ? `Nothing here has been read yet. Use Read ${readWaiting} doc${readWaiting === 1 ? "" : "s"} now, above, to read ${readWaiting === 1 ? "it" : "them"} without waiting for a pull request.`
                       : "Nothing here has been read yet. Striff reads a doc the first time a pull request changes code that doc talks about."}
                   </p>
                 )}
@@ -2265,18 +2359,18 @@ export default function DocsTab({
                                   question a reader has next is when, and by whom. */}
                               {finding.state !== "MOVED" && finding.removedBySha ? (
                                 <a
-                                  className="docs-outcome is-broken is-link"
+                                  className={`docs-outcome is-${staleTone(finding)} is-link`}
                                   href={finding.removedByUrl
                                     || `https://github.com/${owner}/${name}/commit/${finding.removedBySha}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  title={`Removed by ${finding.removedBySha.slice(0, 7)}${finding.removedByMessage ? `: ${finding.removedByMessage}` : ""}${finding.removedAtMs ? `, ${when(finding.removedAtMs)}` : ""}`}
+                                  title={`${finding.state === "RENAMED" ? "Renamed" : "Removed"} by ${finding.removedBySha.slice(0, 7)}${finding.removedByMessage ? `: ${finding.removedByMessage}` : ""}${finding.removedAtMs ? `, ${when(finding.removedAtMs)}` : ""}`}
                                 >
-                                  Gone in <code>{finding.removedBySha.slice(0, 7)}</code>
+                                  {staleLabel(finding)} in <code>{finding.removedBySha.slice(0, 7)}</code>
                                 </a>
                               ) : (
-                                <span className={`docs-outcome is-${finding.state === "MOVED" ? "unclear" : "broken"}`}>
-                                  {finding.state === "MOVED" ? "Moved" : "Gone"}
+                                <span className={`docs-outcome is-${staleTone(finding)}`}>
+                                  {staleLabel(finding)}
                                 </span>
                               )}
                             </td>
