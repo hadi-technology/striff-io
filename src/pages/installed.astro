@@ -78,11 +78,18 @@ const apiBaseUrl = "https://api.striff.io";
     // GitHub returns the install link's `state`, which names where the install began (a report
     // page sets it). Recorded once per arrival; the visitor's first campaign tags stay on the
     // person, so the install is attributed to how they first came.
+    // first_source is where the reader's first recorded visit came from, kept by
+    // scripts/analytics.js. Left off where this browser kept none, so the super property of the
+    // same name, if analytics registered one, is not overwritten with nothing.
     if (setupAction === "install" && window.posthog) {
-      window.posthog.capture("app_installed", {
-        source: params.get("state") || "direct",
-        installation_id: installationId,
-      });
+      const installed = { source: params.get("state") || "direct", installation_id: installationId };
+      try {
+        const firstSource = window.localStorage.getItem("striff_first_source");
+        if (firstSource) installed.first_source = firstSource;
+      } catch (e) {
+        // No storage: the event goes without it.
+      }
+      window.posthog.capture("app_installed", installed);
     }
 
     if (setupAction === "update") {

@@ -12,24 +12,24 @@ test("the badge's address carries a style other than flat, and a key only where 
   assert.equal(badgeImageUrl("acme", "widgets", { preview: true }), "https://striff.io/badge/acme/widgets.svg?preview=1");
 });
 
-test("a public repository's badge links to its page, in every markup, with no tracking", () => {
+test("a public repository's badge links to its page, in every markup, naming the badge as the visit's source and nothing more", () => {
   const image = badgeImageUrl("acme", "widgets", { style: "flat-square" });
   const link = badgeLinkUrl("acme", "widgets");
-  assert.equal(link, "https://striff.io/acme/widgets");
+  assert.equal(link, "https://striff.io/acme/widgets?ref=badge");
   assert.equal(badgeSnippet("markdown", image, link),
-    "[![Striff](https://striff.io/badge/acme/widgets.svg?style=flat-square)](https://striff.io/acme/widgets)");
+    "[![Striff](https://striff.io/badge/acme/widgets.svg?style=flat-square)](https://striff.io/acme/widgets?ref=badge)");
   assert.equal(badgeSnippet("html", image, link),
-    '<a href="https://striff.io/acme/widgets"><img src="https://striff.io/badge/acme/widgets.svg?style=flat-square" alt="Striff"></a>');
+    '<a href="https://striff.io/acme/widgets?ref=badge"><img src="https://striff.io/badge/acme/widgets.svg?style=flat-square" alt="Striff"></a>');
   assert.equal(badgeSnippet("rst", image, link),
-    ".. image:: https://striff.io/badge/acme/widgets.svg?style=flat-square\n   :target: https://striff.io/acme/widgets\n   :alt: Striff");
+    ".. image:: https://striff.io/badge/acme/widgets.svg?style=flat-square\n   :target: https://striff.io/acme/widgets?ref=badge\n   :alt: Striff");
   assert.equal(badgeSnippet("asciidoc", image, link),
-    'image:https://striff.io/badge/acme/widgets.svg?style=flat-square[Striff,link="https://striff.io/acme/widgets"]');
+    'image:https://striff.io/badge/acme/widgets.svg?style=flat-square[Striff,link="https://striff.io/acme/widgets?ref=badge"]');
 });
 
 test("a private repository's badge carries its key and links to it on the dashboard", () => {
   const image = badgeImageUrl("acme", "secret", { token: "ab12" });
   const link = badgeLinkUrl("acme", "secret", { privateRepo: true });
-  assert.equal(link, "https://striff.io/dashboard?repo=acme/secret");
+  assert.equal(link, "https://striff.io/dashboard?repo=acme/secret&ref=badge");
   for (const format of ["markdown", "html", "rst", "asciidoc"]) {
     const snippet = badgeSnippet(format, image, link);
     assert.ok(snippet.includes("https://striff.io/badge/acme/secret.svg?token=ab12"), format);
@@ -38,7 +38,19 @@ test("a private repository's badge carries its key and links to it on the dashbo
     assert.ok(!snippet.includes("utm_"), format);
   }
   assert.equal(badgeSnippet("markdown", image, link),
-    "[![Striff](https://striff.io/badge/acme/secret.svg?token=ab12)](https://striff.io/dashboard?repo=acme/secret)");
+    "[![Striff](https://striff.io/badge/acme/secret.svg?token=ab12)](https://striff.io/dashboard?repo=acme/secret&ref=badge)");
+});
+
+test("the link a Striff page shows as a preview leaves the badge's ref out", () => {
+  assert.equal(badgeLinkUrl("acme", "widgets", { preview: true }), "https://striff.io/acme/widgets");
+  assert.equal(badgeLinkUrl("acme", "secret", { privateRepo: true, preview: true }),
+    "https://striff.io/dashboard?repo=acme/secret");
+});
+
+test("the HTML snippet escapes the ampersand a private repository's link carries", () => {
+  const link = badgeLinkUrl("acme", "secret", { privateRepo: true });
+  assert.ok(badgeSnippet("html", badgeImageUrl("acme", "secret", { token: "ab12" }), link)
+    .includes('href="https://striff.io/dashboard?repo=acme/secret&amp;ref=badge"'));
 });
 
 test("the README is opened in GitHub's editor, or a new one is started", () => {
@@ -103,12 +115,12 @@ test("practice is named in the address only where it was chosen over an availabl
   for (const facts of [{ heldRules: 9 }, { heldRules: 0 }, { heldRules: null }, {}]) {
     assert.equal(address(facts, "practice"), "count");
     assert.equal(snippetFor(facts, "practice"),
-      "[![Striff](https://striff.io/badge/acme/widgets.svg)](https://striff.io/acme/widgets)");
+      "[![Striff](https://striff.io/badge/acme/widgets.svg)](https://striff.io/acme/widgets?ref=badge)");
   }
   // From ten, the default count is left out and a practice picked over it is kept.
   assert.equal(snippetFor({ heldRules: 10 }, "count"),
-    "[![Striff](https://striff.io/badge/acme/widgets.svg)](https://striff.io/acme/widgets)");
+    "[![Striff](https://striff.io/badge/acme/widgets.svg)](https://striff.io/acme/widgets?ref=badge)");
   assert.equal(snippetFor({ heldRules: 10 }, "practice"),
-    "[![Striff](https://striff.io/badge/acme/widgets.svg?variant=practice)](https://striff.io/acme/widgets)");
+    "[![Striff](https://striff.io/badge/acme/widgets.svg?variant=practice)](https://striff.io/acme/widgets?ref=badge)");
   assert.equal(address({ heldRules: 3, agentDocs: true }, "agent"), "agent");
 });
