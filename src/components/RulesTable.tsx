@@ -404,69 +404,87 @@ export default function RulesTable({
               <td className="docs-rule-statement">
                 <Clamped lines={4}>{withCode(row.statement, term)}</Clamped>
               </td>
-              <td className="rules-standing">
-                <FlagFinding
-                  demo={demo}
-                  flagged={{
-                    kind: "rule",
-                    repo: `${owner}/${name}`,
-                    doc: row.doc.path,
-                    line: row.sourceLine,
-                    finding: row.statement,
-                    standing: row.status === "PRE_EXISTING" ? "already broken" : standing(row),
-                    id: row.factId,
-                  }}
-                />
+              <td className="rules-standing-cell">
+
                 {/* A rule a pull request's change broke names that pull request: it is where the
                     break came from, and one click from the diff. A rule broken before any pull
                     request judged it has nothing to name, and says only that it is broken. */}
-                {row.ignored ? (
-                  <span
-                    className="docs-outcome is-ignored"
-                    title={row.ignoredBy === "excluded"
-                      ? "Not checked: the doc this rule is in is excluded."
-                      : "Pull requests aren't checked against this rule."}
-                  >
-                    Ignored{row.ignoredBy === "folder" && repositoryIgnored
-                      ? " · repository"
-                      : row.ignoredBy && IGNORED_BY_HINT[row.ignoredBy] ? ` · ${IGNORED_BY_HINT[row.ignoredBy]}` : ""}
-                  </span>
-                ) : standing(row) === "broken" && row.status === "VIOLATED" && row.pullNo ? (
-                  <a
-                    className="docs-outcome is-broken is-link"
-                    href={`https://github.com/${owner}/${name}/pull/${row.pullNo}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={`Pull request #${row.pullNo} broke this rule.`}
-                  >
-                    Broken by PR #{row.pullNo}
-                  </a>
-                ) : standing(row) === "broken" && row.status === "PRE_EXISTING" ? (
-                  // Broken, and not by the pull request that last checked it: the same "already
-                  // broken" the Checks and Metrics tabs count, so one word means one thing.
-                  <span
-                    className="docs-outcome is-broken"
-                    title={row.pullNo
-                      ? `The code was already not keeping this rule before PR #${row.pullNo}.`
-                      : "The code was already not keeping this rule when it was first checked."}
-                  >
-                    Already broken
-                  </span>
-                ) : standing(row) === "holds" && row.status === "RESTORED" && row.pullNo ? (
-                  <a
-                    className="docs-outcome is-holds is-link"
-                    href={`https://github.com/${owner}/${name}/pull/${row.pullNo}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={`The code was not keeping this rule until pull request #${row.pullNo} restored it.`}
-                  >
-                    Restored by PR #{row.pullNo}
-                  </a>
-                ) : (
-                  <span className={`docs-outcome is-${standing(row)}`} title={STANDING_HELP[standing(row)]}>
-                    {STANDING_LABEL[standing(row)]}
-                  </span>
-                )}
+                {/* The pill and, right of it, the switch that turns the rule off: one line, so turning a
+                    rule off costs the row no height. */}
+                <span className="rule-standing-line">
+                  {row.ignored ? (
+                    <span
+                      className="docs-outcome is-ignored"
+                      title={row.ignoredBy === "excluded"
+                        ? "Not checked: the doc this rule is in is excluded."
+                        : "Pull requests aren't checked against this rule."}
+                    >
+                      Ignored{row.ignoredBy === "folder" && repositoryIgnored
+                        ? " · repository"
+                        : row.ignoredBy && IGNORED_BY_HINT[row.ignoredBy] ? ` · ${IGNORED_BY_HINT[row.ignoredBy]}` : ""}
+                    </span>
+                  ) : standing(row) === "broken" && row.status === "VIOLATED" && row.pullNo ? (
+                    <a
+                      className="docs-outcome is-broken is-link"
+                      href={`https://github.com/${owner}/${name}/pull/${row.pullNo}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`Pull request #${row.pullNo} broke this rule.`}
+                    >
+                      Broken by PR #{row.pullNo}
+                    </a>
+                  ) : standing(row) === "broken" && row.status === "PRE_EXISTING" ? (
+                    // Broken, and not by the pull request that last checked it: the same "already
+                    // broken" the Checks and Metrics tabs count, so one word means one thing.
+                    <span
+                      className="docs-outcome is-broken"
+                      title={row.pullNo
+                        ? `The code was already not keeping this rule before PR #${row.pullNo}.`
+                        : "The code was already not keeping this rule when it was first checked."}
+                    >
+                      Already broken
+                    </span>
+                  ) : standing(row) === "holds" && row.status === "RESTORED" && row.pullNo ? (
+                    <a
+                      className="docs-outcome is-holds is-link"
+                      href={`https://github.com/${owner}/${name}/pull/${row.pullNo}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`The code was not keeping this rule until pull request #${row.pullNo} restored it.`}
+                    >
+                      Restored by PR #{row.pullNo}
+                    </a>
+                  ) : (
+                    <span className={`docs-outcome is-${standing(row)}`} title={STANDING_HELP[standing(row)]}>
+                      {STANDING_LABEL[standing(row)]}
+                    </span>
+                  )}
+                  {ruleStates && (
+                    <RuleSwitch
+                      compact
+                      ignored={!!row.ignored}
+                      ignoredBy={row.ignoredBy}
+                      disabledReason={ruleStates.disabledReason}
+                      onToggle={async (next) => {
+                        setStateError((was) => ({ ...was, [row.factId]: "" }));
+                        const failed = await ruleStates.set(row, next);
+                        if (failed) setStateError((was) => ({ ...was, [row.factId]: failed }));
+                      }}
+                    />
+                  )}
+                  <FlagFinding
+                    demo={demo}
+                    flagged={{
+                      kind: "rule",
+                      repo: `${owner}/${name}`,
+                      doc: row.doc.path,
+                      line: row.sourceLine,
+                      finding: row.statement,
+                      standing: row.status === "PRE_EXISTING" ? "already broken" : standing(row),
+                      id: row.factId,
+                    }}
+                  />
+                </span>
                 {/* This column is narrow, so each line under the pill is short enough to stay one
                     line, and the sentence it stands for is in its title. */}
                 {row.pullNo && (
@@ -492,22 +510,8 @@ export default function RulesTable({
                     demo={demo}
                   />
                 )}
-                {ruleStates && (
-                  <span className="rule-switch-line">
-                    <RuleSwitch
-                      ignored={!!row.ignored}
-                      ignoredBy={row.ignoredBy}
-                      disabledReason={ruleStates.disabledReason}
-                      onToggle={async (next) => {
-                        setStateError((was) => ({ ...was, [row.factId]: "" }));
-                        const failed = await ruleStates.set(row, next);
-                        if (failed) setStateError((was) => ({ ...was, [row.factId]: failed }));
-                      }}
-                    />
-                    {stateError[row.factId] && (
-                      <span className="rule-switch-error" role="alert">{stateError[row.factId]}</span>
-                    )}
-                  </span>
+                {ruleStates && stateError[row.factId] && (
+                  <span className="rule-switch-error" role="alert">{stateError[row.factId]}</span>
                 )}
               </td>
             </tr>

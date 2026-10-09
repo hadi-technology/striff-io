@@ -22,7 +22,10 @@ export function RuleSwitch({
   ignoredBy,
   disabledReason,
   onToggle,
+  compact = false,
 }: {
+  /** Whether it is the small switch beside a rule's pill, with no visible label; its state is in its title. */
+  compact?: boolean;
   ignored: boolean;
   ignoredBy?: string | null;
   /** Why the switch cannot be used, or null where it can. */
@@ -42,13 +45,13 @@ export function RuleSwitch({
       role="switch"
       aria-checked={!ignored}
       aria-label={`Check pull requests against this rule: ${ignored ? "off" : "on"}`}
-      className={`rule-switch${ignored ? " is-off" : ""}`}
+      className={`rule-switch${ignored ? " is-off" : ""}${compact ? " is-compact" : ""}`}
       disabled={!!reason}
       title={title}
       onClick={() => onToggle(!ignored)}
     >
       <span className="rule-switch-track" aria-hidden="true"><span className="rule-switch-knob" /></span>
-      <span className="rule-switch-label">{ignored ? "Ignored" : "Active"}</span>
+      {!compact && <span className="rule-switch-label">{ignored ? "Ignored" : "Active"}</span>}
     </button>
   );
 }
