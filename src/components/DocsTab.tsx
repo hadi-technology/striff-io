@@ -383,9 +383,6 @@ function screenWhy(reason: string): string {
 function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
   switch (doc.state) {
     case "READ":
-      if (doc.outdated) {
-        return `Edited on the default branch since Striff last read it. These rules come from the ${when(doc.lastExtractedMs)} version${doc.lastExtractedPullNo ? ` (PR #${doc.lastExtractedPullNo})` : ""}, and refresh on the next pull request that changes code this doc talks about.`;
-      }
       if (!doc.lastExtractedMs && !doc.ruleCount) {
         // Read, and nothing in it states a rule, so there is no extraction to date. The line under
         // this one says so; this one saying "Striff has rules for this doc" contradicted it.
@@ -435,7 +432,7 @@ const TREE_WIDTH_KEY = "striff.docsTreeWidth";
  *
  * These are facts about a document rather than about its rules, which is why they filter the tree
  * and the standings filter the table. A folder's summary line leads here: every part of it is one
- * of these, so "1 edited since read" is a sentence you can click.
+ * of these, so "1 not read" is a sentence you can click.
  */
 type DocFilter =
   | "results"
@@ -443,7 +440,6 @@ type DocFilter =
   | "broken"
   | "stale"
   | "notRead"
-  | "outdated"
   | "skipped"
   | "retired"
   | "unreadable"
@@ -459,7 +455,6 @@ const DOC_FILTER_TEST: Record<DocFilter, (doc: Doc) => boolean> = {
   // document on its own: it depends on what a reading of the whole repository reported.
   stale: () => false,
   notRead: (doc) => doc.state === "NOT_READ",
-  outdated: (doc) => doc.outdated && doc.state === "READ",
   skipped: (doc) => doc.state === "SCREENED_OUT",
   retired: (doc) => doc.state === "RETIRED",
   unreadable: (doc) => doc.state === "UNREADABLE",
@@ -474,7 +469,6 @@ const FILTER_CHIPS: { key: DocFilter; label: string; dot: string; always: boolea
   { key: "broken", label: "Broken", dot: "broken", always: true },
   { key: "stale", label: "Stale names", dot: "stale", always: false },
   { key: "notRead", label: "Not read", dot: "unread", always: true },
-  { key: "outdated", label: "Edited since", dot: "outdated", always: false },
   { key: "unreadable", label: "Couldn't read", dot: "broken", always: false },
   { key: "skipped", label: "Skipped", dot: "other", always: true },
   { key: "retired", label: "Retired", dot: "other", always: false },
@@ -493,7 +487,6 @@ const FILTER_CHIPS: { key: DocFilter; label: string; dot: string; always: boolea
 const SUMMARY_PARTS: { key: DocFilter; label: string; help: string }[] = [
   { key: "stale", label: "with stale names", help: "Documents with a stale name: one the default branch no longer declares, or declares somewhere else." },
   { key: "notRead", label: "not read", help: "Documents Striff hasn't read yet, so any rule in them is not counted here." },
-  { key: "outdated", label: "edited since read", help: "Documents edited on the default branch since Striff read them, so their rules come from an older version." },
   { key: "unreadable", label: "couldn't read", help: "Documents Striff couldn't finish reading. That isn't counted as “no rules”." },
   { key: "skipped", label: "skipped", help: "Documents Striff skipped because it found no rule in them that could be checked against code." },
   { key: "retired", label: "retired", help: "Documents that say they are no longer current, so their rules aren't checked." },
@@ -2422,9 +2415,7 @@ export default function DocsTab({
                 <p className={`docs-state-line is-${detail.document.state.toLowerCase()}`}>
                   <span
                     className={`docs-sdot is-${
-                      detail.document.outdated && detail.document.state === "READ"
-                        ? "outdated"
-                        : detail.document.state.toLowerCase()
+                      detail.document.state.toLowerCase()
                     }`}
                   />
                   <span>
