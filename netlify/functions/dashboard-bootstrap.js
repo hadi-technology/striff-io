@@ -35,6 +35,9 @@ function shapeInstallation(inst, repositories) {
       private: repo.private,
       html_url: repo.html_url,
       default_branch: repo.default_branch,
+      // A fork has issues turned off unless its owner turns them on, and GitHub answers a
+      // prefilled new-issue link there with a 404: the page offers an issue only where one opens.
+      has_issues: repo.has_issues,
     })),
   };
 }

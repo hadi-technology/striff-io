@@ -411,7 +411,7 @@ export default function RulesTable({
                 )}
                 {issues && standing(row) === "broken" && (
                   <a
-                    className="docs-issue-link"
+                    className="finding-action"
                     href={issueUrl(owner, name, row.doc.path, row, branch)}
                     target="_blank"
                     rel="noopener noreferrer"

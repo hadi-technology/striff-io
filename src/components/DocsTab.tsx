@@ -1,5 +1,6 @@
 import { createElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { staleNameIssueUrl } from "./docIssue";
+import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
+import FindingActions from "./FindingActions";
 import RevisionLine from "./RevisionLine";
 import { Clamped, mark, plainText, snippet, useWatch, withCode, when } from "./docRules";
 import RulesTable, {
@@ -691,7 +692,7 @@ export default function DocsTab({
 }: {
   installationId: number;
   /** The repositories to pick from; the dashboard's carry whether each is private, and its branch. */
-  repos: { full_name: string; private?: boolean; default_branch?: string }[];
+  repos: { full_name: string; private?: boolean; default_branch?: string; has_issues?: boolean }[];
   /** The repository to show. The shell's sidebar picks it; this view only reads it. */
   openRepo?: string | null;
   /**
@@ -782,6 +783,8 @@ export default function DocsTab({
   const [owner, name] = repo.split("/");
   catalogRef.current = catalog;
   const branch = catalog?.defaultBranch || null;
+  // Unknown is offered as before; only a repository GitHub says takes no issues is spared the link.
+  const takesIssues = repos.find((r) => r.full_name === repo)?.has_issues !== false;
 
   // A listing is seconds of work and it is the difference between an empty page and a page: watch
   // until it lands, and stop as soon as there is anything to show or anything to say about why
@@ -2223,7 +2226,7 @@ export default function DocsTab({
                     docCount={scopeRuleDocs}
                     truncated={!!rulesIndex.truncated}
                     onOpenDoc={(path) => openDoc(path)}
-                    issues={!source}
+                    issues={!source && takesIssues}
                   />
                 )}
               </>
@@ -2322,7 +2325,7 @@ export default function DocsTab({
                     showPath={false}
                     filter={ruleFilter}
                     docCount={1}
-                    issues={!source}
+                    issues={!source && takesIssues}
                   />
                 )}
 
@@ -2383,16 +2386,12 @@ export default function DocsTab({
                                 first seen {when(finding.firstSeenMs)}
                               </span>
                               {!readOnly && (
-                                <a
-                                  className="docs-issue-link"
-                                  href={staleNameIssueUrl(owner, name, selected, finding,
-                                    branch || "main")}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  title="Opens GitHub with an issue written out: the doc, the sentence, what the code has and what would close it."
-                                >
-                                  Open an issue
-                                </a>
+                                <FindingActions
+                                  issueUrl={takesIssues
+                                    ? staleNameIssueUrl(owner, name, selected, finding, branch || "main")
+                                    : null}
+                                  prompt={staleNamePrompt(owner, name, selected, finding, branch || "main")}
+                                />
                               )}
                             </td>
                           </tr>

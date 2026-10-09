@@ -29,6 +29,8 @@ interface Repo {
   private: boolean;
   html_url: string;
   default_branch?: string;
+  /** Whether the repository takes issues; a fork does not unless its owner turned them on. */
+  has_issues?: boolean;
 }
 
 interface Installation {

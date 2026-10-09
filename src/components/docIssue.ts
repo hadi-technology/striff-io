@@ -35,6 +35,9 @@ export interface IssueStaleName {
   /** For a renamed name: the spelling the code declares now, and the file declaring it. */
   renamedTo?: string | null;
   renamedToPath?: string | null;
+  /** The commit that removed the name's file, where history said: its message and where to read it. */
+  removedByMessage?: string | null;
+  removedByUrl?: string | null;
 }
 
 /**
@@ -101,6 +104,73 @@ export function staleNameIssueUrl(
   return `https://github.com/${owner}/${repo}/issues/new?title=${encodeURIComponent(
     title
   )}&body=${encodeURIComponent(lines.join("\n"))}`;
+}
+
+/**
+ * Instructions an agent can run as they are to fix a name a doc writes that the code does not have.
+ *
+ * Written from the same finding as {@link staleNameIssueUrl}, and as careful about what Striff
+ * knows: the agent checks the finding before it edits, because a name missing from what Striff
+ * read is not proof the name is missing from the code, and it stops if the finding is wrong. It
+ * edits documentation only.
+ *
+ * @param owner the repository's owner
+ * @param repo the repository's name
+ * @param docPath the document that writes the name
+ * @param finding the name and what shows it is gone
+ * @param branch the branch the finding was read from
+ * @return the prompt, as plain text
+ */
+export function staleNamePrompt(
+  owner: string,
+  repo: string,
+  docPath: string,
+  finding: IssueStaleName,
+  branch = "main"
+): string {
+  const moved = finding.state === "MOVED";
+  const renamed = finding.state === "RENAMED" && !!finding.renamedTo;
+  const simple = finding.name.slice(finding.name.lastIndexOf(".") + 1);
+  const where = `\`${docPath}\`${finding.sourceLine ? `, line ${finding.sourceLine}` : ""}`;
+  const quote = plain(finding.sentence).slice(0, MAX_QUOTE);
+
+  let found: string;
+  let fix: string;
+  if (moved) {
+    found = `\`${finding.name}\` is declared in \`${finding.movedToNamespace}\`${
+      finding.movedToPath ? ` (\`${finding.movedToPath}\`)` : ""
+    }, not where the document puts it.`;
+    fix = `Update the package or path the document gives for \`${simple}\` so it matches where the code declares it.`;
+  } else if (renamed) {
+    found = `The type is now spelled \`${finding.renamedTo}\`${
+      finding.renamedToPath ? `, declared in \`${finding.renamedToPath}\`` : ""
+    }; the document still writes the old name.`;
+    fix = `Replace \`${simple}\` with \`${finding.renamedTo}\` in this passage, and check that any code sample around it still reads correctly.`;
+  } else {
+    found = `Nothing on \`${branch}\` declares \`${finding.name}\`.${
+      finding.historicalPath ? ` The repository once held \`${finding.historicalPath}\` and does not now.` : ""
+    }${
+      finding.removedByUrl
+        ? ` It was removed by ${finding.removedByUrl}${finding.removedByMessage ? ` ("${plain(finding.removedByMessage).slice(0, 120)}")` : ""}.`
+        : ""
+    }`;
+    fix = `Rewrite or remove the part of the passage that describes \`${simple}\`, so the document describes the code as it is now. Do not recreate the type.`;
+  }
+
+  return [
+    `Fix a stale reference in the documentation of ${owner}/${repo} (branch \`${branch}\`).`,
+    "",
+    `Document: ${where}`,
+    ...(quote ? ["The sentence:", `> ${quote}`] : []),
+    "",
+    `What was found: ${found}`,
+    "",
+    "Steps:",
+    `1. Check the finding first. Search the current tree for \`${simple}\` as an exact token: a class, interface, enum, record or type in any language this repository uses, including generated, Kotlin or test sources. If it is declared where the document says, stop, change nothing, and report that the finding is wrong.`,
+    `2. If the finding holds: ${fix}`,
+    "3. Edit documentation only. Do not change source code.",
+    `4. Open a pull request with the change. In its description, quote the sentence above and end with: "Found by Striff (https://striff.io)."`,
+  ].join("\n");
 }
 
 /** GitHub's own limit is generous, but a URL this long is a sign the quote ran away. */
