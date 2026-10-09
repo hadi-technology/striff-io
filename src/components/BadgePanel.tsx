@@ -130,6 +130,7 @@ export default function BadgePanel({
   const addressed = choices.find((each) => each.id === variant)?.address ?? DEFAULT_VARIANT;
   const image = badgeImageUrl(owner, name, { style, variant: addressed, token: key });
   const link = badgeLinkUrl(owner, name, { privateRepo: !!privateRepo });
+  const previewLink = badgeLinkUrl(owner, name, { privateRepo: !!privateRepo, preview: true });
   const snippet = badgeSnippet(format, image, link);
   const preview = badgePreviewPath(owner, name, { style, variant: addressed, token: key });
 
@@ -168,14 +169,14 @@ export default function BadgePanel({
             against its code, or, below ten, that Striff checks them
             {privateRepo
               ? ", and links to this repository on your dashboard, for whoever can see it."
-              : ", and links to the page that lists the rules it holds the code to."}
+              : ", and links to the page that lists the rules it checks the code against."}
           </p>
         </div>
         <div className="badge-panel-preview" aria-live="polite">
           {waitingForKey ? (
             <span className="badge-panel-wait">{tokenError || "Getting this repository's key…"}</span>
           ) : (
-            <a href={link} target="_blank" rel="noopener noreferrer" title="Where the badge links">
+            <a href={previewLink} target="_blank" rel="noopener noreferrer" title="Where the badge links">
               <img src={preview} alt="This repository's Striff badge" height={style === "for-the-badge" ? 28 : 20} />
             </a>
           )}

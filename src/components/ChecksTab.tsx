@@ -40,19 +40,29 @@ export interface ChecksPage {
 function verdictOf(check: Check, whose: "your" | "its" = "your"): { label: string; tone: string; help: string } {
   const state = (check.state || "").toUpperCase();
   if (state === "FAILED" || state === "ERROR") {
-    return { label: "Didn't finish", tone: "is-muted", help: "The review of this commit stopped before it finished." };
+    return { label: "Didn't finish", tone: "is-muted", help: "The check of this commit stopped before it finished." };
   }
   if (state === "RUNNING" || state === "PENDING" || state === "QUEUED" || state === "REQUESTED") {
-    return { label: "Running", tone: "is-running", help: "Striff is still reviewing this commit." };
+    return { label: "Running", tone: "is-running", help: "Striff is still checking this commit." };
   }
   if (check.rulesBroken > 0) {
     return { label: `Breaks ${check.rulesBroken} rule${check.rulesBroken === 1 ? "" : "s"}`, tone: "is-broken", help: `This change breaks rules ${whose} docs state.` };
   }
   // Withheld verdicts say a rule may be broken, so the check cannot be said to keep them.
   if ((check.withheld || 0) > 0) {
-    return { label: "Under review", tone: "is-muted", help: "This check found rules the change may break. A person checks each before it is shown here." };
+    return { label: "Being confirmed", tone: "is-muted", help: "This check found rules the change may break. A person confirms each before it is shown here." };
   }
-  if (check.rulesHeld > 0 || check.rulesAlreadyBroken > 0) {
+  // A rule already broken in code the change touches is what turned its GitHub check neutral, so
+  // the verdict says so rather than reading as a clean pass the check itself did not give.
+  if (check.rulesAlreadyBroken > 0) {
+    return {
+      // The count is on the line beside the verdict; the pill stays one short phrase.
+      label: "No new breaks",
+      tone: "is-prior",
+      help: `This change breaks none of the rules it touches, and ${check.rulesAlreadyBroken} of them were already broken before it.`,
+    };
+  }
+  if (check.rulesHeld > 0) {
     return { label: `Keeps ${whose} rules`, tone: "is-holds", help: "This change breaks none of the rules it touches." };
   }
   return { label: "No rules touched", tone: "is-muted", help: `None of ${whose} documented rules bear on this change.` };
@@ -190,7 +200,7 @@ export default function ChecksTab({
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      #{check.pullNo}
+                      PR #{check.pullNo}
                     </a>
                     {check.headSha && <code className="check-sha">{check.headSha.slice(0, 7)}</code>}
                     <span className="check-when">{checkedAt(check.checkedAtMs)}</span>
@@ -201,7 +211,7 @@ export default function ChecksTab({
                     <p className="check-headline">
                       {check.headline
                         || (verdict.tone === "is-running"
-                          ? "Striff is reviewing this commit."
+                          ? "Striff is checking this commit."
                           : "No summary was written for this check.")}
                     </p>
                   )}
@@ -214,7 +224,7 @@ export default function ChecksTab({
                   <span className="check-rules-label">rule{checked === 1 ? "" : "s"} checked</span>
                   {checked > 0 && (
                     <span className="check-rules-split">
-                      {check.rulesHeld > 0 && <i className="is-holds">{check.rulesHeld} kept</i>}
+                      {check.rulesHeld > 0 && <i className="is-holds">{check.rulesHeld} held</i>}
                       {check.rulesBroken > 0 && <i className="is-broken">{check.rulesBroken} broken</i>}
                       {check.rulesAlreadyBroken > 0 && (
                         <i className="is-prior">{check.rulesAlreadyBroken} already broken</i>
@@ -223,8 +233,8 @@ export default function ChecksTab({
                   )}
                   {(check.withheld || 0) > 0 && (
                     <span className="check-rules-split">
-                      <i className="is-prior" title="Found by this check and not shown until a person has checked them.">
-                        {check.withheld} under review
+                      <i className="is-prior" title="Found by this check and not shown until a person has confirmed them.">
+                        {check.withheld} being confirmed
                       </i>
                     </span>
                   )}

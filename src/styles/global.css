@@ -4659,6 +4659,92 @@
 .docs-rules tr.is-violated td:first-child { box-shadow: inset 2px 0 0 #d33a4b; }
 .docs-rules tr.is-prior td:first-child { box-shadow: inset 2px 0 0 #e0a13a; }
 
+/* An ignored rule: the whole row goes grey and quiet, every cell, and no broken or already-broken
+   tint shows through. Only the switch keeps its full contrast, so the way back is the one thing
+   that still reads as live. The grey stays above 3:1 on the row's background, so it can be read. */
+.docs-rules tr.is-ignored td,
+.docs-rules tr.is-ignored:hover td { background: #f3f4f6; color: #6b7280; }
+.docs-rules tr.is-ignored td > :not(.rule-switch-line):not(.rule-standing-line),
+.docs-rules tr.is-ignored td .rule-switch-line > :not(.rule-switch),
+.docs-rules tr.is-ignored td .rule-standing-line > :not(.rule-switch) {
+  filter: grayscale(1);
+  opacity: 0.82;
+}
+.docs-rules tr.is-ignored td a,
+.docs-rules tr.is-ignored td button:not(.rule-switch),
+.docs-rules tr.is-ignored td code,
+.docs-rules tr.is-ignored td b,
+.docs-rules tr.is-ignored td strong,
+.docs-rules tr.is-ignored td mark { color: #6b7280; background-color: transparent; }
+.docs-outcome.is-ignored { background: #eef0f3; border-color: #d0d7de; color: #57606a; }
+
+/* The Active/Ignored switch at the foot of a rule's standing cell. */
+.rule-switch-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin-top: 0.55rem; }
+.rule-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.45rem 0.15rem 0.2rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #1f2328;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.rule-switch:hover:not(:disabled) { background: #f6f8fa; border-color: #d0d7de; }
+.rule-switch:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.rule-switch:disabled { cursor: not-allowed; opacity: 0.6; }
+.rule-switch-track {
+  position: relative;
+  width: 1.9rem;
+  height: 1.05rem;
+  border-radius: 999px;
+  /* Blue, not green: green and red already mean a rule holds or is broken. */
+  background: #2563eb;
+  transition: background-color 0.15s ease;
+  flex: none;
+}
+.rule-switch-knob {
+  position: absolute;
+  top: 0.125rem;
+  left: 0.975rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(31, 35, 40, 0.3);
+  transition: left 0.15s ease;
+}
+.rule-switch.is-off .rule-switch-track { background: #8c959f; }
+.rule-switch.is-off .rule-switch-knob { left: 0.125rem; }
+.rule-switch-label { min-width: 3.4rem; text-align: left; }
+
+/* A rule's pill with its small switch on the right, on one line. */
+.rule-standing-line { display: flex; align-items: center; gap: 0.4rem; flex-wrap: nowrap; }
+.rule-standing-line .finding-flag { position: relative; top: auto; right: auto; }
+/* The switch and the flag keep to the cell's right edge, so every row's switch lines up. */
+.rule-standing-line .rule-switch { margin-left: auto; }
+.rule-switch.is-compact { padding: 0.1rem; gap: 0; }
+.rule-switch.is-compact .rule-switch-track { width: 1.5rem; height: 0.85rem; }
+.rule-switch.is-compact .rule-switch-knob { width: 0.6rem; height: 0.6rem; left: 0.775rem; }
+.rule-switch.is-compact.is-off .rule-switch-knob { left: 0.125rem; }
+.rule-switch-error { flex-basis: 100%; font-size: 0.72rem; color: #cf222e; }
+@media (prefers-reduced-motion: reduce) { .rule-switch, .rule-switch-track, .rule-switch-knob { transition: none; } }
+@media print { .rule-switch-line, .rule-standing-line .rule-switch { display: none; } }
+
+/* Ignore or reactivate every rule under a doc, a folder or the repository, from its header. */
+.scope-ignore { position: relative; display: inline-flex; margin-right: 0.4rem; }
+.scope-ignore .finding-action { margin-top: 0; }
+.scope-ignore-button.is-all { color: #57606a; background: #f3f4f6; }
+.scope-ignore-button.is-mixed { border-style: dashed; }
+.scope-ignore-panel { width: 20rem; }
+.docs-badge.is-ignored { background: #f3f4f6; border-color: #d0d7de; color: #57606a; }
+.docs-tally-item.is-ignored b { color: #6b7280; }
+
 /* The two levels these things live at: an account, and a repository inside it. */
 .dash-repo-group { margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid #edf1f5; }
 .dash-repo-select {
@@ -5078,18 +5164,130 @@ button.docs-tally-item.is-on { background: #eef2f7; }
 button.docs-tally-item.is-on i { color: #1f2328; }
 .docs-tally-item b em { color: #8a95a1; font-style: normal; font-weight: 600; font-size: 0.7em; }
 
-/* The issue this finding would become, one click away and already written. */
-.docs-issue-link {
+/* What a finding can become, one click away: the issue already written, the prompt for an agent. */
+.finding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+.finding-action {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.35rem;
   margin-top: 0.35rem;
-  color: #2563eb;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid #d0d7de;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #1f2328;
+  font: inherit;
   font-size: 0.75rem;
   font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(31, 35, 40, 0.04);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease, transform 0.15s ease;
 }
-.docs-issue-link:hover { text-decoration: underline; }
-@media print { .docs-issue-link { display: none; } }
+.finding-actions .finding-action { margin-top: 0; }
+.finding-action-note {
+  flex-basis: 100%;
+  padding: 0.4rem 0.6rem;
+  border-left: 2px solid #2563eb;
+  background: #f5f8ff;
+  color: #334155;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+.finding-action-label { display: inline-grid; }
+.finding-action-label > span { grid-area: 1 / 1; text-align: left; }
+.finding-action-label > .is-hidden { visibility: hidden; }
+.finding-action svg { color: #57606a; transition: color 0.15s ease; }
+.finding-action:hover {
+  border-color: #2563eb;
+  color: #1d4ed8;
+  background: #f5f8ff;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.14);
+  transform: translateY(-1px);
+}
+.finding-action:hover svg { color: #2563eb; }
+.finding-action:active { transform: translateY(0); box-shadow: 0 1px 0 rgba(31, 35, 40, 0.04); }
+.finding-action:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.finding-action.is-done { border-color: #1a7f37; color: #1a7f37; background: #f0fdf4; }
+.finding-action.is-done svg { color: #1a7f37; }
+.finding-action.is-failed { border-color: #cf222e; color: #cf222e; background: #fff5f5; }
+@media (prefers-reduced-motion: reduce) {
+  .finding-action, .finding-action svg { transition: none; }
+  .finding-action:hover { transform: none; }
+}
+@media print { .finding-actions, .finding-action { display: none; } }
+
+/* A quiet flag in the corner of a finding's cell, for a reader who thinks Striff got it wrong. */
+td.rules-standing { position: relative; padding-right: 2.25rem; }
+.finding-flag { position: absolute; top: 0.55rem; right: 0.4rem; }
+.finding-flag-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: #8c959f;
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+tr:hover .finding-flag-button,
+.finding-flag-button:focus-visible,
+.finding-flag-button[aria-expanded="true"],
+.finding-flag-button.is-sent { opacity: 1; }
+.finding-flag-button:hover,
+.finding-flag-button[aria-expanded="true"] { color: #cf222e; background: #fff5f5; border-color: #ffd8d3; }
+.finding-flag-button.is-sent { color: #cf222e; }
+.finding-flag-button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.finding-flag-panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 30;
+  width: 18rem;
+  padding: 0.75rem;
+  border: 1px solid #d0d7de;
+  border-radius: 0.6rem;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(31, 35, 40, 0.14);
+  text-align: left;
+  animation: finding-flag-in 0.14s ease-out;
+}
+@keyframes finding-flag-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.finding-flag-title { margin: 0; font-size: 0.85rem; font-weight: 700; color: #1f2328; }
+.finding-flag-hint { margin: 0.2rem 0 0.5rem; font-size: 0.75rem; color: #57606a; line-height: 1.4; }
+.finding-flag-panel textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #d0d7de;
+  border-radius: 0.45rem;
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.finding-flag-panel textarea:focus { outline: 2px solid #2563eb; outline-offset: 0; border-color: #2563eb; }
+.finding-flag-foot { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
+.finding-flag-foot .finding-action { margin-top: 0; }
+.finding-flag-count { margin-right: auto; font-size: 0.7rem; color: #8c959f; }
+.finding-flag-error { flex-basis: 100%; font-size: 0.75rem; color: #cf222e; }
+.finding-action.is-primary { background: #1f2328; border-color: #1f2328; color: #ffffff; }
+.finding-action.is-primary:hover { background: #2563eb; border-color: #2563eb; color: #ffffff; }
+.finding-action:disabled { opacity: 0.6; cursor: default; transform: none; }
+.finding-flag-thanks p { margin: 0; font-size: 0.8rem; color: #1f2328; line-height: 1.45; }
+.finding-flag-thanks p + p { margin-bottom: 0.6rem; color: #57606a; }
+@media (prefers-reduced-motion: reduce) { .finding-flag-panel { animation: none; } .finding-flag-button { transition: none; } }
+@media print { .finding-flag { display: none; } }
 
 /* Which revision the page is a view of, under the repository's name. */
 .docs-revision {
@@ -5503,7 +5701,8 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 .rules-table td:nth-child(1), .rules-table th:nth-child(1) { width: 20%; }
 .rules-table td:nth-child(2), .rules-table th:nth-child(2) { width: auto; }
 .rules-table td:nth-child(3), .rules-table th:nth-child(3) { width: auto; }
-.rules-table td:nth-child(4), .rules-table th:nth-child(4) { width: 11.5rem; }
+/* Wide enough for the longest pill with its switch and flag beside it on one line. */
+.rules-table td:nth-child(4), .rules-table th:nth-child(4) { width: 14.5rem; }
 .rules-table .docs-outcome-when { white-space: nowrap; }
 @media (max-width: 860px) {
   .rules-table td:nth-child(1), .rules-table th:nth-child(1),
@@ -6686,6 +6885,9 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 }
 .check-verdict.is-broken { background: #fdeef0; border-color: #f6c9ce; color: #b3253a; }
 .check-verdict.is-holds { background: #edf9f1; border-color: #bfe3cd; color: #1a7f45; }
+.check-verdict.is-prior { background: #fdf8ee; border-color: #f0d9a8; color: #8a5a0a; }
+/* The one verdict with two facts in it wraps inside the column instead of widening the row. */
+.check-verdict.is-prior { white-space: pre-line; text-align: right; border-radius: 0.6rem; line-height: 1.3; }
 .check-verdict.is-running { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
 .check-verdict.is-muted { background: #f6f8fa; border-color: #e3e8ee; color: #57606a; }
 .check-open { color: #2563eb; font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
@@ -7276,4 +7478,55 @@ button.docs-tally-item.is-on i { color: #1f2328; }
     max-width: 100%;
     border-radius: 0.9rem;
   }
+}
+
+/* Chips, pills and badges are labels, not text to edit: the arrow, never the text caret. Those that
+   act on a click (links, buttons, filters) keep the pointer. */
+.docs-outcome,
+.docs-outcome-when,
+.docs-outcome-branch,
+.docs-badge,
+.docs-live-badge,
+.docs-tally-item,
+.docs-filter,
+.check-verdict { cursor: default; }
+a.docs-outcome,
+.docs-outcome.is-link,
+button.docs-tally-item,
+button.docs-filter,
+a .docs-badge,
+button .docs-badge,
+a.check-verdict,
+button.check-verdict { cursor: pointer; }
+
+/* Rules read from one sentence, grouped: the source and the sentence are said once, in cells that
+   span the group, and stay neutral, since the rules in it can stand differently. Each rule keeps
+   its own tone and its own mark on its own cells. A heavier line sets one sentence off from the
+   next, a light dashed one parts the rules within it. */
+.rules-table td.rules-shared { background: #ffffff; box-shadow: none; }
+.rules-table tr.in-sentence.is-violated td.rules-shared,
+.rules-table tr.in-sentence.is-prior td.rules-shared { background: #ffffff; box-shadow: none; }
+.rules-table tr.in-sentence.is-violated td.docs-rule-statement { box-shadow: inset 2px 0 0 #d33a4b; }
+.rules-table tr.in-sentence.is-prior td.docs-rule-statement { box-shadow: inset 2px 0 0 #e0a13a; }
+.rules-table tr.sentence-first td { border-top: 2px solid #e2e8f0; }
+.rules-table tr.in-sentence:not(.sentence-first) td { border-top: 1px dashed #e5e9ef; }
+.rules-table td.rules-shared { border-right: 1px solid #eef1f5; }
+.rules-sentence-count {
+  display: block;
+  margin-top: 0.4rem;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: default;
+}
+.rules-checks {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  color: #57606a;
+  cursor: default;
+}
+@media (max-width: 860px) {
+  .rules-table tr.in-sentence:not(.sentence-first) { padding-left: 0.75rem; border-left: 2px solid #e2e8f0; }
 }

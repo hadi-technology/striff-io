@@ -69,18 +69,25 @@ export function badgePreviewPath(owner, name, options = {}) {
   return `/badge/${encodeURIComponent(owner)}/${encodeURIComponent(name)}.svg?${query}`;
 }
 
+/** The `ref` a badge's link carries, so a visit from a README's badge can be told from others. */
+export const BADGE_REF = "badge";
+
 /**
  * Where a click on the badge lands: a public repository's own page, and for a private one, which
  * has no public page, the dashboard opened on it, which shows it only to a reader who can see it.
+ * The link carries `ref=badge`, which the site's analytics reads as the visit's source; a link
+ * Striff's own pages show as a preview leaves it out, so a maintainer trying the link is not
+ * counted as a reader of the README. A link without the `ref` lands on the same page.
  *
  * @param {string} owner
  * @param {string} name
- * @param {{ privateRepo?: boolean }} [options]
+ * @param {{ privateRepo?: boolean, preview?: boolean }} [options]
  */
 export function badgeLinkUrl(owner, name, options = {}) {
+  const ref = options.preview ? "" : `ref=${BADGE_REF}`;
   return options.privateRepo
-    ? `${SITE}/dashboard?repo=${encodeURIComponent(owner)}/${encodeURIComponent(name)}`
-    : `${SITE}/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`;
+    ? `${SITE}/dashboard?repo=${encodeURIComponent(owner)}/${encodeURIComponent(name)}${ref ? `&${ref}` : ""}`
+    : `${SITE}/${encodeURIComponent(owner)}/${encodeURIComponent(name)}${ref ? `?${ref}` : ""}`;
 }
 
 /**

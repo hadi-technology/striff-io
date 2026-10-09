@@ -41,6 +41,36 @@ function generateRepoToken(installationId, owner, repo) {
   return `v1.${expiresAt}.${signature}`;
 }
 
+/**
+ * Whether the caller may change which rules a pull request is checked against: GitHub says they
+ * administer the repository, which a personal repository's owner and an organization's owners do.
+ * Seeing a repository is enough to read its rules; turning one off changes what everyone else's
+ * pull requests are held to. Anything short of a clear yes is a no, so a GitHub hiccup never widens
+ * who can do it.
+ */
+async function canManageRules(ghToken, owner, repo) {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${ghToken}`,
+          Accept: "application/vnd.github+json",
+          "User-Agent": "striff-dashboard",
+        },
+      }
+    );
+    if (!res.ok) return false;
+    const data = await res.json();
+    return !!data?.permissions?.admin;
+  } catch {
+    return false;
+  }
+}
+
+/** The writes a PATCH may name, and the API path each goes to. No view is the exclusion list. */
+const PATCH_VIEWS = { "": "exclusions", exclusions: "exclusions", "force-read": "force-read", "rule-states": "rule-states" };
+
 async function readBody(res) {
   const text = await res.text();
   try {
@@ -130,6 +160,34 @@ async function proxy(event, ghToken, params) {
     }
     if (sees !== SEES) return verificationUnavailable();
 
+    if (method === "GET" && params.view === "permissions") {
+      // Asked once per repository, so the controls can say up front who may use them.
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ canManageRules: await canManageRules(ghToken, owner, repo) }),
+      };
+    }
+    const patchView = PATCH_VIEWS[params.view || ""];
+    if (method === "PATCH" && !Object.prototype.hasOwnProperty.call(PATCH_VIEWS, params.view || "")) {
+      // An unknown write used to land on the exclusion list, the one write nobody asked for.
+      return {
+        statusCode: 400,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: "unknown_view" }),
+      };
+    }
+    if (method === "PATCH" && patchView === "rule-states" && !(await canManageRules(ghToken, owner, repo))) {
+      return {
+        statusCode: 403,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          error: "not_repo_admin",
+          message: "Only the repository's owner and admins can change which rules are checked.",
+        }),
+      };
+    }
+
     const token = generateRepoToken(installationId, owner, repo);
     const base = `${STRIFF_API_BASE}/api/v1/organizations/${encodeURIComponent(installationId)}`
       + `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/doc-catalog`;
@@ -147,8 +205,9 @@ async function proxy(event, ghToken, params) {
       url = `${base}/baseline?token=${token}${asked ? `&actor=${encodeURIComponent(asked)}` : ""}`;
       init = { method: "POST", headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
     } else if (method === "PATCH") {
-      // Two lists, opposite jobs: one says never read this, the other says never skip it.
-      url = `${base}/${params.view === "force-read" ? "force-read" : "exclusions"}?token=${token}`;
+      // Two lists say never read this and never skip it; the rule states say which rules a pull
+      // request is checked against.
+      url = `${base}/${patchView}?token=${token}`;
       let asked;
       try {
         asked = JSON.parse(event.body || "{}");

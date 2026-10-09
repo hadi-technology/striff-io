@@ -234,7 +234,7 @@ export default function ReadRepository({
       <span className="read-repo">
         <span className="read-repo-note is-good">
           Read {since(reading!.finishedAtMs)} ago · {reading!.rulesJudged} rule
-          {reading!.rulesJudged === 1 ? "" : "s"} judged
+          {reading!.rulesJudged === 1 ? "" : "s"} checked
           {reading!.reason?.startsWith("Read in part") && (
             <span className="read-repo-part" title={reading!.reason}> · read in part</span>
           )}
@@ -323,7 +323,7 @@ export default function ReadRepository({
       {justFinished && (
         <span className="read-repo-note is-good">
           Read {since(reading!.finishedAtMs)} ago · {reading!.rulesJudged} rule
-          {reading!.rulesJudged === 1 ? "" : "s"} judged
+          {reading!.rulesJudged === 1 ? "" : "s"} checked
           {reading!.reason?.startsWith("Read in part") && (
             <span className="read-repo-part" title={reading!.reason}> · read in part</span>
           )}

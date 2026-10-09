@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { issueUrl } from "./docIssue";
+import { brokenRulePrompt, issueUrl } from "./docIssue";
+import FindingActions from "./FindingActions";
+import FlagFinding from "./FlagFinding";
+import { IGNORED_BY_HINT, RuleSwitch } from "./RuleStateControls";
 import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
 import { standing } from "../lib/standing.js";
@@ -39,6 +42,10 @@ export interface Rule {
   checkedFrom?: number | null;
   /** One past where those words end. */
   checkedTo?: number | null;
+  /** Whether pull requests aren't checked against this rule; absent from an older server, and then false. */
+  ignored?: boolean;
+  /** What ignored it: the rule itself, its doc, a folder above it, or the doc being excluded. */
+  ignoredBy?: "rule" | "document" | "folder" | "excluded" | null;
 }
 
 /** One rule with the document it came from, which is how every scope reads them. */
@@ -59,6 +66,33 @@ export type Standing = "holds" | "broken" | "unchecked" | "unclear";
 
 export { standing };
 
+/** What makes two rules come from one sentence: the doc, the line and the sentence's own words. */
+function sentenceKey(row: Row): string {
+  return `${row.doc.path}\u0000${row.sourceLine ?? ""}\u0000${plainText(row.quote || "")}`;
+}
+
+/**
+ * The rows with each sentence's rules brought together, at the place its first rule was sorted to,
+ * so the order chosen still decides which sentences come first.
+ */
+function bySentence(rows: Row[]): Row[] {
+  const groups = new Map<string, Row[]>();
+  for (const row of rows) {
+    const key = sentenceKey(row);
+    const group = groups.get(key);
+    if (group) group.push(row);
+    else groups.set(key, [row]);
+  }
+  return [...groups.values()].flat();
+}
+
+/** The words of its sentence a rule checks, where it marks any. */
+function checkedWords(row: Row): string {
+  const quote = row.quote || "";
+  if (row.checkedFrom == null || row.checkedTo == null || row.checkedTo <= row.checkedFrom) return "";
+  return plainText(quote.slice(row.checkedFrom, row.checkedTo)).trim();
+}
+
 /** Worst first: what is broken, then what nothing has judged, then what holds. */
 const SEVERITY: Record<Standing, number> = { broken: 0, unchecked: 1, holds: 2, unclear: 3 };
 
@@ -72,12 +106,13 @@ export const STANDING_LABEL: Record<Standing, string> = {
 export const STANDING_HELP: Record<Standing, string> = {
   broken: "The code does not keep this rule.",
   holds: "The code keeps this rule.",
-  unchecked: "Nothing has judged this rule against the code yet.",
-  unclear: "Striff could not tell.",
+  unchecked: "This rule hasn't been checked against the code yet.",
+  unclear: "Striff couldn't check this rule.",
 };
 
 /** What an empty table says when a count, not a search, emptied it. */
-const NONE_STANDING: Record<Standing, string> = {
+const NONE_STANDING: Record<Standing | "ignored", string> = {
+  ignored: "No rule here is ignored.",
   broken: "No rule here is broken.",
   holds: "No rule here holds yet.",
   unchecked: "Every rule here has been checked.",
@@ -85,7 +120,15 @@ const NONE_STANDING: Record<Standing, string> = {
 };
 
 /** Which rules a reader asked to see, where they followed a count to them. */
-export type RuleFilter = "all" | Standing;
+export type RuleFilter = "all" | Standing | "ignored";
+
+/** Turns rules on and off for pull requests, where the reader may; absent on a public page. */
+export interface RuleStateHandle {
+  /** Why the reader cannot use the switches, or null where they can. */
+  disabledReason: string | null;
+  /** Sets one rule; resolves to an error to show, or null. */
+  set: (row: Row, ignored: boolean) => Promise<string | null>;
+}
 
 /** Which column the list is ordered by. */
 type SortKey = "rule" | "source" | "outcome";
@@ -123,6 +166,9 @@ export default function RulesTable({
   truncated,
   onOpenDoc,
   issues = true,
+  demo = false,
+  ruleStates,
+  repositoryIgnored = false,
 }: {
   /** The rules in scope, already stripped of the ones nothing could judge. */
   rows: Row[];
@@ -146,7 +192,15 @@ export default function RulesTable({
   onOpenDoc?: (path: string) => void;
   /** Whether a broken rule offers to open an issue; a public page's reader is not the repository's. */
   issues?: boolean;
+  /** Whether these are the demo's rules, about a repository that does not exist on GitHub. */
+  demo?: boolean;
+  /** The Active/Ignored switch on each row; absent where nothing can be changed. */
+  ruleStates?: RuleStateHandle;
+  /** Whether the whole repository is ignored, so a rule ignored with it says so, not "folder". */
+  repositoryIgnored?: boolean;
 }) {
+  /** A switch that failed says so on its own row until it is tried again. */
+  const [stateError, setStateError] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
   // Document order to begin with: a repository's rules read as its documents do until someone
@@ -162,7 +216,9 @@ export default function RulesTable({
 
   const term = query.trim().toLowerCase();
   const shown = useMemo(() => {
-    const matchesFilter = (row: Row) => (filter === "all" ? true : standing(row) === filter);
+    // An ignored rule is listed under All and Ignored, and counted in none of the standings.
+    const matchesFilter = (row: Row) =>
+      filter === "all" ? true : filter === "ignored" ? !!row.ignored : !row.ignored && standing(row) === filter;
     const matchesTerm = (row: Row) =>
       term === "" ||
       plainText(row.statement).toLowerCase().includes(term) ||
@@ -185,10 +241,22 @@ export default function RulesTable({
       }
       return byDocument(a, b);
     };
-    return rows
+    // Ignored rules sit below the rest whichever way the list is ordered.
+    const sorted = rows
       .filter((row) => matchesFilter(row) && matchesTerm(row))
-      .sort((a, b) => sort.dir * compare(a, b));
+      .sort((a, b) => Number(!!a.ignored) - Number(!!b.ignored) || sort.dir * compare(a, b));
+    return bySentence(sorted);
   }, [rows, filter, term, sort]);
+
+  /** Each sentence's rules in the order shown, so its first row can hold the sentence for all of them. */
+  const sentences = useMemo(() => {
+    const members = new Map<string, Row[]>();
+    for (const row of shown) {
+      const key = sentenceKey(row);
+      members.set(key, [...(members.get(key) || []), row]);
+    }
+    return members;
+  }, [shown]);
 
   /** The same click on a column twice turns it round; a different column starts at the top. */
   function orderBy(key: SortKey) {
@@ -216,7 +284,7 @@ export default function RulesTable({
 
   /** The list as it stands on screen, as a file: what is filtered out is not in it. */
   function downloadCsv() {
-    const header = ["Document", "Line", "Rule", "Sentence", "Outcome", "Pull request", "Judged", "On default branch"];
+    const header = ["Doc", "Line", "Rule", "Sentence", "Outcome", "Pull request", "Checked", "On default branch"];
     const lines = [header.map(csvCell).join(",")];
     for (const row of shown) {
       lines.push(
@@ -225,10 +293,10 @@ export default function RulesTable({
           csvCell(row.sourceLine ?? ""),
           csvCell(plainText(row.statement)),
           csvCell(plainText(row.quote)),
-          csvCell(STANDING_LABEL[standing(row)]),
+          csvCell(row.ignored ? "Ignored" : STANDING_LABEL[standing(row)]),
           csvCell(row.pullNo ? `#${row.pullNo}` : ""),
           csvCell(row.judgedAtMs ? new Date(row.judgedAtMs).toISOString().slice(0, 10) : ""),
-          csvCell(row.onDefaultBranch ? "judged against the default branch" : "judged on a pull request"),
+          csvCell(row.onDefaultBranch ? "checked against the default branch" : "checked on a pull request"),
         ].join(",")
       );
     }
@@ -315,24 +383,36 @@ export default function RulesTable({
           </tr>
         </thead>
         <tbody>
-          {shown.map((row) => (
+          {shown.map((row) => {
+            const members = sentences.get(sentenceKey(row)) || [row];
+            const group = { size: members.length, index: members.indexOf(row) };
+            const grouped = group.size > 1;
+            // One sentence's rules share its cells only where they all mark the same words in it;
+            // otherwise the sentence is shown plain and each rule names the words it checks.
+            const sameWords = members.every((r) => r.checkedFrom === row.checkedFrom && r.checkedTo === row.checkedTo);
+            return (
             <tr
               key={row.factId}
               /* The tone follows the pill. It used to follow the pull request's own status, so a
                  rule the default branch reports as broken -- which the pill says, in red -- got a
                  white row with no mark on it at all. Newly broken and already broken keep their
                  own tones, because the first is this change's doing and the second is not. */
-              className={
-                row.status === "VIOLATED"
+              className={[
+                row.ignored
+                  ? "is-ignored"
+                  : row.status === "VIOLATED"
                   ? "is-violated"
                   : row.status === "PRE_EXISTING"
                   ? "is-prior"
                   : standing(row) === "broken"
                   ? "is-violated"
-                  : ""
-              }
+                  : "",
+                grouped ? "in-sentence" : "",
+                grouped && group.index === 0 ? "sentence-first" : "",
+              ].filter(Boolean).join(" ")}
             >
-              <td className="rules-source">
+              {group.index === 0 && (
+              <td className={`rules-source${grouped ? " rules-shared" : ""}`} rowSpan={grouped ? group.size : undefined}>
                 <span className="rules-source-where">
                   {showPath ? (
                     <button type="button" className="rules-source-link" onClick={() => onOpenDoc?.(row.doc.path)}>
@@ -366,37 +446,114 @@ export default function RulesTable({
                   </span>
                 )}
               </td>
-              <td className="docs-rule-quote">
-                <Clamped lines={4}>{withChecked(row.quote, row.checkedFrom, row.checkedTo, term)}</Clamped>
-              </td>
+              )}
+              {group.index === 0 && (
+                <td className={`docs-rule-quote${grouped ? " rules-shared" : ""}`} rowSpan={grouped ? group.size : undefined}>
+                  <Clamped lines={4}>
+                    {grouped && !sameWords
+                      ? withCode(row.quote || "", term)
+                      : withChecked(row.quote, row.checkedFrom, row.checkedTo, term)}
+                  </Clamped>
+                  {grouped && (
+                    <span className="rules-sentence-count">{group.size} rules from this sentence</span>
+                  )}
+                </td>
+              )}
               <td className="docs-rule-statement">
                 <Clamped lines={4}>{withCode(row.statement, term)}</Clamped>
+                {grouped && !sameWords && checkedWords(row) && (
+                  <span className="rules-checks" title="The words of the sentence this rule checks.">
+                    checks “{checkedWords(row)}”
+                  </span>
+                )}
               </td>
-              <td>
+              <td className="rules-standing-cell">
+
                 {/* A rule a pull request's change broke names that pull request: it is where the
                     break came from, and one click from the diff. A rule broken before any pull
                     request judged it has nothing to name, and says only that it is broken. */}
-                {standing(row) === "broken" && row.status === "VIOLATED" && row.pullNo ? (
-                  <a
-                    className="docs-outcome is-broken is-link"
-                    href={`https://github.com/${owner}/${name}/pull/${row.pullNo}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={`Pull request #${row.pullNo} broke this rule.`}
-                  >
-                    Broken by #{row.pullNo}
-                  </a>
-                ) : (
-                  <span className={`docs-outcome is-${standing(row)}`} title={STANDING_HELP[standing(row)]}>
-                    {STANDING_LABEL[standing(row)]}
-                  </span>
-                )}
+                {/* The pill and, right of it, the switch that turns the rule off: one line, so turning a
+                    rule off costs the row no height. */}
+                <span className="rule-standing-line">
+                  {row.ignored ? (
+                    <span
+                      className="docs-outcome is-ignored"
+                      title={row.ignoredBy === "excluded"
+                        ? "Not checked: the doc this rule is in is excluded."
+                        : "Pull requests aren't checked against this rule."}
+                    >
+                      Ignored{row.ignoredBy === "folder" && repositoryIgnored
+                        ? " · repository"
+                        : row.ignoredBy && IGNORED_BY_HINT[row.ignoredBy] ? ` · ${IGNORED_BY_HINT[row.ignoredBy]}` : ""}
+                    </span>
+                  ) : standing(row) === "broken" && row.status === "VIOLATED" && row.pullNo ? (
+                    <a
+                      className="docs-outcome is-broken is-link"
+                      href={`https://github.com/${owner}/${name}/pull/${row.pullNo}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`Pull request #${row.pullNo} broke this rule.`}
+                    >
+                      Broken by PR #{row.pullNo}
+                    </a>
+                  ) : standing(row) === "broken" && row.status === "PRE_EXISTING" ? (
+                    // Broken, and not by the pull request that last checked it: the same "already
+                    // broken" the Checks and Metrics tabs count, so one word means one thing.
+                    <span
+                      className="docs-outcome is-broken"
+                      title={row.pullNo
+                        ? `The code was already not keeping this rule before PR #${row.pullNo}.`
+                        : "The code was already not keeping this rule when it was first checked."}
+                    >
+                      Already broken
+                    </span>
+                  ) : standing(row) === "holds" && row.status === "RESTORED" && row.pullNo ? (
+                    <a
+                      className="docs-outcome is-holds is-link"
+                      href={`https://github.com/${owner}/${name}/pull/${row.pullNo}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`The code was not keeping this rule until pull request #${row.pullNo} restored it.`}
+                    >
+                      Restored by PR #{row.pullNo}
+                    </a>
+                  ) : (
+                    <span className={`docs-outcome is-${standing(row)}`} title={STANDING_HELP[standing(row)]}>
+                      {STANDING_LABEL[standing(row)]}
+                    </span>
+                  )}
+                  {ruleStates && (
+                    <RuleSwitch
+                      compact
+                      ignored={!!row.ignored}
+                      ignoredBy={row.ignoredBy}
+                      disabledReason={ruleStates.disabledReason}
+                      onToggle={async (next) => {
+                        setStateError((was) => ({ ...was, [row.factId]: "" }));
+                        const failed = await ruleStates.set(row, next);
+                        if (failed) setStateError((was) => ({ ...was, [row.factId]: failed }));
+                      }}
+                    />
+                  )}
+                  <FlagFinding
+                    demo={demo}
+                    flagged={{
+                      kind: "rule",
+                      repo: `${owner}/${name}`,
+                      doc: row.doc.path,
+                      line: row.sourceLine,
+                      finding: row.statement,
+                      standing: row.status === "PRE_EXISTING" ? "already broken" : standing(row),
+                      id: row.factId,
+                    }}
+                  />
+                </span>
                 {/* This column is narrow, so each line under the pill is short enough to stay one
                     line, and the sentence it stands for is in its title. */}
                 {row.pullNo && (
                   <span
                     className="docs-outcome-when"
-                    title={`Last judged on PR #${row.pullNo}, ${when(row.judgedAtMs)}.`}
+                    title={`Last checked on PR #${row.pullNo}, ${when(row.judgedAtMs)}.`}
                   >
                     PR #{row.pullNo} · {when(row.judgedAtMs)}
                   </span>
@@ -404,28 +561,25 @@ export default function RulesTable({
                 {row.pullNo && !row.onDefaultBranch && (
                   <span
                     className="docs-outcome-branch"
-                    title="A pull request judged this rule. Nothing has judged it against the default branch yet."
+                    title="A pull request checked this rule. It hasn't been checked against the default branch yet."
                   >
                     not checked on {branch || "the branch"} yet
                   </span>
                 )}
-                {issues && standing(row) === "broken" && (
-                  <a
-                    className="docs-issue-link"
-                    href={issueUrl(owner, name, row.doc.path, row, branch)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Opens GitHub with an issue written out: the sentence, the rule, what happened and what would close it."
-                  >
-                    Open an issue
-                    <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M6.5 3.5H3.5v9h9v-3" /><path d="M9.5 3.5h3v3" /><path d="M12.5 3.5 7 9" />
-                    </svg>
-                  </a>
+                {issues && !row.ignored && standing(row) === "broken" && (
+                  <FindingActions
+                    issueUrl={issueUrl(owner, name, row.doc.path, row, branch)}
+                    prompt={brokenRulePrompt(owner, name, row.doc.path, row, branch)}
+                    demo={demo}
+                  />
+                )}
+                {ruleStates && stateError[row.factId] && (
+                  <span className="rule-switch-error" role="alert">{stateError[row.factId]}</span>
                 )}
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
 
@@ -447,7 +601,7 @@ export default function RulesTable({
         {truncated && (
           <>
             {" · "}
-            <b>This repository holds more rules than one answer carries; these are the first of
+            <b>This repository has more rules than one answer carries; these are the first of
             them, by document, so a document later in the repository may have rules this list
             does not reach.</b>
           </>

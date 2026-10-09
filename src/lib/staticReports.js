@@ -256,7 +256,7 @@ export function reportHead(report, site = SITE) {
   // so the canonical address, the sitemap and og:url name the address a crawler ends up on.
   const canonical = `${site}/${owner.toLowerCase()}/${name.toLowerCase()}/`;
   const namesPart = facts.names > 0
-    ? `${facts.names}${facts.namesTruncated ? "+" : ""} ${facts.names === 1 && !facts.namesTruncated ? "name" : "names"} in the docs no longer ${facts.names === 1 && !facts.namesTruncated ? "matches" : "match"} the code.`
+    ? `${facts.names}${facts.namesTruncated ? "+" : ""} stale ${facts.names === 1 && !facts.namesTruncated ? "name" : "names"} in the docs.`
     : "";
   const day = facts.refreshedAtMs ? headDay(facts.refreshedAtMs) : null;
 
@@ -268,13 +268,13 @@ export function reportHead(report, site = SITE) {
     if (facts.unchecked > 0) standings.push(`${facts.unchecked} not checked yet`);
     description = `Striff read ${plural(facts.read, "doc")} in ${full} and checked the ${plural(facts.rules, "rule")} ${facts.read === 1 ? "it states" : "they state"} against the code: ${standings.join(", ")}.`;
   } else if (facts.names > 0) {
-    headline = `${full}: ${facts.names}${facts.namesTruncated ? "+" : ""} ${facts.names === 1 && !facts.namesTruncated ? "name" : "names"} in its docs out of date`;
+    headline = `${full}: ${facts.names}${facts.namesTruncated ? "+" : ""} stale ${facts.names === 1 && !facts.namesTruncated ? "name" : "names"} in its docs`;
     description = `Striff read ${plural(facts.read, "doc")} in ${full} and checked the names ${facts.read === 1 ? "it writes" : "they write"} against the code.`;
   } else {
     headline = `${full}: documented architecture report`;
     description = `Striff reads the docs in ${full}, turns the sentences that make claims about the code into rules, and checks them against the code.`;
   }
-  description = [description, namesPart, `Public, read-only report${day ? `, last refreshed ${day}` : ""}.`]
+  description = [description, namesPart, `Public, read-only report${day ? `, last read ${day}` : ""}.`]
     .filter(Boolean).join(" ");
 
   const jsonLd = {

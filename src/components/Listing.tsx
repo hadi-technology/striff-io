@@ -25,12 +25,12 @@ export default function Listing({
     return (
       <div className="listing is-stale" role="status">
         <p className="listing-line">
-          Striff has not listed {what} yet. The work is queued and can sit behind other
+          Striff hasn't read {what} yet. The work is queued and can sit behind other
           repositories; it is not lost.
         </p>
         {onLookAgain && (
           <button type="button" className="dashboard-button dashboard-button-secondary" onClick={onLookAgain}>
-            Look again
+            Try again
           </button>
         )}
       </div>
