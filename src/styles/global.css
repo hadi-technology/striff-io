@@ -5138,6 +5138,71 @@ button.docs-tally-item.is-on i { color: #1f2328; }
 }
 @media print { .finding-actions, .finding-action { display: none; } }
 
+/* A quiet flag in the corner of a finding's cell, for a reader who thinks Striff got it wrong. */
+td.rules-standing { position: relative; padding-right: 2.25rem; }
+.finding-flag { position: absolute; top: 0.55rem; right: 0.4rem; }
+.finding-flag-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: #8c959f;
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+tr:hover .finding-flag-button,
+.finding-flag-button:focus-visible,
+.finding-flag-button[aria-expanded="true"],
+.finding-flag-button.is-sent { opacity: 1; }
+.finding-flag-button:hover,
+.finding-flag-button[aria-expanded="true"] { color: #cf222e; background: #fff5f5; border-color: #ffd8d3; }
+.finding-flag-button.is-sent { color: #cf222e; }
+.finding-flag-button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.finding-flag-panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 30;
+  width: 18rem;
+  padding: 0.75rem;
+  border: 1px solid #d0d7de;
+  border-radius: 0.6rem;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(31, 35, 40, 0.14);
+  text-align: left;
+  animation: finding-flag-in 0.14s ease-out;
+}
+@keyframes finding-flag-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.finding-flag-title { margin: 0; font-size: 0.85rem; font-weight: 700; color: #1f2328; }
+.finding-flag-hint { margin: 0.2rem 0 0.5rem; font-size: 0.75rem; color: #57606a; line-height: 1.4; }
+.finding-flag-panel textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #d0d7de;
+  border-radius: 0.45rem;
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.finding-flag-panel textarea:focus { outline: 2px solid #2563eb; outline-offset: 0; border-color: #2563eb; }
+.finding-flag-foot { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
+.finding-flag-foot .finding-action { margin-top: 0; }
+.finding-flag-count { margin-right: auto; font-size: 0.7rem; color: #8c959f; }
+.finding-flag-error { flex-basis: 100%; font-size: 0.75rem; color: #cf222e; }
+.finding-action.is-primary { background: #1f2328; border-color: #1f2328; color: #ffffff; }
+.finding-action.is-primary:hover { background: #2563eb; border-color: #2563eb; color: #ffffff; }
+.finding-action:disabled { opacity: 0.6; cursor: default; transform: none; }
+.finding-flag-thanks p { margin: 0; font-size: 0.8rem; color: #1f2328; line-height: 1.45; }
+.finding-flag-thanks p + p { margin-bottom: 0.6rem; color: #57606a; }
+@media (prefers-reduced-motion: reduce) { .finding-flag-panel { animation: none; } .finding-flag-button { transition: none; } }
+@media print { .finding-flag { display: none; } }
+
 /* Which revision the page is a view of, under the repository's name. */
 .docs-revision {
   display: flex;

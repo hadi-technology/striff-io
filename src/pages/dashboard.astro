@@ -30,4 +30,13 @@ import Dashboard from "../components/Dashboard";
   <main class="dashboard-page text-slate-900">
     <Dashboard client:load />
   </main>
+
+  <!-- Netlify registers a form's fields from static HTML at deploy time. The flag a reader sends on
+       a rule or a stale name (FlagFinding) is posted to this form by script; this copy is never shown. -->
+  <form name="finding-flag" data-netlify="true" netlify-honeypot="bot-field" hidden>
+    <input type="hidden" name="form-name" value="finding-flag" />
+    <input name="kind" /><input name="repo" /><input name="doc" /><input name="line" />
+    <input name="finding" /><input name="standing" /><input name="id" /><input name="page" />
+    <textarea name="message"></textarea><input name="bot-field" />
+  </form>
 </BaseLayout>

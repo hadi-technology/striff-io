@@ -1,6 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
+import FlagFinding from "./FlagFinding";
 import RevisionLine from "./RevisionLine";
 import { Clamped, mark, plainText, snippet, useWatch, withCode, when } from "./docRules";
 import RulesTable, {
@@ -2382,7 +2383,18 @@ export default function DocsTab({
                             <td className="docs-rule-quote">
                               <Clamped lines={4}>{withCode(finding.sentence || "")}</Clamped>
                             </td>
-                            <td>
+                            <td className="rules-standing">
+                              <FlagFinding
+                                demo={!!sample}
+                                flagged={{
+                                  kind: "stale-name",
+                                  repo: `${owner}/${name}`,
+                                  doc: selected,
+                                  line: finding.sourceLine,
+                                  finding: finding.name,
+                                  standing: finding.state.toLowerCase(),
+                                }}
+                              />
                               <span className="docs-stale-has">{withCode(staleLine(finding))}</span>
                               <span className="docs-outcome-when">
                                 first seen {when(finding.firstSeenMs)}

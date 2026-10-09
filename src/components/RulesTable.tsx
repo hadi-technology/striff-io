@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { brokenRulePrompt, issueUrl } from "./docIssue";
 import FindingActions from "./FindingActions";
+import FlagFinding from "./FlagFinding";
 import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
 import { standing } from "../lib/standing.js";
@@ -376,7 +377,19 @@ export default function RulesTable({
               <td className="docs-rule-statement">
                 <Clamped lines={4}>{withCode(row.statement, term)}</Clamped>
               </td>
-              <td>
+              <td className="rules-standing">
+                <FlagFinding
+                  demo={demo}
+                  flagged={{
+                    kind: "rule",
+                    repo: `${owner}/${name}`,
+                    doc: row.doc.path,
+                    line: row.sourceLine,
+                    finding: row.statement,
+                    standing: row.status === "PRE_EXISTING" ? "already broken" : standing(row),
+                    id: row.factId,
+                  }}
+                />
                 {/* A rule a pull request's change broke names that pull request: it is where the
                     break came from, and one click from the diff. A rule broken before any pull
                     request judged it has nothing to name, and says only that it is broken. */}
