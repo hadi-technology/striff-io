@@ -58,7 +58,7 @@ const githubAppUrl = "https://github.com/apps/striffs/installations/new";
 const ossShown = await loadTallies(ossRepos);
 /** What a screen reader hears for one repository's tally. */
 const tallyWords = (t: { held: number; broken: number; outOfDate: number }) =>
-  `${t.held} rule${t.held === 1 ? "" : "s"} held, ${t.broken} broken, ${t.outOfDate} name${t.outOfDate === 1 ? "" : "s"} out of date`;
+  `${t.held} rule${t.held === 1 ? "" : "s"} held, ${t.broken} broken, ${t.outOfDate} stale name${t.outOfDate === 1 ? "" : "s"}`;
 
 // The browser extension's homepage section.
 const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
@@ -445,7 +445,7 @@ const structuredData = JSON.stringify([
                                 <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.06 1.06L6.94 8 4.97 9.97a.75.75 0 1 0 1.06 1.06L8 9.06l1.97 1.97a.75.75 0 1 0 1.06-1.06L9.06 8l1.97-1.97a.75.75 0 0 0-1.06-1.06L8 6.94Z"/></svg>
                                 <b>{r.tally.broken}</b><i>broken</i>
                               </span>
-                              <span class="proof-tally-item is-stale"><b>{r.tally.outOfDate}</b><i>out of date</i></span>
+                              <span class="proof-tally-item is-stale"><b>{r.tally.outOfDate}</b><i>stale names</i></span>
                             </span>
                           </span>
                         </a>

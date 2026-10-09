@@ -461,7 +461,7 @@ const FILTER_CHIPS: { key: DocFilter; label: string; dot: string; always: boolea
   { key: "results", label: "With results", dot: "", always: false },
   { key: "all", label: "All", dot: "", always: true },
   { key: "broken", label: "Broken", dot: "broken", always: true },
-  { key: "stale", label: "Names out of date", dot: "stale", always: false },
+  { key: "stale", label: "Stale names", dot: "stale", always: false },
   { key: "notRead", label: "Not read", dot: "unread", always: true },
   { key: "outdated", label: "Edited since", dot: "outdated", always: false },
   { key: "unreadable", label: "Couldn't read", dot: "broken", always: false },
@@ -480,7 +480,7 @@ const FILTER_CHIPS: { key: DocFilter; label: string; dot: string; always: boolea
  * rules cannot say this, because a document with no rules has no row to say it in.
  */
 const SUMMARY_PARTS: { key: DocFilter; label: string; help: string }[] = [
-  { key: "stale", label: "naming something gone", help: "Documents that write a name the default branch no longer has." },
+  { key: "stale", label: "with stale names", help: "Documents with a stale name: one the default branch no longer declares, or declares somewhere else." },
   { key: "notRead", label: "not read", help: "Documents Striff hasn't read yet, so any rule in them is not counted here." },
   { key: "outdated", label: "edited since read", help: "Documents edited on the default branch since Striff read them, so their rules come from an older version." },
   { key: "unreadable", label: "couldn't read", help: "Documents Striff could not finish reading. That isn't counted as “no rules”." },
@@ -1519,7 +1519,7 @@ export default function DocsTab({
         {staleByDoc.has(doc.path) && (
           <span
             className="docs-badge is-stale"
-            title="Names this doc writes that no longer match the code: gone, moved or renamed."
+            title="Stale names in this doc: gone, moved or renamed in the code."
           >
             {staleByDoc.get(doc.path)!.length} stale
           </span>
@@ -1736,11 +1736,11 @@ export default function DocsTab({
         <button
           type="button"
           className={`docs-tally-item is-stale${repoStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
-          title={`Names your docs write that no longer match the code: gone, moved or renamed. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
+          title={`Stale names in your docs: gone, moved or renamed in the code. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
           onClick={() => setFilter(filter === "stale" ? "all" : "stale")}
         >
           <b>{repoStale}{staleNames.truncated ? "+" : ""}</b>
-          <i>names out of date</i>
+          <i>stale names</i>
         </button>
       )}
       {catalog && !readOnly && (
@@ -1901,8 +1901,8 @@ export default function DocsTab({
           </p>
           {!!source && repoStale > 0 && (
             <p className="docs-names-line">
-              {repoStale}{staleNames?.truncated ? "+" : ""} name{repoStale === 1 && !staleNames?.truncated ? "" : "s"} in
-              these docs no longer match{repoStale === 1 && !staleNames?.truncated ? "es" : ""} the code.
+              {repoStale}{staleNames?.truncated ? "+" : ""} stale
+              name{repoStale === 1 && !staleNames?.truncated ? "" : "s"} in these docs.
             </p>
           )}
           {catalog && <RevisionLine catalog={catalog} />}
@@ -2137,13 +2137,13 @@ export default function DocsTab({
                 {namesFirst && (
                   <div className="docs-gone">
                     <h4>
-                      Names these docs write that the code no longer has
+                      Stale names in these docs
                       <b>{scopeStaleFindings.length}</b>
                     </h4>
                     <p className="docs-stale-note">
-                      Each sentence below names a type the default branch doesn't declare, or
-                      declares somewhere else. Edit the doc so it matches the code, or bring the
-                      type back.
+                      Each sentence below has a stale name: a type the default branch doesn't
+                      declare, or declares somewhere else. Edit the doc so it matches the code, or
+                      bring the type back.
                     </p>
                     <ul className="docs-gone-list">
                       {scopeStaleFindings.map((finding) => (
@@ -2334,12 +2334,12 @@ export default function DocsTab({
                 {staleByDoc.has(selected) && (
                   <div className="docs-stale">
                     <h4>
-                      Names this doc writes that the code no longer has
+                      Stale names in this doc
                       <b>{staleByDoc.get(selected)!.length}</b>
                     </h4>
                     <p className="docs-stale-note">
-                      These aren't broken rules. The doc names something the default branch
-                      doesn't have, so the doc is out of date about it. Edit the doc so it stops
+                      These aren't broken rules. A stale name is one the doc writes and the
+                      default branch doesn't have, or has somewhere else. Edit the doc so it stops
                       naming it, or bring it back; the next reading of the repository closes it
                       either way.
                     </p>

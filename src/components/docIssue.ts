@@ -60,10 +60,10 @@ export function staleNameIssueUrl(
   const moved = finding.state === "MOVED";
   const renamed = finding.state === "RENAMED" && !!finding.renamedTo;
   const title = moved
-    ? `${docPath} puts ${finding.name} where the code no longer has it`
+    ? `Stale name in ${docPath}: ${finding.name} has moved`
     : renamed
-      ? `${docPath} writes ${finding.name}, which the code now spells ${finding.renamedTo}`
-      : `${docPath} names ${finding.name}, which the code no longer has`;
+      ? `Stale name in ${docPath}: ${finding.name} is now ${finding.renamedTo}`
+      : `Stale name in ${docPath}: ${finding.name} is gone`;
   const where = `https://github.com/${owner}/${repo}/blob/${branch}/${docPath
     .split("/")
     .map(encodeURIComponent)
@@ -158,7 +158,7 @@ export function staleNamePrompt(
   }
 
   return [
-    `Fix a stale reference in the documentation of ${owner}/${repo} (branch \`${branch}\`).`,
+    `Fix a stale name in the documentation of ${owner}/${repo} (branch \`${branch}\`).`,
     "",
     `Document: ${where}`,
     ...(quote ? ["The sentence:", `> ${quote}`] : []),
@@ -170,6 +170,54 @@ export function staleNamePrompt(
     `2. If the finding holds: ${fix}`,
     "3. Edit documentation only. Do not change source code.",
     `4. Open a pull request with the change. In its description, quote the sentence above and end with: "Found by Striff (https://striff.io)."`,
+  ].join("\n");
+}
+
+/**
+ * Instructions an agent can run as they are about a rule the code is not keeping.
+ *
+ * A broken rule says the doc and the code disagree, not which one is wrong, and the rule was read
+ * from the sentence by a model. So the agent first checks whether the code really breaks what the
+ * sentence says, and stops if it does not. Where the doc is what went out of date, it edits the
+ * doc. Where the code moved away from a rule the doc still means, it changes no code: it reports
+ * what broke it and proposes the fix, for a person to decide.
+ *
+ * @param owner the repository's owner
+ * @param repo the repository's name
+ * @param docPath the document the rule was read from
+ * @param rule the rule and what was last said about it
+ * @param branch the default branch where known
+ * @return the prompt, as plain text
+ */
+export function brokenRulePrompt(
+  owner: string,
+  repo: string,
+  docPath: string,
+  rule: IssueRule,
+  branch?: string | null
+): string {
+  const ref = branch || "the default branch";
+  const where = `\`${docPath}\`${rule.sourceLine ? `, line ${rule.sourceLine}` : ""}`;
+  const quote = plain(rule.quote).slice(0, MAX_QUOTE);
+  const statement = plain(rule.statement);
+  const happened =
+    rule.status === "VIOLATED"
+      ? `The code kept this rule before ${rule.pullNo ? `pull request #${rule.pullNo}` : "the last change checked"} and not after.`
+      : `The code was already not keeping this rule when ${rule.pullNo ? `pull request #${rule.pullNo}` : "it was last checked"} was checked.`;
+
+  return [
+    `Check a rule that the documentation of ${owner}/${repo} states and the code may no longer keep (branch \`${ref}\`).`,
+    "",
+    `Document: ${where}`,
+    ...(quote ? ["The sentence:", `> ${quote}`] : []),
+    `The rule Striff read from it: ${statement}`,
+    `What Striff found: ${happened}`,
+    "",
+    "Steps:",
+    "1. Check the finding first. Read the sentence and the code it talks about on the current branch, and decide whether the code really breaks what the sentence says. The rule was read from the sentence automatically and may not say quite what the sentence means. If the code keeps what the sentence says, stop, change nothing, and report that the finding is wrong.",
+    `2. If the code breaks it, work out which side is out of date.${rule.pullNo ? ` Read pull request #${rule.pullNo} to see whether the change was meant.` : ""}`,
+    "3. If the code changed on purpose and the doc no longer describes it, edit the sentence so it describes the code as it is now. Edit documentation only, and open a pull request. In its description, quote the sentence above and end with: \"Found by Striff (https://striff.io).\"",
+    "4. If the doc still describes what is intended and the code drifted from it, do not change any code. Report which change broke the rule and the smallest code change that would restore it, and ask before making it.",
   ].join("\n");
 }
 

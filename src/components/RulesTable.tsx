@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { issueUrl } from "./docIssue";
+import { brokenRulePrompt, issueUrl } from "./docIssue";
 import FindingActions from "./FindingActions";
 import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
@@ -414,7 +414,11 @@ export default function RulesTable({
                   </span>
                 )}
                 {issues && standing(row) === "broken" && (
-                  <FindingActions issueUrl={issueUrl(owner, name, row.doc.path, row, branch)} demo={demo} />
+                  <FindingActions
+                    issueUrl={issueUrl(owner, name, row.doc.path, row, branch)}
+                    prompt={brokenRulePrompt(owner, name, row.doc.path, row, branch)}
+                    demo={demo}
+                  />
                 )}
               </td>
             </tr>

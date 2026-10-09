@@ -18,7 +18,7 @@ function fakeFetch(answers, asked = []) {
   };
 }
 
-test("the tally is the default branch's holding and broken rules and the names out of date", () => {
+test("the tally is the default branch's holding and broken rules and the stale names", () => {
   assert.deepEqual(tallyFrom(catalog({ rules: 56, holdsOnDefaultBranch: 54, brokenOnDefaultBranch: 2 }), findings(1)),
     { held: 54, broken: 2, outOfDate: 1, rules: 56 });
 });

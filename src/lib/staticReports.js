@@ -268,7 +268,7 @@ export function reportHead(report, site = SITE) {
     if (facts.unchecked > 0) standings.push(`${facts.unchecked} not checked yet`);
     description = `Striff read ${plural(facts.read, "doc")} in ${full} and checked the ${plural(facts.rules, "rule")} ${facts.read === 1 ? "it states" : "they state"} against the code: ${standings.join(", ")}.`;
   } else if (facts.names > 0) {
-    headline = `${full}: ${facts.names}${facts.namesTruncated ? "+" : ""} ${facts.names === 1 && !facts.namesTruncated ? "name" : "names"} in its docs out of date`;
+    headline = `${full}: ${facts.names}${facts.namesTruncated ? "+" : ""} stale ${facts.names === 1 && !facts.namesTruncated ? "name" : "names"} in its docs`;
     description = `Striff read ${plural(facts.read, "doc")} in ${full} and checked the names ${facts.read === 1 ? "it writes" : "they write"} against the code.`;
   } else {
     headline = `${full}: documented architecture report`;
