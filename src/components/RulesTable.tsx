@@ -405,35 +405,18 @@ export default function RulesTable({
                 <Clamped lines={4}>{withCode(row.statement, term)}</Clamped>
               </td>
               <td className="rules-standing">
-                {/* The flag and the switch stand in the cell's corner, one above the other, so turning
-                    a rule off costs the row no height. */}
-                <span className="rule-corner">
-                  <FlagFinding
-                    demo={demo}
-                    flagged={{
-                      kind: "rule",
-                      repo: `${owner}/${name}`,
-                      doc: row.doc.path,
-                      line: row.sourceLine,
-                      finding: row.statement,
-                      standing: row.status === "PRE_EXISTING" ? "already broken" : standing(row),
-                      id: row.factId,
-                    }}
-                  />
-                  {ruleStates && (
-                    <RuleSwitch
-                      vertical
-                      ignored={!!row.ignored}
-                      ignoredBy={row.ignoredBy}
-                      disabledReason={ruleStates.disabledReason}
-                      onToggle={async (next) => {
-                        setStateError((was) => ({ ...was, [row.factId]: "" }));
-                        const failed = await ruleStates.set(row, next);
-                        if (failed) setStateError((was) => ({ ...was, [row.factId]: failed }));
-                      }}
-                    />
-                  )}
-                </span>
+                <FlagFinding
+                  demo={demo}
+                  flagged={{
+                    kind: "rule",
+                    repo: `${owner}/${name}`,
+                    doc: row.doc.path,
+                    line: row.sourceLine,
+                    finding: row.statement,
+                    standing: row.status === "PRE_EXISTING" ? "already broken" : standing(row),
+                    id: row.factId,
+                  }}
+                />
                 {/* A rule a pull request's change broke names that pull request: it is where the
                     break came from, and one click from the diff. A rule broken before any pull
                     request judged it has nothing to name, and says only that it is broken. */}
@@ -509,8 +492,22 @@ export default function RulesTable({
                     demo={demo}
                   />
                 )}
-                {ruleStates && stateError[row.factId] && (
-                  <span className="rule-switch-error" role="alert">{stateError[row.factId]}</span>
+                {ruleStates && (
+                  <span className="rule-switch-line">
+                    <RuleSwitch
+                      ignored={!!row.ignored}
+                      ignoredBy={row.ignoredBy}
+                      disabledReason={ruleStates.disabledReason}
+                      onToggle={async (next) => {
+                        setStateError((was) => ({ ...was, [row.factId]: "" }));
+                        const failed = await ruleStates.set(row, next);
+                        if (failed) setStateError((was) => ({ ...was, [row.factId]: failed }));
+                      }}
+                    />
+                    {stateError[row.factId] && (
+                      <span className="rule-switch-error" role="alert">{stateError[row.factId]}</span>
+                    )}
+                  </span>
                 )}
               </td>
             </tr>

@@ -4664,9 +4664,8 @@
    that still reads as live. The grey stays above 3:1 on the row's background, so it can be read. */
 .docs-rules tr.is-ignored td,
 .docs-rules tr.is-ignored:hover td { background: #f3f4f6; color: #6b7280; }
-.docs-rules tr.is-ignored td > :not(.rule-switch-line):not(.rule-corner),
-.docs-rules tr.is-ignored td .rule-switch-line > :not(.rule-switch),
-.docs-rules tr.is-ignored td .rule-corner > :not(.rule-switch) {
+.docs-rules tr.is-ignored td > :not(.rule-switch-line),
+.docs-rules tr.is-ignored td .rule-switch-line > :not(.rule-switch) {
   filter: grayscale(1);
   opacity: 0.82;
 }
@@ -4722,25 +4721,9 @@
 .rule-switch.is-off .rule-switch-track { background: #8c959f; }
 .rule-switch.is-off .rule-switch-knob { left: 0.125rem; }
 .rule-switch-label { min-width: 3.4rem; text-align: left; }
-
-/* The corner of a rule's standing cell: the flag, and under it the switch standing upright. */
-.rule-corner {
-  position: absolute;
-  top: 0.55rem;
-  right: 0.4rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-}
-.rule-corner .finding-flag { position: relative; top: auto; right: auto; }
-.rule-switch.is-vertical { padding: 0.15rem; gap: 0; }
-.rule-switch.is-vertical .rule-switch-track { width: 1.05rem; height: 1.9rem; }
-.rule-switch.is-vertical .rule-switch-knob { left: 0.125rem; top: 0.125rem; transition: top 0.15s ease; }
-.rule-switch.is-vertical.is-off .rule-switch-knob { left: 0.125rem; top: 0.975rem; }
 .rule-switch-error { flex-basis: 100%; font-size: 0.72rem; color: #cf222e; }
 @media (prefers-reduced-motion: reduce) { .rule-switch, .rule-switch-track, .rule-switch-knob { transition: none; } }
-@media print { .rule-switch-line, .rule-corner .rule-switch { display: none; } }
+@media print { .rule-switch-line { display: none; } }
 
 /* Ignore or reactivate every rule under a doc, a folder or the repository, from its header. */
 .scope-ignore { position: relative; display: inline-flex; margin-right: 0.4rem; }
