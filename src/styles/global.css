@@ -7479,3 +7479,22 @@ tr:hover .finding-flag-button,
     border-radius: 0.9rem;
   }
 }
+
+/* Chips, pills and badges are labels, not text to edit: the arrow, never the text caret. Those that
+   act on a click (links, buttons, filters) keep the pointer. */
+.docs-outcome,
+.docs-outcome-when,
+.docs-outcome-branch,
+.docs-badge,
+.docs-live-badge,
+.docs-tally-item,
+.docs-filter,
+.check-verdict { cursor: default; }
+a.docs-outcome,
+.docs-outcome.is-link,
+button.docs-tally-item,
+button.docs-filter,
+a .docs-badge,
+button .docs-badge,
+a.check-verdict,
+button.check-verdict { cursor: pointer; }
