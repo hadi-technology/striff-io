@@ -1,3 +1,5 @@
+import { ruleMarker, staleNameMarker } from "./findingIssue.ts";
+
 /**
  * A GitHub issue, written out before anyone opens it.
  *
@@ -14,6 +16,8 @@
 
 /** As much of a rule as the issue needs to describe itself. */
 export interface IssueRule {
+  /** The rule's identity, which the issue names in a hidden line so Striff can find it again. */
+  factId?: string | null;
   statement: string;
   quote: string | null;
   sourceLine: number | null;
@@ -99,7 +103,10 @@ export function staleNameIssueUrl(
       ? `**What would close this:** edit the doc to write \`${finding.renamedTo}\`.`
       : "**What would close this:** edit the doc so it stops naming it, or bring it back.",
     "",
-    `<sub>Found by Striff on the default branch. Opened from the [Striff dashboard](${DASHBOARD_LINK}).</sub>`
+    `<sub>Found by Striff on the default branch. Opened from the [Striff dashboard](${DASHBOARD_LINK}).</sub>`,
+    "",
+    // Hidden on GitHub; how Striff finds this issue again and shows it beside the finding.
+    staleNameMarker(docPath, finding.name)
   );
   return `https://github.com/${owner}/${repo}/issues/new?title=${encodeURIComponent(
     title
@@ -305,6 +312,8 @@ export function issueUrl(
     "Either is a fix. Striff re-reads a doc on the next pull request that changes code the doc talks about, so an edited sentence becomes the new rule then.",
     "",
     `<sub>Opened from the [Striff dashboard](${DASHBOARD_LINK}).</sub>`,
+    // Hidden on GitHub; how Striff finds this issue again and shows it beside the rule.
+    ...(rule.factId ? ["", ruleMarker(rule.factId)] : []),
   ].join("\n");
 
   const params = new URLSearchParams({ title, body });

@@ -30,6 +30,8 @@ test("each view the page reads maps to its API path", () => {
     "/api/v1/public-repos/acme/widgets/doc-catalog/rules");
   assert.equal(apiPathFor({ owner: "acme", repo: "widgets", view: "type-findings" }),
     "/api/v1/public-repos/acme/widgets/doc-catalog/type-findings");
+  assert.equal(apiPathFor({ owner: "acme", repo: "widgets", view: "finding-issues" }),
+    "/api/v1/public-repos/acme/widgets/doc-catalog/finding-issues");
   assert.equal(apiPathFor({ owner: "acme", repo: "widgets", view: "doc", path: "docs/a b.md", version: "abc123" }),
     "/api/v1/public-repos/acme/widgets/doc-catalog/doc?path=docs%2Fa+b.md&version=abc123");
 });

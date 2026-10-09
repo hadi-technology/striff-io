@@ -1,6 +1,7 @@
 import { createElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
+import { issueIndex, withRuleIssues, withStaleNameIssue, type FindingIssue, type IssueIndex } from "./findingIssue.ts";
 import FlagFinding from "./FlagFinding";
 import { NOT_ADMIN, ScopeIgnore } from "./RuleStateControls";
 import { applyRuleStates, ignoreCounts } from "../lib/ruleStates.js";
@@ -267,6 +268,8 @@ interface StaleName {
   removedByMessage?: string | null;
   removedAtMs?: number | null;
   removedByUrl?: string | null;
+  /** The GitHub issue the stale name is tracked in, where the server knows of one. */
+  issue?: FindingIssue | null;
 }
 
 interface StaleNames {
@@ -677,7 +680,7 @@ const GitHubMark = () =>
  */
 export interface DocsSource {
   /** The URL of one read: the catalogue (""), every rule, the names gone, or one document. */
-  url(view: "" | "rules" | "type-findings", path?: string): string;
+  url(view: "" | "rules" | "type-findings" | "finding-issues", path?: string): string;
   /** What the view says under the repository's name, in place of how to use the tree. */
   lede?: ReactNode;
   /** The repository's README badge, shown beside its name; same-origin, so its title can be read. */
@@ -731,6 +734,29 @@ export default function DocsTab({
   const [detail, setDetail] = useState<Detail | null>(null);
   /** Every rule of the repository, for the scopes a single document's answer cannot serve. */
   const [rulesIndex, setRulesIndex] = useState<RepoRules | null>(initial?.rules ?? null);
+  /**
+   * The issues the findings are tracked in. Asked for after the rules are on screen and merged into
+   * them where they are shown, so a slow or failed answer never holds the page up or changes it.
+   */
+  const [findingIssues, setFindingIssues] = useState<IssueIndex | null>(null);
+  /** Counts each answer to a read of the rules, so the issues are asked for again after one. */
+  const [rulesRead, setRulesRead] = useState(0);
+  const haveRules = rulesIndex != null;
+  useEffect(() => {
+    // The demo carries its own issues; a page with no rules yet has nothing to put them on.
+    if (sample || !haveRules || !owner || !name) return;
+    const controller = new AbortController();
+    fetch(readUrl("finding-issues"), { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : undefined))
+      .then((answer) => {
+        // A failed read leaves whatever links are on screen; an answer replaces them.
+        if (answer !== undefined && !controller.signal.aborted) setFindingIssues(issueIndex(answer));
+      })
+      .catch(() => {
+        // No answer, no links: the buttons stay as they are.
+      });
+    return () => controller.abort();
+  }, [repo, rulesRead, haveRules]);
   const [rulesLoading, setRulesLoading] = useState(false);
   /** The names the docs write that the code no longer has, null until a reading has reported. */
   const [staleNames, setStaleNames] = useState<StaleNames | null>(
@@ -850,6 +876,7 @@ export default function DocsTab({
     setRuleFilter("all");
     setRulesIndex(null);
     setStaleNames(null);
+    setFindingIssues(null);
     setActionError("");
     setReadRefused(null);
     reload();
@@ -957,7 +984,7 @@ export default function DocsTab({
   }
 
   /** The URL of one read, from the public page where this view reads one. */
-  function readUrl(view: "" | "rules" | "type-findings", path?: string): string {
+  function readUrl(view: "" | "rules" | "type-findings" | "finding-issues", path?: string): string {
     if (source) return source.url(view, path);
     return `/.netlify/functions/doc-catalog-proxy?${view ? `view=${view}&` : ""}installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}${path != null ? `&path=${encodeURIComponent(path)}` : ""}`;
   }
@@ -1052,6 +1079,7 @@ export default function DocsTab({
       const res = await fetch(readUrl("rules"));
       if (!res.ok || wanted !== rulesAt.current) return;
       setRulesIndex(await res.json());
+      setRulesRead((n) => n + 1);
     } catch {
       // The tree, the states and one document's rules all still work without this; the rollups
       // say they are still loading rather than claiming a repository has no rules.
@@ -1361,6 +1389,8 @@ export default function DocsTab({
         : a.doc.path.localeCompare(b.doc.path)
     );
   }, [scopeKind, selected, detail, rulesIndex]);
+  // The rows as shown: with the issues each is tracked in, once that answer has come.
+  const shownRows = useMemo(() => withRuleIssues(scopeRows, findingIssues), [scopeRows, findingIssues]);
 
   /** Names gone under whatever is selected, so the count agrees with the rest of the tally. */
   const scopeStale = useMemo(
@@ -2349,7 +2379,7 @@ export default function DocsTab({
                 )}
                 {rulesIndex && scopeRows.length > 0 && (
                   <RulesTable
-                    rows={scopeRows}
+                    rows={shownRows}
                     owner={owner}
                     name={name}
                     branch={branch}
@@ -2361,6 +2391,7 @@ export default function DocsTab({
                     truncated={!!rulesIndex.truncated}
                     onOpenDoc={(path) => openDoc(path)}
                     issues={!source && takesIssues}
+                    readOnly={!!source}
                     demo={!!sample}
                     repositoryIgnored={!!rulesIndex?.ignoredPaths?.some((entry) => entry.prefix && entry.path === "")}
                     ruleStates={source ? undefined : {
@@ -2457,7 +2488,7 @@ export default function DocsTab({
 
                 {scopeRows.length > 0 && (
                   <RulesTable
-                    rows={scopeRows}
+                    rows={shownRows}
                     owner={owner}
                     name={name}
                     branch={branch}
@@ -2467,6 +2498,7 @@ export default function DocsTab({
                     filter={ruleFilter}
                     docCount={1}
                     issues={!source && takesIssues}
+                    readOnly={!!source}
                     demo={!!sample}
                     repositoryIgnored={!!rulesIndex?.ignoredPaths?.some((entry) => entry.prefix && entry.path === "")}
                     ruleStates={source ? undefined : {
@@ -2543,13 +2575,15 @@ export default function DocsTab({
                               <span className="docs-outcome-when">
                                 first seen {when(finding.firstSeenMs)}
                               </span>
-                              {!source && (
+                              {(!source || withStaleNameIssue(finding, selected, findingIssues).issue) && (
                                 <FindingActions
-                                  issueUrl={takesIssues
+                                  issueUrl={takesIssues && !source
                                     ? staleNameIssueUrl(owner, name, selected, finding, branch || "main")
                                     : null}
-                                  prompt={staleNamePrompt(owner, name, selected, finding, branch || "main")}
+                                  prompt={source ? undefined : staleNamePrompt(owner, name, selected, finding, branch || "main")}
                                   demo={!!sample}
+                                  issue={withStaleNameIssue(finding, selected, findingIssues).issue}
+                                  readOnly={!!source}
                                 />
                               )}
                             </td>

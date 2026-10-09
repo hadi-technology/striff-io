@@ -123,6 +123,16 @@ function checking<T extends { quote: string }>(row: T, words: string) {
   return from < 0 ? row : { ...row, checkedFrom: from, checkedTo: from + words.length };
 }
 
+/** A demo issue on the made-up repository; the demo never opens it. */
+function issueAt(number: number, state: "open" | "closed", stateReason: string | null = null) {
+  return { number, url: `https://github.com/${DEMO_REPO}/issues/${number}`, state, stateReason };
+}
+
+/** A demo finding with the issue it is tracked in. */
+function tracked<T extends object>(row: T, issue: ReturnType<typeof issueAt>) {
+  return { ...row, issue };
+}
+
 const HOLDS = (line: number, statement: string, quote: string, pr = "412", days = 15) =>
   rule(line, statement, quote, "MAINTAINED", "HOLDS", pr, days);
 
@@ -130,9 +140,10 @@ const rulesByDoc: Record<string, ReturnType<typeof rule>[]> = {
   "AGENTS.md": [
     HOLDS(12, "Nothing in `checkout` depends on `legacy`", "Never import from `legacy/` in new code; use the equivalents in `core/`."),
     HOLDS(19, "Only `checkout.store` depends on `org.hibernate`", "Persistence lives in the store package. No other package imports the ORM."),
-    checking(rule(27, "Nothing in `checkout.web` depends on `checkout.store`",
+    // Tracked in an open issue: the demo shows the issue in place of the button.
+    tracked(checking(rule(27, "Nothing in `checkout.web` depends on `checkout.store`",
       "Controllers never reach the store directly; everything goes through a service, and the service is the only thing that knows a database exists. This is the rule we break most often under time pressure, and it is the one that costs most to put back, because by the time anyone notices there are a dozen controllers holding a repository and no service layer worth the name.",
-      "VIOLATED", "BROKEN", "427", 12), "Controllers never reach the store directly"),
+      "VIOLATED", "BROKEN", "427", 12), "Controllers never reach the store directly"), issueAt(431, "open")),
     // A second rule from the same sentence, so the demo shows one sentence's rules grouped.
     checking(HOLDS(27, "Only `checkout.service` depends on `checkout.store`",
       "Controllers never reach the store directly; everything goes through a service, and the service is the only thing that knows a database exists. This is the rule we break most often under time pressure, and it is the one that costs most to put back, because by the time anyone notices there are a dozen controllers holding a repository and no service layer worth the name.",
@@ -149,9 +160,10 @@ const rulesByDoc: Record<string, ReturnType<typeof rule>[]> = {
   ],
   "docs/adr/0007-payments.md": [
     HOLDS(14, "Nothing in `billing` depends on `checkout`", "Billing knows nothing about checkout. The dependency runs one way."),
-    rule(44, "Nothing in `billing.webhooks` depends on `web`",
+    // An issue closed as not planned: the demo offers to ignore the rule instead.
+    tracked(rule(44, "Nothing in `billing.webhooks` depends on `web`",
       "Webhook handlers must not depend on the web layer.",
-      "PRE_EXISTING", "BROKEN", "427", 12),
+      "PRE_EXISTING", "BROKEN", "427", 12), issueAt(418, "closed", "not_planned")),
   ],
   "docs/adr/0008-read-models.md": [
     HOLDS(11, "Nothing in `reporting` depends on `checkout.store`", "Read models are built from events, never by reaching into the write side.", "398", 22),
@@ -191,6 +203,7 @@ export const demoStaleNames: any = {
       docPath: "ARCHITECTURE.md",
       name: "CartSessionStore",
       state: "ABSENT",
+      issue: issueAt(433, "open"),
       sentence: "`CartSessionStore` keeps an open cart for thirty minutes after the last change.",
       sourceLine: 64,
       namespace: "checkout.cart",
@@ -210,6 +223,7 @@ export const demoStaleNames: any = {
       docPath: "ARCHITECTURE.md",
       name: "billing.LedgerEntry",
       state: "MOVED",
+      issue: issueAt(401, "closed", "completed"),
       sentence: "Every charge is written as a `billing.LedgerEntry` before the provider is called.",
       sourceLine: 71,
       namespace: "billing",

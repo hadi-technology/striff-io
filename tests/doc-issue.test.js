@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { brokenRulePrompt, staleNameIssueUrl, staleNamePrompt } from "../src/components/docIssue.ts";
+import { brokenRulePrompt, issueUrl, staleNameIssueUrl, staleNamePrompt } from "../src/components/docIssue.ts";
 
 const absent = {
   name: "org.eolang.parser.Program",
@@ -65,4 +65,43 @@ test("a prompt for a broken rule checks first and changes no code on its own", (
   assert.match(prompt, /Edit documentation only/);
   assert.match(prompt, /do not change any code/);
   assert.doesNotMatch(prompt, /open a pull request|push|fork|remote/i);
+});
+
+test("a stale name's issue ends with a hidden line naming the doc and the name", () => {
+  const body = new URL(staleNameIssueUrl("objectionary", "eo", "eo-maven-plugin/README.md", absent, "master"))
+    .searchParams.get("body");
+
+  assert.ok(body.endsWith("<!-- striff:finding stale-name:eo-maven-plugin/README.md:org.eolang.parser.Program -->"), body);
+});
+
+test("a rule's issue ends with a hidden line naming the rule, and keeps its title", () => {
+  const url = new URL(issueUrl("acme", "checkout-service", "ARCHITECTURE.md", {
+    factId: "ARCHITECTURE.md|3f9a12c4be01",
+    statement: "Nothing in `web` depends on `store`",
+    quote: "Controllers never reach the store directly.",
+    sourceLine: 12,
+    status: "VIOLATED",
+    pullNo: "427",
+    judgedAtMs: null,
+    onDefaultBranch: "BROKEN",
+  }, "main"));
+
+  assert.ok(url.searchParams.get("body").endsWith("<!-- striff:finding rule:ARCHITECTURE.md|3f9a12c4be01 -->"));
+  assert.equal(url.searchParams.get("title"), "Docs and code disagree: Nothing in web depends on store");
+});
+
+test("a rule with no identity gets no hidden line", () => {
+  const url = new URL(issueUrl("acme", "checkout-service", "ARCHITECTURE.md", {
+    statement: "Nothing in `web` depends on `store`", quote: null, sourceLine: null, status: "VIOLATED",
+    pullNo: null, judgedAtMs: null, onDefaultBranch: null,
+  }, "main"));
+
+  assert.doesNotMatch(url.searchParams.get("body"), /striff:finding/);
+});
+
+test("a stale name's issue keeps its title shape", () => {
+  const url = new URL(staleNameIssueUrl("objectionary", "eo", "eo-maven-plugin/README.md", absent, "master"));
+
+  assert.equal(url.searchParams.get("title"),
+    "Stale name in eo-maven-plugin/README.md: org.eolang.parser.Program is gone");
 });
