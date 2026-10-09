@@ -2227,6 +2227,7 @@ export default function DocsTab({
                     truncated={!!rulesIndex.truncated}
                     onOpenDoc={(path) => openDoc(path)}
                     issues={!source && takesIssues}
+                    demo={!!sample}
                   />
                 )}
               </>
@@ -2326,6 +2327,7 @@ export default function DocsTab({
                     filter={ruleFilter}
                     docCount={1}
                     issues={!source && takesIssues}
+                    demo={!!sample}
                   />
                 )}
 
@@ -2385,12 +2387,13 @@ export default function DocsTab({
                               <span className="docs-outcome-when">
                                 first seen {when(finding.firstSeenMs)}
                               </span>
-                              {!readOnly && (
+                              {!source && (
                                 <FindingActions
                                   issueUrl={takesIssues
                                     ? staleNameIssueUrl(owner, name, selected, finding, branch || "main")
                                     : null}
                                   prompt={staleNamePrompt(owner, name, selected, finding, branch || "main")}
+                                  demo={!!sample}
                                 />
                               )}
                             </td>

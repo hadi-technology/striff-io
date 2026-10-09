@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { issueUrl } from "./docIssue";
+import FindingActions from "./FindingActions";
 import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
 import { standing } from "../lib/standing.js";
@@ -123,6 +124,7 @@ export default function RulesTable({
   truncated,
   onOpenDoc,
   issues = true,
+  demo = false,
 }: {
   /** The rules in scope, already stripped of the ones nothing could judge. */
   rows: Row[];
@@ -146,6 +148,8 @@ export default function RulesTable({
   onOpenDoc?: (path: string) => void;
   /** Whether a broken rule offers to open an issue; a public page's reader is not the repository's. */
   issues?: boolean;
+  /** Whether these are the demo's rules, about a repository that does not exist on GitHub. */
+  demo?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
@@ -410,18 +414,7 @@ export default function RulesTable({
                   </span>
                 )}
                 {issues && standing(row) === "broken" && (
-                  <a
-                    className="finding-action"
-                    href={issueUrl(owner, name, row.doc.path, row, branch)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Opens GitHub with an issue written out: the sentence, the rule, what happened and what would close it."
-                  >
-                    Open an issue
-                    <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M6.5 3.5H3.5v9h9v-3" /><path d="M9.5 3.5h3v3" /><path d="M12.5 3.5 7 9" />
-                    </svg>
-                  </a>
+                  <FindingActions issueUrl={issueUrl(owner, name, row.doc.path, row, branch)} demo={demo} />
                 )}
               </td>
             </tr>

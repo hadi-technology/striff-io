@@ -5106,6 +5106,15 @@ button.docs-tally-item.is-on i { color: #1f2328; }
     box-shadow 0.15s ease, transform 0.15s ease;
 }
 .finding-actions .finding-action { margin-top: 0; }
+.finding-action-note {
+  flex-basis: 100%;
+  padding: 0.4rem 0.6rem;
+  border-left: 2px solid #2563eb;
+  background: #f5f8ff;
+  color: #334155;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
 .finding-action-label { display: inline-grid; }
 .finding-action-label > span { grid-area: 1 / 1; text-align: left; }
 .finding-action-label > .is-hidden { visibility: hidden; }

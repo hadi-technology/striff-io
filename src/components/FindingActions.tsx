@@ -5,19 +5,24 @@ import { useEffect, useRef, useState } from "react";
  * a prompt an agent can run as it stands to fix it.
  *
  * The issue link is left out where the repository takes no issues, since GitHub answers it there
- * with a 404. Copying says whether it worked: a clipboard the browser refuses is said, never
- * passed off as copied.
+ * with a 404. In the demo the repository is made up, so the issue button says what it would do
+ * rather than opening GitHub. Copying says whether it worked: a clipboard the browser refuses is
+ * said, never passed off as copied.
  */
 export default function FindingActions({
   issueUrl,
   prompt,
+  demo = false,
 }: {
   /** GitHub's new-issue page with this finding filled in, or null where the repository takes none. */
   issueUrl: string | null;
-  /** The instructions for an agent, pasted as they are. */
-  prompt: string;
+  /** The instructions for an agent, pasted as they are; no copy button without one. */
+  prompt?: string;
+  /** Whether the finding is the demo's, about a repository that does not exist on GitHub. */
+  demo?: boolean;
 }) {
   const [copy, setCopy] = useState<"idle" | "copied" | "failed">("idle");
+  const [explained, setExplained] = useState(false);
   const reset = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
@@ -25,6 +30,7 @@ export default function FindingActions({
   }, []);
 
   async function copyPrompt() {
+    if (!prompt) return;
     const ok = await toClipboard(prompt);
     setCopy(ok ? "copied" : "failed");
     if (reset.current) clearTimeout(reset.current);
@@ -33,7 +39,7 @@ export default function FindingActions({
 
   return (
     <span className="finding-actions">
-      {issueUrl && (
+      {issueUrl && !demo && (
         <a
           className="finding-action"
           href={issueUrl}
@@ -41,13 +47,22 @@ export default function FindingActions({
           rel="noopener noreferrer"
           title="Opens GitHub with an issue written out: the doc, the sentence, what the code has and what would close it."
         >
-          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-            <circle cx="8" cy="8" r="6" /><circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none" />
-          </svg>
+          {ISSUE_ICON}
           Open an issue
         </a>
       )}
-      <button
+      {issueUrl && demo && (
+        <button
+          type="button"
+          className="finding-action"
+          onClick={() => setExplained((open) => !open)}
+          aria-expanded={explained}
+        >
+          {ISSUE_ICON}
+          Open an issue
+        </button>
+      )}
+      {prompt && <button
         type="button"
         className={`finding-action${copy === "copied" ? " is-done" : ""}${copy === "failed" ? " is-failed" : ""}`}
         onClick={copyPrompt}
@@ -66,10 +81,22 @@ export default function FindingActions({
             {copy === "failed" ? "Could not copy" : "Copied"}
           </span>
         </span>
-      </button>
+      </button>}
+      {explained && (
+        <span className="finding-action-note" role="note">
+          In your repository, this opens a GitHub issue about it, already written: the sentence in
+          the doc, what Striff found and what would close it.
+        </span>
+      )}
     </span>
   );
 }
+
+const ISSUE_ICON = (
+  <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+    <circle cx="8" cy="8" r="6" /><circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none" />
+  </svg>
+);
 
 /** Puts text on the clipboard, falling back to a selected textarea where the async API is refused. */
 async function toClipboard(text: string): Promise<boolean> {
