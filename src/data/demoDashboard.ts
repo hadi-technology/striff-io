@@ -15,6 +15,7 @@
  * edited since it was read, and one Striff read and found nothing in. A demo where everything is
  * green teaches nobody what the product is for.
  */
+import { applyRuleStates } from "../lib/ruleStates.js";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -233,7 +234,7 @@ export const demoStaleNames: any = {
 };
 
 /** Every rule of the repository, as `view=rules` sends them. */
-export const demoRules: any = {
+const demoRulesRead: any = {
   repoOwner: "acme",
   repoName: "checkout-service",
   defaultBranch: DEMO_BRANCH,
@@ -250,6 +251,16 @@ export const demoRules: any = {
       rules: (rulesByDoc[d.path] || []).map((r, i) => ({ ...r, factId: `${d.path}|${i}` })),
     })),
 };
+
+/**
+ * The example's rules as the team has set them: one doc ignored as a whole, so the rules it holds
+ * now and later aren't checked, and one rule ignored on its own. The switches on the demo page
+ * change this answer in place, and nothing else.
+ */
+export const demoRules: any = applyRuleStates(
+  applyRuleStates(demoRulesRead, { ignored: true, path: "docs/adr/0008-read-models.md", prefix: false }),
+  { ignored: true, factIds: ["ARCHITECTURE.md|2"] }
+);
 
 /** One document with its rules, as `view=doc` sends it. */
 export function demoDoc(path: string): any {

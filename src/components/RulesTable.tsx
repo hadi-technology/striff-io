@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { brokenRulePrompt, issueUrl } from "./docIssue";
 import FindingActions from "./FindingActions";
 import FlagFinding from "./FlagFinding";
+import { IGNORED_BY_HINT, RuleSwitch } from "./RuleStateControls";
 import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
 import { standing } from "../lib/standing.js";
@@ -41,6 +42,10 @@ export interface Rule {
   checkedFrom?: number | null;
   /** One past where those words end. */
   checkedTo?: number | null;
+  /** Whether pull requests aren't checked against this rule; absent from an older server, and then false. */
+  ignored?: boolean;
+  /** What ignored it: the rule itself, its doc, a folder above it, or the doc being excluded. */
+  ignoredBy?: "rule" | "document" | "folder" | "excluded" | null;
 }
 
 /** One rule with the document it came from, which is how every scope reads them. */
@@ -79,7 +84,8 @@ export const STANDING_HELP: Record<Standing, string> = {
 };
 
 /** What an empty table says when a count, not a search, emptied it. */
-const NONE_STANDING: Record<Standing, string> = {
+const NONE_STANDING: Record<Standing | "ignored", string> = {
+  ignored: "No rule here is ignored.",
   broken: "No rule here is broken.",
   holds: "No rule here holds yet.",
   unchecked: "Every rule here has been checked.",
@@ -87,7 +93,15 @@ const NONE_STANDING: Record<Standing, string> = {
 };
 
 /** Which rules a reader asked to see, where they followed a count to them. */
-export type RuleFilter = "all" | Standing;
+export type RuleFilter = "all" | Standing | "ignored";
+
+/** Turns rules on and off for pull requests, where the reader may; absent on a public page. */
+export interface RuleStateHandle {
+  /** Why the reader cannot use the switches, or null where they can. */
+  disabledReason: string | null;
+  /** Sets one rule; resolves to an error to show, or null. */
+  set: (row: Row, ignored: boolean) => Promise<string | null>;
+}
 
 /** Which column the list is ordered by. */
 type SortKey = "rule" | "source" | "outcome";
@@ -126,6 +140,8 @@ export default function RulesTable({
   onOpenDoc,
   issues = true,
   demo = false,
+  ruleStates,
+  repositoryIgnored = false,
 }: {
   /** The rules in scope, already stripped of the ones nothing could judge. */
   rows: Row[];
@@ -151,7 +167,13 @@ export default function RulesTable({
   issues?: boolean;
   /** Whether these are the demo's rules, about a repository that does not exist on GitHub. */
   demo?: boolean;
+  /** The Active/Ignored switch on each row; absent where nothing can be changed. */
+  ruleStates?: RuleStateHandle;
+  /** Whether the whole repository is ignored, so a rule ignored with it says so, not "folder". */
+  repositoryIgnored?: boolean;
 }) {
+  /** A switch that failed says so on its own row until it is tried again. */
+  const [stateError, setStateError] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
   // Document order to begin with: a repository's rules read as its documents do until someone
@@ -167,7 +189,9 @@ export default function RulesTable({
 
   const term = query.trim().toLowerCase();
   const shown = useMemo(() => {
-    const matchesFilter = (row: Row) => (filter === "all" ? true : standing(row) === filter);
+    // An ignored rule is listed under All and Ignored, and counted in none of the standings.
+    const matchesFilter = (row: Row) =>
+      filter === "all" ? true : filter === "ignored" ? !!row.ignored : !row.ignored && standing(row) === filter;
     const matchesTerm = (row: Row) =>
       term === "" ||
       plainText(row.statement).toLowerCase().includes(term) ||
@@ -190,9 +214,10 @@ export default function RulesTable({
       }
       return byDocument(a, b);
     };
+    // Ignored rules sit below the rest whichever way the list is ordered.
     return rows
       .filter((row) => matchesFilter(row) && matchesTerm(row))
-      .sort((a, b) => sort.dir * compare(a, b));
+      .sort((a, b) => Number(!!a.ignored) - Number(!!b.ignored) || sort.dir * compare(a, b));
   }, [rows, filter, term, sort]);
 
   /** The same click on a column twice turns it round; a different column starts at the top. */
@@ -230,7 +255,7 @@ export default function RulesTable({
           csvCell(row.sourceLine ?? ""),
           csvCell(plainText(row.statement)),
           csvCell(plainText(row.quote)),
-          csvCell(STANDING_LABEL[standing(row)]),
+          csvCell(row.ignored ? "Ignored" : STANDING_LABEL[standing(row)]),
           csvCell(row.pullNo ? `#${row.pullNo}` : ""),
           csvCell(row.judgedAtMs ? new Date(row.judgedAtMs).toISOString().slice(0, 10) : ""),
           csvCell(row.onDefaultBranch ? "checked against the default branch" : "checked on a pull request"),
@@ -328,7 +353,9 @@ export default function RulesTable({
                  white row with no mark on it at all. Newly broken and already broken keep their
                  own tones, because the first is this change's doing and the second is not. */
               className={
-                row.status === "VIOLATED"
+                row.ignored
+                  ? "is-ignored"
+                  : row.status === "VIOLATED"
                   ? "is-violated"
                   : row.status === "PRE_EXISTING"
                   ? "is-prior"
@@ -393,7 +420,18 @@ export default function RulesTable({
                 {/* A rule a pull request's change broke names that pull request: it is where the
                     break came from, and one click from the diff. A rule broken before any pull
                     request judged it has nothing to name, and says only that it is broken. */}
-                {standing(row) === "broken" && row.status === "VIOLATED" && row.pullNo ? (
+                {row.ignored ? (
+                  <span
+                    className="docs-outcome is-ignored"
+                    title={row.ignoredBy === "excluded"
+                      ? "Not checked: the doc this rule is in is excluded."
+                      : "Pull requests aren't checked against this rule."}
+                  >
+                    Ignored{row.ignoredBy === "folder" && repositoryIgnored
+                      ? " · repository"
+                      : row.ignoredBy && IGNORED_BY_HINT[row.ignoredBy] ? ` · ${IGNORED_BY_HINT[row.ignoredBy]}` : ""}
+                  </span>
+                ) : standing(row) === "broken" && row.status === "VIOLATED" && row.pullNo ? (
                   <a
                     className="docs-outcome is-broken is-link"
                     href={`https://github.com/${owner}/${name}/pull/${row.pullNo}`}
@@ -447,12 +485,29 @@ export default function RulesTable({
                     not checked on {branch || "the branch"} yet
                   </span>
                 )}
-                {issues && standing(row) === "broken" && (
+                {issues && !row.ignored && standing(row) === "broken" && (
                   <FindingActions
                     issueUrl={issueUrl(owner, name, row.doc.path, row, branch)}
                     prompt={brokenRulePrompt(owner, name, row.doc.path, row, branch)}
                     demo={demo}
                   />
+                )}
+                {ruleStates && (
+                  <span className="rule-switch-line">
+                    <RuleSwitch
+                      ignored={!!row.ignored}
+                      ignoredBy={row.ignoredBy}
+                      disabledReason={ruleStates.disabledReason}
+                      onToggle={async (next) => {
+                        setStateError((was) => ({ ...was, [row.factId]: "" }));
+                        const failed = await ruleStates.set(row, next);
+                        if (failed) setStateError((was) => ({ ...was, [row.factId]: failed }));
+                      }}
+                    />
+                    {stateError[row.factId] && (
+                      <span className="rule-switch-error" role="alert">{stateError[row.factId]}</span>
+                    )}
+                  </span>
                 )}
               </td>
             </tr>

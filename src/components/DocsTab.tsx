@@ -2,6 +2,8 @@ import { createElement, useEffect, useMemo, useRef, useState, type ReactNode } f
 import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
 import FlagFinding from "./FlagFinding";
+import { NOT_ADMIN, ScopeIgnore } from "./RuleStateControls";
+import { applyRuleStates, ignoreCounts } from "../lib/ruleStates.js";
 import RevisionLine from "./RevisionLine";
 import { Clamped, mark, plainText, snippet, useWatch, withCode, when } from "./docRules";
 import RulesTable, {
@@ -72,6 +74,10 @@ interface Doc {
   readChars?: number | null;
   /** How long the doc is, null wherever readChars is. */
   totalChars?: number | null;
+  /** Whether this doc, or a folder above it, is ignored; absent from an older server. */
+  ignored?: boolean;
+  /** How many of its rules pull requests aren't checked against. */
+  ignoredRules?: number;
 }
 
 /** Whether a doc that has been read was read in part and not from all of it. */
@@ -113,6 +119,8 @@ interface Summary {
    * Absent from an older server, and then nothing is known to wait.
    */
   waitingToBeReadAgain?: number;
+  /** Rules pull requests aren't checked against, counted in none of the standings above. */
+  ignored?: number;
 }
 
 interface Catalog {
@@ -217,6 +225,8 @@ interface RepoRules {
   documents: { document: Doc; rules: Rule[] }[];
   /** Whether the repository holds more rules than one answer carries. */
   truncated: boolean;
+  /** The docs and folders ignored as a standing setting ("" with prefix is the whole repository). */
+  ignoredPaths?: { path: string; prefix: boolean }[];
 }
 
 /**
@@ -748,6 +758,8 @@ export default function DocsTab({
   const split = useRef<HTMLDivElement>(null);
   /** Which of the selection's rules to list, followed from the counts above them. */
   const [ruleFilter, setRuleFilter] = useState<RuleFilter>("all");
+  /** Whether this reader may turn rules on and off: null until GitHub has said. */
+  const [canManageRules, setCanManageRules] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   /** Whether this page gave up waiting for a listing that had not arrived. */
@@ -859,6 +871,97 @@ export default function DocsTab({
 
   /** Nothing here can be changed: the example repository, or a public page. */
   const readOnly = !!sample || !!source;
+
+  // Who may turn rules on and off is asked once per repository, so the switches can say up front
+  // why they are off rather than fail on a click. The demo's switches work on the page alone.
+  useEffect(() => {
+    if (source) return;
+    if (sample) {
+      setCanManageRules(true);
+      return;
+    }
+    if (!owner || !name) return;
+    let current = true;
+    setCanManageRules(null);
+    fetch(`/.netlify/functions/doc-catalog-proxy?view=permissions&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((answer) => {
+        if (current) setCanManageRules(answer ? !!answer.canManageRules : null);
+      })
+      .catch(() => {
+        // Unknown leaves the controls on; the write itself is refused if it should be.
+      });
+    return () => {
+      current = false;
+    };
+  }, [repo, installationId]);
+
+  /** Why the rule switches are off for this reader, or null where they work. */
+  const ruleStateBlocked = canManageRules === false ? NOT_ADMIN : null;
+
+  /**
+   * Turns rules on or off for pull requests: a list of rules, or everything under a doc, a folder
+   * or the repository. The page changes at once and goes back if the write is refused; the demo
+   * changes only the page.
+   *
+   * @return an error to show, or null
+   */
+  async function setRuleStates(change: { ignored: boolean; factIds?: string[]; path?: string; prefix?: boolean }):
+    Promise<string | null> {
+    const before = rulesIndex;
+    if (!before) return "The rules haven't loaded yet.";
+    setRulesIndex(applyRuleStates(before, change) as RepoRules);
+    if (sample) return null;
+    const failed = change.ignored ? "Couldn't ignore that." : "Couldn't make that active.";
+    try {
+      const res = await fetch(
+        `/.netlify/functions/doc-catalog-proxy?view=rule-states&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
+        { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(change) }
+      );
+      const answer = await res.json().catch(() => null);
+      if (!res.ok) {
+        setRulesIndex(before);
+        if (answer?.error === "not_repo_admin") setCanManageRules(false);
+        return answer?.message || failed;
+      }
+      if (answer && Array.isArray(answer.documents)) setRulesIndex(answer as RepoRules);
+      return null;
+    } catch {
+      setRulesIndex(before);
+      return failed;
+    }
+  }
+
+  /** The rules under a doc, a folder or the repository, every one of them, for the bulk control. */
+  function rulesUnder(path: string, prefix: boolean): Rule[] {
+    const out: Rule[] = [];
+    for (const group of rulesIndex?.documents || []) {
+      const docPath = group.document.path;
+      const inside = !prefix ? docPath === path
+        : path === "" || docPath === path || docPath.startsWith(`${path}/`);
+      if (inside) out.push(...group.rules);
+    }
+    return out;
+  }
+
+  /** The bulk Active/Ignored control for whatever is selected; nothing on a public page. */
+  function scopeIgnore(path: string, prefix: boolean, where: string) {
+    if (source) return null;
+    const counts = ignoreCounts(rulesUnder(path, prefix).filter((rule) => rule.ignoredBy !== "excluded"));
+    return (
+      <ScopeIgnore
+        total={counts.changeable}
+        ignored={counts.ignored}
+        where={where}
+        disabledReason={ruleStateBlocked}
+        onApply={async (ignored) => {
+          const failed = await setRuleStates({ ignored, path, prefix });
+          if (failed) setActionError(failed);
+          return !failed;
+        }}
+      />
+    );
+  }
 
   /** The URL of one read, from the public page where this view reads one. */
   function readUrl(view: "" | "rules" | "type-findings", path?: string): string {
@@ -1233,9 +1336,19 @@ export default function DocsTab({
   const scopeRows = useMemo<Row[]>(() => {
     if (scopeKind === "doc") {
       if (!detail) return [];
+      // The doc's own answer carries its rules; whether each is ignored is the repository's, so
+      // it is read from there and a switch moves both.
+      const states = new Map(
+        (rulesIndex?.documents.find((group) => group.document.path === detail.document.path)?.rules || [])
+          .map((rule) => [rule.factId, rule])
+      );
       return detail.rules
         .filter((rule) => standing(rule) !== "unclear")
-        .map((rule) => ({ ...rule, doc: detail.document }));
+        .map((rule) => {
+          const state = states.get(rule.factId);
+          return { ...rule, ignored: state?.ignored ?? rule.ignored, ignoredBy: state?.ignoredBy ?? rule.ignoredBy,
+            doc: detail.document };
+        });
     }
     const under = scopeKind === "root" ? null : `${selected}/`;
     const rows: Row[] = [];
@@ -1268,15 +1381,16 @@ export default function DocsTab({
     [scopeRows]
   );
 
-  const scopeCounts = useMemo(
-    () => ({
+  const scopeCounts = useMemo(() => {
+    const active = scopeRows.filter((row) => !row.ignored);
+    return {
       all: scopeRows.length,
-      broken: scopeRows.filter((row) => standing(row) === "broken").length,
-      holds: scopeRows.filter((row) => standing(row) === "holds").length,
-      unchecked: scopeRows.filter((row) => standing(row) === "unchecked").length,
-    }),
-    [scopeRows]
-  );
+      broken: active.filter((row) => standing(row) === "broken").length,
+      holds: active.filter((row) => standing(row) === "holds").length,
+      unchecked: active.filter((row) => standing(row) === "unchecked").length,
+      ignored: scopeRows.length - active.length,
+    };
+  }, [scopeRows]);
 
   /**
    * The counts above the tree, which are of the whole repository whatever is selected. They were
@@ -1285,17 +1399,20 @@ export default function DocsTab({
    * what is selected, and says how many of the rules it lists.
    */
   const repoCounts = useMemo(() => {
-    const rows: { status: string | null; onDefaultBranch: string | null }[] = [];
+    const rows: Rule[] = [];
     for (const group of rulesIndex?.documents || []) {
       for (const rule of group.rules) {
         if (standing(rule) !== "unclear") rows.push(rule);
       }
     }
+    // An ignored rule is counted in the total and as ignored, and in none of the standings.
+    const active = rows.filter((row) => !row.ignored);
     return {
       all: rows.length,
-      broken: rows.filter((row) => standing(row) === "broken").length,
-      holds: rows.filter((row) => standing(row) === "holds").length,
-      unchecked: rows.filter((row) => standing(row) === "unchecked").length,
+      broken: active.filter((row) => standing(row) === "broken").length,
+      holds: active.filter((row) => standing(row) === "holds").length,
+      unchecked: active.filter((row) => standing(row) === "unchecked").length,
+      ignored: rows.length - active.length,
     };
   }, [rulesIndex]);
   const repoStale = useMemo(
@@ -1512,6 +1629,11 @@ export default function DocsTab({
             Reading
           </span>
         )}
+        {rulesIndex?.ignoredPaths?.some((entry) => !entry.prefix && entry.path === doc.path) && (
+          <span className="docs-badge is-ignored" title="Pull requests aren't checked against this doc's rules.">
+            Ignored
+          </span>
+        )}
         {doc.brokenRules + doc.alreadyBrokenRules > 0 && (
           <span className="docs-badge is-broken" title="Rules of this doc the code does not keep.">
             {doc.brokenRules + doc.alreadyBrokenRules} broken
@@ -1617,6 +1739,11 @@ export default function DocsTab({
               }${excludedFolder.path === node.path ? "" : ` with ${excludedFolder.path}/`}`}
             >
               Excluded
+            </span>
+          )}
+          {rulesIndex?.ignoredPaths?.some((entry) => entry.prefix && entry.path === (isRoot ? "" : node.path)) && (
+            <span className="docs-badge is-ignored" title={`Pull requests aren't checked against the rules ${isRoot ? "in this repository" : `under ${node.path}/`}.`}>
+              Ignored
             </span>
           )}
           {node.broken > 0 && <span className="docs-dot" title={`${node.broken} broken`} />}
@@ -1727,6 +1854,17 @@ export default function DocsTab({
         <b>{repoCounts.unchecked}</b>
         <i>not checked yet</i>
       </button>
+      {(repoCounts.ignored > 0 || ruleFilter === "ignored") && (
+        <button
+          type="button"
+          className={`docs-tally-item is-ignored${ruleFilter === "ignored" ? " is-on" : ""}`}
+          title="Rules pull requests aren't checked against. Click to show these."
+          onClick={() => setRuleFilter(ruleFilter === "ignored" ? "all" : "ignored")}
+        >
+          <b>{repoCounts.ignored}</b>
+          <i>ignored</i>
+        </button>
+      )}
       </>
       )}
       {/* Shown only once a reading of the whole repository has looked. Until then there is
@@ -1845,7 +1983,7 @@ export default function DocsTab({
                       <span className="docs-palette-sub">
                         {marked(rule.path)}
                         {rule.sourceLine ? `:${rule.sourceLine}` : ""}
-                        {` · ${STANDING_LABEL[standing(rule)].toLowerCase()}`}
+                        {` · ${rule.ignored ? "ignored" : STANDING_LABEL[standing(rule)].toLowerCase()}`}
                       </span>
                     </button>
                   ))}
@@ -2095,6 +2233,8 @@ export default function DocsTab({
                     {scopeKind === "root" ? "Open repository" : "Open folder"}
                   </a>
                   <span className="docs-pane-actions">
+                    {scopeIgnore(scopeKind === "root" ? "" : selected, true,
+                      scopeKind === "root" ? "this repository" : "this folder")}
                     {scopeKind === "folder" && rowMenu(selected, undefined, true, "pane")}
                   </span>
                 </div>
@@ -2229,6 +2369,11 @@ export default function DocsTab({
                     onOpenDoc={(path) => openDoc(path)}
                     issues={!source && takesIssues}
                     demo={!!sample}
+                    repositoryIgnored={!!rulesIndex?.ignoredPaths?.some((entry) => entry.prefix && entry.path === "")}
+                    ruleStates={source ? undefined : {
+                      disabledReason: ruleStateBlocked,
+                      set: (row, ignored) => setRuleStates({ ignored, factIds: [row.factId] }),
+                    }}
                   />
                 )}
               </>
@@ -2269,7 +2414,10 @@ export default function DocsTab({
                     <GitHubMark />
                     View on GitHub
                   </a>
-                  <span className="docs-pane-actions">{rowMenu(selected, detail.document, false, "pane")}</span>
+                  <span className="docs-pane-actions">
+                    {scopeIgnore(selected, false, "this doc")}
+                    {rowMenu(selected, detail.document, false, "pane")}
+                  </span>
                 </div>
                 <p className={`docs-state-line is-${detail.document.state.toLowerCase()}`}>
                   <span
@@ -2329,6 +2477,11 @@ export default function DocsTab({
                     docCount={1}
                     issues={!source && takesIssues}
                     demo={!!sample}
+                    repositoryIgnored={!!rulesIndex?.ignoredPaths?.some((entry) => entry.prefix && entry.path === "")}
+                    ruleStates={source ? undefined : {
+                      disabledReason: ruleStateBlocked,
+                      set: (row, ignored) => setRuleStates({ ignored, factIds: [row.factId] }),
+                    }}
                   />
                 )}
 

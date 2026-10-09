@@ -4659,6 +4659,80 @@
 .docs-rules tr.is-violated td:first-child { box-shadow: inset 2px 0 0 #d33a4b; }
 .docs-rules tr.is-prior td:first-child { box-shadow: inset 2px 0 0 #e0a13a; }
 
+/* An ignored rule: the whole row goes grey and quiet, every cell, and no broken or already-broken
+   tint shows through. Only the switch keeps its full contrast, so the way back is the one thing
+   that still reads as live. The grey stays above 3:1 on the row's background, so it can be read. */
+.docs-rules tr.is-ignored td,
+.docs-rules tr.is-ignored:hover td { background: #f3f4f6; color: #6b7280; }
+.docs-rules tr.is-ignored td > :not(.rule-switch-line),
+.docs-rules tr.is-ignored td .rule-switch-line > :not(.rule-switch) {
+  filter: grayscale(1);
+  opacity: 0.82;
+}
+.docs-rules tr.is-ignored td a,
+.docs-rules tr.is-ignored td button:not(.rule-switch),
+.docs-rules tr.is-ignored td code,
+.docs-rules tr.is-ignored td b,
+.docs-rules tr.is-ignored td strong,
+.docs-rules tr.is-ignored td mark { color: #6b7280; background-color: transparent; }
+.docs-outcome.is-ignored { background: #eef0f3; border-color: #d0d7de; color: #57606a; }
+
+/* The Active/Ignored switch at the foot of a rule's standing cell. */
+.rule-switch-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin-top: 0.55rem; }
+.rule-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.45rem 0.15rem 0.2rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #1f2328;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.rule-switch:hover:not(:disabled) { background: #f6f8fa; border-color: #d0d7de; }
+.rule-switch:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.rule-switch:disabled { cursor: not-allowed; opacity: 0.6; }
+.rule-switch-track {
+  position: relative;
+  width: 1.9rem;
+  height: 1.05rem;
+  border-radius: 999px;
+  background: #1a7f37;
+  transition: background-color 0.15s ease;
+  flex: none;
+}
+.rule-switch-knob {
+  position: absolute;
+  top: 0.125rem;
+  left: 0.975rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(31, 35, 40, 0.3);
+  transition: left 0.15s ease;
+}
+.rule-switch.is-off .rule-switch-track { background: #8c959f; }
+.rule-switch.is-off .rule-switch-knob { left: 0.125rem; }
+.rule-switch-label { min-width: 3.4rem; text-align: left; }
+.rule-switch-error { flex-basis: 100%; font-size: 0.72rem; color: #cf222e; }
+@media (prefers-reduced-motion: reduce) { .rule-switch, .rule-switch-track, .rule-switch-knob { transition: none; } }
+@media print { .rule-switch-line { display: none; } }
+
+/* Ignore or reactivate every rule under a doc, a folder or the repository, from its header. */
+.scope-ignore { position: relative; display: inline-flex; margin-right: 0.4rem; }
+.scope-ignore .finding-action { margin-top: 0; }
+.scope-ignore-button.is-all { color: #57606a; background: #f3f4f6; }
+.scope-ignore-button.is-mixed { border-style: dashed; }
+.scope-ignore-panel { width: 20rem; }
+.docs-badge.is-ignored { background: #f3f4f6; border-color: #d0d7de; color: #57606a; }
+.docs-tally-item.is-ignored b { color: #6b7280; }
+
 /* The two levels these things live at: an account, and a repository inside it. */
 .dash-repo-group { margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid #edf1f5; }
 .dash-repo-select {

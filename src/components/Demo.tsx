@@ -80,7 +80,7 @@ export default function Demo() {
           <span className="demo-chip">Example</span>
           {view === "metrics"
             ? "An invented organization, in the real dashboard. Nothing here can be changed."
-            : "An invented repository, in the real dashboard. Nothing here can be changed."}
+            : "An invented repository, in the real dashboard. Try the switches; nothing you change is saved."}
         </p>
       </div>
 
