@@ -66,6 +66,33 @@ export type Standing = "holds" | "broken" | "unchecked" | "unclear";
 
 export { standing };
 
+/** What makes two rules come from one sentence: the doc, the line and the sentence's own words. */
+function sentenceKey(row: Row): string {
+  return `${row.doc.path}\u0000${row.sourceLine ?? ""}\u0000${plainText(row.quote || "")}`;
+}
+
+/**
+ * The rows with each sentence's rules brought together, at the place its first rule was sorted to,
+ * so the order chosen still decides which sentences come first.
+ */
+function bySentence(rows: Row[]): Row[] {
+  const groups = new Map<string, Row[]>();
+  for (const row of rows) {
+    const key = sentenceKey(row);
+    const group = groups.get(key);
+    if (group) group.push(row);
+    else groups.set(key, [row]);
+  }
+  return [...groups.values()].flat();
+}
+
+/** The words of its sentence a rule checks, where it marks any. */
+function checkedWords(row: Row): string {
+  const quote = row.quote || "";
+  if (row.checkedFrom == null || row.checkedTo == null || row.checkedTo <= row.checkedFrom) return "";
+  return plainText(quote.slice(row.checkedFrom, row.checkedTo)).trim();
+}
+
 /** Worst first: what is broken, then what nothing has judged, then what holds. */
 const SEVERITY: Record<Standing, number> = { broken: 0, unchecked: 1, holds: 2, unclear: 3 };
 
@@ -215,10 +242,21 @@ export default function RulesTable({
       return byDocument(a, b);
     };
     // Ignored rules sit below the rest whichever way the list is ordered.
-    return rows
+    const sorted = rows
       .filter((row) => matchesFilter(row) && matchesTerm(row))
       .sort((a, b) => Number(!!a.ignored) - Number(!!b.ignored) || sort.dir * compare(a, b));
+    return bySentence(sorted);
   }, [rows, filter, term, sort]);
+
+  /** Each sentence's rules in the order shown, so its first row can hold the sentence for all of them. */
+  const sentences = useMemo(() => {
+    const members = new Map<string, Row[]>();
+    for (const row of shown) {
+      const key = sentenceKey(row);
+      members.set(key, [...(members.get(key) || []), row]);
+    }
+    return members;
+  }, [shown]);
 
   /** The same click on a column twice turns it round; a different column starts at the top. */
   function orderBy(key: SortKey) {
@@ -345,14 +383,21 @@ export default function RulesTable({
           </tr>
         </thead>
         <tbody>
-          {shown.map((row) => (
+          {shown.map((row) => {
+            const members = sentences.get(sentenceKey(row)) || [row];
+            const group = { size: members.length, index: members.indexOf(row) };
+            const grouped = group.size > 1;
+            // One sentence's rules share its cells only where they all mark the same words in it;
+            // otherwise the sentence is shown plain and each rule names the words it checks.
+            const sameWords = members.every((r) => r.checkedFrom === row.checkedFrom && r.checkedTo === row.checkedTo);
+            return (
             <tr
               key={row.factId}
               /* The tone follows the pill. It used to follow the pull request's own status, so a
                  rule the default branch reports as broken -- which the pill says, in red -- got a
                  white row with no mark on it at all. Newly broken and already broken keep their
                  own tones, because the first is this change's doing and the second is not. */
-              className={
+              className={[
                 row.ignored
                   ? "is-ignored"
                   : row.status === "VIOLATED"
@@ -361,10 +406,13 @@ export default function RulesTable({
                   ? "is-prior"
                   : standing(row) === "broken"
                   ? "is-violated"
-                  : ""
-              }
+                  : "",
+                grouped ? "in-sentence" : "",
+                grouped && group.index === 0 ? "sentence-first" : "",
+              ].filter(Boolean).join(" ")}
             >
-              <td className="rules-source">
+              {group.index === 0 && (
+              <td className={`rules-source${grouped ? " rules-shared" : ""}`} rowSpan={grouped ? group.size : undefined}>
                 <span className="rules-source-where">
                   {showPath ? (
                     <button type="button" className="rules-source-link" onClick={() => onOpenDoc?.(row.doc.path)}>
@@ -398,11 +446,26 @@ export default function RulesTable({
                   </span>
                 )}
               </td>
-              <td className="docs-rule-quote">
-                <Clamped lines={4}>{withChecked(row.quote, row.checkedFrom, row.checkedTo, term)}</Clamped>
-              </td>
+              )}
+              {group.index === 0 && (
+                <td className={`docs-rule-quote${grouped ? " rules-shared" : ""}`} rowSpan={grouped ? group.size : undefined}>
+                  <Clamped lines={4}>
+                    {grouped && !sameWords
+                      ? withCode(row.quote || "", term)
+                      : withChecked(row.quote, row.checkedFrom, row.checkedTo, term)}
+                  </Clamped>
+                  {grouped && (
+                    <span className="rules-sentence-count">{group.size} rules from this sentence</span>
+                  )}
+                </td>
+              )}
               <td className="docs-rule-statement">
                 <Clamped lines={4}>{withCode(row.statement, term)}</Clamped>
+                {grouped && !sameWords && checkedWords(row) && (
+                  <span className="rules-checks" title="The words of the sentence this rule checks.">
+                    checks “{checkedWords(row)}”
+                  </span>
+                )}
               </td>
               <td className="rules-standing-cell">
 
@@ -515,7 +578,8 @@ export default function RulesTable({
                 )}
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
 

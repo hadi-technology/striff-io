@@ -54,8 +54,8 @@ function doc(path: string, state: string, extra: Record<string, unknown> = {}) {
 }
 
 const documents = [
-  doc("AGENTS.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 3, brokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 2 * DAY }),
-  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 3, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: 99908, totalChars: 112480 }),
+  doc("AGENTS.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 4, brokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 2 * DAY }),
+  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 4, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: 99908, totalChars: 112480 }),
   doc("CONTRIBUTING.md", "NOT_READ"),
   doc("README.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: describes setup and usage, not how the code is built" }),
   doc("docs/adr/0007-payments.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 2, alreadyBrokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 12 * DAY }),
@@ -70,12 +70,12 @@ const summary = {
   screenedOut: 1,
   retired: 0,
   unreadable: 0,
-  rules: 9,
+  rules: 11,
   brokenRules: 1,
   alreadyBrokenRules: 1,
   neverChecked: 0,
   excluded: 0,
-  holdsOnDefaultBranch: 7,
+  holdsOnDefaultBranch: 9,
   brokenOnDefaultBranch: 2,
 };
 
@@ -133,6 +133,10 @@ const rulesByDoc: Record<string, ReturnType<typeof rule>[]> = {
     checking(rule(27, "Nothing in `checkout.web` depends on `checkout.store`",
       "Controllers never reach the store directly; everything goes through a service, and the service is the only thing that knows a database exists. This is the rule we break most often under time pressure, and it is the one that costs most to put back, because by the time anyone notices there are a dozen controllers holding a repository and no service layer worth the name.",
       "VIOLATED", "BROKEN", "427", 12), "Controllers never reach the store directly"),
+    // A second rule from the same sentence, so the demo shows one sentence's rules grouped.
+    checking(HOLDS(27, "Only `checkout.service` depends on `checkout.store`",
+      "Controllers never reach the store directly; everything goes through a service, and the service is the only thing that knows a database exists. This is the rule we break most often under time pressure, and it is the one that costs most to put back, because by the time anyone notices there are a dozen controllers holding a repository and no service layer worth the name.",
+      "427", 12), "the service is the only thing that knows a database exists"),
   ],
   "ARCHITECTURE.md": [
     checking(HOLDS(21, "Only `billing` depends on `com.stripe`", "Only the billing module talks to the Stripe SDK; everything else goes through PaymentGateway.", "398", 21),
@@ -140,6 +144,8 @@ const rulesByDoc: Record<string, ReturnType<typeof rule>[]> = {
     checking(HOLDS(38, "Every class in `billing.providers` implements `PaymentGateway`", "**Providers are plug-ins.** Every payment provider implements `PaymentGateway` ([see the ADR](docs/adr/0007-payments.md)), and _nothing_ else does.", "398", 21),
       "Every payment provider implements `PaymentGateway`"),
     HOLDS(52, "Nothing in `web` depends on `billing.internal`", "The web layer sees the billing API and nothing behind it.", "398", 21),
+    checking(HOLDS(38, "Nothing outside `billing.providers` implements `PaymentGateway`", "**Providers are plug-ins.** Every payment provider implements `PaymentGateway` ([see the ADR](docs/adr/0007-payments.md)), and _nothing_ else does.", "398", 21),
+      "_nothing_ else does"),
   ],
   "docs/adr/0007-payments.md": [
     HOLDS(14, "Nothing in `billing` depends on `checkout`", "Billing knows nothing about checkout. The dependency runs one way."),

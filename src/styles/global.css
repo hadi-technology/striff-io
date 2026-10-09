@@ -7498,3 +7498,35 @@ a .docs-badge,
 button .docs-badge,
 a.check-verdict,
 button.check-verdict { cursor: pointer; }
+
+/* Rules read from one sentence, grouped: the source and the sentence are said once, in cells that
+   span the group, and stay neutral, since the rules in it can stand differently. Each rule keeps
+   its own tone and its own mark on its own cells. A heavier line sets one sentence off from the
+   next, a light dashed one parts the rules within it. */
+.rules-table td.rules-shared { background: #ffffff; box-shadow: none; }
+.rules-table tr.in-sentence.is-violated td.rules-shared,
+.rules-table tr.in-sentence.is-prior td.rules-shared { background: #ffffff; box-shadow: none; }
+.rules-table tr.in-sentence.is-violated td.docs-rule-statement { box-shadow: inset 2px 0 0 #d33a4b; }
+.rules-table tr.in-sentence.is-prior td.docs-rule-statement { box-shadow: inset 2px 0 0 #e0a13a; }
+.rules-table tr.sentence-first td { border-top: 2px solid #e2e8f0; }
+.rules-table tr.in-sentence:not(.sentence-first) td { border-top: 1px dashed #e5e9ef; }
+.rules-table td.rules-shared { border-right: 1px solid #eef1f5; }
+.rules-sentence-count {
+  display: block;
+  margin-top: 0.4rem;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: default;
+}
+.rules-checks {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  color: #57606a;
+  cursor: default;
+}
+@media (max-width: 860px) {
+  .rules-table tr.in-sentence:not(.sentence-first) { padding-left: 0.75rem; border-left: 2px solid #e2e8f0; }
+}
