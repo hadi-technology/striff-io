@@ -4725,7 +4725,9 @@
 
 /* A rule's pill with its small switch on the right, on one line. */
 .rule-standing-line { display: flex; align-items: center; gap: 0.4rem; flex-wrap: nowrap; }
-.rule-standing-line .finding-flag { position: relative; top: auto; right: auto; margin-left: auto; }
+.rule-standing-line .finding-flag { position: relative; top: auto; right: auto; }
+/* The switch and the flag keep to the cell's right edge, so every row's switch lines up. */
+.rule-standing-line .rule-switch { margin-left: auto; }
 .rule-switch.is-compact { padding: 0.1rem; gap: 0; }
 .rule-switch.is-compact .rule-switch-track { width: 1.5rem; height: 0.85rem; }
 .rule-switch.is-compact .rule-switch-knob { width: 0.6rem; height: 0.6rem; left: 0.775rem; }
