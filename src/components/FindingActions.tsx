@@ -164,7 +164,7 @@ export default function FindingActions({
   );
 }
 
-/** GitHub's open-issue mark, in its green: the finding is tracked. */
+/** GitHub's open-issue mark, in pink: the finding is tracked. */
 const TRACKED_ICON = (
   <svg className="finding-tracked-icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
     <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
