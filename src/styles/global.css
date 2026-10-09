@@ -4702,7 +4702,8 @@
   width: 1.9rem;
   height: 1.05rem;
   border-radius: 999px;
-  background: #1a7f37;
+  /* Blue, not green: green and red already mean a rule holds or is broken. */
+  background: #2563eb;
   transition: background-color 0.15s ease;
   flex: none;
 }
