@@ -295,7 +295,8 @@ const demoRulesRead: any = {
         ...(d.state === "EXCLUDED" ? { excluded: true, excludedBy: "excluded" } : {}),
       })),
     })),
-  excludedPaths: [],
+  // The exclusion list, as the API sends it beside the catalogue's own.
+  excludedPaths: demoCatalog.exclusions.map((e: { path: string; folder: boolean }) => ({ path: e.path, prefix: e.folder })),
 };
 
 /**

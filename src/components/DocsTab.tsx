@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createElement, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
 import { issueIndex, withRuleIssues, withStaleNameIssue, type FindingIssue, type IssueIndex } from "./findingIssue.ts";
@@ -7,6 +7,7 @@ import { NOT_ADMIN, ScopeExclude } from "./RuleStateControls";
 import {
   applyExclusion,
   applyRuleStates,
+  exclusionWrites,
   coveringFolder,
   coveringPath,
   normalizeCatalog,
@@ -237,12 +238,14 @@ interface RepoRules {
   documents: { document: Doc; rules: Rule[] }[];
   /** Whether the repository holds more rules than one answer carries. */
   truncated: boolean;
-  /**
-   * Docs and folders whose rules were set aside as a whole in the rule states ("" with prefix is
-   * the whole repository). Shown as excluded; a doc or folder is excluded from now on through the
-   * exclusions instead, so these are only ever taken back.
-   */
+  /** The docs and folders excluded from reading ("" with prefix is the repository); the catalogue's exclusions say the same. */
   excludedPaths?: { path: string; prefix: boolean }[];
+  /**
+   * Docs and folders whose rules a server from before exclusion covered them set aside as a whole
+   * in the rule states, while still reading them. Shown as excluded; a doc or folder is excluded
+   * from now on through the exclusions instead, so these are only ever taken back.
+   */
+  legacyPaths?: { path: string; prefix: boolean }[];
 }
 
 /**
@@ -457,7 +460,8 @@ type DocFilter =
   | "unreadable"
   | "skipped"
   | "retired"
-  | "excluded";
+  | "excluded"
+  | "forced";
 
 /**
  * Which rules the tree and the table show, by how they stand or that they are excluded. These
@@ -470,6 +474,7 @@ type RuleChip = "holds" | "broken" | "unchecked" | "stale" | "excludedRules";
 type Filter = DocFilter | RuleChip;
 
 const DOC_FILTER_TEST: Record<Exclude<DocFilter, "results" | "excluded">, (doc: Doc) => boolean> = {
+  forced: (doc) => doc.forced,
   all: () => true,
   notRead: (doc) => doc.state === "NOT_READ",
   unreadable: (doc) => doc.state === "UNREADABLE",
@@ -477,7 +482,12 @@ const DOC_FILTER_TEST: Record<Exclude<DocFilter, "results" | "excluded">, (doc: 
   retired: (doc) => doc.state === "RETIRED",
 };
 
-interface Chip<K> { key: K; label: string; dot: string; always: boolean; help: string }
+/**
+ * One chip. `hidden` is a filter with no chip of its own, reached from a folder's summary line,
+ * whose chip shows only while it is the filter in use, so the tree never filters by something the
+ * chips do not say.
+ */
+interface Chip<K> { key: K; label: string; dot: string; always: boolean; help: string; hidden?: boolean }
 
 /** The chips above the tree that count documents, in the order a reader looks for them. */
 const DOC_CHIPS: Chip<DocFilter>[] = [
@@ -488,6 +498,7 @@ const DOC_CHIPS: Chip<DocFilter>[] = [
   { key: "skipped", label: "Skipped", dot: "other", always: true, help: "Documents Striff skipped because it found no rule in them that could be checked against code." },
   { key: "retired", label: "Retired", dot: "other", always: false, help: "Documents that say they are no longer current, so their rules aren't checked." },
   { key: "excluded", label: "Excluded", dot: "other", always: true, help: "Documents excluded here: Striff doesn't read them and none of their rules are checked." },
+  { key: "forced", label: "Read anyway", dot: "other", always: false, hidden: true, help: "Documents Striff skipped that this repository asked it to read regardless." },
 ];
 
 /** The chips above the tree that count rules. */
@@ -516,9 +527,12 @@ const TABLE_FILTER: Partial<Record<Filter, RuleFilter>> = {
  * rules cannot say this, because a document with no rules has no row to say it in. The same states
  * as the document chips, in the same words.
  */
-const SUMMARY_PARTS: { key: DocFilter; label: string; help: string }[] = DOC_CHIPS
-  .filter((chip) => chip.key !== "results" && chip.key !== "all")
-  .map((chip) => ({ key: chip.key, label: chip.label.toLowerCase(), help: chip.help }));
+const SUMMARY_PARTS: { key: Filter; label: string; help: string }[] = [
+  { key: "stale", label: "with stale names", help: "Documents with a stale name: one the default branch no longer declares, or declares somewhere else." },
+  ...DOC_CHIPS
+    .filter((chip) => chip.key !== "results" && chip.key !== "all")
+    .map((chip) => ({ key: chip.key as Filter, label: chip.label.toLowerCase(), help: chip.help })),
+];
 
 /** One node of the document tree: the repository, a folder holding more, or a document. */
 interface TreeNode {
@@ -833,9 +847,24 @@ export default function DocsTab({
 
   /** What the view is showing right now, for the listing wait to look at before it reloads. */
   const catalogRef = useRef<Catalog | null>(null);
+  /** The same for the rules, so a change is applied to the latest answer, not one a closure held. */
+  const rulesRef = useRef<RepoRules | null>(null);
 
   const [owner, name] = repo.split("/");
   catalogRef.current = catalog;
+  rulesRef.current = rulesIndex;
+
+  /** Puts a catalogue on the page and in its ref at once, so the next change starts from it. */
+  function putCatalog(next: Catalog | null) {
+    catalogRef.current = next;
+    setCatalog(next);
+  }
+
+  /** Puts a rules answer on the page and in its ref at once. */
+  function putRules(next: RepoRules | null) {
+    rulesRef.current = next;
+    setRulesIndex(next);
+  }
   const branch = catalog?.defaultBranch || null;
   // Unknown is offered as before; only a repository GitHub says takes no issues is spared the link.
   const takesIssues = repos.find((r) => r.full_name === repo)?.has_issues !== false;
@@ -895,7 +924,7 @@ export default function DocsTab({
     setSelected("");
     setDetail(null);
     setFilter(null);
-    setRulesIndex(null);
+    putRules(null);
     setStaleNames(null);
     setFindingIssues(null);
     setActionError("");
@@ -939,11 +968,27 @@ export default function DocsTab({
 
   /** Why the rule switches are off for this reader, or null where they work. */
   const ruleStateBlocked = canManageRules === false ? NOT_ADMIN : null;
+  /** Where the reasons a control is off are written once, for the controls to point at. */
+  const blockedId = useId();
+  const loadingId = useId();
+  /**
+   * What a control the reader may not use carries: it stays focusable and says why, rather than
+   * being disabled, which a keyboard never reaches and a screen reader never explains.
+   */
+  const blockedProps = ruleStateBlocked
+    ? { "aria-disabled": true as const, "aria-describedby": blockedId, title: ruleStateBlocked }
+    : {};
+  /** Runs `act` unless the reader may not change what it changes. */
+  const unlessBlocked = (act: () => void) => () => {
+    if (!ruleStateBlocked) act();
+  };
 
   /**
    * Excludes rules from pull requests or includes them again: a list of rules or, to take back a
    * doc or folder set aside in the rule states before exclusion covered it, a path. The page
-   * changes at once and goes back if the write is refused; the demo changes only the page.
+   * changes at once, from the latest answer on it; a refused write puts back what was there where
+   * nothing else has changed it since, and reads the rules again where something has. The demo
+   * changes only the page.
    *
    * The body names the change both ways, `excluded` and `ignored`, so the API from before the
    * rename reads it as well as the one after.
@@ -952,11 +997,16 @@ export default function DocsTab({
    */
   async function setRuleStates(change: { excluded: boolean; factIds?: string[]; path?: string; prefix?: boolean }):
     Promise<string | null> {
-    const before = rulesIndex;
+    const before = rulesRef.current;
     if (!before) return "The rules haven't loaded yet.";
-    setRulesIndex(applyRuleStates(before, change) as RepoRules);
+    const optimistic = applyRuleStates(before, change) as RepoRules;
+    putRules(optimistic);
     if (sample) return null;
     const failed = change.excluded ? "Couldn't exclude that." : "Couldn't include that.";
+    const undo = () => {
+      if (rulesRef.current === optimistic) putRules(before);
+      else loadRules();
+    };
     try {
       const res = await fetch(
         `/.netlify/functions/doc-catalog-proxy?view=rule-states&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
@@ -965,14 +1015,14 @@ export default function DocsTab({
       );
       const answer = await res.json().catch(() => null);
       if (!res.ok) {
-        setRulesIndex(before);
+        undo();
         if (answer?.error === "not_repo_admin") setCanManageRules(false);
         return answer?.message || failed;
       }
-      if (answer && Array.isArray(answer.documents)) setRulesIndex(normalizeRules(answer) as RepoRules);
+      if (answer && Array.isArray(answer.documents)) putRules(normalizeRules(answer) as RepoRules);
       return null;
     } catch {
-      setRulesIndex(before);
+      undo();
       return failed;
     }
   }
@@ -993,26 +1043,29 @@ export default function DocsTab({
    * Whether a doc, a folder or the repository is excluded, and by what: its own exclusion, a folder
    * above it, or an entry the rule states still carry for it.
    */
-  function exclusionOf(path: string, folder: boolean): { excluded: boolean; via: string | null } {
-    const own = (catalog?.exclusions || []).some((rule) => rule.path === path && !!rule.folder === folder)
-      || (rulesIndex?.excludedPaths || []).some((entry) => entry.path === path && entry.prefix === folder);
-    if (own) return { excluded: true, via: null };
+  function exclusionOf(path: string, folder: boolean):
+    { excluded: boolean; via: string | null; stillRead: boolean } {
+    const listed = (catalog?.exclusions || []).some((rule) => rule.path === path && !!rule.folder === folder);
+    const legacy = (rulesIndex?.legacyPaths || []).some((entry) => entry.path === path && entry.prefix === folder);
+    // Held only by an old rule-state entry: never stopped from being read, only from being checked.
+    if (listed || legacy) return { excluded: true, via: null, stillRead: !listed };
     const above = coveringFolder(path, catalog?.exclusions);
-    if (above) return { excluded: true, via: folderName(above) };
-    const legacy = coveringPath(path, rulesIndex?.excludedPaths);
-    if (legacy && legacy.prefix) return { excluded: true, via: folderName(legacy) };
-    return { excluded: false, via: null };
+    if (above) return { excluded: true, via: folderName(above), stillRead: false };
+    const old = coveringPath(path, rulesIndex?.legacyPaths);
+    if (old && old.prefix) return { excluded: true, via: folderName(old), stillRead: true };
+    return { excluded: false, via: null, stillRead: false };
   }
 
   /** The Exclude control for whatever is selected; nothing on a public page. */
   function scopeExclude(path: string, kind: "doc" | "folder" | "repository") {
     if (source) return null;
     const folder = kind !== "doc";
-    const { excluded, via } = exclusionOf(path, folder);
+    const { excluded, via, stillRead } = exclusionOf(path, folder);
     return (
       <ScopeExclude
         excluded={excluded}
         via={via}
+        stillRead={stillRead}
         rules={rulesUnder(path, folder)}
         kind={kind}
         where={kind === "doc" ? "this doc" : kind === "folder" ? `${path}/` : "this repository"}
@@ -1022,7 +1075,7 @@ export default function DocsTab({
           if (via && !next) {
             // A folder above is what excludes this one: that is the setting to take back.
             const above = coveringFolder(path, catalog?.exclusions)
-              || coveringPath(path, rulesIndex?.excludedPaths);
+              || coveringPath(path, rulesIndex?.legacyPaths);
             const abovePath = above?.path ?? "";
             return exclude(abovePath, true, false);
           }
@@ -1072,7 +1125,7 @@ export default function DocsTab({
    */
   async function loadCatalog(quiet = false) {
     if (sample) {
-      setCatalog(normalizeCatalog(sample.catalog));
+      putCatalog(normalizeCatalog(sample.catalog));
       setStaleNames(sample.staleNames || null);
       setExpanded(allFolders(buildTree(sample.catalog.documents || [], name)));
       setLoading(false);
@@ -1094,10 +1147,10 @@ export default function DocsTab({
         setError(data.message || data.error || "Couldn't load this repository's documents");
         // What is on screen was true when it arrived. A refresh that failed is a reason to say so,
         // not to take the documents away from whoever is reading them.
-        if (!catalogRef.current) setCatalog(null);
+        if (!catalogRef.current) putCatalog(null);
         return;
       }
-      setCatalog(normalizeCatalog(data));
+      putCatalog(normalizeCatalog(data));
       // A quiet look keeps the names on screen until the new answer replaces them.
       loadStaleNames(wanted, quiet);
       setExpanded(allFolders(buildTree(data.documents || [], name)));
@@ -1119,7 +1172,7 @@ export default function DocsTab({
    */
   async function loadRules() {
     if (sample) {
-      setRulesIndex(normalizeRules(sample.rules));
+      putRules(normalizeRules(sample.rules));
       return;
     }
     const wanted = ++rulesAt.current;
@@ -1127,7 +1180,7 @@ export default function DocsTab({
     try {
       const res = await fetch(readUrl("rules"));
       if (!res.ok || wanted !== rulesAt.current) return;
-      setRulesIndex(normalizeRules(await res.json()));
+      putRules(normalizeRules(await res.json()));
       setRulesRead((n) => n + 1);
     } catch {
       // The tree, the states and one document's rules all still work without this; the rollups
@@ -1271,39 +1324,45 @@ export default function DocsTab({
       return false;
     }
     const named = folder ? folderName({ path }) : path;
-    const listed = (catalog?.exclusions || []).some((rule) => rule.path === path && !!rule.folder === folder);
-    const legacy = !excluded
-      && (rulesIndex?.excludedPaths || []).some((entry) => entry.path === path && entry.prefix === folder);
+    const change = { path, folder, excluded };
     setActionError("");
-    if (legacy) {
-      const failed = await setRuleStates({ excluded: false, path, prefix: folder });
-      if (failed) {
-        setActionError(failed);
+    for (const step of exclusionWrites(catalogRef.current, rulesRef.current, change)) {
+      if (step.view === "rule-states") {
+        // An old rule-state entry holding the path: taken back where it was set.
+        const failed = await setRuleStates(step.body as { excluded: boolean; path: string; prefix: boolean });
+        if (failed) {
+          setActionError(failed);
+          return false;
+        }
+        continue;
+      }
+      // Applied to the latest answers on the page, which a write before this one may have replaced.
+      const beforeCatalog = catalogRef.current;
+      const beforeRules = rulesRef.current;
+      const next = applyExclusion(beforeCatalog, beforeRules, change);
+      putCatalog(next.catalog as Catalog);
+      putRules(next.rules as RepoRules);
+      if (sample) continue;
+      const answer = await write(step.body, "", `Couldn't ${excluded ? "exclude" : "include"} ${named}.`);
+      // A server that does not take the repository as a folder answers with the catalogue unchanged.
+      const refused = answer === false
+        || (excluded && path === "" && Array.isArray(answer?.exclusions)
+          && !answer.exclusions.some((rule: Exclusion) => rule.folder && rule.path === ""));
+      if (refused) {
+        // Put back only what nothing has replaced since; otherwise the server says what is so.
+        if (catalogRef.current === next.catalog && rulesRef.current === next.rules) {
+          putCatalog(beforeCatalog);
+          putRules(beforeRules);
+        } else {
+          await reload();
+        }
+        if (answer !== false) {
+          setActionError("Striff can't exclude this repository as a whole yet. Exclude its folders or docs instead.");
+        }
         return false;
       }
-      if (!listed) return true;
     }
-    const beforeCatalog = catalog;
-    const beforeRules = rulesIndex;
-    const next = applyExclusion(catalog, rulesIndex, { path, folder, excluded });
-    setCatalog(next.catalog as Catalog);
-    setRulesIndex(next.rules as RepoRules);
     if (sample) return true;
-    const answer = await write(
-      folder ? { paths: [], folders: [path], excluded } : { paths: [path], folders: [], excluded },
-      "", `Couldn't ${excluded ? "exclude" : "include"} ${named}.`);
-    // A server that does not take the repository as a folder answers with the catalogue unchanged.
-    const refused = answer === false
-      || (excluded && path === "" && Array.isArray(answer?.exclusions)
-        && !answer.exclusions.some((rule: Exclusion) => rule.folder && rule.path === ""));
-    if (refused) {
-      setCatalog(beforeCatalog);
-      setRulesIndex(beforeRules);
-      if (answer !== false) {
-        setActionError("Striff can't exclude this repository as a whole yet. Exclude its folders or docs instead.");
-      }
-      return false;
-    }
     await reloadKeeping(selected);
     return true;
   }
@@ -1416,7 +1475,7 @@ export default function DocsTab({
   const excludedDocs = useMemo(() => {
     const paths = new Set<string>();
     for (const doc of allDocs) {
-      if (doc.state === "EXCLUDED" || coveringPath(doc.path, rulesIndex?.excludedPaths)) paths.add(doc.path);
+      if (doc.state === "EXCLUDED" || coveringPath(doc.path, rulesIndex?.legacyPaths)) paths.add(doc.path);
     }
     return paths;
   }, [catalog, rulesIndex]);
@@ -1518,7 +1577,7 @@ export default function DocsTab({
       }
       if (rule.excludedBy === "document") return "doc";
       if (rule.excludedBy === "folder") {
-        return coveringPath(doc.path, rulesIndex?.excludedPaths)?.path === "" ? "repository" : "folder";
+        return coveringPath(doc.path, rulesIndex?.legacyPaths)?.path === "" ? "repository" : "folder";
       }
       return null;
     };
@@ -1609,7 +1668,7 @@ export default function DocsTab({
         ...part,
         count: scopeDocs.filter(matches(part.key)).length,
       })).filter((part) => part.count > 0),
-    [scopeDocs, staleByDoc]
+    [scopeDocs, staleByDoc, excludedDocs, ruleDocs, resultDocs]
   );
 
   /* ─── The search palette ────────────────────────────────────────── */
@@ -1704,18 +1763,18 @@ export default function DocsTab({
                 <button
                   type="button"
                   role="menuitem"
-                  disabled={!!ruleStateBlocked}
-                  title={ruleStateBlocked ?? undefined}
-                  onClick={() => exclude(covering.path, true, false)}
+                  {...blockedProps}
+                  onClick={unlessBlocked(() => exclude(covering.path, true, false))}
                 >
                   {covering.path === path
                     ? "Include this folder again"
                     : `Include ${folderName(covering)} again`}
                 </button>
               ) : (
-                <button type="button" role="menuitem" disabled={!!ruleStateBlocked}
-                  title={ruleStateBlocked ?? "Striff won't read any doc under it, and none of their rules are checked."}
-                  onClick={() => exclude(path, true, true)}>
+                <button type="button" role="menuitem"
+                  title="Striff won't read any doc under it, and none of their rules are checked."
+                  {...blockedProps}
+                  onClick={unlessBlocked(() => exclude(path, true, true))}>
                   Exclude this folder
                 </button>
               )
@@ -1726,15 +1785,14 @@ export default function DocsTab({
                 <button
                   type="button"
                   role="menuitem"
-                  disabled={!!ruleStateBlocked}
-                  title={ruleStateBlocked ?? undefined}
-                  onClick={() => exclude(covering.path, true, false)}
+                  {...blockedProps}
+                  onClick={unlessBlocked(() => exclude(covering.path, true, false))}
                 >
                   Include {folderName(covering)} again
                 </button>
               ) : (
-                <button type="button" role="menuitem" disabled={!!ruleStateBlocked}
-                  title={ruleStateBlocked ?? undefined} onClick={() => exclude(path, false, false)}>
+                <button type="button" role="menuitem" {...blockedProps}
+                  onClick={unlessBlocked(() => exclude(path, false, false))}>
                   Include again
                 </button>
               )
@@ -1751,9 +1809,10 @@ export default function DocsTab({
                       Read it anyway
                     </button>
                   ))}
-                <button type="button" role="menuitem" disabled={!!ruleStateBlocked}
-                  title={ruleStateBlocked ?? "Striff won't read this doc, and none of its rules are checked."}
-                  onClick={() => exclude(path, false, true)}>
+                <button type="button" role="menuitem"
+                  title="Striff won't read this doc, and none of its rules are checked."
+                  {...blockedProps}
+                  onClick={unlessBlocked(() => exclude(path, false, true))}>
                   Exclude this doc
                 </button>
               </>
@@ -1879,7 +1938,7 @@ export default function DocsTab({
     const open = expanded.has(node.path);
     // A folder excluded from reading, or set aside as a whole in the rule states before exclusion
     // covered it: one word for either.
-    const legacyFolder = coveringPath(node.path, rulesIndex?.excludedPaths);
+    const legacyFolder = coveringPath(node.path, rulesIndex?.legacyPaths);
     const excludedFolder = coveringFolder(node.path, catalog?.exclusions)
       ?? (legacyFolder?.prefix
         ? { path: legacyFolder.path, folder: true, excludedBy: null, reason: null, atMs: 0 }
@@ -2081,6 +2140,8 @@ export default function DocsTab({
 
   return (
     <div className="docs-tab">
+      {ruleStateBlocked && <span id={blockedId} className="sr-only">{ruleStateBlocked}</span>}
+      {!rulesIndex && <span id={loadingId} className="sr-only">The rules are still loading.</span>}
       {paletteOpen && (
         <div className="docs-palette-scrim" onClick={() => setPaletteOpen(false)}>
           <div className="docs-palette" role="dialog" aria-label="Search docs and rules" onClick={(event) => event.stopPropagation()}>
@@ -2308,8 +2369,8 @@ export default function DocsTab({
                   <span className="docs-filter-label">{group}</span>
                   {chips
                     // A public page changes nothing, so it has no excluded rules to come back to.
-                    .filter((chip) => (chip.always && !(source && chip.key === "excludedRules"))
-                      || filterCounts[chip.key] > 0 || filter === chip.key)
+                    .filter((chip) => filter === chip.key || (!chip.hidden
+                      && ((chip.always && !(source && chip.key === "excludedRules")) || filterCounts[chip.key] > 0)))
                     .map((chip) => (
                       <button
                         key={chip.key}
@@ -2317,9 +2378,10 @@ export default function DocsTab({
                         className={`docs-filter${filter === chip.key ? " is-on" : ""}`}
                         aria-pressed={filter === chip.key}
                         title={`${chip.help}${filter === chip.key ? " Click again to show every document." : ""}`}
-                        disabled={waiting}
+                        aria-disabled={waiting || undefined}
+                        aria-describedby={waiting ? loadingId : undefined}
                         // A second click on the chip in use puts the tree back as it was.
-                        onClick={() => toggleFilter(chip.key)}
+                        onClick={() => { if (!waiting) toggleFilter(chip.key); }}
                       >
                         {chip.dot && <span className={`docs-fdot is-${chip.dot}`} />}
                         {chip.label} <b>{waiting ? "…" : filterCounts[chip.key]}</b>
@@ -2345,9 +2407,10 @@ export default function DocsTab({
                         key={rule.path}
                         type="button"
                         className="docs-foot-folder"
-                        disabled={busy || !!ruleStateBlocked}
-                        title={ruleStateBlocked ?? `Include ${folderName(rule)} again${rule.excludedBy ? ` (excluded by ${rule.excludedBy}${rule.reason ? `: ${rule.reason}` : ""})` : ""}`}
-                        onClick={() => exclude(rule.path, true, false)}
+                        disabled={busy}
+                        title={`Include ${folderName(rule)} again${rule.excludedBy ? ` (excluded by ${rule.excludedBy}${rule.reason ? `: ${rule.reason}` : ""})` : ""}`}
+                        {...blockedProps}
+                        onClick={unlessBlocked(() => exclude(rule.path, true, false))}
                       >
                         {rule.path === "" ? "whole repository" : `${rule.path}/`}<i aria-hidden="true">×</i>
                         <span className="sr-only"> — include again</span>

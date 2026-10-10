@@ -4454,10 +4454,11 @@
   text-align: left;
   white-space: nowrap;
 }
-.docs-menu > *:hover:not(:disabled) { background: #f1f5f9; color: #0f172a; text-decoration: none; }
+.docs-menu > *:hover:not([aria-disabled="true"]) { background: #f1f5f9; color: #0f172a; text-decoration: none; }
 /* Excluding and including are for the repository's owner and admins; the item stays, greyed, with
    the reason in its title. */
-.docs-menu > button:disabled { color: #8c959f; cursor: not-allowed; }
+.docs-menu > button[aria-disabled="true"],
+.docs-menu > button[aria-disabled="true"]:hover { color: #8c959f; background: transparent; cursor: not-allowed; }
 
 .docs-tree-foot { padding: 0.5rem 0.75rem 0.6rem; border-top: 1px solid #edf1f5; color: #64748b; font-size: 0.74rem; }
 
@@ -4665,7 +4666,7 @@
   text-transform: uppercase;
 }
 .docs-filter-group + .docs-filter-group { padding-top: 0.5rem; border-top: 1px dashed #e2e8f0; }
-.docs-filter:disabled { opacity: 0.6; cursor: default; }
+.docs-filter[aria-disabled="true"] { opacity: 0.6; cursor: default; }
 
 /* A wash on the rows that need something doing, and nothing on the ones that do not.
    Tinting every row by its standing would paint most of the table green -- most rules hold --
@@ -5125,8 +5126,9 @@
 }
 .docs-foot-folder:hover:not(:disabled) { border-color: #cbd5e1; background: #eef2f6; color: #24292f; }
 .docs-foot-folder i { font-style: normal; color: #8a95a1; }
-.docs-foot-folder:disabled { cursor: not-allowed; }
-.docs-foot-folder:disabled i { visibility: hidden; }
+.docs-foot-folder[aria-disabled="true"] { cursor: not-allowed; }
+.docs-foot-folder[aria-disabled="true"]:hover { border-color: #e3e8ee; background: #f6f8fa; color: #57606a; }
+.docs-foot-folder[aria-disabled="true"] i { visibility: hidden; }
 
 /* A read or a write that failed, said where it happened rather than nowhere. */
 .docs-pane-error {
@@ -5304,6 +5306,13 @@ tr:hover .finding-flag-button,
 .finding-action.is-primary { background: #1f2328; border-color: #1f2328; color: #ffffff; }
 .finding-action.is-primary:hover { background: #2563eb; border-color: #2563eb; color: #ffffff; }
 .finding-action:disabled { opacity: 0.6; cursor: default; transform: none; }
+/* Off for this reader, but still focusable, so the reason it carries can be heard: it looks the same
+   as a disabled button and does not light up on hover. */
+.finding-action[aria-disabled="true"],
+.finding-action[aria-disabled="true"]:hover { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; border-color: #d0d7de; color: #1f2328; }
+.finding-action[aria-disabled="true"]:hover svg { color: inherit; }
+.finding-action[aria-disabled="true"]:hover { background: #ffffff; }
+.scope-exclude-button.is-excluded[aria-disabled="true"]:hover { background: #f3f4f6; }
 .finding-flag-thanks p { margin: 0; font-size: 0.8rem; color: #1f2328; line-height: 1.45; }
 .finding-flag-thanks p + p { margin-bottom: 0.6rem; color: #57606a; }
 @media (prefers-reduced-motion: reduce) { .finding-flag-panel { animation: none; } .finding-flag-button { transition: none; } }

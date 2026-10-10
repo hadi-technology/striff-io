@@ -59,6 +59,7 @@ export function RuleSwitch({
 export function ScopeExclude({
   excluded,
   via,
+  stillRead = false,
   rules,
   kind,
   where,
@@ -69,6 +70,11 @@ export function ScopeExclude({
   excluded: boolean;
   /** The folder above that excludes it, as a reader names it ("docs/drafts/", "the repository"); null where it is its own setting. */
   via: string | null;
+  /**
+   * Whether it is held only by a rule-state entry from before exclusion covered it: Striff never
+   * stopped reading it, only checking its rules.
+   */
+  stillRead?: boolean;
   /** How many rules Striff has under it, for what the panel says. */
   rules: number;
   kind: "doc" | "folder" | "repository";
@@ -83,6 +89,7 @@ export function ScopeExclude({
   const button = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const titleId = useId();
+  const reasonId = useId();
 
   useEffect(() => {
     if (!asking) return;
@@ -108,6 +115,7 @@ export function ScopeExclude({
   }
 
   async function apply() {
+    if (disabledReason) return;
     setBusy(true);
     const ok = await onApply(!excluded);
     setBusy(false);
@@ -133,9 +141,12 @@ export function ScopeExclude({
         className={`finding-action scope-exclude-button${excluded ? " is-excluded" : ""}`}
         aria-haspopup="dialog"
         aria-expanded={asking}
-        disabled={!!disabledReason || busy}
+        // Still focusable where the reader may not use it, so a screen reader reaches the reason.
+        aria-disabled={disabledReason ? true : undefined}
+        aria-describedby={disabledReason ? reasonId : undefined}
+        disabled={busy}
         title={disabledReason ?? (excluded ? `Include ${target} again` : `Exclude ${where}`)}
-        onClick={() => setAsking(!asking)}
+        onClick={() => { if (!disabledReason) setAsking(!asking); }}
       >
         <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.6"
           strokeLinecap="round" aria-hidden="true">
@@ -143,6 +154,7 @@ export function ScopeExclude({
         </svg>
         {label}
       </button>
+      {disabledReason && <span id={reasonId} className="sr-only">{disabledReason}</span>}
       {asking && (
         <div ref={panel} className="finding-flag-panel scope-exclude-panel" role="dialog" aria-labelledby={titleId}>
           {excluded ? (
@@ -150,8 +162,10 @@ export function ScopeExclude({
               <p id={titleId} className="finding-flag-title">Include {target} again?</p>
               <p className="finding-flag-hint">
                 {via
-                  ? `This ${kind === "doc" ? "doc" : "folder"} is excluded because ${via} is. Including ${via} brings back every doc under it.`
-                  : `Striff reads it again on the next pull request that changes code it talks about, and pull requests are checked against its rules again.`}
+                  ? `This ${kind === "doc" ? "doc" : "folder"} is excluded because ${via} is. Including ${via} ${stillRead ? "has pull requests checked against every rule under it again" : "brings back every doc under it"}.`
+                  : stillRead
+                    ? "Striff has kept reading it; pull requests are checked against its rules again."
+                    : "Striff reads it again on the next pull request that changes code it talks about, and pull requests are checked against its rules again."}
               </p>
             </>
           ) : (

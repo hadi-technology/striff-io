@@ -11,6 +11,12 @@
  * Every answer is read through {@link normalizeRules} or {@link normalizeCatalog}, which take the
  * new name where it is given and the old one where it is not, so the rest of the page only ever
  * sees the new names. Missing fields, from a server that predates rule states, read as included.
+ *
+ * The two path lists are not the same thing. The new `excludedPaths` is the exclusion list itself:
+ * the docs and folders not read. The old `ignoredPaths` were rule-state entries: docs and folders
+ * still read, whose rules were set aside as a whole. A server sending the new name may send the old
+ * one beside it, holding the same exclusion list, so old entries are read only from a server that
+ * sends `ignoredPaths` and no `excludedPaths`; they are kept as `legacyPaths`.
  */
 import { standing } from "./standing.js";
 
@@ -85,9 +91,12 @@ export function normalizeDoc(doc) {
 export function normalizeRules(answer) {
   if (!answer || !Array.isArray(answer.documents)) return answer;
   const { ignoredPaths, ...rest } = answer;
+  const current = Array.isArray(answer.excludedPaths);
   return {
     ...rest,
-    excludedPaths: answer.excludedPaths ?? ignoredPaths ?? [],
+    excludedPaths: current ? answer.excludedPaths : [],
+    // Already normalized answers carry their legacy entries forward.
+    legacyPaths: answer.legacyPaths ?? (current ? [] : ignoredPaths ?? []),
     documents: answer.documents.map((group) => ({
       ...group,
       document: normalizeDoc(group.document),
@@ -108,31 +117,33 @@ export function normalizeCatalog(answer) {
 
 /**
  * The rules answer with one rule-state change applied: a list of rules excluded or included, or
- * (for an answer that still carries them) a doc or folder in the rule states taken back.
+ * (on a server from before exclusion covered it) a doc or folder in the rule states set aside or
+ * taken back, which changes `legacyPaths`.
  *
- * Including a path also includes every rule beneath it, whatever was set on the rule. A rule in a
- * doc that is excluded from reading is left alone: it is not checked until the doc is included.
+ * Including a path also includes every rule beneath it, whatever was set on the rule; a rule made
+ * included inside a path still set aside stays included. A rule in a doc that is excluded from
+ * reading is left alone: it is not checked until the doc is included.
  *
- * @param {{ documents: { document: object, rules: object[] }[], excludedPaths?: object[] }} repoRules
+ * @param {{ documents: { document: object, rules: object[] }[], legacyPaths?: object[] }} repoRules
  * @param {{ excluded: boolean, factIds?: string[], path?: string, prefix?: boolean }} change
  * @returns the new answer; the one passed in is not changed
  */
 export function applyRuleStates(repoRules, change) {
   if (!repoRules) return repoRules;
   const byPath = change.factIds == null;
-  let excludedPaths = [...(repoRules.excludedPaths || [])];
+  let legacyPaths = [...(repoRules.legacyPaths || [])];
   if (byPath) {
     const scope = change.path || "";
     const prefix = !!change.prefix;
-    excludedPaths = excludedPaths.filter((entry) => change.excluded
+    legacyPaths = legacyPaths.filter((entry) => change.excluded
       ? !(entry.path === scope && entry.prefix === prefix)
       : !(prefix ? under(entry.path, scope, true) : entry.path === scope && !entry.prefix));
-    if (change.excluded) excludedPaths.push({ path: scope, prefix });
+    if (change.excluded) legacyPaths.push({ path: scope, prefix });
   }
   const ids = new Set(change.factIds || []);
   const documents = repoRules.documents.map((group) => {
     const path = group.document.path;
-    const covering = coveringPath(path, excludedPaths);
+    const covering = coveringPath(path, legacyPaths);
     const rules = group.rules.map((rule) => {
       if (rule.excludedBy === "excluded") return rule;
       if (!byPath) {
@@ -146,7 +157,7 @@ export function applyRuleStates(repoRules, change) {
     const excludedRules = rules.filter((rule) => rule.excluded).length;
     return { ...group, document: { ...group.document, excluded: !!covering, excludedRules }, rules };
   });
-  return { ...repoRules, documents, excludedPaths };
+  return { ...repoRules, documents, legacyPaths };
 }
 
 /**
@@ -192,11 +203,13 @@ export function applyExclusion(catalog, repoRules, change) {
 
   const nextRules = repoRules && {
     ...repoRules,
+    // The new API's exclusion list, kept in step with the catalogue's.
+    excludedPaths: exclusions.map((entry) => ({ path: entry.path, prefix: !!entry.folder })),
     documents: repoRules.documents.map((group) => {
       const docPath = group.document.path;
       if (!inside(docPath)) return group;
       const covered = stillCovered(docPath);
-      const legacy = coveringPath(docPath, repoRules.excludedPaths);
+      const legacy = coveringPath(docPath, repoRules.legacyPaths);
       const rules = group.rules.map((rule) => {
         if (change.excluded) {
           if (rule.excludedBy === "excluded") return rule;
@@ -215,6 +228,32 @@ export function applyExclusion(catalog, repoRules, change) {
   };
 
   return { catalog: nextCatalog, rules: nextRules };
+}
+
+/**
+ * The writes that exclude a doc, a folder or the repository, or include it again, in the order
+ * they are sent. Excluding is one write to the exclusion list. Including is one write there where
+ * the path is on it, and one to the rule states where a server from before exclusion covered it
+ * still holds the path there; a path held both ways takes both.
+ *
+ * @param {{ exclusions?: { path: string, folder: boolean }[] } | null} catalog
+ * @param {{ legacyPaths?: { path: string, prefix: boolean }[] } | null} repoRules
+ * @param {{ path: string, folder: boolean, excluded: boolean }} change
+ * @returns {{ view: "rule-states" | "exclusions", body: object }[]}
+ */
+export function exclusionWrites(catalog, repoRules, change) {
+  const path = change.path || "";
+  const folder = !!change.folder;
+  const exclusionBody = folder
+    ? { paths: [], folders: [path], excluded: change.excluded }
+    : { paths: [path], folders: [], excluded: change.excluded };
+  if (change.excluded) return [{ view: "exclusions", body: exclusionBody }];
+  const listed = (catalog?.exclusions || []).some((entry) => entry.path === path && !!entry.folder === folder);
+  const legacy = (repoRules?.legacyPaths || []).some((entry) => entry.path === path && entry.prefix === folder);
+  const writes = [];
+  if (legacy) writes.push({ view: "rule-states", body: { excluded: false, ignored: false, path, prefix: folder } });
+  if (listed || !legacy) writes.push({ view: "exclusions", body: exclusionBody });
+  return writes;
 }
 
 /**

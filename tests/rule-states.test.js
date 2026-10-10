@@ -5,6 +5,7 @@ import {
   applyRuleStates,
   coveringFolder,
   coveringPath,
+  exclusionWrites,
   normalizeCatalog,
   normalizeRules,
   ruleCounts,
@@ -34,6 +35,7 @@ test("an answer from a server without rule states reads as every rule included",
   assert.equal(plain.documents[0].rules[0].excluded, false);
   assert.equal(plain.documents[0].rules[0].excludedBy, null);
   assert.deepEqual(plain.excludedPaths, []);
+  assert.deepEqual(plain.legacyPaths, []);
 });
 
 test("the old field names are read where the new ones are absent", () => {
@@ -44,7 +46,9 @@ test("the old field names are read where the new ones are absent", () => {
       rules: [rule("a", { ignored: true, ignoredBy: "folder" })],
     }],
   });
-  assert.deepEqual(old.excludedPaths, [{ path: "docs", prefix: true }]);
+  // The old server's paths are rule-state entries, not the exclusion list.
+  assert.deepEqual(old.legacyPaths, [{ path: "docs", prefix: true }]);
+  assert.deepEqual(old.excludedPaths, []);
   assert.equal(old.ignoredPaths, undefined);
   assert.deepEqual(old.documents[0].rules[0].excluded, true);
   assert.equal(old.documents[0].rules[0].excludedBy, "folder");
@@ -57,11 +61,13 @@ test("the old field names are read where the new ones are absent", () => {
 
 test("the new field names win where a server sends both", () => {
   const both = normalizeRules({
-    ignoredPaths: [],
+    ignoredPaths: [{ path: "", prefix: true }],
     excludedPaths: [{ path: "", prefix: true }],
     documents: [{ document: { path: "a.md" }, rules: [rule("a", { ignored: false, excluded: true, excludedBy: "rule", ignoredBy: null })] }],
   });
   assert.deepEqual(both.excludedPaths, [{ path: "", prefix: true }]);
+  // The new server sends the exclusion list under both names; neither is an old rule-state entry.
+  assert.deepEqual(both.legacyPaths, []);
   assert.equal(both.documents[0].rules[0].excluded, true);
   assert.equal(both.documents[0].rules[0].excludedBy, "rule");
   const detail = normalizeCatalog({ document: { path: "a.md", ignored: true }, rules: [rule("a", { ignored: true, ignoredBy: "rule" })] });
@@ -85,11 +91,11 @@ test("one rule is excluded and included again on its own, and the counts follow"
 test("a doc or folder from the old rule states covers the docs beneath it, and is taken back", () => {
   let next = applyRuleStates(answer(), { excluded: true, path: "docs/adr", prefix: true });
   assert.deepEqual([state(next).d1, state(next).d2, state(next).d3], ["folder", "folder", "folder"]);
-  assert.deepEqual(coveringPath("docs/adr/0009-new.md", next.excludedPaths), { path: "docs/adr", prefix: true });
-  assert.equal(coveringPath("docs/adrx.md", next.excludedPaths), null);
+  assert.deepEqual(coveringPath("docs/adr/0009-new.md", next.legacyPaths), { path: "docs/adr", prefix: true });
+  assert.equal(coveringPath("docs/adrx.md", next.legacyPaths), null);
   next = applyRuleStates(next, { excluded: false, path: "docs", prefix: true });
   assert.deepEqual([state(next).d1, state(next).d2, state(next).d3], ["included", "included", "included"]);
-  assert.deepEqual(next.excludedPaths, []);
+  assert.deepEqual(next.legacyPaths, []);
 });
 
 test("a folder exclusion covers the folder and everything under it; the empty path is the repository", () => {
@@ -143,4 +149,86 @@ test("the whole repository is the empty folder", () => {
   const next = applyExclusion(catalog(), answer(), { path: "", folder: true, excluded: true });
   assert.ok(next.catalog.documents.every((d) => d.state === "EXCLUDED"));
   assert.equal(ruleCounts(allRules(next.rules)).excluded, 6);
+});
+
+test("a rule made included inside a doc from the old rule states stays included", () => {
+  let next = applyRuleStates(answer(), { excluded: true, path: "docs/adr/0007.md", prefix: false });
+  assert.deepEqual([state(next).d1, state(next).d2], ["document", "document"]);
+  next = applyRuleStates(next, { excluded: false, factIds: ["d1"] });
+  assert.equal(state(next).d1, "included");
+  assert.equal(state(next).d2, "document");
+  assert.equal(next.documents[1].document.excluded, true);
+});
+
+test("a whole-repository path in the old rule states leaves a doc excluded from reading alone", () => {
+  const next = applyRuleStates(answer(), { excluded: true, path: "", prefix: true });
+  assert.equal(state(next).a1, "folder");
+  assert.equal(state(next).x1, "excluded");
+  assert.deepEqual(ruleCounts(allRules(next)), { all: 6, holds: 0, broken: 0, unchecked: 0, excluded: 6 });
+  const back = applyRuleStates(next, { excluded: false, path: "", prefix: true });
+  assert.equal(state(back).a1, "included");
+  assert.equal(state(back).x1, "excluded");
+});
+
+/** An answer in the new API's shape: the exclusion list under both names, excludedBy "excluded". */
+const newApi = () => normalizeRules({
+  truncated: false,
+  excludedPaths: [{ path: "docs/old.md", prefix: false }],
+  ignoredPaths: [{ path: "docs/old.md", prefix: false }],
+  documents: [
+    { document: { path: "AGENTS.md", state: "READ", excluded: false, ignored: false }, rules: [rule("a1"), rule("a2", BROKEN)] },
+    { document: { path: "docs/adr/0007.md", state: "READ" }, rules: [rule("d1"), rule("d2")] },
+    { document: { path: "docs/adr/0008.md", state: "READ", extractedContentHash: "x" }, rules: [rule("d3")] },
+    { document: { path: "docs/old.md", state: "EXCLUDED", excluded: true, ignored: true, excludedRules: 1 },
+      rules: [rule("x1", { excluded: true, excludedBy: "excluded", ignored: true, ignoredBy: "excluded" })] },
+  ],
+});
+
+test("on the new API, excluding and including a doc or a folder is one write and moves the counts at once", () => {
+  for (const change of [{ path: "AGENTS.md", folder: false }, { path: "docs/adr", folder: true }]) {
+    const out = exclusionWrites(catalog(), newApi(), { ...change, excluded: true });
+    assert.equal(out.length, 1, change.path);
+    assert.equal(out[0].view, "exclusions");
+    assert.deepEqual(out[0].body, change.folder
+      ? { paths: [], folders: ["docs/adr"], excluded: true }
+      : { paths: ["AGENTS.md"], folders: [], excluded: true });
+
+    const excluded = applyExclusion(catalog(), newApi(), { ...change, excluded: true });
+    const moved = change.folder ? 3 : 2;
+    assert.deepEqual(ruleCounts(allRules(excluded.rules)).excluded, 1 + moved, change.path);
+    assert.ok(excluded.rules.excludedPaths.some((entry) => entry.path === change.path && entry.prefix === change.folder));
+
+    const back = exclusionWrites(excluded.catalog, excluded.rules, { ...change, excluded: false });
+    assert.deepEqual(back.map((w) => w.view), ["exclusions"], change.path);
+    const included = applyExclusion(excluded.catalog, excluded.rules, { ...change, excluded: false });
+    assert.deepEqual(ruleCounts(allRules(included.rules)), ruleCounts(allRules(newApi())), change.path);
+  }
+});
+
+test("on the new API, including a doc excluded before the page loaded is one write to the exclusion list", () => {
+  const out = exclusionWrites(catalog(), newApi(), { path: "docs/old.md", folder: false, excluded: false });
+  assert.deepEqual(out, [{ view: "exclusions", body: { paths: ["docs/old.md"], folders: [], excluded: false } }]);
+  const included = applyExclusion(catalog(), newApi(), { path: "docs/old.md", folder: false, excluded: false });
+  assert.equal(state(included.rules).x1, "included");
+  assert.equal(ruleCounts(allRules(included.rules)).excluded, 0);
+});
+
+test("on the old API, a path held in the rule states is taken back there, and on the list too where it is on both", () => {
+  const old = normalizeRules({
+    ignoredPaths: [{ path: "docs/adr", prefix: true }],
+    documents: [{ document: { path: "docs/adr/0007.md", ignored: true }, rules: [rule("d1", { ignored: true, ignoredBy: "folder" })] }],
+  });
+  assert.deepEqual(exclusionWrites(catalog(), old, { path: "docs/adr", folder: true, excluded: false }),
+    [{ view: "rule-states", body: { excluded: false, ignored: false, path: "docs/adr", prefix: true } }]);
+  const both = { ...catalog(), exclusions: [{ path: "docs/adr", folder: true }] };
+  assert.deepEqual(exclusionWrites(both, old, { path: "docs/adr", folder: true, excluded: false }).map((w) => w.view),
+    ["rule-states", "exclusions"]);
+  // Excluding never writes to the rule states.
+  assert.deepEqual(exclusionWrites(both, old, { path: "docs/adr", folder: true, excluded: true }).map((w) => w.view),
+    ["exclusions"]);
+});
+
+test("the repository is excluded as the empty folder", () => {
+  assert.deepEqual(exclusionWrites(catalog(), newApi(), { path: "", folder: true, excluded: true }),
+    [{ view: "exclusions", body: { paths: [], folders: [""], excluded: true } }]);
 });

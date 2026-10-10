@@ -142,16 +142,43 @@ test("the permissions view answers from GitHub and asks the API nothing", async 
   assert.equal(apiCalls().length, 0);
 });
 
-test("a GitHub that will not answer is a no", async () => {
+test("a GitHub that will not answer lets no write through, and says to try again", async () => {
+  for (const down of [
+    async () => json({ message: "Server Error" }, 502),
+    async () => { throw new TypeError("fetch failed"); },
+  ]) {
+    let apiAsked = 0;
+    globalThis.fetch = async (url) => {
+      const u = new URL(String(url));
+      if (u.origin === "https://api.github.com") return down();
+      apiAsked += 1;
+      return json({ answered: u.pathname });
+    };
+
+    for (const [view, body] of [["rule-states", { ignored: true, factIds: ["a.md|abc"] }],
+      ["exclusions", { paths: ["a.md"], folders: [], excluded: true }]]) {
+      const res = await request("PATCH", view, body);
+      assert.equal(res.statusCode, 503, view);
+      assert.equal(JSON.parse(res.body).error, "github_unavailable", view);
+    }
+    const asked = await request("GET", "permissions");
+    assert.equal(asked.statusCode, 503);
+    assert.equal(JSON.parse(asked.body).error, "github_unavailable");
+    assert.equal(apiAsked, 0);
+  }
+});
+
+test("a GitHub that answers no is a no", async () => {
   globalThis.fetch = async (url) => {
     const u = new URL(String(url));
-    if (u.origin === "https://api.github.com") return json({ message: "Server Error" }, 502);
+    if (u.origin === "https://api.github.com") return json({ message: "Not Found" }, 404);
     return json({ answered: u.pathname });
   };
 
   const res = await request("PATCH", "rule-states", { ignored: true, factIds: ["a.md|abc"] });
 
   assert.equal(res.statusCode, 403);
+  assert.equal(JSON.parse(res.body).error, "not_repo_admin");
 });
 
 test("the issues the findings are tracked in are read from their own API path", async () => {
