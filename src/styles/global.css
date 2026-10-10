@@ -4454,7 +4454,10 @@
   text-align: left;
   white-space: nowrap;
 }
-.docs-menu > *:hover { background: #f1f5f9; color: #0f172a; text-decoration: none; }
+.docs-menu > *:hover:not(:disabled) { background: #f1f5f9; color: #0f172a; text-decoration: none; }
+/* Excluding and including are for the repository's owner and admins; the item stays, greyed, with
+   the reason in its title. */
+.docs-menu > button:disabled { color: #8c959f; cursor: not-allowed; }
 
 .docs-tree-foot { padding: 0.5rem 0.75rem 0.6rem; border-top: 1px solid #edf1f5; color: #64748b; font-size: 0.74rem; }
 
@@ -5122,6 +5125,8 @@
 }
 .docs-foot-folder:hover:not(:disabled) { border-color: #cbd5e1; background: #eef2f6; color: #24292f; }
 .docs-foot-folder i { font-style: normal; color: #8a95a1; }
+.docs-foot-folder:disabled { cursor: not-allowed; }
+.docs-foot-folder:disabled i { visibility: hidden; }
 
 /* A read or a write that failed, said where it happened rather than nowhere. */
 .docs-pane-error {

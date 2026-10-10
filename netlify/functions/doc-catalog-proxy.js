@@ -177,13 +177,16 @@ async function proxy(event, ghToken, params) {
         body: JSON.stringify({ error: "unknown_view" }),
       };
     }
-    if (method === "PATCH" && patchView === "rule-states" && !(await canManageRules(ghToken, owner, repo))) {
+    // Excluding a doc, a folder or the repository switches off every rule in it, so it is gated
+    // the same as switching off one rule.
+    if (method === "PATCH" && (patchView === "rule-states" || patchView === "exclusions")
+      && !(await canManageRules(ghToken, owner, repo))) {
       return {
         statusCode: 403,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           error: "not_repo_admin",
-          message: "Only the repository's owner and admins can change which rules are checked.",
+          message: "Only the repository's owner and admins can change which docs and rules are checked.",
         }),
       };
     }

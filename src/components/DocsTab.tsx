@@ -1016,9 +1016,8 @@ export default function DocsTab({
         rules={rulesUnder(path, folder)}
         kind={kind}
         where={kind === "doc" ? "this doc" : kind === "folder" ? `${path}/` : "this repository"}
-        // Excluding from reading is open to whoever may read the dashboard, as the exclusion list
-        // has always been; the rule switches are what only an owner or admin may use.
-        disabledReason={null}
+        // Excluding a path switches off every rule in it, so it is gated as the rule switches are.
+        disabledReason={ruleStateBlocked}
         onApply={async (next) => {
           if (via && !next) {
             // A folder above is what excludes this one: that is the setting to take back.
@@ -1227,6 +1226,7 @@ export default function DocsTab({
       );
       const answer = await res.json().catch(() => ({}));
       if (!res.ok) {
+        if (answer?.error === "not_repo_admin") setCanManageRules(false);
         setActionError(answer.message || answer.error || failed);
         return false;
       }
@@ -1264,6 +1264,10 @@ export default function DocsTab({
   async function exclude(path: string, folder: boolean, excluded: boolean): Promise<boolean> {
     if (source) {
       setActionError("This is a public page, so nothing here can be changed.");
+      return false;
+    }
+    if (ruleStateBlocked) {
+      setActionError(ruleStateBlocked);
       return false;
     }
     const named = folder ? folderName({ path }) : path;
@@ -1700,6 +1704,8 @@ export default function DocsTab({
                 <button
                   type="button"
                   role="menuitem"
+                  disabled={!!ruleStateBlocked}
+                  title={ruleStateBlocked ?? undefined}
                   onClick={() => exclude(covering.path, true, false)}
                 >
                   {covering.path === path
@@ -1707,8 +1713,8 @@ export default function DocsTab({
                     : `Include ${folderName(covering)} again`}
                 </button>
               ) : (
-                <button type="button" role="menuitem"
-                  title="Striff won't read any doc under it, and none of their rules are checked."
+                <button type="button" role="menuitem" disabled={!!ruleStateBlocked}
+                  title={ruleStateBlocked ?? "Striff won't read any doc under it, and none of their rules are checked."}
                   onClick={() => exclude(path, true, true)}>
                   Exclude this folder
                 </button>
@@ -1720,12 +1726,15 @@ export default function DocsTab({
                 <button
                   type="button"
                   role="menuitem"
+                  disabled={!!ruleStateBlocked}
+                  title={ruleStateBlocked ?? undefined}
                   onClick={() => exclude(covering.path, true, false)}
                 >
                   Include {folderName(covering)} again
                 </button>
               ) : (
-                <button type="button" role="menuitem" onClick={() => exclude(path, false, false)}>
+                <button type="button" role="menuitem" disabled={!!ruleStateBlocked}
+                  title={ruleStateBlocked ?? undefined} onClick={() => exclude(path, false, false)}>
                   Include again
                 </button>
               )
@@ -1742,8 +1751,8 @@ export default function DocsTab({
                       Read it anyway
                     </button>
                   ))}
-                <button type="button" role="menuitem"
-                  title="Striff won't read this doc, and none of its rules are checked."
+                <button type="button" role="menuitem" disabled={!!ruleStateBlocked}
+                  title={ruleStateBlocked ?? "Striff won't read this doc, and none of its rules are checked."}
                   onClick={() => exclude(path, false, true)}>
                   Exclude this doc
                 </button>
@@ -2336,8 +2345,8 @@ export default function DocsTab({
                         key={rule.path}
                         type="button"
                         className="docs-foot-folder"
-                        disabled={busy}
-                        title={`Include ${folderName(rule)} again${rule.excludedBy ? ` (excluded by ${rule.excludedBy}${rule.reason ? `: ${rule.reason}` : ""})` : ""}`}
+                        disabled={busy || !!ruleStateBlocked}
+                        title={ruleStateBlocked ?? `Include ${folderName(rule)} again${rule.excludedBy ? ` (excluded by ${rule.excludedBy}${rule.reason ? `: ${rule.reason}` : ""})` : ""}`}
                         onClick={() => exclude(rule.path, true, false)}
                       >
                         {rule.path === "" ? "whole repository" : `${rule.path}/`}<i aria-hidden="true">×</i>

@@ -398,8 +398,10 @@ test("the actor on a write is the cached login for this token, never the body's"
   await docCatalog({
     httpMethod: "PATCH",
     headers: cookie(TOKEN_A),
-    queryStringParameters: { installation_id: "7", owner: "acme", repo: "widgets" },
-    body: JSON.stringify({ paths: ["a.md"], actor: "mallory" }),
+    // The forced-read list: a write nobody needs to be an admin for, so nothing but the cached
+    // login is consulted. Exclusions and rule states ask GitHub who is an admin first.
+    queryStringParameters: { installation_id: "7", owner: "acme", repo: "widgets", view: "force-read" },
+    body: JSON.stringify({ paths: ["a.md"], forced: true, actor: "mallory" }),
   });
 
   assert.equal(githubCalls().length, 0);
