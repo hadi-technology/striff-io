@@ -483,7 +483,7 @@ interface Chip<K> { key: K; label: string; dot: string; always: boolean; help: s
 const DOC_CHIPS: Chip<DocFilter>[] = [
   { key: "results", label: "With results", dot: "", always: false, help: "Documents with a rule that holds or is broken, or a stale name." },
   { key: "all", label: "All", dot: "", always: true, help: "Every document in this repository, whatever state it is in." },
-  { key: "notRead", label: "Not read", dot: "unread", always: true, help: "Documents Striff hasn't read yet, so any rule in them is not counted here." },
+  { key: "notRead", label: "Not read yet", dot: "unread", always: true, help: "Documents Striff hasn't read yet, so any rule in them is not counted here." },
   { key: "unreadable", label: "Couldn't read", dot: "broken", always: false, help: "Documents Striff couldn't finish reading. That isn't counted as “no rules”." },
   { key: "skipped", label: "Skipped", dot: "other", always: true, help: "Documents Striff skipped because it found no rule in them that could be checked against code." },
   { key: "retired", label: "Retired", dot: "other", always: false, help: "Documents that say they are no longer current, so their rules aren't checked." },
