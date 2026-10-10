@@ -3,7 +3,7 @@ import { brokenRulePrompt, issueUrl } from "./docIssue";
 import FindingActions from "./FindingActions";
 import type { FindingIssue } from "./findingIssue.ts";
 import FlagFinding from "./FlagFinding";
-import { IGNORED_BY_HINT, RuleSwitch } from "./RuleStateControls";
+import { RuleSwitch } from "./RuleStateControls";
 import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
 import { standing } from "../lib/standing.js";
@@ -27,6 +27,8 @@ export interface RowDoc {
   outdated: boolean;
   lastExtractedMs: number | null;
   lastExtractedPullNo: string | null;
+  /** The doc's state, where the row carries it: an excluded doc's rules can't be switched one by one. */
+  state?: string;
 }
 
 export interface Rule {
@@ -44,9 +46,14 @@ export interface Rule {
   /** One past where those words end. */
   checkedTo?: number | null;
   /** Whether pull requests aren't checked against this rule; absent from an older server, and then false. */
-  ignored?: boolean;
-  /** What ignored it: the rule itself, its doc, a folder above it, or the doc being excluded. */
-  ignoredBy?: "rule" | "document" | "folder" | "excluded" | null;
+  excluded?: boolean;
+  /**
+   * What excluded it: the rule itself, its doc or a folder above it in the rule states, or the doc
+   * being excluded from reading.
+   */
+  excludedBy?: "rule" | "document" | "folder" | "excluded" | null;
+  /** What a reader is told excluded it, beside the word: "doc", "folder", "repository"; none for the rule's own switch. */
+  excludedWith?: string | null;
   /** The GitHub issue the rule is tracked in, where the server knows of one. */
   issue?: FindingIssue | null;
 }
@@ -114,8 +121,8 @@ export const STANDING_HELP: Record<Standing, string> = {
 };
 
 /** What an empty table says when a count, not a search, emptied it. */
-const NONE_STANDING: Record<Standing | "ignored", string> = {
-  ignored: "No rule here is ignored.",
+const NONE_STANDING: Record<Standing | "excluded", string> = {
+  excluded: "No rule here is excluded.",
   broken: "No rule here is broken.",
   holds: "No rule here holds yet.",
   unchecked: "Every rule here has been checked.",
@@ -123,14 +130,14 @@ const NONE_STANDING: Record<Standing | "ignored", string> = {
 };
 
 /** Which rules a reader asked to see, where they followed a count to them. */
-export type RuleFilter = "all" | Standing | "ignored";
+export type RuleFilter = "all" | Standing | "excluded";
 
-/** Turns rules on and off for pull requests, where the reader may; absent on a public page. */
+/** Excludes rules from pull requests and includes them again, where the reader may; absent on a public page. */
 export interface RuleStateHandle {
   /** Why the reader cannot use the switches, or null where they can. */
   disabledReason: string | null;
   /** Sets one rule; resolves to an error to show, or null. */
-  set: (row: Row, ignored: boolean) => Promise<string | null>;
+  set: (row: Row, excluded: boolean) => Promise<string | null>;
 }
 
 /** Which column the list is ordered by. */
@@ -172,7 +179,6 @@ export default function RulesTable({
   readOnly = false,
   demo = false,
   ruleStates,
-  repositoryIgnored = false,
 }: {
   /** The rules in scope, already stripped of the ones nothing could judge. */
   rows: Row[];
@@ -200,10 +206,8 @@ export default function RulesTable({
   readOnly?: boolean;
   /** Whether these are the demo's rules, about a repository that does not exist on GitHub. */
   demo?: boolean;
-  /** The Active/Ignored switch on each row; absent where nothing can be changed. */
+  /** The Included/Excluded switch on each row; absent where nothing can be changed. */
   ruleStates?: RuleStateHandle;
-  /** Whether the whole repository is ignored, so a rule ignored with it says so, not "folder". */
-  repositoryIgnored?: boolean;
 }) {
   /** A switch that failed says so on its own row until it is tried again. */
   const [stateError, setStateError] = useState<Record<string, string>>({});
@@ -222,9 +226,9 @@ export default function RulesTable({
 
   const term = query.trim().toLowerCase();
   const shown = useMemo(() => {
-    // An ignored rule is listed under All and Ignored, and counted in none of the standings.
+    // An excluded rule is listed under All and Excluded, and counted in none of the standings.
     const matchesFilter = (row: Row) =>
-      filter === "all" ? true : filter === "ignored" ? !!row.ignored : !row.ignored && standing(row) === filter;
+      filter === "all" ? true : filter === "excluded" ? !!row.excluded : !row.excluded && standing(row) === filter;
     const matchesTerm = (row: Row) =>
       term === "" ||
       plainText(row.statement).toLowerCase().includes(term) ||
@@ -247,10 +251,10 @@ export default function RulesTable({
       }
       return byDocument(a, b);
     };
-    // Ignored rules sit below the rest whichever way the list is ordered.
+    // Excluded rules sit below the rest whichever way the list is ordered.
     const sorted = rows
       .filter((row) => matchesFilter(row) && matchesTerm(row))
-      .sort((a, b) => Number(!!a.ignored) - Number(!!b.ignored) || sort.dir * compare(a, b));
+      .sort((a, b) => Number(!!a.excluded) - Number(!!b.excluded) || sort.dir * compare(a, b));
     return bySentence(sorted);
   }, [rows, filter, term, sort]);
 
@@ -299,7 +303,7 @@ export default function RulesTable({
           csvCell(row.sourceLine ?? ""),
           csvCell(plainText(row.statement)),
           csvCell(plainText(row.quote)),
-          csvCell(row.ignored ? "Ignored" : STANDING_LABEL[standing(row)]),
+          csvCell(row.excluded ? "Excluded" : STANDING_LABEL[standing(row)]),
           csvCell(row.pullNo ? `#${row.pullNo}` : ""),
           csvCell(row.judgedAtMs ? new Date(row.judgedAtMs).toISOString().slice(0, 10) : ""),
           csvCell(row.onDefaultBranch ? "checked against the default branch" : "checked on a pull request"),
@@ -404,8 +408,8 @@ export default function RulesTable({
                  white row with no mark on it at all. Newly broken and already broken keep their
                  own tones, because the first is this change's doing and the second is not. */
               className={[
-                row.ignored
-                  ? "is-ignored"
+                row.excluded
+                  ? "is-excluded"
                   : row.status === "VIOLATED"
                   ? "is-violated"
                   : row.status === "PRE_EXISTING"
@@ -481,16 +485,14 @@ export default function RulesTable({
                 {/* The pill and, right of it, the switch that turns the rule off: one line, so turning a
                     rule off costs the row no height. */}
                 <span className="rule-standing-line">
-                  {row.ignored ? (
+                  {row.excluded ? (
                     <span
-                      className="docs-outcome is-ignored"
-                      title={row.ignoredBy === "excluded"
-                        ? "Not checked: the doc this rule is in is excluded."
-                        : "Pull requests aren't checked against this rule."}
+                      className="docs-outcome is-excluded"
+                      title={row.excludedWith
+                        ? `Not checked: this rule's ${row.excludedWith} is excluded.`
+                        : "Excluded: pull requests aren't checked against this rule."}
                     >
-                      Ignored{row.ignoredBy === "folder" && repositoryIgnored
-                        ? " · repository"
-                        : row.ignoredBy && IGNORED_BY_HINT[row.ignoredBy] ? ` · ${IGNORED_BY_HINT[row.ignoredBy]}` : ""}
+                      Excluded{row.excludedWith ? ` · ${row.excludedWith}` : ""}
                     </span>
                   ) : standing(row) === "broken" && row.status === "VIOLATED" && row.pullNo ? (
                     <a
@@ -531,8 +533,8 @@ export default function RulesTable({
                   {ruleStates && (
                     <RuleSwitch
                       compact
-                      ignored={!!row.ignored}
-                      ignoredBy={row.ignoredBy}
+                      excluded={!!row.excluded}
+                      withDoc={row.excludedBy === "excluded" || row.doc.state === "EXCLUDED"}
                       disabledReason={ruleStates.disabledReason}
                       onToggle={async (next) => {
                         setStateError((was) => ({ ...was, [row.factId]: "" }));
@@ -572,14 +574,14 @@ export default function RulesTable({
                     not checked on {branch || "the branch"} yet
                   </span>
                 )}
-                {!row.ignored && standing(row) === "broken" && (!readOnly || row.issue) && (
+                {!row.excluded && standing(row) === "broken" && (!readOnly || row.issue) && (
                   <FindingActions
                     issueUrl={issues && !readOnly ? issueUrl(owner, name, row.doc.path, row, branch) : null}
                     prompt={readOnly ? undefined : brokenRulePrompt(owner, name, row.doc.path, row, branch)}
                     demo={demo}
                     issue={row.issue}
                     readOnly={readOnly}
-                    onIgnore={ruleStates && !ruleStates.disabledReason
+                    onExclude={ruleStates && !ruleStates.disabledReason
                       ? async () => {
                           setStateError((was) => ({ ...was, [row.factId]: "" }));
                           const failed = await ruleStates.set(row, true);

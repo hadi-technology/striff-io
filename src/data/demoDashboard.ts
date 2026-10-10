@@ -11,8 +11,9 @@
  * breaks there.
  *
  * The repository is deliberately not tidy. It has a document nobody has read, one a screen skipped,
- * one that says it is superseded, one that could not be read at all, one the team excluded, one
- * edited since it was read, and one Striff read and found nothing in. A demo where everything is
+ * one a screen skipped that the team asked to be read anyway, one that says it is superseded, one
+ * that could not be read at all, one the team excluded and a folder of drafts it excluded, one
+ * edited since it was read, and a rule the team excluded on its own. A demo where everything is
  * green teaches nobody what the product is for.
  */
 import { applyRuleStates } from "../lib/ruleStates.js";
@@ -60,21 +61,30 @@ const documents = [
   doc("README.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: describes setup and usage, not how the code is built" }),
   doc("docs/adr/0007-payments.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 2, alreadyBrokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 12 * DAY }),
   doc("docs/adr/0008-read-models.md", "READ", { extractedContentHash: "71cc4ab9", ruleCount: 1, outdated: true, lastExtractedMs: NOW - 22 * DAY, lastExtractedPullNo: "398" }),
+  doc("docs/adr/0003-shared-database.md", "RETIRED", { retiredReason: "Superseded by ADR 0007, which gives billing a store of its own." }),
+  doc("docs/design/event-flow.md", "UNREADABLE"),
+  doc("docs/glossary.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: defines terms, states no rule about the code", forced: true, forcedBy: "maria-k", forcedReason: "It names the modules the ADRs talk about" }),
+  // Excluded by the team: Striff reads neither, and none of their rules is checked. The server
+  // counts an excluded doc's rules apart from its rule count, as it does any excluded rule.
+  doc("docs/legacy/payments-v1.md", "EXCLUDED", { extractedContentHash: "5e0a7d13", lastExtractedMs: NOW - 60 * DAY, lastExtractedPullNo: "301", excludedBy: "maria-k", excludedReason: "Describes the v1 flow we're retiring" }),
+  doc("docs/drafts/read-replicas.md", "EXCLUDED", { extractedContentHash: "c19b02ee", lastExtractedMs: NOW - 30 * DAY, lastExtractedPullNo: "377" }),
+  doc("docs/drafts/sagas.md", "EXCLUDED"),
 ];
 
+const count = (state: string) => documents.filter((d) => d.state === state).length;
 const summary = {
   documents: documents.length,
-  read: 4,
-  outdated: 1,
-  notRead: 1,
-  screenedOut: 1,
-  retired: 0,
-  unreadable: 0,
+  read: count("READ"),
+  outdated: documents.filter((d) => d.outdated).length,
+  notRead: count("NOT_READ"),
+  screenedOut: count("SCREENED_OUT"),
+  retired: count("RETIRED"),
+  unreadable: count("UNREADABLE"),
   rules: 11,
   brokenRules: 1,
   alreadyBrokenRules: 1,
   neverChecked: 0,
-  excluded: 0,
+  excluded: count("EXCLUDED"),
   holdsOnDefaultBranch: 9,
   brokenOnDefaultBranch: 2,
 };
@@ -168,6 +178,13 @@ const rulesByDoc: Record<string, ReturnType<typeof rule>[]> = {
   "docs/adr/0008-read-models.md": [
     HOLDS(11, "Nothing in `reporting` depends on `checkout.store`", "Read models are built from events, never by reaching into the write side.", "398", 22),
   ],
+  "docs/legacy/payments-v1.md": [
+    HOLDS(9, "Only `checkout` depends on `com.stripe`", "Checkout calls Stripe directly; there is no billing module yet.", "301", 60),
+    HOLDS(17, "Nothing in `billing` depends on `ledger`", "Refunds are written straight to the payments table.", "301", 60),
+  ],
+  "docs/drafts/read-replicas.md": [
+    HOLDS(6, "Only `reporting` depends on `checkout.replica`", "Reporting reads from the replica, and nothing else should.", "377", 30),
+  ],
 };
 
 const history = [
@@ -186,7 +203,10 @@ export const demoCatalog: any = {
   lastScanMs: NOW - 3 * 60 * 1000,
   lastAttempt: { atMs: NOW - 3 * 60 * 1000, outcome: "listed", reason: null, documents: documents.length },
   reading: null,
-  exclusions: [],
+  exclusions: [
+    { path: "docs/drafts", folder: true, excludedBy: "maria-k", reason: "Drafts aren't decisions yet", atMs: NOW - 9 * DAY },
+    { path: "docs/legacy/payments-v1.md", folder: false, excludedBy: "maria-k", reason: "Describes the v1 flow we're retiring", atMs: NOW - 20 * DAY },
+  ],
   summary,
   documents,
 };
@@ -265,35 +285,34 @@ const demoRulesRead: any = {
   summary,
   truncated: false,
   documents: documents
-    .filter((d) => (rulesByDoc[d.path] || []).length > 0 && d.state !== "EXCLUDED")
+    .filter((d) => (rulesByDoc[d.path] || []).length > 0)
     .map((d) => ({
       document: d,
-      rules: (rulesByDoc[d.path] || []).map((r, i) => ({ ...r, factId: `${d.path}|${i}` })),
+      // A rule in an excluded doc is sent excluded, and says it is excluded with its doc.
+      rules: (rulesByDoc[d.path] || []).map((r, i) => ({
+        ...r,
+        factId: `${d.path}|${i}`,
+        ...(d.state === "EXCLUDED" ? { excluded: true, excludedBy: "excluded" } : {}),
+      })),
     })),
+  excludedPaths: [],
 };
 
 /**
- * The example's rules as the team has set them: one doc ignored as a whole, so the rules it holds
- * now and later aren't checked, and one rule ignored on its own. The switches on the demo page
- * change this answer in place, and nothing else.
+ * The example's rules as the team has set them: the excluded doc's and the excluded folder's,
+ * and one rule excluded on its own. The switches on the demo page change this answer in place,
+ * and nothing else.
  */
-export const demoRules: any = applyRuleStates(
-  applyRuleStates(demoRulesRead, { ignored: true, path: "docs/adr/0008-read-models.md", prefix: false }),
-  { ignored: true, factIds: ["ARCHITECTURE.md|2"] }
-);
+export const demoRules: any = applyRuleStates(demoRulesRead, { excluded: true, factIds: ["ARCHITECTURE.md|2"] });
 
 /** One document with its rules, as `view=doc` sends it. */
 export function demoDoc(path: string): any {
   const document_ = documents.find((d) => d.path === path);
   if (!document_) return null;
   const own = (rulesByDoc[path] || []).map((r, i) => ({ ...r, factId: `${path}|${i}` }));
-  const mine =
-    document_.state === "EXCLUDED"
-      ? own.map((r) => ({ ...r, status: null, pullNo: null, judgedAtMs: null, onDefaultBranch: null }))
-      : own;
   return {
     document: document_,
-    rules: mine,
+    rules: own,
     history: document_.state === "NOT_READ" ? [] : history,
   };
 }

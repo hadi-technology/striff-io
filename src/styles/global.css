@@ -4646,6 +4646,23 @@
 .docs-fdot.is-outdated { background: #d97706; }
 .docs-fdot.is-unread { background: #fff; box-shadow: inset 0 0 0 1.5px #94a3b8; }
 .docs-fdot.is-other { background: #cbd5e1; }
+.docs-fdot.is-held { background: #17794a; }
+
+/* Two labelled groups of chips above the tree: the documents, then the rules. Each label sits on
+   its own line, so the chips under it wrap the same way at any width of the tree. */
+.docs-filters { flex-direction: column; flex-wrap: nowrap; gap: 0.55rem; }
+.docs-filter-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
+.docs-filter-label {
+  flex-basis: 100%;
+  margin: 0 0 0.05rem 0.1rem;
+  color: #64748b;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.docs-filter-group + .docs-filter-group { padding-top: 0.5rem; border-top: 1px dashed #e2e8f0; }
+.docs-filter:disabled { opacity: 0.6; cursor: default; }
 
 /* A wash on the rows that need something doing, and nothing on the ones that do not.
    Tinting every row by its standing would paint most of the table green -- most rules hold --
@@ -4659,24 +4676,24 @@
 .docs-rules tr.is-violated td:first-child { box-shadow: inset 2px 0 0 #d33a4b; }
 .docs-rules tr.is-prior td:first-child { box-shadow: inset 2px 0 0 #e0a13a; }
 
-/* An ignored rule: the whole row goes grey and quiet, every cell, and no broken or already-broken
+/* An excluded rule: the whole row goes grey and quiet, every cell, and no broken or already-broken
    tint shows through. Only the switch keeps its full contrast, so the way back is the one thing
    that still reads as live. The grey stays above 3:1 on the row's background, so it can be read. */
-.docs-rules tr.is-ignored td,
-.docs-rules tr.is-ignored:hover td { background: #f3f4f6; color: #6b7280; }
-.docs-rules tr.is-ignored td > :not(.rule-switch-line):not(.rule-standing-line),
-.docs-rules tr.is-ignored td .rule-switch-line > :not(.rule-switch),
-.docs-rules tr.is-ignored td .rule-standing-line > :not(.rule-switch) {
+.docs-rules tr.is-excluded td,
+.docs-rules tr.is-excluded:hover td { background: #f3f4f6; color: #6b7280; }
+.docs-rules tr.is-excluded td > :not(.rule-switch-line):not(.rule-standing-line),
+.docs-rules tr.is-excluded td .rule-switch-line > :not(.rule-switch),
+.docs-rules tr.is-excluded td .rule-standing-line > :not(.rule-switch) {
   filter: grayscale(1);
   opacity: 0.82;
 }
-.docs-rules tr.is-ignored td a,
-.docs-rules tr.is-ignored td button:not(.rule-switch),
-.docs-rules tr.is-ignored td code,
-.docs-rules tr.is-ignored td b,
-.docs-rules tr.is-ignored td strong,
-.docs-rules tr.is-ignored td mark { color: #6b7280; background-color: transparent; }
-.docs-outcome.is-ignored { background: #eef0f3; border-color: #d0d7de; color: #57606a; }
+.docs-rules tr.is-excluded td a,
+.docs-rules tr.is-excluded td button:not(.rule-switch),
+.docs-rules tr.is-excluded td code,
+.docs-rules tr.is-excluded td b,
+.docs-rules tr.is-excluded td strong,
+.docs-rules tr.is-excluded td mark { color: #6b7280; background-color: transparent; }
+.docs-outcome.is-excluded { background: #eef0f3; border-color: #d0d7de; color: #57606a; }
 
 /* The Active/Ignored switch at the foot of a rule's standing cell. */
 .rule-switch-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin-top: 0.55rem; }
@@ -4736,14 +4753,12 @@
 @media (prefers-reduced-motion: reduce) { .rule-switch, .rule-switch-track, .rule-switch-knob { transition: none; } }
 @media print { .rule-switch-line, .rule-standing-line .rule-switch { display: none; } }
 
-/* Ignore or reactivate every rule under a doc, a folder or the repository, from its header. */
-.scope-ignore { position: relative; display: inline-flex; margin-right: 0.4rem; }
-.scope-ignore .finding-action { margin-top: 0; }
-.scope-ignore-button.is-all { color: #57606a; background: #f3f4f6; }
-.scope-ignore-button.is-mixed { border-style: dashed; }
-.scope-ignore-panel { width: 20rem; }
-.docs-badge.is-ignored { background: #f3f4f6; border-color: #d0d7de; color: #57606a; }
-.docs-tally-item.is-ignored b { color: #6b7280; }
+/* Exclude a doc, a folder or the repository, or include it again, from its header. */
+.scope-exclude { position: relative; display: inline-flex; margin-right: 0.4rem; }
+.scope-exclude .finding-action { margin-top: 0; }
+.scope-exclude-button.is-excluded { color: #57606a; background: #f3f4f6; }
+.scope-exclude-panel { width: 20rem; }
+.docs-tally-item.is-excluded b { color: #6b7280; }
 
 /* The two levels these things live at: an account, and a repository inside it. */
 .dash-repo-group { margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid #edf1f5; }
@@ -7547,7 +7562,7 @@ button.check-verdict { cursor: pointer; }
 }
 .finding-issue-note a { color: #57606a; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .finding-issue-note a:hover { color: #2563eb; }
-.finding-issue-ignore {
+.finding-issue-exclude {
   padding: 0;
   border: 0;
   background: none;
@@ -7556,6 +7571,6 @@ button.check-verdict { cursor: pointer; }
   font-weight: 600;
   cursor: pointer;
 }
-.finding-issue-ignore:hover { text-decoration: underline; text-underline-offset: 2px; }
-.finding-issue-ignore:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 2px; }
-@media print { .finding-issue-ignore { display: none; } }
+.finding-issue-exclude:hover { text-decoration: underline; text-underline-offset: 2px; }
+.finding-issue-exclude:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 2px; }
+@media print { .finding-issue-exclude { display: none; } }

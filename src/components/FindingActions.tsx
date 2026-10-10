@@ -12,7 +12,7 @@ import { issueView, type FindingIssue } from "./findingIssue.ts";
  *
  * A finding already tracked in an open issue shows that issue in place of the button. One whose
  * issue was closed shows the button again with a note, and where it was closed as not planned,
- * offers to ignore the rule instead. Read-only, as on a public page, it shows only the issue.
+ * offers to exclude the rule instead. Read-only, as on a public page, it shows only the issue.
  */
 export default function FindingActions({
   issueUrl,
@@ -20,7 +20,7 @@ export default function FindingActions({
   demo = false,
   issue = null,
   readOnly = false,
-  onIgnore = null,
+  onExclude = null,
 }: {
   /** GitHub's new-issue page with this finding filled in, or null where the repository takes none. */
   issueUrl: string | null;
@@ -32,8 +32,8 @@ export default function FindingActions({
   issue?: FindingIssue | null;
   /** Whether the reader can only look, as on a public page: the issue shows, the buttons do not. */
   readOnly?: boolean;
-  /** Ignores the rule, where a closed-as-not-planned issue makes that the likelier wish. */
-  onIgnore?: (() => void) | null;
+  /** Excludes the rule, where a closed-as-not-planned issue makes that the likelier wish. */
+  onExclude?: (() => void) | null;
 }) {
   const [copy, setCopy] = useState<"idle" | "copied" | "failed">("idle");
   const [explained, setExplained] = useState<null | "open" | "tracked">(null);
@@ -137,12 +137,12 @@ export default function FindingActions({
             <a href={tracked.url} target="_blank" rel="noopener noreferrer">#{tracked.number}</a>
           )}
           {tracked.notPlanned ? " closed as not planned" : " was closed"}
-          {tracked.notPlanned && onIgnore && !readOnly && (
+          {tracked.notPlanned && onExclude && !readOnly && (
             <>
               {" · "}
-              <button type="button" className="finding-issue-ignore" onClick={onIgnore}
-                title="Pull requests won't be checked against this rule. You can switch it back on.">
-                Ignore this rule?
+              <button type="button" className="finding-issue-exclude" onClick={onExclude}
+                title="Pull requests won't be checked against this rule. You can include it again.">
+                Exclude this rule?
               </button>
             </>
           )}
