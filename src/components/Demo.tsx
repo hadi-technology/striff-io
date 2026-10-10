@@ -17,10 +17,10 @@ import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
  * API sends. Nothing is redrawn for the occasion, which is the point -- a demo that is a picture of
  * a product proves only that somebody can draw.
  *
- * The repository is invented and says so, here and in the page around it. Writing is refused:
- * excluding a document, forcing a read and asking for a reading all decline politely rather than
- * pretending, because a control that appears to work and does not is worse than one that is
- * honest about being an example.
+ * The repository is invented and says so, here and in the page around it. Excluding a rule, a
+ * document or a folder changes the page and nothing else, and says so above it. Forcing a read and
+ * asking for a reading decline politely rather than pretending, because a control that appears to
+ * work and does not is worse than one that is honest about being an example.
  *
  * The open view is in the URL fragment (#docs, #checks, #metrics), so the homepage can send a reader to one
  * view and a reader can send a colleague to the one they mean. `#rules` was the flat list of rules

@@ -1,31 +1,24 @@
 /**
- * Which rules a pull request is checked against: every rule is active unless it, its doc or a
- * folder above it is ignored, and a rule in an excluded doc is never checked.
+ * Which rules a pull request is checked against: every rule is included unless it is excluded on
+ * its own, or its doc or a folder above it is excluded.
  *
  * The API answers this for real; these functions apply one change to an answer already on the
- * page, so the switch moves the moment it is clicked and the demo can be tried with nothing behind
- * it. Plain JavaScript so the node tests read the same answer the dashboard shows. Missing fields,
- * from a server that predates rule states, read as active.
- */
-
-/**
- * Whether `docPath` lies under an ignored path: the doc itself, or a folder holding it ("" with
- * prefix is the whole repository).
+ * page, so a switch moves the moment it is clicked and the demo can be tried with nothing behind
+ * it. Plain JavaScript so the node tests read the same answer the dashboard shows.
  *
- * @param {string} docPath
- * @param {{ path: string, prefix: boolean }[] | undefined} ignoredPaths
- * @returns {{ path: string, prefix: boolean } | null} the covering entry, the deepest if several
+ * The API names these fields `excluded`, `excludedBy`, `excludedRules` and `excludedPaths`; a
+ * server from before that names them `ignored`, `ignoredBy`, `ignoredRules` and `ignoredPaths`.
+ * Every answer is read through {@link normalizeRules} or {@link normalizeCatalog}, which take the
+ * new name where it is given and the old one where it is not, so the rest of the page only ever
+ * sees the new names. Missing fields, from a server that predates rule states, read as included.
+ *
+ * The two path lists are not the same thing. The new `excludedPaths` is the exclusion list itself:
+ * the docs and folders not read. The old `ignoredPaths` were rule-state entries: docs and folders
+ * still read, whose rules were set aside as a whole. A server sending the new name may send the old
+ * one beside it, holding the same exclusion list, so old entries are read only from a server that
+ * sends `ignoredPaths` and no `excludedPaths`; they are kept as `legacyPaths`.
  */
-export function coveringPath(docPath, ignoredPaths) {
-  let best = null;
-  for (const entry of ignoredPaths || []) {
-    const covers = entry.prefix
-      ? entry.path === "" || docPath === entry.path || docPath.startsWith(`${entry.path}/`)
-      : docPath === entry.path;
-    if (covers && (!best || entry.path.length >= best.path.length)) best = entry;
-  }
-  return best;
-}
+import { standing } from "./standing.js";
 
 /** Whether a doc lies under `scope`, a folder path ("" for the repository) or a doc path. */
 function under(docPath, scope, prefix) {
@@ -34,64 +27,252 @@ function under(docPath, scope, prefix) {
 }
 
 /**
- * The rules answer with one change applied: a list of rules, or a doc or folder, made ignored or
- * active.
+ * Whether `docPath` lies under an excluded path from the rule states: the doc itself, or a folder
+ * holding it ("" with prefix is the whole repository).
  *
- * Making a path active also makes every rule beneath it active, whatever was set on the rule; a
- * rule made active inside an ignored doc or folder stays active while the path stays ignored. A
- * rule in an excluded doc is left alone: it is not checked until the doc is included again.
+ * @param {string} docPath
+ * @param {{ path: string, prefix: boolean }[] | undefined} excludedPaths
+ * @returns {{ path: string, prefix: boolean } | null} the covering entry, the deepest if several
+ */
+export function coveringPath(docPath, excludedPaths) {
+  let best = null;
+  for (const entry of excludedPaths || []) {
+    if (under(docPath, entry.path, entry.prefix) && (!best || entry.path.length >= best.path.length)) best = entry;
+  }
+  return best;
+}
+
+/**
+ * The folder exclusion that covers `path`, a doc's or a folder's, if one does: the folder itself
+ * or one above it, the empty path being the whole repository. The deepest wins, since it is the
+ * one a reader set last on the way down.
  *
- * @param {{ documents: { document: object, rules: object[] }[], ignoredPaths?: object[] }} repoRules
- * @param {{ ignored: boolean, factIds?: string[], path?: string, prefix?: boolean }} change
+ * @param {string} path
+ * @param {{ path: string, folder: boolean }[] | undefined} exclusions
+ */
+export function coveringFolder(path, exclusions) {
+  let best = null;
+  for (const entry of exclusions || []) {
+    if (!entry.folder || !under(path, entry.path, true)) continue;
+    if (!best || entry.path.length >= best.path.length) best = entry;
+  }
+  return best;
+}
+
+/** One rule with the new field names, read from the old ones where the server sent only those. */
+export function normalizeRule(rule) {
+  const { ignored, ignoredBy, ...rest } = rule;
+  return {
+    ...rest,
+    excluded: !!(rule.excluded ?? ignored ?? false),
+    excludedBy: rule.excludedBy ?? ignoredBy ?? null,
+  };
+}
+
+/**
+ * One doc with the new field names. A doc's own `excludedBy` is who excluded it, not why a rule is
+ * excluded, and is left as it is.
+ */
+export function normalizeDoc(doc) {
+  const { ignored, ignoredRules, ...rest } = doc;
+  const out = { ...rest };
+  const excluded = doc.excluded ?? ignored;
+  if (excluded != null) out.excluded = !!excluded;
+  const excludedRules = doc.excludedRules ?? ignoredRules;
+  if (excludedRules != null) out.excludedRules = excludedRules;
+  return out;
+}
+
+/**
+ * Every rule of a repository with the new field names.
+ *
+ * @param {object | null | undefined} answer the API's answer to a read of every rule
+ */
+export function normalizeRules(answer) {
+  if (!answer || !Array.isArray(answer.documents)) return answer;
+  const { ignoredPaths, ...rest } = answer;
+  const current = Array.isArray(answer.excludedPaths);
+  return {
+    ...rest,
+    excludedPaths: current ? answer.excludedPaths : [],
+    // Already normalized answers carry their legacy entries forward.
+    legacyPaths: answer.legacyPaths ?? (current ? [] : ignoredPaths ?? []),
+    documents: answer.documents.map((group) => ({
+      ...group,
+      document: normalizeDoc(group.document),
+      rules: (group.rules || []).map(normalizeRule),
+    })),
+  };
+}
+
+/** A catalogue, or one doc's answer, with the new field names on its documents and rules. */
+export function normalizeCatalog(answer) {
+  if (!answer) return answer;
+  const out = { ...answer };
+  if (Array.isArray(answer.documents)) out.documents = answer.documents.map(normalizeDoc);
+  if (answer.document) out.document = normalizeDoc(answer.document);
+  if (Array.isArray(answer.rules)) out.rules = answer.rules.map(normalizeRule);
+  return out;
+}
+
+/**
+ * The rules answer with one rule-state change applied: a list of rules excluded or included, or
+ * (on a server from before exclusion covered it) a doc or folder in the rule states set aside or
+ * taken back, which changes `legacyPaths`.
+ *
+ * Including a path also includes every rule beneath it, whatever was set on the rule; a rule made
+ * included inside a path still set aside stays included. A rule in a doc that is excluded from
+ * reading is left alone: it is not checked until the doc is included.
+ *
+ * @param {{ documents: { document: object, rules: object[] }[], legacyPaths?: object[] }} repoRules
+ * @param {{ excluded: boolean, factIds?: string[], path?: string, prefix?: boolean }} change
  * @returns the new answer; the one passed in is not changed
  */
 export function applyRuleStates(repoRules, change) {
   if (!repoRules) return repoRules;
   const byPath = change.factIds == null;
-  let ignoredPaths = [...(repoRules.ignoredPaths || [])];
+  let legacyPaths = [...(repoRules.legacyPaths || [])];
   if (byPath) {
     const scope = change.path || "";
     const prefix = !!change.prefix;
-    // Taking a path back takes back everything set beneath it; ignoring one replaces what was set
-    // on the same path.
-    ignoredPaths = ignoredPaths.filter((entry) => change.ignored
+    legacyPaths = legacyPaths.filter((entry) => change.excluded
       ? !(entry.path === scope && entry.prefix === prefix)
       : !(prefix ? under(entry.path, scope, true) : entry.path === scope && !entry.prefix));
-    if (change.ignored) ignoredPaths.push({ path: scope, prefix });
+    if (change.excluded) legacyPaths.push({ path: scope, prefix });
   }
   const ids = new Set(change.factIds || []);
   const documents = repoRules.documents.map((group) => {
     const path = group.document.path;
-    const covering = coveringPath(path, ignoredPaths);
+    const covering = coveringPath(path, legacyPaths);
     const rules = group.rules.map((rule) => {
-      if (rule.ignoredBy === "excluded") return rule;
+      if (rule.excludedBy === "excluded") return rule;
       if (!byPath) {
         if (!ids.has(rule.factId)) return rule;
-        return { ...rule, ignored: change.ignored, ignoredBy: change.ignored ? "rule" : null };
+        return { ...rule, excluded: change.excluded, excludedBy: change.excluded ? "rule" : null };
       }
       if (!under(path, change.path || "", !!change.prefix)) return rule;
-      if (!change.ignored) return { ...rule, ignored: false, ignoredBy: null };
-      return { ...rule, ignored: true, ignoredBy: covering && covering.prefix ? "folder" : "document" };
+      if (!change.excluded) return { ...rule, excluded: false, excludedBy: null };
+      return { ...rule, excluded: true, excludedBy: covering && covering.prefix ? "folder" : "document" };
     });
-    const ignoredRules = rules.filter((rule) => rule.ignored).length;
-    return { ...group, document: { ...group.document, ignored: !!covering, ignoredRules }, rules };
+    const excludedRules = rules.filter((rule) => rule.excluded).length;
+    return { ...group, document: { ...group.document, excluded: !!covering, excludedRules }, rules };
   });
-  return { ...repoRules, documents, ignoredPaths };
+  return { ...repoRules, documents, legacyPaths };
 }
 
 /**
- * How many of `rules` are ignored, and how many could be changed at all (a rule in an excluded doc
- * cannot).
+ * The catalogue and the rules answer with a doc, a folder or the repository (the empty folder)
+ * excluded from reading or included again, as the page shows it until the server answers.
  *
- * @param {{ ignored?: boolean, ignoredBy?: string | null }[]} rules
- * @returns {{ total: number, ignored: number, changeable: number }}
+ * An excluded doc is not read and none of its rules is checked; each rule remembers its own state,
+ * so including the doc again brings back a rule excluded on its own as excluded. A doc included
+ * again goes back to the state it had, or to read or not read by whether it has rules, which is
+ * what the server does.
+ *
+ * @param {{ documents: object[], exclusions?: object[] } | null} catalog
+ * @param {{ documents: { document: object, rules: object[] }[] } | null} repoRules
+ * @param {{ path: string, folder: boolean, excluded: boolean }} change
+ * @returns {{ catalog: object | null, rules: object | null }} new answers; those passed in are not changed
  */
-export function ignoreCounts(rules) {
-  let ignored = 0;
-  let changeable = 0;
-  for (const rule of rules) {
-    if (rule.ignored) ignored += 1;
-    if (rule.ignoredBy !== "excluded") changeable += 1;
+export function applyExclusion(catalog, repoRules, change) {
+  const path = change.path || "";
+  const folder = !!change.folder;
+  const same = (entry) => entry.path === path && !!entry.folder === folder;
+  let exclusions = (catalog?.exclusions || []).filter((entry) => !same(entry));
+  if (change.excluded) {
+    exclusions = [...exclusions, { path, folder, excludedBy: null, reason: null, atMs: Date.now() }];
   }
-  return { total: rules.length, ignored, changeable };
+  const inside = (docPath) => under(docPath, path, folder);
+  const stillCovered = (docPath) => exclusions.some((entry) => under(docPath, entry.path, !!entry.folder));
+
+  const docOf = (doc) => {
+    if (!inside(doc.path)) return doc;
+    if (change.excluded) {
+      return doc.state === "EXCLUDED" ? doc : { ...doc, state: "EXCLUDED", stateBeforeExclusion: doc.state };
+    }
+    if (doc.state !== "EXCLUDED" || stillCovered(doc.path)) return doc;
+    const { stateBeforeExclusion, ...rest } = doc;
+    return { ...rest, state: stateBeforeExclusion || (doc.extractedContentHash ? "READ" : "NOT_READ") };
+  };
+
+  const nextCatalog = catalog && {
+    ...catalog,
+    exclusions,
+    documents: (catalog.documents || []).map(docOf),
+  };
+
+  const nextRules = repoRules && {
+    ...repoRules,
+    // The new API's exclusion list, kept in step with the catalogue's.
+    excludedPaths: exclusions.map((entry) => ({ path: entry.path, prefix: !!entry.folder })),
+    documents: repoRules.documents.map((group) => {
+      const docPath = group.document.path;
+      if (!inside(docPath)) return group;
+      const covered = stillCovered(docPath);
+      const legacy = coveringPath(docPath, repoRules.legacyPaths);
+      const rules = group.rules.map((rule) => {
+        if (change.excluded) {
+          if (rule.excludedBy === "excluded") return rule;
+          return { ...rule, excluded: true, excludedBy: "excluded",
+            ownState: { excluded: !!rule.excluded, excludedBy: rule.excludedBy ?? null } };
+        }
+        if (covered || rule.excludedBy !== "excluded") return rule;
+        const { ownState, ...rest } = rule;
+        const own = ownState
+          || (legacy ? { excluded: true, excludedBy: legacy.prefix ? "folder" : "document" } : { excluded: false, excludedBy: null });
+        return { ...rest, ...own };
+      });
+      const document = docOf(group.document);
+      return { ...group, document: { ...document, excludedRules: rules.filter((rule) => rule.excluded).length }, rules };
+    }),
+  };
+
+  return { catalog: nextCatalog, rules: nextRules };
+}
+
+/**
+ * The writes that exclude a doc, a folder or the repository, or include it again, in the order
+ * they are sent. Excluding is one write to the exclusion list. Including is one write there where
+ * the path is on it, and one to the rule states where a server from before exclusion covered it
+ * still holds the path there; a path held both ways takes both.
+ *
+ * @param {{ exclusions?: { path: string, folder: boolean }[] } | null} catalog
+ * @param {{ legacyPaths?: { path: string, prefix: boolean }[] } | null} repoRules
+ * @param {{ path: string, folder: boolean, excluded: boolean }} change
+ * @returns {{ view: "rule-states" | "exclusions", body: object }[]}
+ */
+export function exclusionWrites(catalog, repoRules, change) {
+  const path = change.path || "";
+  const folder = !!change.folder;
+  const exclusionBody = folder
+    ? { paths: [], folders: [path], excluded: change.excluded }
+    : { paths: [path], folders: [], excluded: change.excluded };
+  if (change.excluded) return [{ view: "exclusions", body: exclusionBody }];
+  const listed = (catalog?.exclusions || []).some((entry) => entry.path === path && !!entry.folder === folder);
+  const legacy = (repoRules?.legacyPaths || []).some((entry) => entry.path === path && entry.prefix === folder);
+  const writes = [];
+  if (legacy) writes.push({ view: "rule-states", body: { excluded: false, ignored: false, path, prefix: folder } });
+  if (listed || !legacy) writes.push({ view: "exclusions", body: exclusionBody });
+  return writes;
+}
+
+/**
+ * How a list of rules stands, every count in rules: how many are included and hold, are broken
+ * or have not been checked, and how many are excluded, whatever excluded them. An excluded rule is
+ * counted as excluded and in none of the standings. A rule Striff could not judge is not listed
+ * anywhere, so it is counted nowhere.
+ *
+ * @param {{ excluded?: boolean, status: string | null, onDefaultBranch: string | null }[]} rules
+ * @returns {{ all: number, holds: number, broken: number, unchecked: number, excluded: number }}
+ */
+export function ruleCounts(rules) {
+  const counts = { all: 0, holds: 0, broken: 0, unchecked: 0, excluded: 0 };
+  for (const rule of rules) {
+    const stands = standing(rule);
+    if (stands === "unclear") continue;
+    counts.all += 1;
+    if (rule.excluded) counts.excluded += 1;
+    else counts[stands] += 1;
+  }
+  return counts;
 }

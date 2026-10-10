@@ -42,13 +42,17 @@ function generateRepoToken(installationId, owner, repo) {
 }
 
 /**
- * Whether the caller may change which rules a pull request is checked against: GitHub says they
- * administer the repository, which a personal repository's owner and an organization's owners do.
- * Seeing a repository is enough to read its rules; turning one off changes what everyone else's
- * pull requests are held to. Anything short of a clear yes is a no, so a GitHub hiccup never widens
- * who can do it.
+ * Whether the caller may change which docs and rules a pull request is checked against: GitHub says
+ * they administer the repository, which a personal repository's owner and an organization's owners
+ * do. Seeing a repository is enough to read its rules; excluding one changes what everyone else's
+ * pull requests are held to.
+ *
+ * @returns "yes", "no" where GitHub answered and the answer is not a clear yes, or "unknown" where
+ *     GitHub did not answer (a 5xx, or no answer at all). Only "yes" lets a write through, so a
+ *     GitHub hiccup never widens who can do it; "unknown" is said as such, so a reader who is an
+ *     admin is told to try again rather than told they are not one.
  */
-async function canManageRules(ghToken, owner, repo) {
+async function adminStanding(ghToken, owner, repo) {
   try {
     const res = await fetch(
       `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
@@ -60,12 +64,25 @@ async function canManageRules(ghToken, owner, repo) {
         },
       }
     );
-    if (!res.ok) return false;
+    if (res.status >= 500) return "unknown";
+    if (!res.ok) return "no";
     const data = await res.json();
-    return !!data?.permissions?.admin;
+    return data?.permissions?.admin ? "yes" : "no";
   } catch {
-    return false;
+    return "unknown";
   }
+}
+
+/** What a write or a permissions read is answered while GitHub will not say who is an admin. */
+function githubUnavailable() {
+  return {
+    statusCode: 503,
+    headers: { "Content-Type": "application/json", "Retry-After": "5" },
+    body: JSON.stringify({
+      error: "github_unavailable",
+      message: "GitHub didn't say whether you administer this repository. Try again in a moment.",
+    }),
+  };
 }
 
 /** The writes a PATCH may name, and the API path each goes to. No view is the exclusion list. */
@@ -162,10 +179,12 @@ async function proxy(event, ghToken, params) {
 
     if (method === "GET" && params.view === "permissions") {
       // Asked once per repository, so the controls can say up front who may use them.
+      const standing = await adminStanding(ghToken, owner, repo);
+      if (standing === "unknown") return githubUnavailable();
       return {
         statusCode: 200,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ canManageRules: await canManageRules(ghToken, owner, repo) }),
+        body: JSON.stringify({ canManageRules: standing === "yes" }),
       };
     }
     const patchView = PATCH_VIEWS[params.view || ""];
@@ -177,13 +196,18 @@ async function proxy(event, ghToken, params) {
         body: JSON.stringify({ error: "unknown_view" }),
       };
     }
-    if (method === "PATCH" && patchView === "rule-states" && !(await canManageRules(ghToken, owner, repo))) {
+    // Excluding a doc, a folder or the repository switches off every rule in it, so it is gated
+    // the same as switching off one rule.
+    const gated = method === "PATCH" && (patchView === "rule-states" || patchView === "exclusions");
+    const standing = gated ? await adminStanding(ghToken, owner, repo) : "yes";
+    if (standing === "unknown") return githubUnavailable();
+    if (standing !== "yes") {
       return {
         statusCode: 403,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           error: "not_repo_admin",
-          message: "Only the repository's owner and admins can change which rules are checked.",
+          message: "Only the repository's owner and admins can change which docs and rules are checked.",
         }),
       };
     }

@@ -1,10 +1,19 @@
-import { createElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createElement, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
 import { issueIndex, withRuleIssues, withStaleNameIssue, type FindingIssue, type IssueIndex } from "./findingIssue.ts";
 import FlagFinding from "./FlagFinding";
-import { NOT_ADMIN, ScopeIgnore } from "./RuleStateControls";
-import { applyRuleStates, ignoreCounts } from "../lib/ruleStates.js";
+import { NOT_ADMIN, ScopeExclude } from "./RuleStateControls";
+import {
+  applyExclusion,
+  applyRuleStates,
+  exclusionWrites,
+  coveringFolder,
+  coveringPath,
+  normalizeCatalog,
+  normalizeRules,
+  ruleCounts,
+} from "../lib/ruleStates.js";
 import RevisionLine from "./RevisionLine";
 import { Clamped, mark, plainText, snippet, useWatch, withCode, when } from "./docRules";
 import RulesTable, {
@@ -75,10 +84,15 @@ interface Doc {
   readChars?: number | null;
   /** How long the doc is, null wherever readChars is. */
   totalChars?: number | null;
-  /** Whether this doc, or a folder above it, is ignored; absent from an older server. */
-  ignored?: boolean;
+  /**
+   * Whether this doc, or a folder above it, is excluded in the rule states; absent from an older
+   * server. A doc excluded from reading says so by its state.
+   */
+  excluded?: boolean;
   /** How many of its rules pull requests aren't checked against. */
-  ignoredRules?: number;
+  excludedRules?: number;
+  /** The state it had before this page excluded it, so including it again can put it back. */
+  stateBeforeExclusion?: DocState;
 }
 
 /** Whether a doc that has been read was read in part and not from all of it. */
@@ -120,8 +134,6 @@ interface Summary {
    * Absent from an older server, and then nothing is known to wait.
    */
   waitingToBeReadAgain?: number;
-  /** Rules pull requests aren't checked against, counted in none of the standings above. */
-  ignored?: number;
 }
 
 interface Catalog {
@@ -226,8 +238,14 @@ interface RepoRules {
   documents: { document: Doc; rules: Rule[] }[];
   /** Whether the repository holds more rules than one answer carries. */
   truncated: boolean;
-  /** The docs and folders ignored as a standing setting ("" with prefix is the whole repository). */
-  ignoredPaths?: { path: string; prefix: boolean }[];
+  /** The docs and folders excluded from reading ("" with prefix is the repository); the catalogue's exclusions say the same. */
+  excludedPaths?: { path: string; prefix: boolean }[];
+  /**
+   * Docs and folders whose rules a server from before exclusion covered them set aside as a whole
+   * in the rule states, while still reading them. Shown as excluded; a doc or folder is excluded
+   * from now on through the exclusions instead, so these are only ever taken back.
+   */
+  legacyPaths?: { path: string; prefix: boolean }[];
 }
 
 /**
@@ -337,16 +355,10 @@ interface Exclusion {
 }
 
 /**
- * The folder rule that covers this path, if one does. A folder rule covers the folder itself and
- * everything under it, which is what someone who excluded a directory meant, so a document inside
- * it cannot be included on its own -- the rule to take back is the folder's.
+ * How a reader names the folder an exclusion was set on: its path with a slash, or the repository.
  */
-function coveringFolder(path: string, exclusions: Exclusion[] | undefined): Exclusion | null {
-  for (const rule of exclusions || []) {
-    if (!rule.folder) continue;
-    if (path === rule.path || path.startsWith(`${rule.path}/`)) return rule;
-  }
-  return null;
+function folderName(rule: { path: string }): string {
+  return rule.path === "" ? "the repository" : `${rule.path}/`;
 }
 
 interface Detail {
@@ -413,6 +425,9 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
     case "UNREADABLE":
       return "Striff couldn't finish reading this doc. That isn't counted as “no rules”; it tries again on the next pull request that touches the code it names.";
     case "EXCLUDED":
+      if (covering && covering.path === "") {
+        return `You excluded this repository${covering.excludedBy ? `, ${covering.excludedBy}` : ""}${covering.reason ? `: “${covering.reason}”` : ""}. Striff doesn't read any doc in it, so it costs nothing, and these rules aren't checked. Including the repository again brings every doc back.`;
+      }
       if (covering && covering.path !== doc.path) {
         return `This doc is inside ${covering.path}/, a folder you excluded${covering.excludedBy ? `, ${covering.excludedBy}` : ""}${covering.reason ? `: “${covering.reason}”` : ""}. Striff doesn't read anything under it, so it costs nothing, and these rules aren't checked. Including the folder again brings every doc under it back.`;
       }
@@ -431,53 +446,77 @@ const TREE_MAX_SHARE = 0.6;
 const TREE_WIDTH_KEY = "striff.docsTreeWidth";
 
 /**
- * Which documents the tree shows.
+ * Which documents the tree shows, by what state each document is in.
  *
- * These are facts about a document rather than about its rules, which is why they filter the tree
- * and the standings filter the table. A folder's summary line leads here: every part of it is one
- * of these, so "1 not read" is a sentence you can click.
+ * These count documents and are facts about a document rather than about its rules. A folder's
+ * summary line leads here: every part of it is one of these, so "1 not read" is a sentence you
+ * can click. "With results" is the view the tree opens on where there are any: the documents with
+ * a rule that holds or is broken, or a stale name.
  */
 type DocFilter =
   | "results"
   | "all"
-  | "broken"
-  | "stale"
   | "notRead"
+  | "unreadable"
   | "skipped"
   | "retired"
-  | "unreadable"
   | "excluded"
   | "forced";
 
-const DOC_FILTER_TEST: Record<DocFilter, (doc: Doc) => boolean> = {
-  // Filled in where the view is: it depends on the rules and on the names gone.
-  results: () => false,
+/**
+ * Which rules the tree and the table show, by how they stand or that they are excluded. These
+ * count rules (stale names count names), and choosing one narrows the tree to the documents
+ * holding such rules and the table to those rules.
+ */
+type RuleChip = "holds" | "broken" | "unchecked" | "stale" | "excludedRules";
+
+/** The one thing the tree is filtered by: a document state, or a kind of rule. */
+type Filter = DocFilter | RuleChip;
+
+const DOC_FILTER_TEST: Record<Exclude<DocFilter, "results" | "excluded">, (doc: Doc) => boolean> = {
+  forced: (doc) => doc.forced,
   all: () => true,
-  broken: (doc) => doc.brokenRules + doc.alreadyBrokenRules > 0,
-  // Filled in where the view is, because it is the only thing here that is not a fact about the
-  // document on its own: it depends on what a reading of the whole repository reported.
-  stale: () => false,
   notRead: (doc) => doc.state === "NOT_READ",
+  unreadable: (doc) => doc.state === "UNREADABLE",
   skipped: (doc) => doc.state === "SCREENED_OUT",
   retired: (doc) => doc.state === "RETIRED",
-  unreadable: (doc) => doc.state === "UNREADABLE",
-  excluded: (doc) => doc.state === "EXCLUDED",
-  forced: (doc) => doc.forced,
 };
 
-/** The chips above the tree, in the order a reader looks for them. */
-const FILTER_CHIPS: { key: DocFilter; label: string; dot: string; always: boolean }[] = [
-  { key: "results", label: "With results", dot: "", always: false },
-  { key: "all", label: "All", dot: "", always: true },
-  { key: "broken", label: "Broken", dot: "broken", always: true },
-  { key: "stale", label: "Stale names", dot: "stale", always: false },
-  { key: "notRead", label: "Not read", dot: "unread", always: true },
-  { key: "unreadable", label: "Couldn't read", dot: "broken", always: false },
-  { key: "skipped", label: "Skipped", dot: "other", always: true },
-  { key: "retired", label: "Retired", dot: "other", always: false },
-  { key: "excluded", label: "Excluded", dot: "other", always: true },
-  { key: "forced", label: "Read anyway", dot: "other", always: false },
+/**
+ * One chip. `hidden` is a filter with no chip of its own, reached from a folder's summary line,
+ * whose chip shows only while it is the filter in use, so the tree never filters by something the
+ * chips do not say.
+ */
+interface Chip<K> { key: K; label: string; dot: string; always: boolean; help: string; hidden?: boolean }
+
+/** The chips above the tree that count documents, in the order a reader looks for them. */
+const DOC_CHIPS: Chip<DocFilter>[] = [
+  { key: "results", label: "With results", dot: "", always: false, help: "Documents with a rule that holds or is broken, or a stale name." },
+  { key: "all", label: "All", dot: "", always: true, help: "Every document in this repository, whatever state it is in." },
+  { key: "notRead", label: "Not read yet", dot: "unread", always: true, help: "Documents Striff hasn't read yet, so any rule in them is not counted here." },
+  { key: "unreadable", label: "Couldn't read", dot: "broken", always: false, help: "Documents Striff couldn't finish reading. That isn't counted as “no rules”." },
+  { key: "skipped", label: "Skipped", dot: "other", always: true, help: "Documents Striff skipped because it found no rule in them that could be checked against code." },
+  { key: "retired", label: "Retired", dot: "other", always: false, help: "Documents that say they are no longer current, so their rules aren't checked." },
+  { key: "excluded", label: "Excluded", dot: "other", always: true, help: "Documents excluded here: Striff doesn't read them and none of their rules are checked." },
+  { key: "forced", label: "Read anyway", dot: "other", always: false, hidden: true, help: "Documents Striff skipped that this repository asked it to read regardless." },
 ];
+
+/** The chips above the tree that count rules. */
+const RULE_CHIPS: Chip<RuleChip>[] = [
+  { key: "holds", label: "Holding", dot: "held", always: true, help: "Included rules the code keeps." },
+  { key: "broken", label: "Broken", dot: "broken", always: true, help: "Included rules the code does not keep." },
+  { key: "unchecked", label: "Not checked yet", dot: "unread", always: false, help: "Included rules nothing has checked against the code yet." },
+  { key: "stale", label: "Stale names", dot: "stale", always: false, help: "Names the docs write that the default branch no longer declares, or declares somewhere else. Counted in names." },
+  { key: "excludedRules", label: "Excluded", dot: "other", always: true, help: "Rules pull requests aren't checked against: excluded on their own, or with their doc or folder." },
+];
+
+/** Which rules the table lists for each kind of rule chosen above the tree. */
+const TABLE_FILTER: Partial<Record<Filter, RuleFilter>> = {
+  holds: "holds",
+  broken: "broken",
+  unchecked: "unchecked",
+  excludedRules: "excluded",
+};
 
 /**
  * What a folder's own row cannot say.
@@ -485,16 +524,14 @@ const FILTER_CHIPS: { key: DocFilter; label: string; dot: string; always: boolea
  * A row's badges are facts about one file. A folder has no single state, so they cannot move up to
  * it -- but without them a folder's rule count is not trustworthy: fourteen rules under `docs/adr/`
  * could be all of them, or fourteen plus whatever is in three documents nobody has read. A table of
- * rules cannot say this, because a document with no rules has no row to say it in.
+ * rules cannot say this, because a document with no rules has no row to say it in. The same states
+ * as the document chips, in the same words.
  */
-const SUMMARY_PARTS: { key: DocFilter; label: string; help: string }[] = [
+const SUMMARY_PARTS: { key: Filter; label: string; help: string }[] = [
   { key: "stale", label: "with stale names", help: "Documents with a stale name: one the default branch no longer declares, or declares somewhere else." },
-  { key: "notRead", label: "not read", help: "Documents Striff hasn't read yet, so any rule in them is not counted here." },
-  { key: "unreadable", label: "couldn't read", help: "Documents Striff couldn't finish reading. That isn't counted as “no rules”." },
-  { key: "skipped", label: "skipped", help: "Documents Striff skipped because it found no rule in them that could be checked against code." },
-  { key: "retired", label: "retired", help: "Documents that say they are no longer current, so their rules aren't checked." },
-  { key: "excluded", label: "excluded", help: "Documents this repository asked Striff not to read." },
-  { key: "forced", label: "read anyway", help: "Documents Striff skipped that this repository asked it to read regardless." },
+  ...DOC_CHIPS
+    .filter((chip) => chip.key !== "results" && chip.key !== "all")
+    .map((chip) => ({ key: chip.key as Filter, label: chip.label.toLowerCase(), help: chip.help })),
 ];
 
 /** One node of the document tree: the repository, a folder holding more, or a document. */
@@ -544,7 +581,8 @@ function buildTree(documents: Doc[], repoName: string): TreeNode {
   const total = (node: TreeNode): TreeNode => {
     node.children = sortNodes(node.children.map(total));
     node.rules = (node.doc?.ruleCount || 0) + node.children.reduce((sum, c) => sum + c.rules, 0);
-    node.broken = (node.doc?.brokenRules || 0) + node.children.reduce((sum, c) => sum + c.broken, 0);
+    const ownBroken = node.doc && node.doc.state !== "EXCLUDED" ? node.doc.brokenRules : 0;
+    node.broken = ownBroken + node.children.reduce((sum, c) => sum + c.broken, 0);
     return node;
   };
   return total(root);
@@ -730,10 +768,10 @@ export default function DocsTab({
   };
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
-  const [catalog, setCatalog] = useState<Catalog | null>(initial?.catalog ?? null);
+  const [catalog, setCatalog] = useState<Catalog | null>(normalizeCatalog(initial?.catalog) ?? null);
   const [detail, setDetail] = useState<Detail | null>(null);
   /** Every rule of the repository, for the scopes a single document's answer cannot serve. */
-  const [rulesIndex, setRulesIndex] = useState<RepoRules | null>(initial?.rules ?? null);
+  const [rulesIndex, setRulesIndex] = useState<RepoRules | null>(normalizeRules(initial?.rules) ?? null);
   /**
    * The issues the findings are tracked in. Asked for after the rules are on screen and merged into
    * them where they are shown, so a slow or failed answer never holds the page up or changes it.
@@ -768,15 +806,13 @@ export default function DocsTab({
    * The filter someone picked, null until they pick one. Unpicked, the tree shows the documents
    * with results, or all of them where none has any, so it is never empty on load.
    */
-  const [chosenFilter, setFilter] = useState<DocFilter | null>(null);
+  const [chosenFilter, setFilter] = useState<Filter | null>(null);
   // How wide the tree is, in pixels; null until someone has dragged it, which leaves the width
   // to the stylesheet. Remembered, because a width someone chose for long paths is one they
   // would have to choose again on every visit.
   const [treeWidth, setTreeWidth] = useState<number | null>(null);
   const [resizing, setResizing] = useState(false);
   const split = useRef<HTMLDivElement>(null);
-  /** Which of the selection's rules to list, followed from the counts above them. */
-  const [ruleFilter, setRuleFilter] = useState<RuleFilter>("all");
   /** Whether this reader may turn rules on and off: null until GitHub has said. */
   const [canManageRules, setCanManageRules] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
@@ -811,9 +847,24 @@ export default function DocsTab({
 
   /** What the view is showing right now, for the listing wait to look at before it reloads. */
   const catalogRef = useRef<Catalog | null>(null);
+  /** The same for the rules, so a change is applied to the latest answer, not one a closure held. */
+  const rulesRef = useRef<RepoRules | null>(null);
 
   const [owner, name] = repo.split("/");
   catalogRef.current = catalog;
+  rulesRef.current = rulesIndex;
+
+  /** Puts a catalogue on the page and in its ref at once, so the next change starts from it. */
+  function putCatalog(next: Catalog | null) {
+    catalogRef.current = next;
+    setCatalog(next);
+  }
+
+  /** Puts a rules answer on the page and in its ref at once. */
+  function putRules(next: RepoRules | null) {
+    rulesRef.current = next;
+    setRulesIndex(next);
+  }
   const branch = catalog?.defaultBranch || null;
   // Unknown is offered as before; only a repository GitHub says takes no issues is spared the link.
   const takesIssues = repos.find((r) => r.full_name === repo)?.has_issues !== false;
@@ -873,8 +924,7 @@ export default function DocsTab({
     setSelected("");
     setDetail(null);
     setFilter(null);
-    setRuleFilter("all");
-    setRulesIndex(null);
+    putRules(null);
     setStaleNames(null);
     setFindingIssues(null);
     setActionError("");
@@ -918,66 +968,118 @@ export default function DocsTab({
 
   /** Why the rule switches are off for this reader, or null where they work. */
   const ruleStateBlocked = canManageRules === false ? NOT_ADMIN : null;
+  /** Where the reasons a control is off are written once, for the controls to point at. */
+  const blockedId = useId();
+  const loadingId = useId();
+  /**
+   * What a control the reader may not use carries: it stays focusable and says why, rather than
+   * being disabled, which a keyboard never reaches and a screen reader never explains.
+   */
+  const blockedProps = ruleStateBlocked
+    ? { "aria-disabled": true as const, "aria-describedby": blockedId, title: ruleStateBlocked }
+    : {};
+  /** Runs `act` unless the reader may not change what it changes. */
+  const unlessBlocked = (act: () => void) => () => {
+    if (!ruleStateBlocked) act();
+  };
 
   /**
-   * Turns rules on or off for pull requests: a list of rules, or everything under a doc, a folder
-   * or the repository. The page changes at once and goes back if the write is refused; the demo
+   * Excludes rules from pull requests or includes them again: a list of rules or, to take back a
+   * doc or folder set aside in the rule states before exclusion covered it, a path. The page
+   * changes at once, from the latest answer on it; a refused write puts back what was there where
+   * nothing else has changed it since, and reads the rules again where something has. The demo
    * changes only the page.
+   *
+   * The body names the change both ways, `excluded` and `ignored`, so the API from before the
+   * rename reads it as well as the one after.
    *
    * @return an error to show, or null
    */
-  async function setRuleStates(change: { ignored: boolean; factIds?: string[]; path?: string; prefix?: boolean }):
+  async function setRuleStates(change: { excluded: boolean; factIds?: string[]; path?: string; prefix?: boolean }):
     Promise<string | null> {
-    const before = rulesIndex;
+    const before = rulesRef.current;
     if (!before) return "The rules haven't loaded yet.";
-    setRulesIndex(applyRuleStates(before, change) as RepoRules);
+    const optimistic = applyRuleStates(before, change) as RepoRules;
+    putRules(optimistic);
     if (sample) return null;
-    const failed = change.ignored ? "Couldn't ignore that." : "Couldn't make that active.";
+    const failed = change.excluded ? "Couldn't exclude that." : "Couldn't include that.";
+    const undo = () => {
+      if (rulesRef.current === optimistic) putRules(before);
+      else loadRules();
+    };
     try {
       const res = await fetch(
         `/.netlify/functions/doc-catalog-proxy?view=rule-states&installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}`,
-        { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(change) }
+        { method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...change, ignored: change.excluded }) }
       );
       const answer = await res.json().catch(() => null);
       if (!res.ok) {
-        setRulesIndex(before);
+        undo();
         if (answer?.error === "not_repo_admin") setCanManageRules(false);
         return answer?.message || failed;
       }
-      if (answer && Array.isArray(answer.documents)) setRulesIndex(answer as RepoRules);
+      if (answer && Array.isArray(answer.documents)) putRules(normalizeRules(answer) as RepoRules);
       return null;
     } catch {
-      setRulesIndex(before);
+      undo();
       return failed;
     }
   }
 
-  /** The rules under a doc, a folder or the repository, every one of them, for the bulk control. */
-  function rulesUnder(path: string, prefix: boolean): Rule[] {
-    const out: Rule[] = [];
+  /** How many rules Striff has under a doc, a folder or the repository, for what excluding it says. */
+  function rulesUnder(path: string, folder: boolean): number {
+    let count = 0;
     for (const group of rulesIndex?.documents || []) {
       const docPath = group.document.path;
-      const inside = !prefix ? docPath === path
+      const inside = !folder ? docPath === path
         : path === "" || docPath === path || docPath.startsWith(`${path}/`);
-      if (inside) out.push(...group.rules);
+      if (inside) count += group.rules.length;
     }
-    return out;
+    return count;
   }
 
-  /** The bulk Active/Ignored control for whatever is selected; nothing on a public page. */
-  function scopeIgnore(path: string, prefix: boolean, where: string) {
+  /**
+   * Whether a doc, a folder or the repository is excluded, and by what: its own exclusion, a folder
+   * above it, or an entry the rule states still carry for it.
+   */
+  function exclusionOf(path: string, folder: boolean):
+    { excluded: boolean; via: string | null; stillRead: boolean } {
+    const listed = (catalog?.exclusions || []).some((rule) => rule.path === path && !!rule.folder === folder);
+    const legacy = (rulesIndex?.legacyPaths || []).some((entry) => entry.path === path && entry.prefix === folder);
+    // Held only by an old rule-state entry: never stopped from being read, only from being checked.
+    if (listed || legacy) return { excluded: true, via: null, stillRead: !listed };
+    const above = coveringFolder(path, catalog?.exclusions);
+    if (above) return { excluded: true, via: folderName(above), stillRead: false };
+    const old = coveringPath(path, rulesIndex?.legacyPaths);
+    if (old && old.prefix) return { excluded: true, via: folderName(old), stillRead: true };
+    return { excluded: false, via: null, stillRead: false };
+  }
+
+  /** The Exclude control for whatever is selected; nothing on a public page. */
+  function scopeExclude(path: string, kind: "doc" | "folder" | "repository") {
     if (source) return null;
-    const counts = ignoreCounts(rulesUnder(path, prefix).filter((rule) => rule.ignoredBy !== "excluded"));
+    const folder = kind !== "doc";
+    const { excluded, via, stillRead } = exclusionOf(path, folder);
     return (
-      <ScopeIgnore
-        total={counts.changeable}
-        ignored={counts.ignored}
-        where={where}
+      <ScopeExclude
+        excluded={excluded}
+        via={via}
+        stillRead={stillRead}
+        rules={rulesUnder(path, folder)}
+        kind={kind}
+        where={kind === "doc" ? "this doc" : kind === "folder" ? `${path}/` : "this repository"}
+        // Excluding a path switches off every rule in it, so it is gated as the rule switches are.
         disabledReason={ruleStateBlocked}
-        onApply={async (ignored) => {
-          const failed = await setRuleStates({ ignored, path, prefix });
-          if (failed) setActionError(failed);
-          return !failed;
+        onApply={async (next) => {
+          if (via && !next) {
+            // A folder above is what excludes this one: that is the setting to take back.
+            const above = coveringFolder(path, catalog?.exclusions)
+              || coveringPath(path, rulesIndex?.legacyPaths);
+            const abovePath = above?.path ?? "";
+            return exclude(abovePath, true, false);
+          }
+          return exclude(path, folder, next);
         }}
       />
     );
@@ -1023,7 +1125,7 @@ export default function DocsTab({
    */
   async function loadCatalog(quiet = false) {
     if (sample) {
-      setCatalog(sample.catalog);
+      putCatalog(normalizeCatalog(sample.catalog));
       setStaleNames(sample.staleNames || null);
       setExpanded(allFolders(buildTree(sample.catalog.documents || [], name)));
       setLoading(false);
@@ -1045,10 +1147,10 @@ export default function DocsTab({
         setError(data.message || data.error || "Couldn't load this repository's documents");
         // What is on screen was true when it arrived. A refresh that failed is a reason to say so,
         // not to take the documents away from whoever is reading them.
-        if (!catalogRef.current) setCatalog(null);
+        if (!catalogRef.current) putCatalog(null);
         return;
       }
-      setCatalog(data);
+      putCatalog(normalizeCatalog(data));
       // A quiet look keeps the names on screen until the new answer replaces them.
       loadStaleNames(wanted, quiet);
       setExpanded(allFolders(buildTree(data.documents || [], name)));
@@ -1070,7 +1172,7 @@ export default function DocsTab({
    */
   async function loadRules() {
     if (sample) {
-      setRulesIndex(sample.rules);
+      putRules(normalizeRules(sample.rules));
       return;
     }
     const wanted = ++rulesAt.current;
@@ -1078,7 +1180,7 @@ export default function DocsTab({
     try {
       const res = await fetch(readUrl("rules"));
       if (!res.ok || wanted !== rulesAt.current) return;
-      setRulesIndex(await res.json());
+      putRules(normalizeRules(await res.json()));
       setRulesRead((n) => n + 1);
     } catch {
       // The tree, the states and one document's rules all still work without this; the rollups
@@ -1118,7 +1220,7 @@ export default function DocsTab({
     setDetail(null);
     setActionError("");
     if (sample) {
-      setDetail(sample.doc(path));
+      setDetail(normalizeCatalog(sample.doc(path)));
       return;
     }
     // Two clicks in a row answer in whatever order the network likes. Only the document asked for
@@ -1132,7 +1234,7 @@ export default function DocsTab({
         setActionError(answer.message || answer.error || `Couldn't open ${path}.`);
         return;
       }
-      setDetail(await res.json());
+      setDetail(normalizeCatalog(await res.json()));
     } catch {
       if (wanted === openedAt.current) setActionError(`Couldn't open ${path}.`);
     }
@@ -1155,7 +1257,7 @@ export default function DocsTab({
    * One write, one answer. A PATCH that failed used to reload the catalogue unchanged and say
    * nothing, so a rejected token or a 500 looked exactly like a change that did not stick.
    */
-  async function write(body: unknown, view: "" | "force-read", failed: string) {
+  async function write(body: unknown, view: "" | "force-read", failed: string): Promise<false | any> {
     if (source) {
       setActionError("This is a public page, so nothing here can be changed.");
       return false;
@@ -1175,12 +1277,13 @@ export default function DocsTab({
           body: JSON.stringify(body),
         }
       );
+      const answer = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const answer = await res.json().catch(() => ({}));
+        if (answer?.error === "not_repo_admin") setCanManageRules(false);
         setActionError(answer.message || answer.error || failed);
         return false;
       }
-      return true;
+      return answer ?? {};
     } catch {
       setActionError(failed);
       return false;
@@ -1201,11 +1304,67 @@ export default function DocsTab({
     }
   }
 
-  async function setExcluded(path: string, excluded: boolean) {
-    const ok = await write({ paths: [path], folders: [], excluded },
-      "", `Couldn't ${excluded ? "exclude" : "include"} ${path}.`);
-    if (!ok) return;
-    await reloadKeeping(path);
+  /**
+   * Excludes a doc, a folder or the repository (the empty folder) from reading, or includes it
+   * again. Excluded, nothing in it is read and none of its rules is checked, now or later.
+   *
+   * The page changes at once, counts and all, and goes back if the write is refused; the demo
+   * changes only the page. A path still set aside in the rule states from before is taken back
+   * there too, since that is also what keeps it excluded.
+   *
+   * @return whether it was done
+   */
+  async function exclude(path: string, folder: boolean, excluded: boolean): Promise<boolean> {
+    if (source) {
+      setActionError("This is a public page, so nothing here can be changed.");
+      return false;
+    }
+    if (ruleStateBlocked) {
+      setActionError(ruleStateBlocked);
+      return false;
+    }
+    const named = folder ? folderName({ path }) : path;
+    const change = { path, folder, excluded };
+    setActionError("");
+    for (const step of exclusionWrites(catalogRef.current, rulesRef.current, change)) {
+      if (step.view === "rule-states") {
+        // An old rule-state entry holding the path: taken back where it was set.
+        const failed = await setRuleStates(step.body as { excluded: boolean; path: string; prefix: boolean });
+        if (failed) {
+          setActionError(failed);
+          return false;
+        }
+        continue;
+      }
+      // Applied to the latest answers on the page, which a write before this one may have replaced.
+      const beforeCatalog = catalogRef.current;
+      const beforeRules = rulesRef.current;
+      const next = applyExclusion(beforeCatalog, beforeRules, change);
+      putCatalog(next.catalog as Catalog);
+      putRules(next.rules as RepoRules);
+      if (sample) continue;
+      const answer = await write(step.body, "", `Couldn't ${excluded ? "exclude" : "include"} ${named}.`);
+      // A server that does not take the repository as a folder answers with the catalogue unchanged.
+      const refused = answer === false
+        || (excluded && path === "" && Array.isArray(answer?.exclusions)
+          && !answer.exclusions.some((rule: Exclusion) => rule.folder && rule.path === ""));
+      if (refused) {
+        // Put back only what nothing has replaced since; otherwise the server says what is so.
+        if (catalogRef.current === next.catalog && rulesRef.current === next.rules) {
+          putCatalog(beforeCatalog);
+          putRules(beforeRules);
+        } else {
+          await reload();
+        }
+        if (answer !== false) {
+          setActionError("Striff can't exclude this repository as a whole yet. Exclude its folders or docs instead.");
+        }
+        return false;
+      }
+    }
+    if (sample) return true;
+    await reloadKeeping(selected);
+    return true;
   }
 
   /**
@@ -1264,14 +1423,6 @@ export default function DocsTab({
     await reloadKeeping(path);
   }
 
-  async function setFolderExcluded(folder: string, excluded: boolean) {
-    const ok = await write({ paths: [], folders: [folder] , excluded },
-      "", `Couldn't ${excluded ? "exclude" : "include"} ${folder}/.`);
-    if (!ok) return;
-    // The button is usually in the open node's own menu, and reloading must come back to what was
-    // being read rather than to wherever the tree happens to start.
-    await reloadKeeping(selected);
-  }
 
   const allDocs = catalog?.documents || [];
 
@@ -1298,40 +1449,102 @@ export default function DocsTab({
   }, [staleNames]);
 
   /**
-   * The documents with something to show: a rule that holds, a broken rule where this view shows
-   * broken rules (not on a public page), or a name gone.
+   * The documents with something to show: an included rule that holds, a broken one where this
+   * view shows broken rules (not on a public page), or a name gone. A doc excluded from reading has
+   * nothing checked, so it is not one of them.
    */
   const resultDocs = useMemo(() => {
     const paths = new Set<string>(staleByDoc.keys());
     for (const group of rulesIndex?.documents || []) {
-      if (group.rules.some((rule) => standing(rule) === "holds" || (!source && standing(rule) === "broken"))) {
+      if (group.rules.some((rule) => !rule.excluded
+        && (standing(rule) === "holds" || (!source && standing(rule) === "broken")))) {
         paths.add(group.document.path);
       }
     }
     if (!source) {
-      for (const doc of allDocs) if (DOC_FILTER_TEST.broken(doc)) paths.add(doc.path);
+      for (const doc of allDocs) if (doc.brokenRules + doc.alreadyBrokenRules > 0) paths.add(doc.path);
     }
+    for (const doc of allDocs) if (doc.state === "EXCLUDED") paths.delete(doc.path);
     return paths;
   }, [catalog, rulesIndex, staleByDoc, source]);
 
-  /** Every filter is a fact about a document; these need the reading's answers as well. */
-  const matches = (key: DocFilter) => (doc: Doc) =>
-    key === "stale" ? staleByDoc.has(doc.path)
-      : key === "results" ? resultDocs.has(doc.path)
-      : DOC_FILTER_TEST[key](doc);
+  /**
+   * The documents excluded: from reading, or (from before exclusion covered it) set aside as a
+   * whole in the rule states. One word for both, since either way none of their rules is checked.
+   */
+  const excludedDocs = useMemo(() => {
+    const paths = new Set<string>();
+    for (const doc of allDocs) {
+      if (doc.state === "EXCLUDED" || coveringPath(doc.path, rulesIndex?.legacyPaths)) paths.add(doc.path);
+    }
+    return paths;
+  }, [catalog, rulesIndex]);
 
-  /** What each filter would show, counted in documents, since documents are what it filters. */
+  /**
+   * How the repository's rules stand, every count in rules. They are of the whole repository
+   * whatever is selected, and they are read from the same rule states the switches change, so
+   * excluding one rule moves its count from where it stood to Excluded at once. The table below
+   * shows what is selected, and says how many of the rules it lists.
+   */
+  const repoCounts = useMemo(
+    () => ruleCounts((rulesIndex?.documents || []).flatMap((group) => group.rules)),
+    [rulesIndex]
+  );
+
+  /** The documents holding each kind of rule a chip counts, by the doc's path. */
+  const ruleDocs = useMemo(() => {
+    const byChip: Record<RuleChip, Set<string>> = {
+      holds: new Set(), broken: new Set(), unchecked: new Set(), excludedRules: new Set(),
+      stale: new Set(staleByDoc.keys()),
+    };
+    for (const group of rulesIndex?.documents || []) {
+      for (const rule of group.rules) {
+        const stands = standing(rule);
+        if (stands === "unclear") continue;
+        const chip: RuleChip = rule.excluded ? "excludedRules" : stands;
+        byChip[chip].add(group.document.path);
+      }
+    }
+    return byChip;
+  }, [rulesIndex, staleByDoc]);
+
+  const repoStale = useMemo(
+    () => allDocs.reduce((sum, doc) => sum + (staleByDoc.get(doc.path)?.length || 0), 0),
+    [allDocs, staleByDoc]
+  );
+
+  /** Whether a document is one a filter shows. */
+  const matches = (key: Filter) => (doc: Doc): boolean => {
+    if (key === "results") return resultDocs.has(doc.path);
+    if (key === "excluded") return excludedDocs.has(doc.path);
+    if (key in ruleDocs) return ruleDocs[key as RuleChip].has(doc.path);
+    return DOC_FILTER_TEST[key as keyof typeof DOC_FILTER_TEST](doc);
+  };
+
+  /**
+   * What each chip counts: documents for the document chips, rules for the rule chips (names, for
+   * stale names), each in the unit its group says.
+   */
   const filterCounts = useMemo(() => {
-    const counted = {} as Record<DocFilter, number>;
-    for (const chip of FILTER_CHIPS) counted[chip.key] = allDocs.filter(matches(chip.key)).length;
+    const counted = {} as Record<Filter, number>;
+    for (const chip of DOC_CHIPS) counted[chip.key] = allDocs.filter(matches(chip.key)).length;
+    counted.holds = repoCounts.holds;
+    counted.broken = repoCounts.broken;
+    counted.unchecked = repoCounts.unchecked;
+    counted.excludedRules = repoCounts.excluded;
+    counted.stale = repoStale;
     return counted;
-  }, [catalog, staleByDoc, resultDocs]);
+  }, [catalog, staleByDoc, resultDocs, excludedDocs, repoCounts, repoStale]);
 
-  const filter: DocFilter = chosenFilter ?? (filterCounts.results > 0 ? "results" : "all");
+  const filter: Filter = chosenFilter ?? (filterCounts.results > 0 ? "results" : "all");
+  /** Which rules the table lists: those a rule chip names, or every rule in what is selected. */
+  const ruleFilter: RuleFilter = TABLE_FILTER[filter] ?? "all";
+  /** Chooses a filter; choosing the one already chosen puts the tree back to every document. */
+  const toggleFilter = (key: Filter) => setFilter(filter === key ? "all" : key);
 
   const documents = useMemo(
     () => allDocs.filter(matches(filter)),
-    [catalog, filter, staleByDoc, resultDocs]
+    [catalog, filter, staleByDoc, resultDocs, excludedDocs, ruleDocs]
   );
 
   const tree = useMemo(() => buildTree(documents, name), [documents, name]);
@@ -1355,10 +1568,25 @@ export default function DocsTab({
    * A document's own rules come from its own answer, not from the repository-wide one.
    */
   const scopeRows = useMemo<Row[]>(() => {
+    /** What a reader is told excluded a rule, beside the word; nothing for the rule's own switch. */
+    const excludedWith = (rule: Rule, doc: Doc): string | null => {
+      if (!rule.excluded) return null;
+      if (rule.excludedBy === "excluded" || doc.state === "EXCLUDED") {
+        const above = coveringFolder(doc.path, catalog?.exclusions);
+        return !above ? "doc" : above.path === "" ? "repository" : "folder";
+      }
+      if (rule.excludedBy === "document") return "doc";
+      if (rule.excludedBy === "folder") {
+        return coveringPath(doc.path, rulesIndex?.legacyPaths)?.path === "" ? "repository" : "folder";
+      }
+      return null;
+    };
     if (scopeKind === "doc") {
       if (!detail) return [];
-      // The doc's own answer carries its rules; whether each is ignored is the repository's, so
-      // it is read from there and a switch moves both.
+      // The doc's own answer carries its rules; whether each is excluded is the repository's, so
+      // it is read from there and a switch moves both. So is the doc's state, which excluding it
+      // changes before the doc's own answer is read again.
+      const doc = selectedDoc ?? detail.document;
       const states = new Map(
         (rulesIndex?.documents.find((group) => group.document.path === detail.document.path)?.rules || [])
           .map((rule) => [rule.factId, rule])
@@ -1367,8 +1595,8 @@ export default function DocsTab({
         .filter((rule) => standing(rule) !== "unclear")
         .map((rule) => {
           const state = states.get(rule.factId);
-          return { ...rule, ignored: state?.ignored ?? rule.ignored, ignoredBy: state?.ignoredBy ?? rule.ignoredBy,
-            doc: detail.document };
+          const own = { ...rule, excluded: state?.excluded ?? rule.excluded, excludedBy: state?.excludedBy ?? rule.excludedBy };
+          return { ...own, excludedWith: excludedWith(own, doc), doc };
         });
     }
     const under = scopeKind === "root" ? null : `${selected}/`;
@@ -1380,7 +1608,7 @@ export default function DocsTab({
         // said nothing is not worth a reader's attention or a place in the counts. It is still
         // stored, and the next pull request that touches the code it names judges it again.
         if (standing(rule) === "unclear") continue;
-        rows.push({ ...rule, doc: group.document });
+        rows.push({ ...rule, excludedWith: excludedWith(rule, group.document), doc: group.document });
       }
     }
     return rows.sort((a, b) =>
@@ -1388,7 +1616,7 @@ export default function DocsTab({
         ? (a.sourceLine || 0) - (b.sourceLine || 0)
         : a.doc.path.localeCompare(b.doc.path)
     );
-  }, [scopeKind, selected, detail, rulesIndex]);
+  }, [scopeKind, selected, detail, rulesIndex, catalog]);
   // The rows as shown: with the issues each is tracked in, once that answer has come.
   const shownRows = useMemo(() => withRuleIssues(scopeRows, findingIssues), [scopeRows, findingIssues]);
 
@@ -1402,45 +1630,6 @@ export default function DocsTab({
   const scopeRuleDocs = useMemo(
     () => new Set(scopeRows.map((row) => row.doc.path)).size,
     [scopeRows]
-  );
-
-  const scopeCounts = useMemo(() => {
-    const active = scopeRows.filter((row) => !row.ignored);
-    return {
-      all: scopeRows.length,
-      broken: active.filter((row) => standing(row) === "broken").length,
-      holds: active.filter((row) => standing(row) === "holds").length,
-      unchecked: active.filter((row) => standing(row) === "unchecked").length,
-      ignored: scopeRows.length - active.length,
-    };
-  }, [scopeRows]);
-
-  /**
-   * The counts above the tree, which are of the whole repository whatever is selected. They were
-   * of the selection, so opening a folder changed the numbers at the top of the page, which read
-   * as the repository changing rather than as a narrower view of it. The table below still shows
-   * what is selected, and says how many of the rules it lists.
-   */
-  const repoCounts = useMemo(() => {
-    const rows: Rule[] = [];
-    for (const group of rulesIndex?.documents || []) {
-      for (const rule of group.rules) {
-        if (standing(rule) !== "unclear") rows.push(rule);
-      }
-    }
-    // An ignored rule is counted in the total and as ignored, and in none of the standings.
-    const active = rows.filter((row) => !row.ignored);
-    return {
-      all: rows.length,
-      broken: active.filter((row) => standing(row) === "broken").length,
-      holds: active.filter((row) => standing(row) === "holds").length,
-      unchecked: active.filter((row) => standing(row) === "unchecked").length,
-      ignored: rows.length - active.length,
-    };
-  }, [rulesIndex]);
-  const repoStale = useMemo(
-    () => allDocs.reduce((sum, doc) => sum + (staleByDoc.get(doc.path)?.length || 0), 0),
-    [allDocs, staleByDoc]
   );
 
   /**
@@ -1460,6 +1649,11 @@ export default function DocsTab({
   /** Whether a public page leads with the names gone, above whatever rules the scope has. */
   const namesFirst = !!source && !!rulesIndex && scopeKind !== "doc"
     && scopeStaleFindings.length > 0;
+  /**
+   * Whether a folder or the repository shows its names gone in place of its rules: the stale names
+   * chip counts names, so what it opens on is the names.
+   */
+  const namesOnly = filter === "stale" && scopeKind !== "doc" && scopeStaleFindings.length > 0;
 
   /** What the selection is called, in the export, on paper and in the pane's own heading. */
   const scopeLabel =
@@ -1474,7 +1668,7 @@ export default function DocsTab({
         ...part,
         count: scopeDocs.filter(matches(part.key)).length,
       })).filter((part) => part.count > 0),
-    [scopeDocs, staleByDoc]
+    [scopeDocs, staleByDoc, excludedDocs, ruleDocs, resultDocs]
   );
 
   /* ─── The search palette ────────────────────────────────────────── */
@@ -1569,15 +1763,19 @@ export default function DocsTab({
                 <button
                   type="button"
                   role="menuitem"
-                  onClick={() => setFolderExcluded(covering.path, false)}
+                  {...blockedProps}
+                  onClick={unlessBlocked(() => exclude(covering.path, true, false))}
                 >
                   {covering.path === path
                     ? "Include this folder again"
-                    : `Include ${covering.path}/ again`}
+                    : `Include ${folderName(covering)} again`}
                 </button>
               ) : (
-                <button type="button" role="menuitem" onClick={() => setFolderExcluded(path, true)}>
-                  Exclude this folder from reading
+                <button type="button" role="menuitem"
+                  title="Striff won't read any doc under it, and none of their rules are checked."
+                  {...blockedProps}
+                  onClick={unlessBlocked(() => exclude(path, true, true))}>
+                  Exclude this folder
                 </button>
               )
             ) : doc?.state === "EXCLUDED" ? (
@@ -1587,12 +1785,14 @@ export default function DocsTab({
                 <button
                   type="button"
                   role="menuitem"
-                  onClick={() => setFolderExcluded(covering.path, false)}
+                  {...blockedProps}
+                  onClick={unlessBlocked(() => exclude(covering.path, true, false))}
                 >
-                  Include {covering.path}/ again
+                  Include {folderName(covering)} again
                 </button>
               ) : (
-                <button type="button" role="menuitem" onClick={() => setExcluded(path, false)}>
+                <button type="button" role="menuitem" {...blockedProps}
+                  onClick={unlessBlocked(() => exclude(path, false, false))}>
                   Include again
                 </button>
               )
@@ -1609,8 +1809,11 @@ export default function DocsTab({
                       Read it anyway
                     </button>
                   ))}
-                <button type="button" role="menuitem" onClick={() => setExcluded(path, true)}>
-                  Exclude from reading
+                <button type="button" role="menuitem"
+                  title="Striff won't read this doc, and none of its rules are checked."
+                  {...blockedProps}
+                  onClick={unlessBlocked(() => exclude(path, false, true))}>
+                  Exclude this doc
                 </button>
               </>
             )}
@@ -1652,12 +1855,15 @@ export default function DocsTab({
             Reading
           </span>
         )}
-        {rulesIndex?.ignoredPaths?.some((entry) => !entry.prefix && entry.path === doc.path) && (
-          <span className="docs-badge is-ignored" title="Pull requests aren't checked against this doc's rules.">
-            Ignored
+        {/* A doc whose rules were set aside as a whole before exclusion covered it: excluded,
+            in the same word, though its state is still what reading it found. */}
+        {doc.state !== "EXCLUDED" && excludedDocs.has(doc.path) && (
+          <span className="docs-badge is-excluded" title="Excluded: pull requests aren't checked against this doc's rules.">
+            Excluded
           </span>
         )}
-        {doc.brokenRules + doc.alreadyBrokenRules > 0 && (
+        {/* An excluded doc's rules aren't checked, so nothing in it is reported broken. */}
+        {doc.state !== "EXCLUDED" && doc.brokenRules + doc.alreadyBrokenRules > 0 && (
           <span className="docs-badge is-broken" title="Rules of this doc the code does not keep.">
             {doc.brokenRules + doc.alreadyBrokenRules} broken
           </span>
@@ -1671,10 +1877,18 @@ export default function DocsTab({
           </span>
         )}
         {doc.state !== "READ" && !beingRead && (
-          <span className={`docs-badge is-${doc.state.toLowerCase()}`}>{STATE_LABEL[doc.state]}</span>
+          <span
+            className={`docs-badge is-${doc.state.toLowerCase()}`}
+            title={doc.state === "EXCLUDED" ? "Excluded: Striff doesn't read this doc, and none of its rules are checked." : undefined}
+          >
+            {STATE_LABEL[doc.state]}
+          </span>
         )}
-        {doc.forced && doc.state !== "READ" && !beingRead && (
-          <span className="docs-badge is-forced">Read anyway</span>
+        {/* A setting rather than a state: this repository asked for a skipped doc to be read. */}
+        {doc.forced && doc.state !== "READ" && doc.state !== "EXCLUDED" && !beingRead && (
+          <span className="docs-badge is-forced" title={`${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read this doc whatever its screens say.`}>
+            Read anyway
+          </span>
         )}
       </>
     );
@@ -1695,7 +1909,7 @@ export default function DocsTab({
         <div
           key={node.path}
           className={`docs-row${selected === doc.path ? " is-open" : ""}${
-            ["RETIRED", "SCREENED_OUT", "EXCLUDED"].includes(doc.state) ? " is-dim" : ""
+            ["RETIRED", "SCREENED_OUT", "EXCLUDED"].includes(doc.state) || excludedDocs.has(doc.path) ? " is-dim" : ""
           }`}
           style={indent}
         >
@@ -1722,7 +1936,13 @@ export default function DocsTab({
 
     const isRoot = node.path === "";
     const open = expanded.has(node.path);
-    const excludedFolder = isRoot ? null : coveringFolder(node.path, catalog?.exclusions);
+    // A folder excluded from reading, or set aside as a whole in the rule states before exclusion
+    // covered it: one word for either.
+    const legacyFolder = coveringPath(node.path, rulesIndex?.legacyPaths);
+    const excludedFolder = coveringFolder(node.path, catalog?.exclusions)
+      ?? (legacyFolder?.prefix
+        ? { path: legacyFolder.path, folder: true, excludedBy: null, reason: null, atMs: 0 }
+        : null);
     const rows: any[] = [
       <div
         key={node.path || "__root__"}
@@ -1759,14 +1979,10 @@ export default function DocsTab({
               className="docs-badge is-excluded"
               title={`Excluded${excludedFolder.excludedBy ? ` by ${excludedFolder.excludedBy}` : ""}${
                 excludedFolder.reason ? `: ${excludedFolder.reason}` : ""
-              }${excludedFolder.path === node.path ? "" : ` with ${excludedFolder.path}/`}`}
+              }${excludedFolder.path === node.path ? "" : ` with ${folderName(excludedFolder)}`}. Striff doesn't read the docs ${
+                isRoot ? "here" : "under it"}, and none of their rules are checked.`}
             >
               Excluded
-            </span>
-          )}
-          {rulesIndex?.ignoredPaths?.some((entry) => entry.prefix && entry.path === (isRoot ? "" : node.path)) && (
-            <span className="docs-badge is-ignored" title={`Pull requests aren't checked against the rules ${isRoot ? "in this repository" : `under ${node.path}/`}.`}>
-              Ignored
             </span>
           )}
           {node.broken > 0 && <span className="docs-dot" title={`${node.broken} broken`} />}
@@ -1843,7 +2059,7 @@ export default function DocsTab({
         type="button"
         className="docs-tally-item"
         title="Every rule read from this repository's documents."
-        onClick={() => setRuleFilter("all")}
+        onClick={() => setFilter("all")}
       >
         <b>{repoCounts.all}</b>
         <i>rule{repoCounts.all === 1 ? "" : "s"}</i>
@@ -1852,40 +2068,40 @@ export default function DocsTab({
           has checked. */}
       <button
         type="button"
-        className={`docs-tally-item is-held${ruleFilter === "holds" ? " is-on" : ""}`}
+        className={`docs-tally-item is-held${filter === "holds" ? " is-on" : ""}`}
         title={`${STANDING_HELP.holds} Click to show these.`}
-        onClick={() => setRuleFilter(ruleFilter === "holds" ? "all" : "holds")}
+        onClick={() => toggleFilter("holds")}
       >
         <b>{repoCounts.holds}</b>
         <i>hold{repoCounts.holds === 1 ? "s" : ""}</i>
       </button>
       <button
         type="button"
-        className={`docs-tally-item is-violated${ruleFilter === "broken" ? " is-on" : ""}`}
+        className={`docs-tally-item is-violated${filter === "broken" ? " is-on" : ""}`}
         title={`${STANDING_HELP.broken} Click to show these.`}
-        onClick={() => setRuleFilter(ruleFilter === "broken" ? "all" : "broken")}
+        onClick={() => toggleFilter("broken")}
       >
         <b>{repoCounts.broken}</b>
         <i>broken</i>
       </button>
       <button
         type="button"
-        className={`docs-tally-item${ruleFilter === "unchecked" ? " is-on" : ""}`}
+        className={`docs-tally-item${filter === "unchecked" ? " is-on" : ""}`}
         title={`${STANDING_HELP.unchecked} Click to show these.`}
-        onClick={() => setRuleFilter(ruleFilter === "unchecked" ? "all" : "unchecked")}
+        onClick={() => toggleFilter("unchecked")}
       >
         <b>{repoCounts.unchecked}</b>
         <i>not checked yet</i>
       </button>
-      {(repoCounts.ignored > 0 || ruleFilter === "ignored") && (
+      {(repoCounts.excluded > 0 || filter === "excludedRules") && (
         <button
           type="button"
-          className={`docs-tally-item is-ignored${ruleFilter === "ignored" ? " is-on" : ""}`}
-          title="Rules pull requests aren't checked against. Click to show these."
-          onClick={() => setRuleFilter(ruleFilter === "ignored" ? "all" : "ignored")}
+          className={`docs-tally-item is-excluded${filter === "excludedRules" ? " is-on" : ""}`}
+          title="Rules pull requests aren't checked against: excluded on their own, or with their doc or folder. Click to show these."
+          onClick={() => toggleFilter("excludedRules")}
         >
-          <b>{repoCounts.ignored}</b>
-          <i>ignored</i>
+          <b>{repoCounts.excluded}</b>
+          <i>excluded</i>
         </button>
       )}
       </>
@@ -1899,7 +2115,7 @@ export default function DocsTab({
           type="button"
           className={`docs-tally-item is-stale${repoStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
           title={`Stale names in your docs: gone, moved or renamed in the code. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
-          onClick={() => setFilter(filter === "stale" ? "all" : "stale")}
+          onClick={() => toggleFilter("stale")}
         >
           <b>{repoStale}{staleNames.truncated ? "+" : ""}</b>
           <i>stale names</i>
@@ -1924,6 +2140,8 @@ export default function DocsTab({
 
   return (
     <div className="docs-tab">
+      {ruleStateBlocked && <span id={blockedId} className="sr-only">{ruleStateBlocked}</span>}
+      {!rulesIndex && <span id={loadingId} className="sr-only">The rules are still loading.</span>}
       {paletteOpen && (
         <div className="docs-palette-scrim" onClick={() => setPaletteOpen(false)}>
           <div className="docs-palette" role="dialog" aria-label="Search docs and rules" onClick={(event) => event.stopPropagation()}>
@@ -2006,7 +2224,7 @@ export default function DocsTab({
                       <span className="docs-palette-sub">
                         {marked(rule.path)}
                         {rule.sourceLine ? `:${rule.sourceLine}` : ""}
-                        {` · ${rule.ignored ? "ignored" : STANDING_LABEL[standing(rule)].toLowerCase()}`}
+                        {` · ${rule.excluded ? "excluded" : STANDING_LABEL[standing(rule)].toLowerCase()}`}
                       </span>
                     </button>
                   ))}
@@ -2139,19 +2357,37 @@ export default function DocsTab({
             {actionError && (scopeKind !== "doc" || detail) && (
               <p className="docs-write-error">{actionError}</p>
             )}
+            {/* Two groups, each counted in its own unit: the documents by the state each is in, and
+                the rules by how they stand or that they are excluded. One chip is on at a time,
+                and a rule chip narrows the table beside the tree as well as the tree. */}
             <div className="docs-filters">
-              {FILTER_CHIPS.filter((chip) => chip.always || filterCounts[chip.key] > 0 || filter === chip.key).map((chip) => (
-                <button
-                  key={chip.key}
-                  type="button"
-                  className={`docs-filter${filter === chip.key ? " is-on" : ""}`}
-                  aria-pressed={filter === chip.key}
-                  // A second click on the chip in use puts the tree back as it was.
-                  onClick={() => setFilter(filter === chip.key ? "all" : chip.key)}
-                >
-                  {chip.dot && <span className={`docs-fdot is-${chip.dot}`} />}
-                  {chip.label} <b>{filterCounts[chip.key]}</b>
-                </button>
+              {([
+                ["Documents", DOC_CHIPS, false],
+                ["Rules", RULE_CHIPS, !rulesIndex],
+              ] as [string, Chip<Filter>[], boolean][]).map(([group, chips, waiting]) => (
+                <div key={group} className="docs-filter-group" role="group" aria-label={group}>
+                  <span className="docs-filter-label">{group}</span>
+                  {chips
+                    // A public page changes nothing, so it has no excluded rules to come back to.
+                    .filter((chip) => filter === chip.key || (!chip.hidden
+                      && ((chip.always && !(source && chip.key === "excludedRules")) || filterCounts[chip.key] > 0)))
+                    .map((chip) => (
+                      <button
+                        key={chip.key}
+                        type="button"
+                        className={`docs-filter${filter === chip.key ? " is-on" : ""}`}
+                        aria-pressed={filter === chip.key}
+                        title={`${chip.help}${filter === chip.key ? " Click again to show every document." : ""}`}
+                        aria-disabled={waiting || undefined}
+                        aria-describedby={waiting ? loadingId : undefined}
+                        // A second click on the chip in use puts the tree back as it was.
+                        onClick={() => { if (!waiting) toggleFilter(chip.key); }}
+                      >
+                        {chip.dot && <span className={`docs-fdot is-${chip.dot}`} />}
+                        {chip.label} <b>{waiting ? "…" : filterCounts[chip.key]}</b>
+                      </button>
+                    ))}
+                </div>
               ))}
             </div>
             <div className="docs-tree" role="tree">
@@ -2172,10 +2408,11 @@ export default function DocsTab({
                         type="button"
                         className="docs-foot-folder"
                         disabled={busy}
-                        title={`Include ${rule.path}/ again${rule.excludedBy ? ` (excluded by ${rule.excludedBy}${rule.reason ? `: ${rule.reason}` : ""})` : ""}`}
-                        onClick={() => setFolderExcluded(rule.path, false)}
+                        title={`Include ${folderName(rule)} again${rule.excludedBy ? ` (excluded by ${rule.excludedBy}${rule.reason ? `: ${rule.reason}` : ""})` : ""}`}
+                        {...blockedProps}
+                        onClick={unlessBlocked(() => exclude(rule.path, true, false))}
                       >
-                        {rule.path}/<i aria-hidden="true">×</i>
+                        {rule.path === "" ? "whole repository" : `${rule.path}/`}<i aria-hidden="true">×</i>
                         <span className="sr-only"> — include again</span>
                       </button>
                     ))}
@@ -2256,8 +2493,8 @@ export default function DocsTab({
                     {scopeKind === "root" ? "Open repository" : "Open folder"}
                   </a>
                   <span className="docs-pane-actions">
-                    {scopeIgnore(scopeKind === "root" ? "" : selected, true,
-                      scopeKind === "root" ? "this repository" : "this folder")}
+                    {scopeExclude(scopeKind === "root" ? "" : selected,
+                      scopeKind === "root" ? "repository" : "folder")}
                     {scopeKind === "folder" && rowMenu(selected, undefined, true, "pane")}
                   </span>
                 </div>
@@ -2286,7 +2523,7 @@ export default function DocsTab({
                         type="button"
                         className={`docs-scope-part${filter === part.key ? " is-on" : ""}`}
                         title={`${part.help} Click to show these in the tree.`}
-                        onClick={() => setFilter(filter === part.key ? "all" : part.key)}
+                        onClick={() => toggleFilter(part.key)}
                       >
                         {part.count} {part.label}
                       </button>
@@ -2298,7 +2535,7 @@ export default function DocsTab({
                 {rulesLoading && !rulesIndex && (
                   <p className="dashboard-metric-caption">Reading this repository's rules…</p>
                 )}
-                {namesFirst && (
+                {(namesFirst || namesOnly) && (
                   <div className="docs-gone">
                     <h4>
                       Stale names in these docs
@@ -2358,7 +2595,7 @@ export default function DocsTab({
                     </ul>
                   </div>
                 )}
-                {rulesIndex && scopeRows.length === 0 && !namesFirst && (
+                {rulesIndex && scopeRows.length === 0 && !namesFirst && !namesOnly && (
                   <p className="dashboard-metric-caption">
                     {/* A truncated answer is the one case where an empty scope is not an answer
                         about the scope: the rules exist and this list did not reach them. */}
@@ -2377,7 +2614,7 @@ export default function DocsTab({
                       : "Nothing here has been read yet. Striff reads a doc the first time a pull request changes code that doc talks about."}
                   </p>
                 )}
-                {rulesIndex && scopeRows.length > 0 && (
+                {rulesIndex && scopeRows.length > 0 && !namesOnly && (
                   <RulesTable
                     rows={shownRows}
                     owner={owner}
@@ -2393,10 +2630,9 @@ export default function DocsTab({
                     issues={!source && takesIssues}
                     readOnly={!!source}
                     demo={!!sample}
-                    repositoryIgnored={!!rulesIndex?.ignoredPaths?.some((entry) => entry.prefix && entry.path === "")}
                     ruleStates={source ? undefined : {
                       disabledReason: ruleStateBlocked,
-                      set: (row, ignored) => setRuleStates({ ignored, factIds: [row.factId] }),
+                      set: (row, excluded) => setRuleStates({ excluded, factIds: [row.factId] }),
                     }}
                   />
                 )}
@@ -2439,18 +2675,19 @@ export default function DocsTab({
                     View on GitHub
                   </a>
                   <span className="docs-pane-actions">
-                    {scopeIgnore(selected, false, "this doc")}
-                    {rowMenu(selected, detail.document, false, "pane")}
+                    {scopeExclude(selected, "doc")}
+                    {rowMenu(selected, selectedDoc ?? detail.document, false, "pane")}
                   </span>
                 </div>
-                <p className={`docs-state-line is-${detail.document.state.toLowerCase()}`}>
+                {/* The state as the catalogue has it, which excluding the doc changes at once. */}
+                <p className={`docs-state-line is-${(selectedDoc ?? detail.document).state.toLowerCase()}`}>
                   <span
                     className={`docs-sdot is-${
-                      detail.document.state.toLowerCase()
+                      (selectedDoc ?? detail.document).state.toLowerCase()
                     }`}
                   />
                   <span>
-                    {withCode(stateLine(detail.document,
+                    {withCode(stateLine(selectedDoc ?? detail.document,
                       coveringFolder(detail.document.path, catalog?.exclusions)))}
                   </span>
                 </p>
@@ -2500,10 +2737,9 @@ export default function DocsTab({
                     issues={!source && takesIssues}
                     readOnly={!!source}
                     demo={!!sample}
-                    repositoryIgnored={!!rulesIndex?.ignoredPaths?.some((entry) => entry.prefix && entry.path === "")}
                     ruleStates={source ? undefined : {
                       disabledReason: ruleStateBlocked,
-                      set: (row, ignored) => setRuleStates({ ignored, factIds: [row.factId] }),
+                      set: (row, excluded) => setRuleStates({ excluded, factIds: [row.factId] }),
                     }}
                   />
                 )}
