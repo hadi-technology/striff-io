@@ -127,8 +127,8 @@ const pipeline = [
 /**
  * Six of the twenty-four rules from a real Striff check: catatafishen/agentbridge #1102, run on
  * 2026-09-27 against commit 32538d6. The rule text, the document, the line and the quoted sentence
- * are copied from the check's own output, and the three columns below are the three the check
- * posts. Nothing here is written for the website.
+ * are copied from the check's own output and shown in the layout the check posts today (that run
+ * predates it). Nothing here is written for the website.
  *
  * https://github.com/catatafishen/agentbridge/runs/108628049213
  */
@@ -546,7 +546,7 @@ const structuredData = JSON.stringify([
             One check, beside your CI. It says what the change moved, lists every rule your own documents state about the code it touched, says whether each one still holds and quotes the sentence it came from, and draws the classes involved.
           </p>
           <p class="diagram-source">
-            <span class="diagram-source-label">Below is one, unedited, from a public repository:</span>
+            <span class="diagram-source-label">Below is one from a public repository, its rules unedited, in the layout Striff posts today:</span>
             <a class="diagram-source-pr" href="https://github.com/catatafishen/agentbridge/pull/1102" target="_blank" rel="noopener noreferrer">
               catatafishen/agentbridge #1102
             </a>
@@ -554,8 +554,8 @@ const structuredData = JSON.stringify([
           </p>
         </div>
 
-        <!-- The check as GitHub renders it: the summary, the rules table in the three columns the
-             check actually posts, and the diagram, which the check embeds at the end of the same
+        <!-- The check as GitHub renders it: the summary, the rules table as the check now posts
+             it, and the diagram, which the check embeds at the end of the same
              comment. Split across two sections it asked a reader to believe they were one run. -->
         <div class="check-report" data-reveal>
           <div class="ghcheck">
@@ -573,23 +573,28 @@ const structuredData = JSON.stringify([
 
             <div class="ghcheck-body">
               <h3 class="ghcheck-h">Documented rules</h3>
-              <p class="ghcheck-note">Rules read from this repository&rsquo;s own docs and checked against the dependency graph this PR produces.</p>
+              <p class="ghcheck-allhold">All 24 documented rules about the code this pull request changes hold.</p>
 
+              <!-- The rules as the check posts them: a numbered two-column table, each row the
+                   state badge, the rule and its line in the docs, then the sentence it came from. -->
               <div class="ghcheck-table-wrap">
-                <table class="ghcheck-table">
-                  <thead><tr><th>Rule</th><th>Source</th><th>This PR</th></tr></thead>
+                <table class="ghcheck-table is-rules">
+                  <thead><tr><th class="ghcheck-n">#</th><th>Rule</th></tr></thead>
                   <tbody>
-                    {realCheckRules.map((r) => (
+                    {realCheckRules.map((r, i) => (
                       <tr>
-                        <td class="ghcheck-rule"><InlineCodeText text={r.rule} /></td>
-                        <td class="ghcheck-src"><code>{r.doc}</code><span>{r.quote}</span></td>
-                        <td class="ghcheck-verdict"><span class="ghcheck-holds">&#10003; holds</span></td>
+                        <td class="ghcheck-n"><b>{i + 1}</b></td>
+                        <td class="ghcheck-cell">
+                          <span class="ghbadge is-holds">Holds</span>
+                          <span class="ghcheck-rule-line"><b class="ghcheck-rule-text"><InlineCodeText text={r.rule} /></b> &middot; <code class="ghcheck-doc">{r.doc}</code></span>
+                          <span class="ghcheck-quote">&ldquo;{r.quote}&rdquo;</span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <p class="ghcheck-more">{24 - realCheckRules.length} more rules checked, all held.</p>
+              <p class="ghcheck-more">Rows {realCheckRules.length + 1}&ndash;24, all holding, are trimmed here.</p>
 
               <!-- The diagram is not a second section. The check embeds it here, at the end of the
                    same comment, and it is wide because a real architecture is wide. -->

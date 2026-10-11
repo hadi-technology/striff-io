@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import FloatingPanel from "./FloatingPanel";
 
 /** Why a control is off for a reader who is not the repository's owner or an admin. */
 export const NOT_ADMIN = "Only the repository's owner and admins can change this.";
@@ -87,7 +88,7 @@ export function ScopeExclude({
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const button = useRef<HTMLButtonElement | null>(null);
-  const panel = useRef<HTMLDivElement | null>(null);
+  const panel = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const reasonId = useId();
 
@@ -156,7 +157,7 @@ export function ScopeExclude({
       </button>
       {disabledReason && <span id={reasonId} className="sr-only">{disabledReason}</span>}
       {asking && (
-        <div ref={panel} className="finding-flag-panel scope-exclude-panel" role="dialog" aria-labelledby={titleId}>
+        <FloatingPanel anchor={button} panelRef={panel} className="finding-flag-panel scope-exclude-panel" role="dialog" aria-labelledby={titleId}>
           {excluded ? (
             <>
               <p id={titleId} className="finding-flag-title">Include {target} again?</p>
@@ -183,7 +184,7 @@ export function ScopeExclude({
               {busy ? "Saving…" : excluded ? "Include again" : "Exclude"}
             </button>
           </div>
-        </div>
+        </FloatingPanel>
       )}
     </span>
   );

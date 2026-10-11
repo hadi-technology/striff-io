@@ -252,6 +252,18 @@ function MetricChart({
   );
 }
 
+/** Shifts a metric's tooltip sideways, where it would otherwise run past the window's edge. */
+function keepTooltipInView(event: { currentTarget: HTMLElement }) {
+  const tip = event.currentTarget.querySelector<HTMLElement>(".dashboard-metric-help-tooltip");
+  if (!tip) return;
+  tip.style.setProperty("--nudge", "0px");
+  const at = tip.getBoundingClientRect();
+  const edge = 8;
+  const right = document.documentElement.clientWidth - edge;
+  const nudge = at.left < edge ? edge - at.left : at.right > right ? right - at.right : 0;
+  tip.style.setProperty("--nudge", `${nudge}px`);
+}
+
 function MetricCardShell({
   label,
   description,
@@ -267,7 +279,7 @@ function MetricCardShell({
     <div className={`dashboard-metric-card${wide ? " dashboard-metric-card-wide" : ""}`}>
       <p className="dashboard-metric-label">
         {label}
-        <span className="dashboard-metric-help" tabIndex={0}>
+        <span className="dashboard-metric-help" tabIndex={0} onPointerEnter={keepTooltipInView} onFocus={keepTooltipInView}>
           <span className="dashboard-metric-help-icon" aria-hidden="true">?</span>
           <span className="dashboard-metric-help-tooltip" role="tooltip">{description}</span>
         </span>

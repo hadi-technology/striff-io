@@ -3,6 +3,7 @@ import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
 import { issueIndex, withRuleIssues, withStaleNameIssue, type FindingIssue, type IssueIndex } from "./findingIssue.ts";
 import FlagFinding from "./FlagFinding";
+import FloatingPanel from "./FloatingPanel";
 import { NOT_ADMIN, ScopeExclude } from "./RuleStateControls";
 import {
   applyExclusion,
@@ -828,6 +829,8 @@ export default function DocsTab({
   /** Whether the view still shows the answers it was built with, which a first load refreshes. */
   const seeded = useRef(!!initial);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  // The control of the one menu open, which that menu opens beside.
+  const menuButton = useRef<HTMLButtonElement | null>(null);
   const [query, setQuery] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
   // What a failed write or a failed document read said, shown where it happened.
@@ -1741,6 +1744,7 @@ export default function DocsTab({
     return (
       <span className="docs-menu-wrap">
         <button
+          ref={open ? menuButton : undefined}
           type="button"
           className="docs-menu-button"
           aria-haspopup="menu"
@@ -1755,7 +1759,7 @@ export default function DocsTab({
           <DotsIcon />
         </button>
         {open && (
-          <span className="docs-menu" role="menu">
+          <FloatingPanel anchor={menuButton} as="span" className="docs-menu" role="menu">
             {folder ? (
               covering ? (
                 // Excluded by its own rule, or by a folder above it: either way the rule to take
@@ -1825,7 +1829,7 @@ export default function DocsTab({
             >
               View on GitHub
             </a>
-          </span>
+          </FloatingPanel>
         )}
       </span>
     );

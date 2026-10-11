@@ -1284,8 +1284,8 @@
     left: 50%;
     z-index: 20;
     width: max-content;
-    max-width: 15rem;
-    transform: translateX(-50%) translateY(4px);
+    max-width: min(15rem, calc(100vw - 1rem));
+    transform: translateX(calc(-50% + var(--nudge, 0px))) translateY(4px);
     border-radius: 0.5rem;
     background: #1f2328;
     padding: 0.5rem 0.65rem;
@@ -1304,7 +1304,7 @@
   .dashboard-metric-help:hover .dashboard-metric-help-tooltip,
   .dashboard-metric-help:focus-visible .dashboard-metric-help-tooltip {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(calc(-50% + var(--nudge, 0px))) translateY(0);
   }
 
   .dashboard-metric-value-row {
@@ -6448,6 +6448,50 @@ tr:hover .finding-flag-button,
   box-shadow: 0 1px 0 rgba(18, 101, 58, 0.08);
 }
 .ghcheck-more { margin: 0.7rem 0 0; color: #8a95a1; font-size: 0.8rem; }
+
+/* State badges, drawn as the check draws them: a flat pill, the state in sentence case. */
+.ghbadge {
+  display: inline-block;
+  height: 20px;
+  border-radius: 6px;
+  background: #1a7f37;
+  padding: 0 10px;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.ghbadge.is-broken { background: #cf222e; }
+.ghbadge.is-already { background: #9a6700; }
+.ghbadge.is-fixed { background: #0969da; }
+.ghbadge.is-holds { background: #1a7f37; }
+
+.ghcheck-allhold { margin: 0.35rem 0 0.85rem; color: #424b55; font-size: 0.9rem; line-height: 1.55; }
+.ghcheck-table.is-rules thead th.ghcheck-n,
+.ghcheck-table.is-rules td.ghcheck-n { width: 2.75rem; text-align: right; }
+.ghcheck-table.is-rules td.ghcheck-n { color: #16202b; font-variant-numeric: tabular-nums; vertical-align: middle; }
+.ghcheck-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; min-width: 0; }
+.ghcheck-rule-line { color: #0f172a; line-height: 1.5; }
+.ghcheck-rule-text { font-weight: 650; }
+.ghcheck-rule-text .github-inline-code {
+  border: 1px solid #cfe0fb;
+  border-radius: 0.32rem;
+  background: #eaf1fe;
+  padding: 0.06em 0.34em;
+  color: #16407f;
+  font-size: 0.9em;
+  font-weight: 600;
+}
+.ghcheck-doc { color: #1d4ed8; font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; font-weight: 600; }
+.ghcheck-quote {
+  color: #57606a;
+  font-family: "Source Serif 4", ui-serif, Georgia, serif;
+  font-size: 0.88rem;
+  font-style: italic;
+  line-height: 1.5;
+}
 
 .ghcheck-caption {
   margin: 0.7rem 0 0;

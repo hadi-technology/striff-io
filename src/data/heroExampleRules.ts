@@ -33,7 +33,7 @@ export const heroExampleRules = [
   },
   {
     verdict: "held",
-    verdictLabel: "Held",
+    verdictLabel: "Holds",
     craft: "Payments ADR",
     quote: "Every payment provider implements `PaymentGateway`, and only the `billing` module talks to the Stripe SDK.",
     doc: "docs/adr/0007-payments.md",
@@ -57,7 +57,7 @@ export const heroExampleRules = [
   },
   {
     verdict: "held",
-    verdictLabel: "Held",
+    verdictLabel: "Holds",
     craft: "Peer modules",
     quote: "Feature modules never depend on each other; shared code goes in `common`.",
     doc: "ARCHITECTURE.md",
