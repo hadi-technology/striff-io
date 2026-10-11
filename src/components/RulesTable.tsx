@@ -7,6 +7,7 @@ import FloatingPanel from "./FloatingPanel";
 import { RuleSwitch } from "./RuleStateControls";
 import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
+import { limitsTheCode } from "../lib/ruleOrder.js";
 import { standing } from "../lib/standing.js";
 
 /**
@@ -141,8 +142,11 @@ export interface RuleStateHandle {
   set: (row: Row, excluded: boolean) => Promise<string | null>;
 }
 
-/** Which column the list is ordered by. */
-type SortKey = "rule" | "source" | "outcome";
+/**
+ * Which column the list is ordered by, or "first-read": the order a list opens in, with the rules
+ * that limit what the code may do first and document order within each part.
+ */
+type SortKey = "rule" | "source" | "outcome" | "first-read";
 
 /**
  * Plain text, for a file someone opens in a spreadsheet: no backticks, no newlines, quotes doubled.
@@ -215,9 +219,9 @@ export default function RulesTable({
   const [query, setQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
   const exportButton = useRef<HTMLButtonElement | null>(null);
-  // Document order to begin with: a repository's rules read as its documents do until someone
-  // asks for something else.
-  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "source", dir: 1 });
+  // The rules that limit what the code may do first, the rest after them, each part as its documents read,
+  // until someone orders the list by a column.
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "first-read", dir: 1 });
 
   useEffect(() => {
     if (!exportOpen) return;
@@ -250,6 +254,9 @@ export default function RulesTable({
         // Judged most recently first within a standing, so "what happened lately" is one click
         // away from "what is broken".
         return rank(a) - rank(b) || (b.judgedAtMs || 0) - (a.judgedAtMs || 0) || byDocument(a, b);
+      }
+      if (sort.key === "first-read") {
+        return Number(!limitsTheCode(a)) - Number(!limitsTheCode(b)) || byDocument(a, b);
       }
       return byDocument(a, b);
     };
