@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { brokenRulePrompt, issueUrl } from "./docIssue";
 import FindingActions from "./FindingActions";
 import type { FindingIssue } from "./findingIssue.ts";
 import FlagFinding from "./FlagFinding";
+import FloatingPanel from "./FloatingPanel";
 import { RuleSwitch } from "./RuleStateControls";
 import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
@@ -213,6 +214,7 @@ export default function RulesTable({
   const [stateError, setStateError] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
+  const exportButton = useRef<HTMLButtonElement | null>(null);
   // Document order to begin with: a repository's rules read as its documents do until someone
   // asks for something else.
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "source", dir: 1 });
@@ -345,6 +347,7 @@ export default function RulesTable({
               out to have covered a folder rather than the repository is a surprise found in a
               downloads folder, which is the worst place to find one. */}
           <button
+            ref={exportButton}
             type="button"
             className="rules-export-button"
             aria-haspopup="menu"
@@ -361,14 +364,14 @@ export default function RulesTable({
             </svg>
           </button>
           {exportOpen && (
-            <div className="rules-export-menu" role="menu">
+            <FloatingPanel anchor={exportButton} className="rules-export-menu" role="menu">
               <button type="button" role="menuitem" onClick={() => { setExportOpen(false); window.print(); }}>
                 Print or save as PDF
               </button>
               <button type="button" role="menuitem" onClick={() => { setExportOpen(false); downloadCsv(); }}>
                 Download CSV
               </button>
-            </div>
+            </FloatingPanel>
           )}
         </div>
       </div>

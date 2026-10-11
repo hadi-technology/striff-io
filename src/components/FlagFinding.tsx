@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import FloatingPanel from "./FloatingPanel";
 
 /** The Netlify form the flags are sent to; its fields are registered by a static copy in dashboard.astro. */
 export const FLAG_FORM = "finding-flag";
@@ -36,7 +37,7 @@ export default function FlagFinding({ flagged, demo = false }: { flagged: Flagge
   const [state, setState] = useState<"editing" | "sending" | "sent" | "failed">("editing");
   const [message, setMessage] = useState("");
   const button = useRef<HTMLButtonElement | null>(null);
-  const panel = useRef<HTMLDivElement | null>(null);
+  const panel = useRef<HTMLElement | null>(null);
   const field = useRef<HTMLTextAreaElement | null>(null);
   const titleId = useId();
   const label = flagged.kind === "rule" ? "Flag this rule" : "Flag this stale name";
@@ -118,7 +119,7 @@ export default function FlagFinding({ flagged, demo = false }: { flagged: Flagge
         </svg>
       </button>
       {open && (
-        <div ref={panel} className="finding-flag-panel" role="dialog" aria-labelledby={titleId}>
+        <FloatingPanel anchor={button} panelRef={panel} className="finding-flag-panel" role="dialog" aria-labelledby={titleId}>
           {state === "sent" ? (
             <div className="finding-flag-thanks" role="status">
               <p id={titleId}><b>Thanks for flagging this.</b></p>
@@ -148,7 +149,7 @@ export default function FlagFinding({ flagged, demo = false }: { flagged: Flagge
               </div>
             </form>
           )}
-        </div>
+        </FloatingPanel>
       )}
     </span>
   );

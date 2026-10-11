@@ -1284,8 +1284,8 @@
     left: 50%;
     z-index: 20;
     width: max-content;
-    max-width: 15rem;
-    transform: translateX(-50%) translateY(4px);
+    max-width: min(15rem, calc(100vw - 1rem));
+    transform: translateX(calc(-50% + var(--nudge, 0px))) translateY(4px);
     border-radius: 0.5rem;
     background: #1f2328;
     padding: 0.5rem 0.65rem;
@@ -1304,7 +1304,7 @@
   .dashboard-metric-help:hover .dashboard-metric-help-tooltip,
   .dashboard-metric-help:focus-visible .dashboard-metric-help-tooltip {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(calc(-50% + var(--nudge, 0px))) translateY(0);
   }
 
   .dashboard-metric-value-row {
