@@ -2,15 +2,15 @@
 title: "63% of repositories hand their agents docs to build from. 8% of those check the code still matches."
 description: "Design doc, then plan, then the agent builds it task by task: spec-driven development is how the companies that make coding agents now tell you to work. We surveyed 335 open-source repositories whose docs describe their architecture. 63% already give their agents docs to work from, and only 8% of those run anything that checks the code against them."
 date: 2026-09-15
-updated: 2026-10-02
+updated: 2026-10-11
 seoTitle: "Spec-driven development and spec drift: 335 repositories surveyed"
 category: "Data & research"
 cover: "survey"
 ---
 
-*First published in September 2025. Rewritten in September 2026 with our own data: a survey of 335 open-source repositories.*
+*First published in July 2026. Rewritten in September 2026 with our own data: a survey of 335 open-source repositories.*
 
-We looked at 335 active open-source repositories whose own documentation describes their architecture. Sixty-three percent of them give their coding agents documents to build from. Of those, 8% run any tool that checks the code against an architecture rule. The rest of this post is where those numbers come from and why I think they matter.
+We looked at 335 active open-source repositories whose own documentation describes their architecture. Sixty-three percent of them give their coding agents documents to build from. Of those, 8% run any tool that checks the code against an architecture rule. The rest of this post is where those numbers come from and why we think they matter.
 
 Start with how a feature gets built at a growing number of companies. Someone writes a design doc: what the feature does, where it lives, what it must not touch. The architecture doc already says how the system fits together. An agent turns the design into an implementation plan, a list of small, checkable tasks, and works through it one task at a time. The next feature starts the same way, from the same documents.
 
@@ -28,7 +28,7 @@ The companies that build coding agents now tell you to work this way:
 <tr><td>OpenAI, Codex</td><td>Execution plans are "thorough design documents, and 'living documents'", an approach that has "enabled Codex to work for more than seven hours from a single prompt."</td></tr>
 <tr><td>Google, Conductor for Gemini CLI</td><td>"Plan before you build." Specs and plans "live alongside your code in persistent Markdown files."</td></tr>
 <tr><td>AWS, Kiro</td><td>Every feature starts as <code>requirements.md</code>, <code>design.md</code> ("technical architecture, sequence diagrams, and implementation considerations") and <code>tasks.md</code>. Amazon's internal memo, per Reuters: "We're making Kiro our recommended AI-native development tool for Amazon."</td></tr>
-<tr><td>Thoughtworks Technology Radar</td><td>Committing instruction files such as AGENTS.md to the repository: <strong>Adopt</strong>. Spec-driven development: "We've seen many developers adopt this style."</td></tr>
+<tr><td>Thoughtworks Technology Radar</td><td>Curated shared instructions for software teams, such as an AGENTS.md committed to the repository: <strong>Adopt</strong>. Spec-driven development, in Assess: "We've seen many developers adopt this style."</td></tr>
 </tbody>
 </table>
 </div>
@@ -46,10 +46,10 @@ The adoption curve is steep:
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">Docs for agents, in eighteen months</p>
 <div class="bp-stats">
-<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">60,000+</div><div class="bp-stat-label">open-source projects had adopted AGENTS.md by December 2025 (Linux Foundation)</div></div>
+<div class="bp-stat bp-stat--brand"><div class="bp-stat-value">60,000+</div><div class="bp-stat-label">open-source projects and agent frameworks had adopted AGENTS.md by December 2025 (Linux Foundation)</div></div>
 <div class="bp-stat bp-stat--brand"><div class="bp-stat-value">137k</div><div class="bp-stat-label">GitHub stars for Spec Kit, in thirteen months</div></div>
 <div class="bp-stat bp-stat--brand"><div class="bp-stat-value">287k</div><div class="bp-stat-label">GitHub stars for Superpowers, a skills and planning kit for coding agents, in eleven months</div></div>
-<div class="bp-stat bp-stat--amber"><div class="bp-stat-value">68%</div><div class="bp-stat-label">of 2,303 agent context files describe the project's architecture</div></div>
+<div class="bp-stat bp-stat--amber"><div class="bp-stat-value">68%</div><div class="bp-stat-label">of agent context files describe the project's architecture, in a hand-coded sample of 332 from a study of 2,303</div></div>
 </div>
 <p class="bp-figure-caption">Sources: <a href="https://www.linuxfoundation.org/press/linux-foundation-announces-the-formation-of-the-agentic-ai-foundation" target="_blank" rel="noopener">Linux Foundation</a>; <a href="https://github.com/github/spec-kit" target="_blank" rel="noopener">github/spec-kit</a> and <a href="https://github.com/obra/superpowers" target="_blank" rel="noopener">obra/superpowers</a>, star counts as of September 15, 2026 (OpenSpec has 68k and the BMAD method 53k); <a href="https://arxiv.org/abs/2511.12884" target="_blank" rel="noopener"><em>Agent READMEs</em>, arXiv 2511.12884</a>.</p>
 </div>
@@ -64,7 +64,7 @@ So the question a spec-anchored team has to answer is who notices when the spec 
 
 ## Every practice got more load-bearing
 
-There's a comforting story that goes with all this: AI writes cleaner code than most humans, so the old disciplines matter less now. I think it has it backwards. Almost no engineering practice exists to help you write code. They exist so you can change code later, safely, without holding the whole system in your head:
+There's a comforting story that goes with all this: AI writes cleaner code than most humans, so the old disciplines matter less now. We think it has it backwards. Almost no engineering practice exists to help you write code. They exist so you can change code later, safely, without holding the whole system in your head:
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">What each practice is for</p>
@@ -84,17 +84,17 @@ What AI changed is the volume of change. If these practices are the machinery fo
 <div class="bp-stats">
 <div class="bp-stat bp-stat--brand"><div class="bp-stat-value">+23%</div><div class="bp-stat-label">pull requests merged on GitHub per month, year over year (Octoverse 2025)</div></div>
 <div class="bp-stat bp-stat--amber"><div class="bp-stat-value">+91%</div><div class="bp-stat-label">PR review time on teams with high AI adoption, alongside 98% more PRs merged (Faros AI, 10,000+ developers)</div></div>
-<div class="bp-stat bp-stat--danger"><div class="bp-stat-value">−35%</div><div class="bp-stat-label">how often new code connects to existing functions, since 2023 (GitClear, 623M changes)</div></div>
-<div class="bp-stat bp-stat--danger"><div class="bp-stat-value">3.8%</div><div class="bp-stat-label">of changed lines are moved, refactored code in 2026, down from 13% in 2023 (GitClear)</div></div>
+<div class="bp-stat bp-stat--danger"><div class="bp-stat-value">−35%</div><div class="bp-stat-label">how often new code connects to existing functions, 2023 to 2026 so far (GitClear, 623M changes)</div></div>
+<div class="bp-stat bp-stat--danger"><div class="bp-stat-value">3.8%</div><div class="bp-stat-label">of changed lines are moved, refactored code in 2026 so far, down from 13% in 2023 (GitClear)</div></div>
 </div>
 <p class="bp-figure-caption">Sources: <a href="https://github.blog/news-insights/octoverse/octoverse-a-new-developer-joins-github-every-second-as-ai-leads-typescript-to-1/" target="_blank" rel="noopener">GitHub Octoverse 2025</a>; <a href="https://www.faros.ai/blog/ai-software-engineering" target="_blank" rel="noopener">Faros AI, <em>The AI Productivity Paradox</em></a> (a vendor study; correlations across teams); <a href="https://www.gitclear.com/the_ai_code_quality_maintainability_gap" target="_blank" rel="noopener">GitClear, June 2026</a>. And <a href="https://services.google.com/fh/files/misc/2025_state_of_ai_assisted_software_development.pdf" target="_blank" rel="noopener">Google's 2025 DORA report</a>: AI adoption "now improves software delivery throughput… However, it still increases delivery instability."</p>
 </div>
 
-GitClear's connectivity number is the one I keep coming back to. In their words: "New code is less and less woven into the existing codebase." Refactoring, the work that keeps a codebase's shape coherent, has fallen to under 4% of changed lines. Line by line the code may be fine. The properties degrading are system-level ones, while everyone's attention stays at the line level.
+GitClear's connectivity number is the one we keep coming back to. In their words: "New code is less and less woven into the existing codebase." Refactoring, the work that keeps a codebase's shape coherent, has fallen to under 4% of changed lines. Line by line the code may be fine. The properties degrading are system-level ones, while everyone's attention stays at the line level.
 
 ## So we measured it ourselves
 
-When I first wrote this post, every number in it was somebody else's. This time we looked at the repositories this matters most for: 335 active open-source projects whose own documentation describes their architecture. For each one we read the last 30 merged pull requests, and the files, build and config on the default branch.
+When we first wrote this post, every number in it was somebody else's. This time we looked at the repositories this matters most for: 335 active open-source projects whose own documentation describes their architecture. For each one we read the last 30 merged pull requests, and the files, build and config on the default branch.
 
 <div class="bp-figure" data-reveal>
 <p class="bp-figure-title">335 repositories that wrote their architecture down</p>
@@ -126,7 +126,7 @@ What's left unguarded:
 <tr><td>Readable code, good names</td><td>Review norms + coding assistants</td><td><span class="bp-yes">✓ Mostly</span></td></tr>
 <tr><td>Small, focused diffs</td><td>Team norms</td><td><span class="bp-yes">✓ If you insist</span></td></tr>
 <tr><td>What your docs say about the code</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Goes stale silently</span></td></tr>
-<tr><td>Dependency direction &amp; boundaries</td><td><em>Nobody</em>, in 93% of the repos above</td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
+<tr><td>Dependency direction &amp; boundaries</td><td><em>Nobody</em>, in 92% of the repos above that give agents docs</td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
 <tr><td>Modules keeping their internals private</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
 <tr><td>No dependency cycles</td><td><em>Nobody</em></td><td><span class="bp-no">✗ Erodes silently</span></td></tr>
 </tbody>
@@ -139,11 +139,11 @@ The practice with no guardian is architecture: what your docs say the system is,
 
 ## When the docs are the program, drift is a bug
 
-A stale doc used to cost a confused new hire an afternoon. Now it costs every agent run that reads it, and agents do what the docs say. ETH Zurich's study of AGENTS.md files found that "instructions in the context files are well followed by coding agents." An engineer who documented a 108,000-line codebase for agents reported what happens when those instructions go stale:
+A stale doc used to cost a confused new hire an afternoon. Now it costs every agent run that reads it, and agents do what the docs say. ETH Zurich's [study of AGENTS.md files](https://arxiv.org/abs/2602.11988) found that "instructions in the context files are well followed by coding agents." The same study found that context files do not generally raise task success rates. Agents still do what they say, so a wrong one sends them the wrong way. An engineer who documented a 108,000-line codebase for agents reported what happens when those instructions go stale:
 
-<div class="bp-callout bp-callout--amber">"Outdated context documents caused agents to generate code that conflicted with recent refactors." And: "Agents trust documentation, and out-of-date specs can mislead sessions and lead to silent failures." <br><em>Source: <a href="https://arxiv.org/abs/2602.20478" target="_blank" rel="noopener">Codified Context</a>, arXiv 2602.20478</em></div>
+<div class="bp-callout bp-callout--amber">"On at least two occasions, outdated context documents caused agents to generate code that conflicted with recent refactors." And: "Agents trust documentation, and out-of-date specs can mislead sessions and lead to silent failures." <br><em>Source: <a href="https://arxiv.org/abs/2602.20478" target="_blank" rel="noopener">Codified Context</a>, arXiv 2602.20478</em></div>
 
-Böckeler saw it in her own tests: given notes describing classes that already existed, the agent "took them as a new specification and generated them all over again, creating duplicates." Keeping the instructions current measurably matters: in a study of AI IDE rule files, compliance rose "from 49.14% to 72.13%" after the rules were updated ([arXiv 2606.12231](https://arxiv.org/abs/2606.12231)). Meanwhile, in a sample of 100 context files, 24% had been generated once and never reviewed again ([arXiv 2606.15828](https://arxiv.org/abs/2606.15828)).
+Böckeler saw it in her own tests: given notes describing classes that already existed, the agent "took them as a new specification and generated them all over again, creating duplicates." Keeping the instructions current measurably matters: in a study of AI IDE rule files, compliance rose "from 49.14% to 72.13%" after the rules were updated ([arXiv 2606.12231](https://arxiv.org/abs/2606.12231)). Meanwhile, in a sample of 100 context files, 24% had never been changed since they were first committed ([arXiv 2606.15828](https://arxiv.org/abs/2606.15828)).
 
 And the docs are drifting faster than anyone is watching them:
 
