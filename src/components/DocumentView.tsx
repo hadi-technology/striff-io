@@ -1,8 +1,5 @@
 import { Component, Fragment, memo, useEffect, useMemo, useState, type ReactNode } from "react";
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkGfm from "remark-gfm";
-import remarkMdx from "remark-mdx";
+import { parseDoc } from "../lib/docParse.js";
 import { Clamped, when, withCode } from "./docRules";
 import { STANDING_HELP, STANDING_LABEL, standing, type Row } from "./RulesTable";
 import { formatDay } from "../lib/renderClock.js";
@@ -84,12 +81,6 @@ interface Ctx extends Shared {
   ranges: any[];
   selected: Set<string> | null;
   inLink: boolean;
-}
-
-function parse(text: string, format: string): any {
-  const processor = unified().use(remarkParse).use(remarkGfm);
-  if (format === "mdx") processor.use(remarkMdx);
-  return processor.parse(text);
 }
 
 /** Catches a throw while the formatted view draws and hands over to the source view. */
@@ -423,7 +414,7 @@ export default function DocumentView({
   const parsed = useMemo(() => {
     if (mode !== "formatted") return { tree: null as any, failed: false };
     try {
-      return { tree: parse(data.text, data.format), failed: false };
+      return { tree: parseDoc(data.text, data.format as "markdown" | "mdx"), failed: false };
     } catch {
       return { tree: null, failed: true };
     }
