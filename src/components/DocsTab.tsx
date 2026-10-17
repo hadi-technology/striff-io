@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { createElement, lazy, Suspense, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
@@ -715,7 +716,15 @@ function LiveBadge({ src }: { src: string }) {
   );
 }
 
-const GitHubMark = () =>
+/** A 16px stroke icon for the tabs above one doc's rules and text, drawn like the dashboard's nav icons. */
+const PaneTabIcon = ({ paths }: { paths: string[] }) =>
+  createElement(
+    "svg",
+    { viewBox: "0 0 16 16", width: 16, height: 16, fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
+    ...paths.map((d, i) => createElement("path", { key: i, d }))
+  );
+
+export const GitHubMark = () =>
   createElement(
     "svg",
     { viewBox: "0 0 16 16", width: 13, height: 13, fill: "currentColor", "aria-hidden": true },
@@ -749,11 +758,14 @@ export default function DocsTab({
   sample,
   source,
   initial,
+  inShell,
+  actionsSlot,
+  badge,
 }: {
   installationId: number;
   /** The repositories to pick from; the dashboard's carry whether each is private, and its branch. */
   repos: { full_name: string; private?: boolean; default_branch?: string; has_issues?: boolean }[];
-  /** The repository to show. The shell's sidebar picks it; this view only reads it. */
+  /** The repository to show. The shell's repository header picks it; this view only reads it. */
   openRepo?: string | null;
   /**
    * Fixed answers to show instead of asking the API, for the public demo: the catalogue, every
@@ -783,6 +795,17 @@ export default function DocsTab({
     rules: any;
     staleNames: any;
   };
+  /**
+   * Shown under the dashboard's tab row, which names the repository and the view and holds the
+   * refresh. The head then leaves those out and keeps the lede, branch line and counts.
+   */
+  inShell?: boolean;
+  /**
+   * Where the shell wants this view's refresh and the repository's README badge: its tab row. With
+   * `inShell` they are drawn there, the badge right after the refresh, and not in the head.
+   */
+  actionsSlot?: HTMLElement | null;
+  badge?: ReactNode;
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [catalog, setCatalog] = useState<Catalog | null>(normalizeCatalog(initial?.catalog) ?? null);
@@ -2306,42 +2329,46 @@ export default function DocsTab({
           </div>
         </div>
       )}
-      {/* The title row spans the page: the description, counts and install button share the
-          row below it, so a long repository name keeps its chips and badge on one line. */}
-      <div className="docs-head-top">
-        <p className="dashboard-kicker">Docs &amp; rules</p>
-        <div className="docs-title">
-          <span className="docs-title-name">{repo}</span>
-          <a
-            className="docs-repo-link"
-            href={githubUrl("", true)}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Open this repository on GitHub"
-          >
-            <GitHubMark />
-            GitHub
-          </a>
-          {source?.badgeUrl && (
-            <span className="docs-refreshed-group">
-              <LiveBadge src={source.badgeUrl} />
-            </span>
-          )}
-          {/* A public page is a snapshot: loading it again finds the same thing. */}
-          {!source && (
-            <button
-              type="button"
-              className={`docs-refresh${loading || rulesLoading ? " is-loading" : ""}`}
-              onClick={() => reload()}
-              disabled={loading || rulesLoading}
-              title="Load this repository's documents and rules again"
+      {!inShell && (
+        <>
+        {/* The title row spans the page: the description, counts and install button share the
+            row below it, so a long repository name keeps its chips and badge on one line. */}
+        <div className="docs-head-top">
+          <p className="dashboard-kicker">Docs &amp; rules</p>
+          <div className="docs-title">
+            <span className="docs-title-name">{repo}</span>
+            <a
+              className="docs-repo-link"
+              href={githubUrl("", true)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open this repository on GitHub"
             >
-              <RefreshMark />
-              Refresh
-            </button>
-          )}
+              <GitHubMark />
+              GitHub
+            </a>
+            {source?.badgeUrl && (
+              <span className="docs-refreshed-group">
+                <LiveBadge src={source.badgeUrl} />
+              </span>
+            )}
+            {/* A public page is a snapshot: loading it again finds the same thing. */}
+            {!source && (
+              <button
+                type="button"
+                className={`docs-refresh${loading || rulesLoading ? " is-loading" : ""}`}
+                onClick={() => reload()}
+                disabled={loading || rulesLoading}
+                title="Load this repository's documents and rules again"
+              >
+                <RefreshMark />
+                Refresh
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+        </>
+      )}
       <div className="docs-head">
         <div className="docs-head-copy">
           {/* The second sentence used to be there whatever the repository looked like, so a
@@ -2358,6 +2385,22 @@ export default function DocsTab({
             </p>
           )}
           {catalog && <RevisionLine catalog={catalog} />}
+          {inShell && actionsSlot && createPortal(
+            <>
+              <button
+                type="button"
+                className={`docs-refresh${loading || rulesLoading ? " is-loading" : ""}`}
+                onClick={() => reload()}
+                disabled={loading || rulesLoading}
+                title="Load this repository's documents and rules again"
+              >
+                <RefreshMark />
+                Refresh
+              </button>
+              {badge}
+            </>,
+            actionsSlot
+          )}
         </div>
         {source?.action ? (
           <div className="docs-head-side">
@@ -2774,10 +2817,12 @@ export default function DocsTab({
                   <div className="dv-tabs" role="tablist" aria-label="This doc">
                     <button type="button" role="tab" id="doc-tab-rules" aria-selected={paneTab === "rules"}
                       className={paneTab === "rules" ? "is-on" : ""} onClick={() => setPaneTab("rules")}>
+                      <PaneTabIcon paths={["m2.5 4 1.25 1.25L6 3", "m2.5 10 1.25 1.25L6 9", "M8.5 4.25h5", "M8.5 10.25h5"]} />
                       Rules <span>{scopeRows.length}</span>
                     </button>
                     <button type="button" role="tab" id="doc-tab-document" aria-selected={paneTab === "document"}
                       className={paneTab === "document" ? "is-on" : ""} onClick={() => setPaneTab("document")}>
+                      <PaneTabIcon paths={["M3.5 1.75h6l3 3v9.5h-9Z", "M9.5 1.75v3h3", "M5.75 8h4.5", "M5.75 10.5h4.5"]} />
                       Document
                     </button>
                   </div>

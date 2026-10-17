@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { RefreshMark } from "./DocsTab";
 
@@ -84,9 +86,17 @@ export default function ChecksTab({
   repo,
   sample,
   source,
+  inShell,
+  actionsSlot,
+  badge,
 }: {
   installationId: number;
   repo: string;
+  /** Shown under the dashboard's tab row, which names the repository and the view. */
+  inShell?: boolean;
+  /** With `inShell`, the refresh and the README badge are drawn here, in the shell's tab row. */
+  actionsSlot?: HTMLElement | null;
+  badge?: ReactNode;
   /** Fixed pages to show instead of asking the API, for the demo. */
   sample?: (page: number) => ChecksPage;
   /** The URL of one page of checks on a public repository's page, in place of the dashboard's. */
@@ -142,23 +152,46 @@ export default function ChecksTab({
     <div className="checks-tab">
       <div className="checks-head">
         <div>
-          <p className="dashboard-kicker">Checks</p>
-          <h2 className="checks-title">{repo}</h2>
+          {!inShell && (
+            <>
+              <p className="dashboard-kicker">Checks</p>
+              <h2 className="checks-title">{repo}</h2>
+            </>
+          )}
           <p className="checks-lede">
             The checks Striff ran on this repository's pull requests, newest first. The last 50
             are listed.
           </p>
         </div>
-        <button
-          type="button"
-          className={`docs-refresh${loading ? " is-loading" : ""}`}
-          onClick={() => setAsked((n) => n + 1)}
-          disabled={loading}
-          title="Load the checks again"
-        >
-          <RefreshMark />
-          Refresh
-        </button>
+        {inShell ? (
+          actionsSlot && createPortal(
+            <>
+              <button
+                type="button"
+                className={`docs-refresh${loading ? " is-loading" : ""}`}
+                onClick={() => setAsked((n) => n + 1)}
+                disabled={loading}
+                title="Load the checks again"
+              >
+                <RefreshMark />
+                Refresh
+              </button>
+              {badge}
+            </>,
+            actionsSlot
+          )
+        ) : (
+          <button
+            type="button"
+            className={`docs-refresh${loading ? " is-loading" : ""}`}
+            onClick={() => setAsked((n) => n + 1)}
+            disabled={loading}
+            title="Load the checks again"
+          >
+            <RefreshMark />
+            Refresh
+          </button>
+        )}
       </div>
 
       {error && <p className="dashboard-inline-error">{error}</p>}
