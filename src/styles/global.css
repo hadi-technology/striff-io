@@ -7721,6 +7721,8 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
 .dv-divider::before, .dv-divider::after { content: ""; flex: 1; border-top: 1px dashed #cbd5e1; }
 
 .dv-source { font-size: 0.9rem; line-height: 1.7; }
+/* A run of lines off screen is not laid out until it nears the view; a long doc opens much faster. */
+.dv-chunk { content-visibility: auto; contain-intrinsic-size: auto 4800px; }
 .dv-line { display: flex; gap: 0.8rem; }
 .dv-line.is-heading { font-weight: 700; }
 .dv-line.is-code { font-family: "IBM Plex Mono", monospace; font-size: 0.8rem; background: #f8fafc; }

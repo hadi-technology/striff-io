@@ -1,4 +1,4 @@
-import { Component, Fragment, memo, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Component, Fragment, memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { parseDoc } from "../lib/docParse.js";
 import { Clamped, when, withCode } from "./docRules";
 import { STANDING_HELP, STANDING_LABEL, standing, type Row } from "./RulesTable";
@@ -441,8 +441,9 @@ export default function DocumentView({
     return () => document.removeEventListener("keydown", onKey);
   }, [selected]);
 
-  const pick = (block: number, ids: string[]) =>
-    setSelected((now) => (now && now.block === block && sameIds(now.ids, ids) ? null : { block, ids }));
+  // Stable, so a block or a run of source lines that holds no open card is not drawn again on a click.
+  const pick = useCallback((block: number, ids: string[]) =>
+    setSelected((now) => (now && now.block === block && sameIds(now.ids, ids) ? null : { block, ids })), []);
 
   const byId = useMemo(() => new Map(rules.map((rule) => [rule.factId, rule])), [rules]);
   const staleById = useMemo(
@@ -688,6 +689,9 @@ function RuleItem({ rule, owner, name, docPath, commit, onInclude, error, setErr
 }
 
 /** The doc as text: wrapped lines, each numbered with a link to GitHub, headings bold, code monospace. */
+/** How many source lines are drawn, and redrawn, together. */
+const CHUNK_LINES = 200;
+
 function SourceView({ data, ranges, cut, selected, pick, card, divider, owner, name, docPath }: {
   data: DocText; ranges: any[]; cut: number | null; selected: { block: number; ids: string[] } | null;
   pick: (block: number, ids: string[]) => void; card: ReactNode; divider: ReactNode; owner: string; name: string; docPath: string;
@@ -695,36 +699,79 @@ function SourceView({ data, ranges, cut, selected, pick, card, divider, owner, n
   const lines = useMemo(() => sourceLines(data.text, data.format), [data.text, data.format]);
   const norm = useMemo(() => normalizeRanges(data.text, ranges), [data.text, ranges]);
   const dividerAt = cut == null ? -1 : lines.findIndex((l) => l.from >= cut);
+  const chunks: ReactNode[] = [];
+  for (let start = 0; start < lines.length; start += CHUNK_LINES) {
+    const end = Math.min(lines.length, start + CHUNK_LINES);
+    const open = selected && selected.block >= start && selected.block < end ? selected : null;
+    chunks.push(
+      <SourceChunk
+        key={start}
+        lines={lines}
+        start={start}
+        end={end}
+        text={data.text}
+        commit={data.commit}
+        norm={norm}
+        cut={cut}
+        selected={open}
+        pick={pick}
+        card={open ? card : null}
+        dividerAt={dividerAt >= start && dividerAt < end ? dividerAt : -1}
+        divider={dividerAt >= start && dividerAt < end ? divider : null}
+        owner={owner}
+        name={name}
+        docPath={docPath}
+      />
+    );
+  }
   return (
     <div className="dv-source">
-      {lines.map((line, i) => {
-        const own = cut != null && line.from < cut && line.to > cut ? [...norm, { from: cut, to: line.to, kind: "tail" }] : norm;
-        const inTail = cut != null && line.from >= cut;
-        const here = selected && selected.block === i ? new Set(selected.ids) : null;
-        const ctx: Ctx = {
-          text: data.text, owner, name, docPath, commit: data.commit, definitions: new Map(),
-          pick, block: i, ranges: inTail ? [] : own, selected: here, inLink: false,
-        };
-        let content: ReactNode = line.from === line.to ? " " : data.text.slice(line.from, line.to);
-        let blockKind = "";
-        if (!inTail && line.to > line.from && own.some((r: any) => r.from < line.to && r.to > line.from)) {
-          const parts = segments(line.from, line.to, own).map((seg: any) => ({ text: data.text.slice(seg.from, seg.to), hits: seg.hits }));
-          content = pieces(parts, ctx);
-          const block = own.filter((r: any) => r.block && r.from <= line.from && r.to >= line.to).sort(byStrength)[0];
-          if (block) blockKind = ` dv-block is-${block.kind}`;
-        }
-        return (
-          <Fragment key={i}>
-            {i === dividerAt && divider}
-            <div className={`dv-line is-${line.kind}${inTail ? " dv-unread" : ""}${blockKind}`}>
-              <a className="dv-ln" href={blobUrl(owner, name, data.commit, docPath, line.n)} target="_blank" rel="noopener noreferrer" aria-label={`Line ${line.n} on GitHub`}>{line.n}</a>
-              <span className="dv-lt">{content}</span>
-            </div>
-            {selected && selected.block === i && card}
-          </Fragment>
-        );
-      })}
+      {chunks}
       {cut != null && dividerAt < 0 && divider}
     </div>
   );
 }
+
+/**
+ * A run of source lines, redrawn only when a card opens or closes in it: a long doc has thousands of
+ * lines, and drawing them all again on every click made a card slow to open.
+ */
+const SourceChunk = memo(function SourceChunk({
+  lines, start, end, text, commit, norm, cut, selected, pick, card, dividerAt, divider, owner, name, docPath,
+}: {
+  lines: { n: number; from: number; to: number; kind: string }[]; start: number; end: number; text: string;
+  commit: string; norm: any[]; cut: number | null; selected: { block: number; ids: string[] } | null;
+  pick: (block: number, ids: string[]) => void; card: ReactNode; dividerAt: number; divider: ReactNode;
+  owner: string; name: string; docPath: string;
+}) {
+  const rows: ReactNode[] = [];
+  for (let i = start; i < end; i++) {
+    const line = lines[i];
+    const own = cut != null && line.from < cut && line.to > cut ? [...norm, { from: cut, to: line.to, kind: "tail" }] : norm;
+    const inTail = cut != null && line.from >= cut;
+    const here = selected && selected.block === i ? new Set(selected.ids) : null;
+    const ctx: Ctx = {
+      text, owner, name, docPath, commit, definitions: new Map(),
+      pick, block: i, ranges: inTail ? [] : own, selected: here, inLink: false,
+    };
+    let content: ReactNode = line.from === line.to ? " " : text.slice(line.from, line.to);
+    let blockKind = "";
+    if (!inTail && line.to > line.from && own.some((r: any) => r.from < line.to && r.to > line.from)) {
+      const parts = segments(line.from, line.to, own).map((seg: any) => ({ text: text.slice(seg.from, seg.to), hits: seg.hits }));
+      content = pieces(parts, ctx);
+      const block = own.filter((r: any) => r.block && r.from <= line.from && r.to >= line.to).sort(byStrength)[0];
+      if (block) blockKind = ` dv-block is-${block.kind}`;
+    }
+    rows.push(
+      <Fragment key={i}>
+        {i === dividerAt && divider}
+        <div className={`dv-line is-${line.kind}${inTail ? " dv-unread" : ""}${blockKind}`}>
+          <a className="dv-ln" href={blobUrl(owner, name, commit, docPath, line.n)} target="_blank" rel="noopener noreferrer" aria-label={`Line ${line.n} on GitHub`}>{line.n}</a>
+          <span className="dv-lt">{content}</span>
+        </div>
+        {selected && selected.block === i && card}
+      </Fragment>
+    );
+  }
+  return <div className="dv-chunk">{rows}</div>;
+});
