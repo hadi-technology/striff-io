@@ -20,6 +20,70 @@ import { applyRuleStates } from "../lib/ruleStates.js";
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * The text of the sample ARCHITECTURE.md, as the text endpoint sends it. The rules below cite its
+ * lines, so a line added here moves them; the demo test checks that each cited line says what its
+ * rule quotes. The fence below is built apart so this comment's own text stays one piece.
+ */
+const FENCE = "```";
+export const ARCH_TEXT = [
+  "# Architecture",
+  "",
+  "Checkout service is a modular monolith in four layers: `api`, `service`, `domain` and `storage`. This page is the source of truth for how they may depend on each other.",
+  "",
+  "## Layers",
+  "",
+  "Controllers in `api` call services only and never touch `storage` directly.",
+  "**`domain` depends on no other layer**, and stays free of framework annotations.",
+  "",
+  "Every repository implements `Repository<T>` and lives in `storage`. The old `legacy` module is on its way out. Nothing outside `legacy` imports from it.",
+  "",
+  "## Events",
+  "",
+  "Services publish domain events through `EventBus`; handlers in `events` never call controllers. Events are delivered at least once, so every handler must be idempotent.",
+  "",
+  "## Payments",
+  "",
+  "Only the billing module talks to the Stripe SDK; everything else goes through PaymentGateway. Each payment provider implements `PaymentGateway` and lives in `payments/providers`.",
+  "",
+  "Refunds go through `RefundService`, which depends on `PaymentGateway` and never on a provider. Provider calls time out after 5 seconds and are retried twice.",
+  "",
+  "| Layer | May depend on | Must not depend on |",
+  "|---|---|---|",
+  "| `api` | `service`, `domain` | `storage` |",
+  "| `shared` | nothing | `orders`, `billing`, `payments` |",
+  "",
+  "## Background jobs",
+  "",
+  "Scheduled jobs are registered with `CronScheduler` at startup. Jobs must be safe to run twice.",
+  "",
+  "`CartSessionStore` keeps an open cart for thirty minutes after the last change.",
+  "",
+  "Every charge is written as a `billing.LedgerEntry` before the provider is called.",
+  "",
+  "## Flow",
+  "",
+  `${FENCE}mermaid`,
+  "flowchart LR",
+  "  api --> service",
+  "  service --> domain",
+  "  service --> storage",
+  FENCE,
+  "",
+  "## Running locally",
+  "",
+  "Run `make migrate` before starting the service, and use the `dev` profile. Everything below this line is past what Striff has read of this doc.",
+  "",
+  "## Glossary",
+  "",
+  "A **provider** is a payment integration behind `PaymentGateway`; a **ledger entry** is one line of money moved.",
+  "",
+].join("\n");
+
+/** Striff read this doc up to its last section; the rest is shown below a divider. */
+const ARCH_READ = ARCH_TEXT.indexOf("## Running locally");
+
+
 /** Fixed at module load so every view in one session agrees about "3 minutes ago". */
 const NOW = Date.now();
 
@@ -56,7 +120,7 @@ function doc(path: string, state: string, extra: Record<string, unknown> = {}) {
 
 const documents = [
   doc("AGENTS.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 4, brokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 2 * DAY }),
-  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 4, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: 99908, totalChars: 112480 }),
+  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 12, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: ARCH_READ, totalChars: ARCH_TEXT.length }),
   doc("CONTRIBUTING.md", "NOT_READ"),
   doc("README.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: describes setup and usage, not how the code is built" }),
   doc("docs/adr/0007-payments.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 2, alreadyBrokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 12 * DAY }),
@@ -80,13 +144,13 @@ const summary = {
   screenedOut: count("SCREENED_OUT"),
   retired: count("RETIRED"),
   unreadable: count("UNREADABLE"),
-  rules: 11,
+  rules: 19,
   brokenRules: 1,
   alreadyBrokenRules: 1,
-  neverChecked: 0,
+  neverChecked: 1,
   excluded: count("EXCLUDED"),
-  holdsOnDefaultBranch: 9,
-  brokenOnDefaultBranch: 2,
+  holdsOnDefaultBranch: 14,
+  brokenOnDefaultBranch: 3,
 };
 
 /**
@@ -160,13 +224,24 @@ const rulesByDoc: Record<string, ReturnType<typeof rule>[]> = {
       "427", 12), "the service is the only thing that knows a database exists"),
   ],
   "ARCHITECTURE.md": [
-    checking(HOLDS(21, "Only `billing` depends on `com.stripe`", "Only the billing module talks to the Stripe SDK; everything else goes through PaymentGateway.", "398", 21),
-      "Only the billing module talks to the Stripe SDK"),
-    checking(HOLDS(38, "Every class in `billing.providers` implements `PaymentGateway`", "**Providers are plug-ins.** Every payment provider implements `PaymentGateway` ([see the ADR](docs/adr/0007-payments.md)), and _nothing_ else does.", "398", 21),
-      "Every payment provider implements `PaymentGateway`"),
-    HOLDS(52, "Nothing in `web` depends on `billing.internal`", "The web layer sees the billing API and nothing behind it.", "398", 21),
-    checking(HOLDS(38, "Nothing outside `billing.providers` implements `PaymentGateway`", "**Providers are plug-ins.** Every payment provider implements `PaymentGateway` ([see the ADR](docs/adr/0007-payments.md)), and _nothing_ else does.", "398", 21),
-      "_nothing_ else does"),
+    HOLDS(7, "Nothing in `api` depends on `storage`", "Controllers in `api` call services only and never touch `storage` directly.", "398", 21),
+    HOLDS(8, "`domain` depends on nothing in `api`, `service` or `storage`", "`domain` depends on no other layer, and stays free of framework annotations.", "398", 21),
+    // Excluded on its own by the team (see demoRules): drawn dashed, with its reason.
+    HOLDS(10, "Nothing outside `legacy` depends on `legacy`", "Nothing outside `legacy` imports from it.", "398", 21),
+    HOLDS(10, "Every class named `*Repository` implements `Repository`", "Every repository implements `Repository<T>` and lives in `storage`.", "398", 21),
+    // Broken on main: drawn red, and tracked in an open issue.
+    tracked(rule(10, "Every class named `*Repository` is in `storage`", "Every repository implements `Repository<T>` and lives in `storage`.",
+      "VIOLATED", "BROKEN", "427", 12), issueAt(434, "open")),
+    HOLDS(14, "Nothing in `events` depends on `api`", "Handlers in `events` never call controllers.", "398", 21),
+    HOLDS(18, "Only `billing` depends on `com.stripe`", "Only the billing module talks to the Stripe SDK; everything else goes through PaymentGateway.", "398", 21),
+    HOLDS(18, "Every class in `billing.providers` implements `PaymentGateway`", "Each payment provider implements `PaymentGateway` and lives in `payments/providers`.", "398", 21),
+    // Never judged on main: drawn as a blue outline.
+    rule(20, "`RefundService` depends on `PaymentGateway`, not on a provider", "Refunds go through `RefundService`, which depends on `PaymentGateway` and never on a provider.", null, null, null, null),
+    // From a table row and from a diagram line: the whole row, the whole line.
+    HOLDS(25, "Nothing in `shared` depends on `orders`, `billing` or `payments`", "`shared` may depend on nothing; it must not depend on `orders`, `billing` or `payments`.", "398", 21),
+    HOLDS(39, "`api` depends on `service`", "`api` depends on `service`", "398", 21),
+    // The sentence it was read from has since been reworded, so it cannot be placed in the text.
+    HOLDS(29, "Only `config` depends on `AppSettings`", "Configuration is read only in `config`, through `AppSettings`.", "398", 21),
   ],
   "docs/adr/0007-payments.md": [
     HOLDS(14, "Nothing in `billing` depends on `checkout`", "Billing knows nothing about checkout. The dependency runs one way."),
@@ -225,7 +300,7 @@ export const demoStaleNames: any = {
       state: "ABSENT",
       issue: issueAt(433, "open"),
       sentence: "`CartSessionStore` keeps an open cart for thirty minutes after the last change.",
-      sourceLine: 64,
+      sourceLine: 31,
       namespace: "checkout.cart",
       historicalPath: "src/main/java/com/acme/checkout/cart/CartSessionStore.java",
       siblings: [],
@@ -245,7 +320,7 @@ export const demoStaleNames: any = {
       state: "MOVED",
       issue: issueAt(401, "closed", "completed"),
       sentence: "Every charge is written as a `billing.LedgerEntry` before the provider is called.",
-      sourceLine: 71,
+      sourceLine: 33,
       namespace: "billing",
       historicalPath: null,
       siblings: [],
@@ -315,6 +390,86 @@ export function demoDoc(path: string): any {
     document: document_,
     rules: own,
     history: document_.state === "NOT_READ" ? [] : history,
+  };
+}
+
+/** The words each ARCHITECTURE.md rule checks, found in the sample text: rule index, then words. */
+const ARCH_WORDS: [number, string][] = [
+  [0, "Controllers in `api` call services only and never touch `storage` directly"],
+  [1, "`domain` depends on no other layer"],
+  [2, "Nothing outside `legacy` imports from it."],
+  [3, "Every repository implements `Repository<T>`"],
+  [4, "and lives in `storage`."],
+  [5, "handlers in `events` never call controllers."],
+  [6, "Only the billing module talks to the Stripe SDK"],
+  [7, "Each payment provider implements `PaymentGateway`"],
+  [8, "Refunds go through `RefundService`, which depends on `PaymentGateway` and never on a provider."],
+];
+
+/** Where `words` stand in `text`, or null: UTF-16 offsets, as the text endpoint sends them. */
+function spanOf(text: string, words: string) {
+  const from = text.indexOf(words);
+  return from < 0 ? null : { from, to: from + words.length };
+}
+
+/**
+ * Where each rule of a document is in its text, in the shape the text endpoint sends: positions
+ * only, joined to the rules by factId. A rule whose sentence is not in the text is unplaced.
+ */
+function placementsFor(path: string, text: string) {
+  const rules = (rulesByDoc[path] || []).map((r, i) => ({ ...r, factId: `${path}|${i}` }));
+  const placements: any[] = [];
+  const unplaced: string[] = [];
+  const lines = text.split("\n");
+  rules.forEach((r, i) => {
+    let span = null;
+    let block: { line: number; kind: string } | null = null;
+    if (path === "ARCHITECTURE.md") {
+      const words = ARCH_WORDS.find(([index]) => index === i);
+      if (words) span = spanOf(text, words[1]);
+      else if (lines[r.sourceLine - 1]?.startsWith("| `shared`")) block = { line: r.sourceLine, kind: "row" };
+      else if (lines[r.sourceLine - 1]?.includes("-->")) block = { line: r.sourceLine, kind: "diagram" };
+    } else {
+      const at = text.indexOf(r.quote);
+      if (at >= 0) {
+        const c = r as { checkedFrom?: number; checkedTo?: number };
+        span = { from: at + (c.checkedFrom ?? 0), to: at + (c.checkedTo ?? r.quote.length) };
+      }
+    }
+    if (span) placements.push({ factId: r.factId, spans: [span], block: null });
+    else if (block) placements.push({ factId: r.factId, spans: [], block });
+    else unplaced.push(r.factId);
+  });
+  return { placements, unplaced };
+}
+
+/** A short sample document for a path that is not ARCHITECTURE.md: its rules' sentences, under a title. */
+function plainText(path: string): string {
+  const title = path.split("/").pop()!.replace(/\.md$/, "").replace(/[-_]/g, " ");
+  const rules = rulesByDoc[path] || [];
+  const body = rules.map((r) => r.quote).join("\n\n");
+  return `# ${title}\n\n${body}\n\nThe rest of this document is prose Striff does not turn into rules.\n`;
+}
+
+/**
+ * One document's text and where its rules are in it, as `doc/text` sends them, so the Document tab
+ * runs on the example with no API behind it.
+ */
+export function demoDocText(path: string): any {
+  const document_ = documents.find((d) => d.path === path);
+  if (!document_ || !(rulesByDoc[path] || []).length) return null;
+  const text = path === "ARCHITECTURE.md" ? ARCH_TEXT : plainText(path);
+  return {
+    path,
+    contentHash: document_.extractedContentHash,
+    format: "markdown",
+    state: "OK",
+    reason: null,
+    commit: DEMO_SHA,
+    mainChanged: false,
+    text,
+    readChars: path === "ARCHITECTURE.md" ? ARCH_READ : null,
+    ...placementsFor(path, text),
   };
 }
 

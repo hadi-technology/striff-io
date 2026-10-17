@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import DocsTab from "./DocsTab";
 import ChecksTab from "./ChecksTab";
 import MetricsTab from "./MetricsTab";
-import { demoCatalog, demoChecks, demoDoc, demoRules, DEMO_REPO, demoStaleNames } from "../data/demoDashboard";
+import { demoCatalog, demoChecks, demoDoc, demoDocText, demoRules, DEMO_REPO, demoStaleNames } from "../data/demoDashboard";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 
 /**
@@ -90,7 +90,7 @@ export default function Demo() {
             installationId={0}
             repos={repos}
             openRepo={DEMO_REPO}
-            sample={{ catalog: demoCatalog, rules: demoRules, doc: demoDoc, staleNames: demoStaleNames }}
+            sample={{ catalog: demoCatalog, rules: demoRules, doc: demoDoc, docText: demoDocText, staleNames: demoStaleNames }}
           />
         )}
         {view === "checks" && (

@@ -285,7 +285,9 @@ export default function PublicRepo({ initial }: { initial?: BuiltReport }) {
         </a>
       </>
     ),
-    url: (docsView, path) => path != null
+    url: (docsView, path, version) => docsView === "doc-text"
+      ? proxy(page.repoOwner, page.repoName, "doc-text", { path: path ?? "", ...(version ? { version } : {}) })
+      : path != null
       ? proxy(page.repoOwner, page.repoName, "doc", { path })
       : proxy(page.repoOwner, page.repoName, docsView === "" ? "catalog" : docsView),
   };

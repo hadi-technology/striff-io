@@ -21,6 +21,7 @@ const VIEWS = {
   "type-findings": "/doc-catalog/type-findings",
   "finding-issues": "/doc-catalog/finding-issues",
   doc: "/doc-catalog/doc",
+  "doc-text": "/doc-catalog/doc/text",
 };
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -44,7 +45,7 @@ export function apiPathFor(params) {
     if (!/^\d{1,3}$/.test(page)) return null;
     query.set("page", page);
   }
-  if (view === "doc") {
+  if (view === "doc" || view === "doc-text") {
     if (!params.path || params.path.length > 1000) return null;
     query.set("path", params.path);
     if (params.version) {

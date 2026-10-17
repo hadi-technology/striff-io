@@ -1,4 +1,4 @@
-import { createElement, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { createElement, lazy, Suspense, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
 import { issueIndex, withRuleIssues, withStaleNameIssue, type FindingIssue, type IssueIndex } from "./findingIssue.ts";
@@ -27,7 +27,18 @@ import RulesTable, {
   type RuleFilter,
 } from "./RulesTable";
 import Listing from "./Listing";
+import { blobUrl } from "../lib/docMarkup.js";
+import { failureMessage, textKey } from "../lib/docView.js";
 import ReadRepository, { askedReading, isRunning, type Reading } from "./ReadRepository";
+
+/** Drawn only when a doc's Document tab is first opened, so the Docs page carries no Markdown parser. */
+const DocumentView = lazy(() => import("./DocumentView"));
+
+/** What the Document tab holds for one version of one doc. */
+type TextEntry =
+  | { status: "loading" }
+  | { status: "failed"; reason: string }
+  | { status: "ready"; data: any };
 
 /**
  * One repository's documents, and the rules read from whichever of them is selected.
@@ -718,8 +729,11 @@ const GitHubMark = () =>
  * public repository's page, which anyone may read and nobody may change from here.
  */
 export interface DocsSource {
-  /** The URL of one read: the catalogue (""), every rule, the names gone, or one document. */
-  url(view: "" | "rules" | "type-findings" | "finding-issues", path?: string): string;
+  /**
+   * The URL of one read: the catalogue (""), every rule, the names gone, one document, or the text
+   * of one document at a version.
+   */
+  url(view: "" | "rules" | "type-findings" | "finding-issues" | "doc-text", path?: string, version?: string): string;
   /** What the view says under the repository's name, in place of how to use the tree. */
   lede?: ReactNode;
   /** The repository's README badge, shown beside its name; same-origin, so its title can be read. */
@@ -751,6 +765,8 @@ export default function DocsTab({
     rules: any;
     doc: (path: string) => any;
     staleNames?: any;
+    /** One document's text and where its rules are in it, as the text endpoint sends them. */
+    docText?: (path: string) => any;
   };
   /**
    * Read a public page instead of the signed-in dashboard. Nothing can be changed, and nothing
@@ -803,6 +819,10 @@ export default function DocsTab({
   );
   /** What is selected: the empty path is the repository itself, which is where this opens. */
   const [selected, setSelected] = useState<string>("");
+  /** Which of a doc's two views is open; a doc always opens on its rules. */
+  const [paneTab, setPaneTab] = useState<"rules" | "document">("rules");
+  /** The text of each doc version the Document tab has been opened on, asked for once each. */
+  const [docTexts, setDocTexts] = useState<Record<string, TextEntry>>({});
   /**
    * The filter someone picked, null until they pick one. Unpicked, the tree shows the documents
    * with results, or all of them where none has any, so it is never empty on load.
@@ -925,6 +945,8 @@ export default function DocsTab({
     }
     // A new repository is read from its root, as a fresh one is.
     setSelected("");
+    setPaneTab("rules");
+    setDocTexts({});
     setDetail(null);
     setFilter(null);
     putRules(null);
@@ -1089,9 +1111,9 @@ export default function DocsTab({
   }
 
   /** The URL of one read, from the public page where this view reads one. */
-  function readUrl(view: "" | "rules" | "type-findings" | "finding-issues", path?: string): string {
-    if (source) return source.url(view, path);
-    return `/.netlify/functions/doc-catalog-proxy?${view ? `view=${view}&` : ""}installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}${path != null ? `&path=${encodeURIComponent(path)}` : ""}`;
+  function readUrl(view: "" | "rules" | "type-findings" | "finding-issues" | "doc-text", path?: string, version?: string): string {
+    if (source) return source.url(view, path, version);
+    return `/.netlify/functions/doc-catalog-proxy?${view ? `view=${view}&` : ""}installation_id=${installationId}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(name)}${path != null ? `&path=${encodeURIComponent(path)}` : ""}${version ? `&version=${encodeURIComponent(version)}` : ""}`;
   }
 
   /**
@@ -1220,6 +1242,7 @@ export default function DocsTab({
 
   async function openDoc(path: string) {
     setSelected(path);
+    setPaneTab("rules");
     setDetail(null);
     setActionError("");
     if (sample) {
@@ -1250,6 +1273,7 @@ export default function DocsTab({
       return;
     }
     setSelected(path);
+    setPaneTab("rules");
     setDetail(null);
     setActionError("");
     // A document that was asked for and has not answered must not paint over a folder.
@@ -1622,6 +1646,50 @@ export default function DocsTab({
   }, [scopeKind, selected, detail, rulesIndex, catalog]);
   // The rows as shown: with the issues each is tracked in, once that answer has come.
   const shownRows = useMemo(() => withRuleIssues(scopeRows, findingIssues), [scopeRows, findingIssues]);
+
+  /* ─── The Document tab ──────────────────────────────────────────── */
+
+  /** Whether the selected doc has a Document tab: one doc, with at least one rule to mark in it. */
+  const hasDocumentTab = scopeKind === "doc" && !!detail && scopeRows.length > 0;
+  /** The version the doc's rules were read from, as the doc's own answer names it; else the doc's. */
+  const shownVersion: string | undefined = (() => {
+    const showing = (detail as any)?.showing;
+    if (typeof showing === "string") return showing;
+    return typeof showing?.contentHash === "string" ? showing.contentHash : undefined;
+  })();
+  const textId = textKey(selected, shownVersion ?? detail?.document.extractedContentHash ?? null);
+  const textEntry = docTexts[textId];
+
+  /** Asks for the text of the selected doc's version; only ever called when the tab is opened or retried. */
+  async function loadDocText(path: string, version: string | undefined, id: string) {
+    const set = (entry: TextEntry) => setDocTexts((was) => ({ ...was, [id]: entry }));
+    set({ status: "loading" });
+    let answer: any = null;
+    let reason = "ERROR";
+    try {
+      if (sample) {
+        answer = sample.docText ? sample.docText(path) : null;
+        if (!answer) reason = "NOT_FOUND";
+      } else {
+        const res = await fetch(readUrl("doc-text", path, version));
+        if (res.ok) answer = await res.json();
+        else reason = res.status === 404 ? "NOT_FOUND" : "ERROR";
+      }
+    } catch {
+      reason = "UNREACHABLE";
+    }
+    if (answer && answer.state === "OK" && typeof answer.text === "string") {
+      set({ status: "ready", data: answer });
+    } else {
+      set({ status: "failed", reason: (answer && answer.reason) || reason });
+    }
+  }
+
+  // The first time the tab is open on a version, and never again for it: a failure waits for Retry.
+  useEffect(() => {
+    if (paneTab !== "document" || !hasDocumentTab || textEntry) return;
+    loadDocText(selected, shownVersion, textId);
+  }, [paneTab, hasDocumentTab, textId]);
 
   /** Names gone under whatever is selected, so the count agrees with the rest of the tally. */
   const scopeStale = useMemo(
@@ -2702,6 +2770,78 @@ export default function DocsTab({
                     answer, and a doc is entitled to have it stated. The same line carries the
                     count when there are rules, so the number under the table is never in doubt,
                     and it says separately when rules exist but nothing has judged them. */}
+                {hasDocumentTab && (
+                  <div className="dv-tabs" role="tablist" aria-label="This doc">
+                    <button type="button" role="tab" id="doc-tab-rules" aria-selected={paneTab === "rules"}
+                      className={paneTab === "rules" ? "is-on" : ""} onClick={() => setPaneTab("rules")}>
+                      Rules <span>{scopeRows.length}</span>
+                    </button>
+                    <button type="button" role="tab" id="doc-tab-document" aria-selected={paneTab === "document"}
+                      className={paneTab === "document" ? "is-on" : ""} onClick={() => setPaneTab("document")}>
+                      Document
+                    </button>
+                  </div>
+                )}
+
+                {hasDocumentTab && paneTab === "document" && (
+                  <div role="tabpanel" aria-labelledby="doc-tab-document">
+                    {(!textEntry || textEntry.status === "loading") && (
+                      <p className="dashboard-metric-caption">Loading the doc…</p>
+                    )}
+                    {textEntry?.status === "failed" && (() => {
+                      const failure = failureMessage(textEntry.reason);
+                      return (
+                        <div className="dv-fail" role="alert">
+                          <p>{failure.message}</p>
+                          {failure.retry && (
+                            <button type="button" onClick={() => loadDocText(selected, shownVersion, textId)}>Retry</button>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    {textEntry?.status === "ready" && (
+                      <Suspense fallback={<p className="dashboard-metric-caption">Loading the doc…</p>}>
+                        <DocumentView
+                          data={textEntry.data}
+                          rules={shownRows}
+                          stale={staleByDoc.get(selected) || []}
+                          owner={owner}
+                          name={name}
+                          docPath={selected}
+                          branch={branch}
+                          lastReadMs={detail.document.lastExtractedMs}
+                          onInclude={readOnly ? undefined : async (row) => ruleStateBlocked ?? setRuleStates({ excluded: false, factIds: [row.factId] })}
+                          renderStale={(finding: StaleName) => (
+                            <>
+                              <p className="dv-card-body">{withCode(staleLine(finding))}</p>
+                              <div className="dv-card-actions">
+                                {(!source || withStaleNameIssue(finding, selected, findingIssues).issue) && (
+                                  <FindingActions
+                                    issueUrl={takesIssues && !source
+                                      ? staleNameIssueUrl(owner, name, selected, finding, branch || "main")
+                                      : null}
+                                    prompt={source ? undefined : staleNamePrompt(owner, name, selected, finding, branch || "main")}
+                                    demo={!!sample}
+                                    issue={withStaleNameIssue(finding, selected, findingIssues).issue}
+                                    readOnly={!!source}
+                                  />
+                                )}
+                                {finding.sourceLine && textEntry.data.commit && (
+                                  <a href={blobUrl(owner, name, textEntry.data.commit, selected, finding.sourceLine)}
+                                     target="_blank" rel="noopener noreferrer">
+                                    Line {finding.sourceLine} on GitHub
+                                  </a>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        />
+                      </Suspense>
+                    )}
+                  </div>
+                )}
+
+                {(paneTab === "rules" || !hasDocumentTab) && (<>
                 {(detail.document.state === "READ" || detail.rules.length > 0) && (
                   <p className="docs-rule-count">
                     {detail.rules.length === 0 ? (
@@ -2833,6 +2973,7 @@ export default function DocsTab({
                     </table>
                   </div>
                 )}
+                </>)}
               </>
             )}
           </div>
