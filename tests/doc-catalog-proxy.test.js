@@ -190,3 +190,17 @@ test("the issues the findings are tracked in are read from their own API path", 
   assert.match(call.url, /\/api\/v1\/organizations\/7\/repos\/acme\/widgets\/doc-catalog\/finding-issues\?token=/);
   assert.equal(call.init.headers["X-Server-Key"], "server-key");
 });
+
+test("the text of a doc goes to its own API path with the path and version", async () => {
+  const res = await handler({
+    httpMethod: "GET",
+    headers: { cookie: `gh_token=${TOKEN}` },
+    queryStringParameters: { installation_id: "7", owner: "acme", repo: "widgets", view: "doc-text", path: "docs/a b.md", version: "h1" },
+  });
+  assert.equal(res.statusCode, 200);
+  const url = new URL(apiCalls()[0].url);
+  assert.equal(url.pathname, "/api/v1/organizations/7/repos/acme/widgets/doc-catalog/doc/text");
+  assert.equal(url.searchParams.get("path"), "docs/a b.md");
+  assert.equal(url.searchParams.get("version"), "h1");
+  assert.ok(url.searchParams.get("token"));
+});

@@ -36,6 +36,13 @@ test("each view the page reads maps to its API path", () => {
     "/api/v1/public-repos/acme/widgets/doc-catalog/doc?path=docs%2Fa+b.md&version=abc123");
 });
 
+test("the text of a doc maps to its own API path and needs a path", () => {
+  assert.equal(apiPathFor({ owner: "acme", repo: "widgets", view: "doc-text", path: "docs/a.md", version: "abc" }),
+    "/api/v1/public-repos/acme/widgets/doc-catalog/doc/text?path=docs%2Fa.md&version=abc");
+  assert.equal(apiPathFor({ owner: "acme", repo: "widgets", view: "doc-text" }), null);
+  assert.equal(apiPathFor({ owner: "acme", repo: "widgets", view: "doc-text", path: "a.md", version: "../x" }), null);
+});
+
 test("a name no repository could have, or a view the page does not read, goes nowhere", () => {
   for (const params of [
     { owner: "../..", repo: "widgets" },

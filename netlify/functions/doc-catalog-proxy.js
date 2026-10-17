@@ -268,6 +268,12 @@ async function proxy(event, ghToken, params) {
       // The GitHub issues the rules and stale names are tracked in, asked for after the page shows.
       url = `${base}/finding-issues?token=${token}`;
       init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
+    } else if (params.view === "doc-text" && params.path) {
+      // The text of the version shown, fetched only when the Document tab is first opened.
+      url = `${base}/doc/text?path=${encodeURIComponent(params.path)}`
+        + (params.version ? `&version=${encodeURIComponent(params.version)}` : "")
+        + `&token=${token}`;
+      init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
     } else if (params.path) {
       url = `${base}/doc?path=${encodeURIComponent(params.path)}`
         + (params.version ? `&version=${encodeURIComponent(params.version)}` : "")
