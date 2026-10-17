@@ -374,7 +374,8 @@ export function kindCounts(rules, stale) {
 
 /**
  * What a reader is told when the text of a document cannot be shown, and whether trying again can
- * help. A version that is no longer on GitHub is final: the same request would be answered the same.
+ * help. A version that is no longer on GitHub, one whose commit is unknown and one too large to show are
+ * final: the same request would be answered the same.
  *
  * @param {string | null | undefined} reason one of the API's reasons, or a status the page made up
  * @returns {{ message: string, retry: boolean }}
@@ -395,9 +396,9 @@ export function failureMessage(reason) {
     case "TIMEOUT":
       return { message: "GitHub took too long to send this file.", retry: true };
     case "VERSION_UNKNOWN":
-      return { message: "Striff doesn't know which commit this version of the doc was read at, so it can't show the text.", retry: true };
+      return { message: "Striff doesn't know which commit this version of the doc was read at, so it can't show the text.", retry: false };
     case "TOO_LARGE":
-      return { message: "This doc is too large to show here.", retry: true };
+      return { message: "This doc is too large to show here.", retry: false };
     case "UNREACHABLE":
       return { message: "Couldn't reach Striff to load the text of this doc.", retry: true };
     default:

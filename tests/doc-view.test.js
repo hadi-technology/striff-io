@@ -132,10 +132,12 @@ test("CRLF lines and a BOM keep line ranges right", () => {
   assert.deepEqual(V.lineRange(text, 2), { from: 4, to: 5 });
 });
 
-test("failure reasons: a changed version offers no retry, others do", () => {
+test("failure reasons: a final answer offers no retry, others do", () => {
   assert.equal(V.failureMessage("CHANGED").message, "This version of the doc isn't on GitHub any more.");
-  assert.equal(V.failureMessage("CHANGED").retry, false);
-  for (const r of ["NOT_FOUND", "FORBIDDEN", "RATE_LIMITED", "TIMEOUT", "VERSION_UNKNOWN", "TOO_LARGE", "ERROR", "x"]) {
+  for (const r of ["CHANGED", "VERSION_UNKNOWN", "TOO_LARGE"]) {
+    assert.equal(V.failureMessage(r).retry, false, r);
+  }
+  for (const r of ["NOT_FOUND", "FORBIDDEN", "RATE_LIMITED", "TIMEOUT", "ERROR", "x"]) {
     assert.equal(V.failureMessage(r).retry, true, r);
   }
 });

@@ -64,6 +64,9 @@ const KIND_LABEL: Record<string, string> = {
 
 const FORMATTED = new Set(["markdown", "mdx"]);
 
+/** Past this many characters a doc opens as source: formatting it would hold the page for a second or more. */
+const LARGE_CHARS = 200_000;
+
 /** Everything the node renderers share for one document. */
 interface Shared {
   text: string;
@@ -409,7 +412,9 @@ export default function DocumentView({
   renderStale: (finding: any) => ReactNode;
 }) {
   const formatted = FORMATTED.has(data.format);
-  const [wanted, setWanted] = useState<"formatted" | "source">(formatted ? "formatted" : "source");
+  const [wanted, setWanted] = useState<"formatted" | "source">(
+    formatted && data.text.length <= LARGE_CHARS ? "formatted" : "source"
+  );
   const [broke, setBroke] = useState(false);
   const [selected, setSelected] = useState<{ block: number; ids: string[] } | null>(null);
   const [includeError, setIncludeError] = useState<Record<string, string>>({});
