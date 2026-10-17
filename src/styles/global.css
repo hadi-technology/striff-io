@@ -4462,46 +4462,10 @@
 
 .docs-tree-foot { padding: 0.5rem 0.75rem 0.6rem; border-top: 1px solid #edf1f5; color: #64748b; font-size: 0.74rem; }
 
-/* ---- Dashboard shell: the account, its sections, and the work beside them ---- */
-.dash-shell { display: grid; grid-template-columns: 13.5rem minmax(0, 1fr); gap: 1.25rem; margin-top: 1.5rem; align-items: start; }
-@media (max-width: 860px) { .dash-shell { grid-template-columns: minmax(0, 1fr); } }
-
-.dash-side {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.9rem 0.75rem;
-  border: 1px solid rgba(31, 35, 40, 0.12);
-  border-radius: 0.75rem;
-  background: #fff;
-  box-shadow: var(--shadow-sm);
-  position: sticky;
-  top: 5rem;
-}
-.dash-side-account { display: grid; gap: 0.3rem; padding: 0 0.35rem; }
-.dash-account-name { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
-.dash-account-select {
-  border: 1px solid rgba(31, 35, 40, 0.14);
-  border-radius: 0.5rem;
-  background: #fff;
-  padding: 0.35rem 0.5rem;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #0f172a;
-}
-.dash-nav { display: flex; flex-direction: column; gap: 0.15rem; }
-.dash-nav-item {
-  display: block;
-  border-radius: 0.5rem;
-  padding: 0.45rem 0.55rem;
-  color: #57606a;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-align: left;
-}
-.dash-nav-item:hover { background: #f6f8fa; color: #24292f; text-decoration: none; }
-.dash-nav-item.is-on { background: #f1f5f9; color: #1f2328; }
-.dash-side-foot { margin-top: auto; padding-top: 0.5rem; border-top: 1px solid #edf1f5; }
+/* ---- Dashboard shell: the repository header and its tabs, then the work ----
+   The account's sections live in the bar above. Nothing runs down the side, so the document tree
+   and the rules table get the page's whole width. */
+.dash-shell { display: flex; flex-direction: column; gap: 1rem; margin-top: 0.25rem; }
 .dash-main { min-width: 0; }
 
 /* ---- Documents view: the page head ---- */
@@ -4530,7 +4494,7 @@
 .docs-tally-item.is-prior b { color: #b45309; }
 .docs-tally-item.is-held b { color: #17794a; }
 
-/* A section inside the dashboard shell carries no card of its own: the sidebar frames it. */
+/* A section inside the dashboard shell carries no card of its own: the strip above heads it. */
 .dashboard-section { min-width: 0; }
 .docs-pane-path .docs-crumb-sep { font-style: normal; margin: 0 0.3rem; color: #c3cedb; }
 .docs-pane-path b { color: #0f172a; font-weight: 600; }
@@ -4538,10 +4502,6 @@
 /* ---- Dashboard on a phone ----
    The shell stacks, the account bar wraps rather than running off the side, and a rule stops
    being a table row: the outcome leads, then the sentence, then the rule, each on its own line. */
-@media (max-width: 860px) {
-  .dash-side { position: static; }
-}
-
 @media (max-width: 640px) {
   .dashboard-account-bar { flex-wrap: wrap; }
   .dashboard-account-bar > div { min-width: 0; }
@@ -4574,43 +4534,7 @@
     }
 
 /* ---- The dashboard's own chrome, as the design draws it ----
-   A white panel of sections down the left with the accent on the one you are in, and the work
-   beside it. Values are the design's: nav rows, the search box, the segmented control. */
-.dash-side {
-  gap: 2px;
-  padding: 16px 12px;
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
-  background: #fff;
-}
-.dash-side .nav-label {
-  padding: 6px 10px 8px;
-  color: #57606a;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.dash-nav { display: flex; flex-direction: column; gap: 2px; margin-top: 0.5rem; }
-.nav-item {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 10px;
-  border-radius: 0.5rem;
-  padding: 9px 10px;
-  color: #57606a;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-align: left;
-}
-.nav-item svg { color: #8a95a1; flex: 0 0 auto; }
-.nav-item:hover { background: #f6f8fa; color: #24292f; text-decoration: none; }
-.nav-item.active { background: #f1f5f9; color: #1f2328; }
-/* The accent marks where you are, and nowhere else in this panel. */
-.nav-item.active svg { color: #2563eb; }
-.nav-item .nav-count { margin-left: auto; color: #8a95a1; font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; }
+   Values are the design's: the search box, the segmented control. */
 
 .tree-search {
   display: flex;
@@ -4764,32 +4688,32 @@
 .scope-exclude-panel { width: 20rem; }
 .docs-tally-item.is-excluded b { color: #6b7280; }
 
-/* The two levels these things live at: an account, and a repository inside it. */
-.dash-repo-group { margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid #edf1f5; }
-.dash-repo-select {
-  width: 100%;
-  margin: 0 0 0.5rem;
-  border: 1px solid rgba(31, 35, 40, 0.14);
-  border-radius: 0.5rem;
-  background: #fff;
-  padding: 0.35rem 0.4rem;
-  color: #0f172a;
-  font-family: inherit;
-  font-size: 0.875rem;
-  font-weight: 700;
-}
-.dash-repo-select:hover { border-color: #cbd5e1; background: #f8fafc; }
-.dash-repo-select:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
-
-.dash-repo-name {
-  padding: 0 10px 0.35rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* The section tabs: one white band under the dark bar, as wide as the bar and aligned with it. The
+   tabs are the level's own: a repository's views, or the account's sections. The right side
+   carries the repository's actions. */
+.tabrow { border-bottom: 1px solid var(--line); background: #fff; }
+.tabrow-inner { display: flex; align-items: center; justify-content: space-between; gap: 0.25rem 1rem; max-width: 90rem; margin: 0 auto; padding: 0 1.5rem; }
+.tabs { display: flex; gap: 0.25rem; min-width: 0; overflow-x: auto; }
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-bottom: 2px solid transparent;
+  padding: 0.8rem 0.9rem 0.7rem;
   white-space: nowrap;
-  color: #0f172a;
-  font-size: 0.875rem;
-  font-weight: 700;
+  color: #57606a;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
+.tab svg { color: #8a95a1; flex: 0 0 auto; }
+.tab:hover { color: #1f2328; border-bottom-color: #cbd5e1; }
+.tab.active { color: #0f172a; border-bottom-color: #2563eb; }
+.tab.active svg { color: #2563eb; }
+.tab:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; border-radius: 0.4rem; }
+.tab-count { color: #8a95a1; font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; }
+.tabrow-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.4rem 0; }
+.tabrow-slot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.tabrow-actions .docs-repo-link, .tabrow-slot .docs-refresh { margin: 0; }
 
 /* ---- Search across documents and the rules read from them ---- */
 .tree-search { width: calc(100% - 24px); text-align: left; }
@@ -4848,23 +4772,40 @@
   background: rgba(255, 255, 255, 0.1);
 }
 .bar-word { font-size: 1.02rem; }
+.bar-account-wrap { display: flex; align-items: center; gap: 0.1rem; }
+.bar-account-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.55rem;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.bar-account-link:hover { background: rgba(255, 255, 255, 0.1); }
+.bar-account-link:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.55); outline-offset: 1px; }
 .bar-account {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 0.6rem;
-  background: rgba(255, 255, 255, 0.07);
-  padding: 0.3rem 0.6rem;
-  color: #e6edf6;
-  font-size: 0.86rem;
-  font-weight: 600;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.3rem;
 }
 .bar-account:hover { background: rgba(255, 255, 255, 0.12); }
 .bar-account-avatar { width: 1.15rem; height: 1.15rem; border-radius: 0.35rem; }
 .bar-account-name { color: #fff; }
 .bar-chevron { width: 0.85rem; height: 0.85rem; color: rgba(255, 255, 255, 0.6); flex: 0 0 auto; }
+/* Where you are, as crumbs: the account, then the repository inside it. */
+.bar-crumb-repo { display: flex; align-items: center; gap: 0.3rem; min-width: 0; }
+.bar-sep { color: rgba(255, 255, 255, 0.3); font-size: 1.15rem; font-weight: 300; }
+.bar-repo-pick { position: relative; display: inline-flex; align-items: center; gap: 0.3rem; min-width: 0; border-radius: 0.5rem; padding: 0.3rem 0.35rem 0.3rem 0.55rem; color: #fff; font-size: 0.9rem; font-weight: 600; }
+.bar-repo-pick:hover { background: rgba(255, 255, 255, 0.1); }
+.bar-repo-pick:focus-within { outline: 2px solid rgba(255, 255, 255, 0.55); outline-offset: 1px; }
+.bar-repo-pick.is-empty { color: #aab6c8; font-weight: 500; }
+.bar-repo-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The select sits over the label and is invisible, so the crumb is the control. */
+.bar-repo-select { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; border: 0; background: transparent; appearance: none; opacity: 0; cursor: pointer; font: inherit; }
 .bar-right { display: flex; align-items: center; gap: 0.9rem; margin-left: auto; }
 .bar-link { color: #c7d2e1; font-size: 0.86rem; font-weight: 600; }
 .bar-link:hover { color: #fff; text-decoration: none; }
@@ -4913,12 +4854,18 @@
   text-align: left;
 }
 .bar-menu-item:hover { background: #f6f8fa; text-decoration: none; }
-.dash-page { max-width: 90rem; margin: 0 auto; padding: 1.75rem 1.5rem 3rem; }
+.dash-page { max-width: 90rem; margin: 0 auto; padding: 1.25rem 1.5rem 3rem; }
 @media (max-width: 640px) {
-  .dash-bar-inner { padding: 0 1rem; gap: 0.6rem; }
+  .dash-bar-inner { padding: 0.6rem 1rem 0; gap: 0.6rem; flex-wrap: wrap; min-height: 0; }
   .bar-word { display: none; }
   .bar-right { gap: 0.6rem; }
   .dash-page { padding: 1.25rem 1rem 2.5rem; }
+  /* The repository crumb takes a second row of the bar; the tab row's actions wrap under the tabs. */
+  .bar-crumb-repo { order: 5; flex: 1 0 100%; margin: -0.2rem 0 0.4rem -0.4rem; }
+  .tabrow-inner { flex-wrap: wrap; padding: 0 1rem; }
+  .tabs { flex: 1 0 100%; }
+  .tab { padding: 0.8rem 0.6rem 0.7rem; }
+  .tabrow-actions { padding: 0 0 0.6rem; }
 }
 
 /* ---- The rules of a repository, in one list ----
@@ -5044,7 +4991,7 @@
 @media print {
   /* The printed page carries its own heading, so the screen's goes; the rest is chrome. */
   .dash-bar,
-  .dash-side,
+  .tabrow,
   .rules-toolbar,
   .docs-head,
   .site-footer,
@@ -5476,13 +5423,11 @@ tr:hover .finding-flag-button,
    operating system's select popup is drawn in its own font with no avatars and looks borrowed. */
 .bar-account-wrap { position: relative; }
 .bar-account { transition: background 120ms ease, border-color 120ms ease; }
-.bar-account-wrap .bar-account { cursor: pointer; max-width: 14rem; font-family: inherit; }
+.bar-account-wrap .bar-account { cursor: pointer; font-family: inherit; }
+.bar-account-link { max-width: 14rem; }
 .bar-account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bar-account:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: 2px; }
-.bar-account-wrap .bar-account[aria-expanded="true"] {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.35);
-}
+.bar-account-wrap .bar-account[aria-expanded="true"] { background: rgba(255, 255, 255, 0.14); }
 .bar-account-wrap .bar-account[aria-expanded="true"] .bar-chevron { transform: rotate(180deg); }
 .bar-chevron { transition: transform 140ms ease; }
 /* An account per row, and a scrollbar rather than a menu running off the bottom of the screen
@@ -7012,9 +6957,9 @@ tr:hover .finding-flag-button,
 .badge-control[aria-expanded="true"] { box-shadow: 0 0 0 2px #bfdbfe; }
 @media print { .badge-control { display: none; } }
 
-/* The selected repository's badge in the side panel, under the picker: as wide as the panel
+/* The selected repository's badge in the section strip, beside the picker: as wide as the strip
    allows and no wider, so a long message scales down rather than wrapping or running out. */
-.dash-repo-badge { display: flex; max-width: 100%; padding: 0 10px 0.35rem; }
+.dash-repo-badge { display: flex; max-width: 100%; }
 .dash-repo-badge .badge-control { max-width: 100%; }
 .dash-repo-badge .badge-control img { max-width: 100%; height: auto; max-height: 20px; }
 
@@ -7634,11 +7579,15 @@ button.check-verdict { cursor: pointer; }
 @media print { .finding-issue-exclude { display: none; } }
 
 /* ─── A doc's Document tab: its text with what each rule checks marked in it ────────── */
-.dv-tabs { display: flex; gap: 2px; margin: 0.9rem 0 0; border-bottom: 1px solid #e2e8f0; }
-.dv-tabs button { appearance: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; padding: 0.55rem 0.9rem; font: inherit; font-size: 0.88rem; font-weight: 600; color: #57606a; cursor: pointer; }
-.dv-tabs button:hover { color: #0f172a; }
+.dv-tabs { display: flex; gap: 0.25rem; margin: 0.9rem 0 0; border-bottom: 1px solid #d8e1ec; }
+.dv-tabs button { display: inline-flex; align-items: center; gap: 0.45rem; appearance: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; padding: 0.6rem 0.9rem; font: inherit; font-size: 0.88rem; font-weight: 700; color: #6b7684; cursor: pointer; }
+.dv-tabs button svg { flex: 0 0 auto; color: #8a95a1; }
+.dv-tabs button:hover { color: #0f172a; border-bottom-color: #cbd5e1; }
 .dv-tabs button.is-on { color: #0f172a; border-bottom-color: #2563eb; }
-.dv-tabs button span { margin-left: 0.2rem; font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; color: #8a95a1; }
+.dv-tabs button.is-on svg { color: #2563eb; }
+.dv-tabs button:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; border-radius: 0.4rem; }
+.dv-tabs button span { margin-left: 0.1rem; border-radius: 999px; background: #eef2f7; padding: 0.05rem 0.45rem; font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; font-weight: 600; color: #57606a; }
+.dv-tabs button.is-on span { background: #e3edfd; color: #1d4ed8; }
 .dv-fail { margin-top: 0.9rem; padding: 0.8rem 1rem; border: 1px solid #e2e8f0; border-radius: 0.6rem; background: #f8fafc; color: #334155; font-size: 0.88rem; }
 .dv-fail p { margin: 0; }
 .dv-fail button { margin-top: 0.6rem; min-height: 34px; padding: 0 0.9rem; border: 1px solid #2563eb; border-radius: 0.5rem; background: #fff; color: #1d4ed8; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
@@ -7763,3 +7712,4 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
   .dv-line { gap: 0.5rem; }
   .dv-unplaced li { flex-direction: column; gap: 0.3rem; }
 }
+

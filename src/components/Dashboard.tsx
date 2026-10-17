@@ -1,6 +1,6 @@
-import { createElement, useState, useEffect, useRef } from "react";
+import { createElement, useState, useEffect, useRef, type ReactNode } from "react";
 import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
-import DocsTab from "./DocsTab";
+import DocsTab, { GitHubMark } from "./DocsTab";
 import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import { EXTENSION_URL } from "./docRules";
@@ -23,7 +23,7 @@ interface User {
   name: string | null;
 }
 
-/** The sections of the dashboard: three belong to the account, one to the repository in view. */
+/** The sections of the dashboard: three belong to the account, two to the repository in view. */
 type Section = "repos" | "docs" | "checks" | "metrics" | "billing";
 
 interface Repo {
@@ -121,6 +121,17 @@ export default function Dashboard() {
    * the post-install page link to /dashboard#badge, which opens it on arrival.
    */
   const [badgeOpen, setBadgeOpen] = useState(false);
+  // The account section and the repository view last in use, so going up to the account and
+  // choosing a repository again each land where the reader was.
+  const [lastAccountSection, setLastAccountSection] = useState<Section>("repos");
+  const [lastRepoView, setLastRepoView] = useState<"docs" | "checks">("docs");
+  // Where the open repository's views put their refresh and badge: the tab row's right side.
+  const [actionsSlot, setActionsSlot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (section === "docs" || section === "checks") setLastRepoView(section);
+    else setLastAccountSection(section);
+  }, [section]);
 
   useEffect(() => {
     if (window.location.hash === "#badge") setBadgeOpen(true);
@@ -287,9 +298,23 @@ export default function Dashboard() {
         current={current}
         section={section}
         openRepo={openRepo}
+        onHome={() => setSection(lastAccountSection)}
+        onRepo={(fullName) => {
+          setOpenRepo(fullName);
+          if (section !== "docs" && section !== "checks") setSection(lastRepoView);
+        }}
         onAccount={setAccountId}
         onSignOut={signOut}
       />
+      {current && (
+        <TabRow
+          current={current}
+          section={section}
+          openRepo={openRepo}
+          onSection={setSection}
+          slotRef={setActionsSlot}
+        />
+      )}
       <div className="dash-page">
         {children}
         {/* The marketing footer is off on this page, and these still have to be reachable. */}
@@ -367,104 +392,6 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="dash-shell">
-          <aside className="dash-side">
-            <p className="nav-label">Account</p>
-            {/* Switching account is the bar's job; here the name only says which one this is. */}
-            <p className="dash-account-name">{current.account.login}</p>
-            <nav className="dash-nav">
-              {([
-                ["metrics", "Metrics", "overview", ""],
-                ["repos", "Repositories", "repos", String((current.repositories || []).length)],
-                ["billing", "Billing", "billing", ""],
-              ] as const).map(([key, label, icon, count]) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={`nav-item${section === key ? " active" : ""}`}
-                  onClick={() => setSection(key)}
-                >
-                  <NavIcon name={icon} />
-                  <span>{label}</span>
-                  {count && <span className="nav-count">{count}</span>}
-                </button>
-              ))}
-            </nav>
-            {openRepo && (
-              <div className="dash-repo-group">
-                <p className="nav-label">Repository</p>
-                {/* Which repository you are looking at is navigation, so it sits with the rest of
-                    it. It used to be a picker on top of the work, which read as part of the page
-                    rather than as the thing that chooses the page. */}
-                {(current.repositories || []).length > 1 ? (
-                  <select
-                    className="dash-repo-select"
-                    aria-label="Repository"
-                    title={openRepo}
-                    value={openRepo}
-                    onChange={(event) => {
-                      setOpenRepo(event.target.value);
-                      // Choosing a repository is asking to see it: from an account section that
-                      // shows no repository, open its docs and rules. Checks follows the choice.
-                      if (section !== "docs" && section !== "checks") setSection("docs");
-                    }}
-                  >
-                    {/* One installation is one account, so every repository here shares an owner
-                        and the owner is already named above. */}
-                    {(current.repositories || []).map((r) => (
-                      <option key={r.full_name} value={r.full_name}>
-                        {r.full_name.split("/")[1] || r.full_name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <p className="dash-repo-name" title={openRepo}>
-                    {openRepo.split("/")[1] || openRepo}
-                  </p>
-                )}
-                {/* The selected repository's README badge, in view whichever section is open;
-                    clicking it opens the panel with its snippet over the page. */}
-                {(() => {
-                  const selected = (current.repositories || []).find((r) => r.full_name === openRepo);
-                  return selected ? (
-                    <SideBadge
-                      key={selected.full_name}
-                      installationId={current.id}
-                      repo={selected}
-                      open={badgeOpen}
-                      onOpen={() => setBadgeOpen(true)}
-                      onClose={() => {
-                        setBadgeOpen(false);
-                        if (window.location.hash === "#badge") {
-                          window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
-                        }
-                      }}
-                    />
-                  ) : null;
-                })()}
-                <nav className="dash-nav">
-                  {/* One item, because there is one view: the document tree, and the rules of
-                      whatever it has selected. Rules used to be a second item showing the same
-                      data flat, which is the repository row of this tree. */}
-                  <button
-                    type="button"
-                    className={`nav-item${section === "docs" ? " active" : ""}`}
-                    onClick={() => setSection("docs")}
-                  >
-                    <NavIcon name="docs" />
-                    <span>Docs &amp; rules</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`nav-item${section === "checks" ? " active" : ""}`}
-                    onClick={() => setSection("checks")}
-                  >
-                    <NavIcon name="checks" />
-                    <span>Checks</span>
-                  </button>
-                </nav>
-              </div>
-            )}
-          </aside>
           <div className="dash-main">
             <InstallationCard
               key={current.id}
@@ -475,12 +402,35 @@ export default function Dashboard() {
               section={section}
               onSection={setSection}
               openRepo={openRepo}
+              actionsSlot={actionsSlot}
+              repoBadge={(() => {
+                // The repository's README badge, placed after the refresh of whichever of its
+                // views is open; clicking it opens the panel with its snippet over the page.
+                const selected = (current.repositories || []).find((r) => r.full_name === openRepo);
+                return selected ? (
+                  <SideBadge
+                    key={selected.full_name}
+                    installationId={current.id}
+                    repo={selected}
+                    open={badgeOpen}
+                    onOpen={() => setBadgeOpen(true)}
+                    onClose={() => {
+                      setBadgeOpen(false);
+                      if (window.location.hash === "#badge") {
+                        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+                      }
+                    }}
+                  />
+                ) : null;
+              })()}
               onOpenRepo={(fullName) => {
                 setOpenRepo(fullName);
                 setSection("docs");
               }}
               onOfferBadge={(fullName) => {
+                // The badge entry lives in the repository's views, so the panel opens over one.
                 setOpenRepo(fullName);
+                setSection("docs");
                 setBadgeOpen(true);
               }}
             />
@@ -533,6 +483,8 @@ function DashBar({
   current,
   section,
   openRepo,
+  onHome,
+  onRepo,
   onAccount,
   onSignOut,
 }: {
@@ -541,8 +493,11 @@ function DashBar({
   current: Installation | null;
   /** Which part of the dashboard is open, so asking for help says where from. */
   section?: Section;
-  /** The repository in view, for the same reason. */
+  /** The repository in view, for the same reason, and what the repository crumb shows. */
   openRepo?: string | null;
+  /** Up to the account's sections, closing the repository. */
+  onHome: () => void;
+  onRepo: (fullName: string) => void;
   onAccount: (id: number) => void;
   onSignOut: () => void;
 }) {
@@ -571,6 +526,14 @@ function DashBar({
             installations={installations}
             current={current}
             onAccount={onAccount}
+            onHome={onHome}
+          />
+        )}
+        {current && (current.repositories || []).length > 0 && (
+          <RepoCrumb
+            repos={current.repositories || []}
+            openRepo={section === "docs" || section === "checks" ? openRepo ?? null : null}
+            onRepo={onRepo}
           />
         )}
         <div className="bar-right">
@@ -616,6 +579,115 @@ function DashBar({
 }
 
 /**
+ * The repository crumb, after the account's: the repository in view as a menu of the account's
+ * repositories, or a muted prompt at the account level so the hierarchy shows and a repository is
+ * one choice away. A native select laid invisibly over the label keeps the browser's own list,
+ * keyboard and screen-reader behaviour.
+ */
+function RepoCrumb({
+  repos,
+  openRepo,
+  onRepo,
+}: {
+  repos: Repo[];
+  openRepo: string | null;
+  onRepo: (fullName: string) => void;
+}) {
+  const label = openRepo ? openRepo.split("/")[1] || openRepo : "Select a repository";
+  return (
+    <div className="bar-crumb-repo">
+      <span className="bar-sep" aria-hidden="true">/</span>
+      <span className={`bar-repo-pick${openRepo ? "" : " is-empty"}`}>
+        <span className="bar-repo-label">{label}</span>
+        <Chevron />
+        <select
+          className="bar-repo-select"
+          aria-label="Repository"
+          value={openRepo ?? ""}
+          onChange={(event) => onRepo(event.target.value)}
+        >
+          {!openRepo && <option value="" disabled>Select a repository</option>}
+          {repos.map((r) => (
+            <option key={r.full_name} value={r.full_name}>
+              {r.full_name.split("/")[1] || r.full_name}
+            </option>
+          ))}
+        </select>
+      </span>
+    </div>
+  );
+}
+
+/**
+ * The page's only section navigation: a white band attached to the bar. At the account level it
+ * holds the account's sections; with a repository open, that repository's views, and on its right
+ * the repository's actions (the link out, and a slot the open view fills with its refresh and
+ * the README badge).
+ */
+function TabRow({
+  current,
+  section,
+  openRepo,
+  onSection,
+  slotRef,
+}: {
+  current: Installation;
+  section: Section;
+  openRepo: string | null;
+  onSection: (section: Section) => void;
+  slotRef: (el: HTMLElement | null) => void;
+}) {
+  const inRepo = !!openRepo && (section === "docs" || section === "checks");
+  const tabs: readonly (readonly [Section, string, string, string])[] = inRepo
+    ? [
+        ["docs", "Docs & rules", "docs", ""],
+        ["checks", "Checks", "checks", ""],
+      ]
+    : [
+        ["metrics", "Metrics", "overview", ""],
+        ["repos", "Repositories", "repos", String((current.repositories || []).length)],
+        ["billing", "Billing", "billing", ""],
+      ];
+  const selected = (current.repositories || []).find((r) => r.full_name === openRepo);
+  return (
+    <div className="tabrow">
+      <div className="tabrow-inner">
+        <nav className="tabs" aria-label={inRepo ? `Repository ${openRepo}` : `Account ${current.account.login}`}>
+          {tabs.map(([key, label, icon, count]) => (
+            <button
+              key={key}
+              type="button"
+              className={`tab${section === key ? " active" : ""}`}
+              aria-current={section === key ? "page" : undefined}
+              onClick={() => onSection(key)}
+            >
+              <NavIcon name={icon} />
+              <span>{label}</span>
+              {count && <span className="tab-count">{count}</span>}
+            </button>
+          ))}
+        </nav>
+        {inRepo && (
+          <div className="tabrow-actions">
+            <a
+              className="docs-repo-link"
+              href={selected?.html_url || `https://github.com/${openRepo}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open this repository on GitHub"
+            >
+              <GitHubMark />
+              GitHub
+            </a>
+            <div className="tabrow-slot" ref={slotRef} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
  * Choosing which account the dashboard is about.
  *
  * This was a native select for a while, and it looked it: the closed control could be made to fit
@@ -631,10 +703,13 @@ function AccountPicker({
   installations,
   current,
   onAccount,
+  onHome,
 }: {
   installations: Installation[];
   current: Installation;
   onAccount: (id: number) => void;
+  /** The account's name goes up to its sections; the chevron beside it is the menu. */
+  onHome: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -690,16 +765,23 @@ function AccountPicker({
     <div className="bar-account-wrap" ref={wrap}>
       <button
         type="button"
+        className="bar-account-link"
+        aria-label={`${current.account.login}: its repositories, metrics and billing`}
+        onClick={onHome}
+      >
+        {current.account.avatar_url && (
+          <img className="bar-account-avatar" src={current.account.avatar_url} alt="" />
+        )}
+        <span className="bar-account-name">{current.account.login}</span>
+      </button>
+      <button
+        type="button"
         className="bar-account"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Account: ${current.account.login}. ${installations.length > 1 ? "Change or add an account" : "Add an account"}`}
         onClick={() => setOpen((was) => !was)}
       >
-        {current.account.avatar_url && (
-          <img className="bar-account-avatar" src={current.account.avatar_url} alt="" />
-        )}
-        <span className="bar-account-name">{current.account.login}</span>
         <Chevron />
       </button>
       {open && (
@@ -797,6 +879,8 @@ function InstallationCard({
   section,
   onSection,
   openRepo,
+  actionsSlot,
+  repoBadge,
   onOpenRepo,
   onOfferBadge,
 }: {
@@ -807,6 +891,10 @@ function InstallationCard({
   section?: Section;
   onSection?: (section: Section) => void;
   openRepo?: string | null;
+  /** The tab row's right side, where the open repository's views put their refresh and badge. */
+  actionsSlot?: HTMLElement | null;
+  /** The open repository's README badge entry, placed after the refresh. */
+  repoBadge?: ReactNode;
   onOpenRepo?: (fullName: string) => void;
   /** Selects a repository and opens its badge panel. */
   onOfferBadge?: (fullName: string) => void;
@@ -822,7 +910,7 @@ function InstallationCard({
   const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
   const [billingError, setBillingError] = useState(false);
   const [ownTab, setOwnTab] = useState<Section>("repos");
-  // The sidebar owns the section when the shell passes one; the card keeps its own otherwise.
+  // The shell's tab row owns the section when it passes one; the card keeps its own otherwise.
   const installTab = section ?? ownTab;
   const setInstallTab = onSection ?? setOwnTab;
   const [metrics, setMetrics] = useState<OrgMetricsData | null>(null);
@@ -1015,7 +1103,7 @@ function InstallationCard({
 
   return (
     <div className={section === undefined ? "dashboard-installation-card" : "dashboard-section"}>
-      {/* Header row: rendered only when this card stands alone; the shell's sidebar names the
+      {/* Header row: rendered only when this card stands alone; the bar above names the
           account otherwise, and a hidden attribute would lose to the flex display. */}
       {section === undefined && (
       <div className="dashboard-installation-head">
@@ -1057,7 +1145,7 @@ function InstallationCard({
         </div>
       )}
 
-      {/* Repositories / Metrics / Billing tabs, when the sidebar is not driving them */}
+      {/* Repositories / Metrics / Billing tabs, when the tab row is not driving them */}
       <div className={section === undefined ? "mt-5" : ""}>
           {section === undefined && (
           <div className="dashboard-tabs">
@@ -1219,11 +1307,11 @@ function InstallationCard({
             </div>
           ) : installTab === "docs" ? (
             <div className="mt-3 dashboard-metric-fade-in">
-              <DocsTab installationId={installation.id} repos={repos} openRepo={openRepo} />
+              <DocsTab installationId={installation.id} repos={repos} openRepo={openRepo} inShell={section !== undefined} actionsSlot={actionsSlot} badge={repoBadge} />
             </div>
           ) : installTab === "checks" ? (
             <div className="mt-3 dashboard-metric-fade-in">
-              <ChecksTab installationId={installation.id} repo={openRepo || ""} />
+              <ChecksTab installationId={installation.id} repo={openRepo || ""} inShell={section !== undefined} actionsSlot={actionsSlot} badge={repoBadge} />
             </div>
           ) : installTab === "metrics" ? (
             <div className="mt-3 dashboard-metric-fade-in">

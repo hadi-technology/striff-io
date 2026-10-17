@@ -143,7 +143,7 @@ export function RepoCardBadge({
 }
 
 /**
- * The selected repository's badge in the dashboard's side panel, under the repository picker, so
+ * The selected repository's badge in the dashboard's repository header, beside its name, so
  * it is in view whichever section is open. Clicking it opens the badge panel over the page. Keyed
  * by repository where it is used, so a new selection starts again with that repository's key.
  * Where a private repository's key cannot be had, the entry says what it does in words, so the
