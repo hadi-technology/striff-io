@@ -7655,8 +7655,8 @@ button.check-verdict { cursor: pointer; }
 .dv-sw { display: inline-block; width: 18px; height: 10px; box-sizing: border-box; }
 .dv-sw.is-holds { background: #dcfce7; border-bottom: 2px solid #16a34a; }
 .dv-sw.is-broken { background: #fee2e2; border-bottom: 2px solid #dc2626; }
-.dv-sw.is-unchecked { box-shadow: inset 0 0 0 1.5px #60a5fa; border-radius: 2px; }
-.dv-sw.is-excluded { border: 1px dashed #94a3b8; border-radius: 2px; }
+.dv-sw.is-unchecked { background: #eff6ff; border-bottom: 2px dashed #60a5fa; }
+.dv-sw.is-excluded { border-bottom: 2px dotted #94a3b8; }
 .dv-sw.is-stale { background: #fef3c7; border-bottom: 2px solid #d97706; }
 
 .dv-doc, .dv-source { max-width: 760px; padding: 1.1rem 0.5rem 0; color: #0f172a; overflow-wrap: anywhere; }
@@ -7687,7 +7687,7 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
 
 .dv-tablewrap, .dv-codewrap { max-width: 100%; margin: 0 0 0.9rem; overflow-x: auto; }
 .dv-table { border-collapse: collapse; font-size: 0.86rem; min-width: 100%; }
-.dv-table th, .dv-table td { border: 1px solid #e2e8f0; padding: 0.4rem 0.7rem; text-align: left; vertical-align: top; }
+.dv-table th, .dv-table td { border: 1px solid #e2e8f0; padding: 0.4rem 0.7rem; text-align: left; vertical-align: top; min-width: 5.5rem; word-break: normal; overflow-wrap: normal; }
 .dv-table th { background: #f8fafc; font-weight: 600; }
 .dv-codewrap { position: relative; border: 1px solid #e2e8f0; border-radius: 0.5rem; background: #f8fafc; }
 .dv-pre { margin: 0; padding: 0.7rem 0.9rem; font-family: "IBM Plex Mono", monospace; font-size: 0.8rem; line-height: 1.6; white-space: pre; overflow-wrap: normal; }
@@ -7701,13 +7701,18 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
 .dv-mark:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 3px; }
 .dv-mark.is-holds { background: #dcfce7; border-bottom: 2px solid #16a34a; }
 .dv-mark.is-broken { background: #fee2e2; border-bottom: 2px solid #dc2626; }
-.dv-mark.is-unchecked { box-shadow: inset 0 0 0 1.5px #60a5fa; border-radius: 3px; padding: 2px 3px; }
-.dv-mark.is-excluded { color: #64748b; border: 1px dashed #94a3b8; border-radius: 3px; padding: 1px 3px; }
+.dv-mark.is-unchecked { background: #eff6ff; border-bottom: 2px dashed #60a5fa; }
+.dv-mark.is-excluded { color: #64748b; border-bottom: 2px dotted #94a3b8; }
 .dv-mark.is-stale { background: #fef3c7; border-bottom: 2px solid #d97706; }
-.dv-mark.is-open { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 3px; }
+/* An open mark deepens its own colour: an outline would box every piece of a sentence split by code. */
+.dv-mark.is-open.is-holds { background: #bbf7d0; }
+.dv-mark.is-open.is-broken { background: #fecaca; }
+.dv-mark.is-open.is-unchecked { background: #dbeafe; }
+.dv-mark.is-open.is-excluded { background: #f1f5f9; }
+.dv-mark.is-open.is-stale { background: #fde68a; }
 .dv-block.is-holds { background: #f0fdf4; }
 .dv-block.is-broken { background: #fef2f2; }
-.dv-block.is-unchecked { box-shadow: inset 0 0 0 1.5px #bfdbfe; }
+.dv-block.is-unchecked { background: #eff6ff; }
 .dv-block.is-excluded { background: #f8fafc; }
 .dv-block.is-stale { background: #fffbeb; }
 .dv-unread { color: #8a95a1; }
