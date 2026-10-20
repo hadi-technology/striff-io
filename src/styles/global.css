@@ -6727,6 +6727,7 @@ tr:hover .finding-flag-button,
   font-size: 0.78rem;
   font-weight: 600;
 }
+.docs-pane-copy { font-family: inherit; line-height: inherit; cursor: pointer; }
 .docs-pane-github:hover { border-color: #cbd5e1; color: #24292f; text-decoration: none; }
 
 /* What a folder's own row cannot carry: the states of the documents under it, so its rule count
@@ -6770,6 +6771,7 @@ tr:hover .finding-flag-button,
   .docs-list,
   .docs-pane-actions,
   .docs-pane-github,
+  .docs-pane-copy,
   .docs-scope-summary,
   .tree-search { display: none !important; }
   .docs-split { display: block; }

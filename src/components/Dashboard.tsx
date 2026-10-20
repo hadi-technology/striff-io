@@ -4,7 +4,7 @@ import DocsTab, { GitHubMark } from "./DocsTab";
 import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import { EXTENSION_URL } from "./docRules";
-import { PENDING_REPO_KEY, findRepo, repoFromSearch, validRepo, withoutRepoParam } from "../lib/dashboardDeepLink.js";
+import { PENDING_DOC_KEY, PENDING_REPO_KEY, docFromSearch, findRepo, repoFromSearch, validDocPath, validRepo, withLink } from "../lib/dashboardDeepLink.js";
 import { signInUrl } from "../lib/githubSignIn.js";
 
 /** Where the GitHub App is installed on an account: the first one, or one more. */
@@ -142,29 +142,37 @@ export default function Dashboard() {
   }, []);
 
   /**
-   * The repository a link asked for (/dashboard?repo=<owner>/<name>, which a private repository's
-   * README badge links to), or the one kept while the reader signed in. Taken out of the address
-   * at once, so a reload or a shared address does not ask again.
+   * The repository (and document) a link asked for (/dashboard?repo=<owner>/<name>&doc=<path>,
+   * which a private repository's README badge links to), or the ones kept while the reader signed
+   * in. The address keeps carrying them while that repository's documents are open, so a copy of
+   * it is a working link; the docs view takes them out when it closes and this takes them out when
+   * the repository turns out not to be the reader's, so a reload does not ask again.
    */
-  function takeLinkedRepo(): string | null {
+  function takeLinkedRepo(): { repo: string | null; doc: string | null } {
     if (new URLSearchParams(window.location.search).has("repo")) {
       const named = repoFromSearch(window.location.search);
-      window.history.replaceState({}, "", withoutRepoParam(window.location.href));
-      if (named) return named;
+      if (named) return { repo: named, doc: docFromSearch(window.location.search) };
+      window.history.replaceState({}, "", withLink(window.location.href, { repo: null, doc: null }));
     }
     try {
       const kept = validRepo(window.sessionStorage.getItem(PENDING_REPO_KEY));
+      const keptDoc = validDocPath(window.sessionStorage.getItem(PENDING_DOC_KEY));
       window.sessionStorage.removeItem(PENDING_REPO_KEY);
-      return kept;
+      window.sessionStorage.removeItem(PENDING_DOC_KEY);
+      if (kept) {
+        // Back from signing in on a bare address: the docs view reads the document from it.
+        window.history.replaceState({}, "", withLink(window.location.href, { repo: kept, doc: keptDoc }));
+      }
+      return { repo: kept, doc: kept ? keptDoc : null };
     } catch {
-      return null;
+      return { repo: null, doc: null };
     }
   }
 
   async function init() {
     setError("");
     setLoading(true);
-    const linkedRepo = takeLinkedRepo();
+    const { repo: linkedRepo, doc: linkedDoc } = takeLinkedRepo();
     try {
       // Who is signed in, every installation and every repository under each, in one request.
       const statusRes = await fetch("/.netlify/functions/dashboard-bootstrap");
@@ -181,6 +189,7 @@ export default function Dashboard() {
         if (linkedRepo) {
           try {
             window.sessionStorage.setItem(PENDING_REPO_KEY, linkedRepo);
+            if (linkedDoc) window.sessionStorage.setItem(PENDING_DOC_KEY, linkedDoc);
           } catch {
             // Without storage the reader lands on the dashboard as it opens by default.
           }
@@ -212,6 +221,7 @@ export default function Dashboard() {
         } else {
           // Said the same way whether the repository exists or not.
           setUnreachableRepo(linkedRepo);
+          window.history.replaceState({}, "", withLink(window.location.href, { repo: null, doc: null }));
         }
       }
 
@@ -1307,7 +1317,7 @@ function InstallationCard({
             </div>
           ) : installTab === "docs" ? (
             <div className="mt-3 dashboard-metric-fade-in">
-              <DocsTab installationId={installation.id} repos={repos} openRepo={openRepo} inShell={section !== undefined} actionsSlot={actionsSlot} badge={repoBadge} />
+              <DocsTab installationId={installation.id} repos={repos} openRepo={openRepo} addressLink="dashboard" inShell={section !== undefined} actionsSlot={actionsSlot} badge={repoBadge} />
             </div>
           ) : installTab === "checks" ? (
             <div className="mt-3 dashboard-metric-fade-in">

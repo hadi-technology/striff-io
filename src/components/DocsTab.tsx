@@ -1,5 +1,7 @@
 import { createPortal } from "react-dom";
 import { createElement, lazy, Suspense, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { copyText } from "../lib/copyText.js";
+import { docFromSearch, docLink, repoFromSearch, withLink } from "../lib/dashboardDeepLink.js";
 import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
 import { issueIndex, withRuleIssues, withStaleNameIssue, type FindingIssue, type IssueIndex } from "./findingIssue.ts";
@@ -724,6 +726,13 @@ const PaneTabIcon = ({ paths }: { paths: string[] }) =>
     ...paths.map((d, i) => createElement("path", { key: i, d }))
   );
 
+const LinkMark = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6.75 9.25a2.5 2.5 0 0 0 3.54 0l2.2-2.2a2.5 2.5 0 0 0-3.54-3.54l-.6.6" />
+    <path d="M9.25 6.75a2.5 2.5 0 0 0-3.54 0l-2.2 2.2a2.5 2.5 0 0 0 3.54 3.54l.6-.6" />
+  </svg>
+);
+
 export const GitHubMark = () =>
   createElement(
     "svg",
@@ -761,6 +770,7 @@ export default function DocsTab({
   inShell,
   actionsSlot,
   badge,
+  addressLink,
 }: {
   installationId: number;
   /** The repositories to pick from; the dashboard's carry whether each is private, and its branch. */
@@ -806,6 +816,13 @@ export default function DocsTab({
    */
   actionsSlot?: HTMLElement | null;
   badge?: ReactNode;
+  /**
+   * Makes the address a link to what is open: "dashboard" keeps `repo` and `doc` in it, "public"
+   * keeps `doc` (the repository is in the path). A `doc` already in the address when the view
+   * opens is the document it opens on, once the repository's catalogue has it. Left out, the
+   * address is not read or written.
+   */
+  addressLink?: "dashboard" | "public";
 }) {
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [catalog, setCatalog] = useState<Catalog | null>(normalizeCatalog(initial?.catalog) ?? null);
@@ -885,6 +902,13 @@ export default function DocsTab({
    * is opened: offering it again would only be refused again.
    */
   const [readRefused, setReadRefused] = useState<string | null>(null);
+  /**
+   * The document the address named, held until the catalogue arrives and says whether the
+   * repository has it. `repo` is the repository the address named, where it named one.
+   */
+  const pendingDoc = useRef<{ repo: string | null; doc: string } | null>(null);
+  /** Whether the "Copy link" control last copied, so it can say so for a moment. */
+  const [linkCopied, setLinkCopied] = useState<"" | "copied" | "failed">("");
   /** Which document was asked for last; an older answer never paints over a newer one. */
   const openedAt = useRef(0);
   /** The same for the catalogue and the rules: switching twice must not land on the first one. */
@@ -944,6 +968,39 @@ export default function DocsTab({
   useEffect(() => {
     if (openRepo && openRepo !== repo) setRepo(openRepo);
   }, [openRepo]);
+
+  // The document the address names. Read after mounting, since the server that first renders this
+  // has no address to ask; the address is also taken back out of the page when the view closes.
+  useEffect(() => {
+    if (!addressLink || sample) return;
+    const doc = docFromSearch(window.location.search);
+    if (doc) {
+      pendingDoc.current = {
+        repo: addressLink === "dashboard" ? repoFromSearch(window.location.search) : null,
+        doc,
+      };
+      openPendingDoc();
+    }
+    return () => {
+      try {
+        window.history.replaceState(window.history.state, "",
+          withLink(window.location.href, addressLink === "dashboard" ? { repo: null, doc: null } : { doc: null }));
+      } catch {
+        // See syncAddress.
+      }
+    };
+  }, []);
+
+  useEffect(openPendingDoc, [catalog]);
+
+  // The repository in the dashboard's address follows the one open, and no document of the last
+  // one stays in it. The first run is the view opening, which the address already describes.
+  const addressRepoSeen = useRef(repo);
+  useEffect(() => {
+    if (addressRepoSeen.current === repo) return;
+    addressRepoSeen.current = repo;
+    syncAddress(null);
+  }, [repo]);
 
   // A repository belongs to one account. Switching account while this view holds the last one's
   // repository asks the API about a pair that does not exist — an installation and a repository
@@ -1263,7 +1320,52 @@ export default function DocsTab({
     }
   }
 
+  /**
+   * Puts the open document in the address, replacing the current entry rather than adding one, so
+   * the address bar is always a link to what is on screen. Null takes the document out. The
+   * dashboard's address also carries the repository. Held back while the address's own document
+   * waits for the catalogue, which it would otherwise take out.
+   */
+  function syncAddress(doc: string | null) {
+    if (!addressLink || sample || pendingDoc.current) return;
+    try {
+      const link = addressLink === "dashboard" ? { repo, doc } : { doc };
+      window.history.replaceState(window.history.state, "", withLink(window.location.href, link));
+    } catch {
+      // An address that cannot be written is only a link that is not kept up to date.
+    }
+  }
+
+  /** The link to the open document, or null where this view does not make links. */
+  function shareLink(path: string): string | null {
+    if (!addressLink || sample) return null;
+    return docLink(window.location.href, addressLink === "dashboard" ? repo : null, path);
+  }
+
+  async function copyShareLink(path: string) {
+    const link = shareLink(path);
+    if (!link) return;
+    setLinkCopied((await copyText(link)) ? "copied" : "failed");
+    window.setTimeout(() => setLinkCopied(""), 2000);
+  }
+
+  /** Opens the document the address named, once the catalogue is in and is for that repository. */
+  function openPendingDoc() {
+    const wanted = pendingDoc.current;
+    const docs = catalogRef.current?.documents;
+    if (!wanted || !docs) return;
+    if (wanted.repo && wanted.repo.toLowerCase() !== repo.toLowerCase()) return;
+    const waiting = docs.length === 0 && catalogRef.current?.lastScanMs === null;
+    if (waiting) return;
+    pendingDoc.current = null;
+    // A path the repository has no document at opens the repository as usual, and leaves the
+    // address as a link to the repository alone.
+    if (docs.some((doc) => doc.path === wanted.doc)) openDoc(wanted.doc);
+    else syncAddress(null);
+  }
+
   async function openDoc(path: string) {
+    syncAddress(path);
     setSelected(path);
     setPaneTab("rules");
     setDetail(null);
@@ -1295,6 +1397,7 @@ export default function DocsTab({
       openDoc(path);
       return;
     }
+    syncAddress(null);
     setSelected(path);
     setPaneTab("rules");
     setDetail(null);
@@ -2789,6 +2892,17 @@ export default function DocsTab({
                     <GitHubMark />
                     View on GitHub
                   </a>
+                  {addressLink && !sample && (
+                    <button
+                      type="button"
+                      className="docs-pane-github docs-pane-copy"
+                      onClick={() => copyShareLink(selected)}
+                      title="Copy a link that opens this document"
+                    >
+                      <LinkMark />
+                      {linkCopied === "copied" ? "Link copied" : linkCopied === "failed" ? "Couldn't copy" : "Copy link"}
+                    </button>
+                  )}
                   <span className="docs-pane-actions">
                     {scopeExclude(selected, "doc")}
                     {rowMenu(selected, selectedDoc ?? detail.document, false, "pane")}
