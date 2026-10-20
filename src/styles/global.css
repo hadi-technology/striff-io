@@ -4371,6 +4371,15 @@
   padding: 0.04em 0.28em;
   border-radius: 0.28rem;
 }
+/* A rule names packages and paths longer than its column: the name wraps with the line where the
+   column ends, and each piece keeps the chip's background. */
+.docs-rule-statement .github-inline-code,
+.rulerow-stmt .github-inline-code {
+  display: inline;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
 .docs-rule-quote .github-inline-code { background: #e8edf4; font-size: 0.82em; }
 
 /* The words of a sentence its rule checks, in bold over a light highlighter stroke, and the rest of
@@ -5669,7 +5678,10 @@ tr:hover .finding-flag-button,
   color: #0f2a4a;
   font-family: "IBM Plex Mono", ui-monospace, monospace;
   font-size: 0.82em;
-  white-space: nowrap;
+  display: inline;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 
