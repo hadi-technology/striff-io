@@ -17,9 +17,41 @@
     });
     if (found) window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
   };
+  // The dashboard's address names the repository and document in view (`repo`, `doc`), and a
+  // private repository's name, or its file paths, must never reach analytics: every address an
+  // event carries is sent without them.
+  var PRIVATE_PARAMS = ['repo', 'doc'];
+  var withoutPrivateParams = function (value) {
+    if (typeof value !== 'string' || value.indexOf('?') < 0) return value;
+    try {
+      var url = new URL(value), found = false;
+      PRIVATE_PARAMS.forEach(function (key) {
+        if (url.searchParams.has(key)) { url.searchParams.delete(key); found = true; }
+      });
+      return found ? url.toString() : value;
+    } catch (e) {
+      return value;
+    }
+  };
+  var scrubAddresses = function (props) {
+    if (!props || typeof props !== 'object') return;
+    Object.keys(props).forEach(function (key) { props[key] = withoutPrivateParams(props[key]); });
+  };
   posthog.init(apiKey || '', {
     api_host: apiHost || '',
     defaults: '2026-01-30',
+    before_send: function (event) {
+      if (event) {
+        scrubAddresses(event.properties);
+        scrubAddresses(event.$set);
+        scrubAddresses(event.$set_once);
+        if (event.properties) {
+          scrubAddresses(event.properties.$set);
+          scrubAddresses(event.properties.$set_once);
+        }
+      }
+      return event;
+    },
     loaded: function (ph) {
       ph.on('eventCaptured', function (event) {
         if (event && event.event === '$pageview') stripCampaignParams();
