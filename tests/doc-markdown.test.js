@@ -128,3 +128,17 @@ test("a range ending inside an emphasis run, and one straddling a whole run, kee
   assert.deepEqual(shape(raw, { from: 0, to: raw.indexOf(" w") }),
     ["x |hit", "y z|em|hit", " w"]);
 });
+
+test("a rule statement from the API shows its names of code as code, and its words as words", () => {
+  assert.deepEqual(shape("`PersistedDeck` may not depend on `CardDefinition`"),
+    ["PersistedDeck|code", " may not depend on ", "CardDefinition|code"]);
+  assert.deepEqual(shape("`apps/shuffler/src/port-tabletop` holds nothing but `buildCardPlayedEvent`"),
+    ["apps/shuffler/src/port-tabletop|code", " holds nothing but ", "buildCardPlayedEvent|code"]);
+  assert.deepEqual(shape("nothing in `src/**/*.java` may import `__init__`"),
+    ["nothing in ", "src/**/*.java|code", " may import ", "__init__|code"]);
+});
+
+test("a name of code in a statement is never read as markup", () => {
+  assert.deepEqual(shape("`<img src=x onerror=alert(1)>` may not depend on `a_b_c`"),
+    ["<img src=x onerror=alert(1)>|code", " may not depend on ", "a_b_c|code"]);
+});
