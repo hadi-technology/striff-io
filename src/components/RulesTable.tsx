@@ -7,7 +7,6 @@ import FloatingPanel from "./FloatingPanel";
 import { RuleSwitch } from "./RuleStateControls";
 import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
-import { limitsTheCode } from "../lib/ruleOrder.js";
 import { standing } from "../lib/standing.js";
 
 /**
@@ -58,6 +57,17 @@ export interface Rule {
   excludedWith?: string | null;
   /** The GitHub issue the rule is tracked in, where the server knows of one. */
   issue?: FindingIssue | null;
+  /**
+   * The two units a dependency rule crosses, in the order of the rule's ends, where the server
+   * resolved both ends to code in different units; absent or empty otherwise, and then no tag.
+   */
+  crossUnits?: string[] | null;
+}
+
+/** The pair of units a rule crosses, or null where the server named none. */
+function crossing(row: Rule): [string, string] | null {
+  const units = row.crossUnits;
+  return Array.isArray(units) && units.length === 2 && units[0] && units[1] ? [units[0], units[1]] : null;
 }
 
 /** One rule with the document it came from, which is how every scope reads them. */
@@ -143,8 +153,8 @@ export interface RuleStateHandle {
 }
 
 /**
- * Which column the list is ordered by, or "first-read": the order a list opens in, with the rules
- * that limit what the code may do first and document order within each part.
+ * Which column the list is ordered by, or "first-read": the order a list opens in, the documents by
+ * path and each document's rules in the order the server sent them.
  */
 type SortKey = "rule" | "source" | "outcome" | "first-read";
 
@@ -219,8 +229,8 @@ export default function RulesTable({
   const [query, setQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
   const exportButton = useRef<HTMLButtonElement | null>(null);
-  // The rules that limit what the code may do first, the rest after them, each part as its documents read,
-  // until someone orders the list by a column.
+  // Each document's rules in the order the server sent them (broken first, then the rules that
+  // matter most, inventory last), the documents by path, until someone orders the list by a column.
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "first-read", dir: 1 });
 
   useEffect(() => {
@@ -240,6 +250,7 @@ export default function RulesTable({
       plainText(row.statement).toLowerCase().includes(term) ||
       plainText(row.quote).toLowerCase().includes(term) ||
       row.doc.path.toLowerCase().includes(term);
+    const sent = new Map(rows.map((row, at) => [row.factId, at]));
     const byDocument = (a: Row, b: Row) =>
       a.doc.path === b.doc.path
         ? (a.sourceLine || 0) - (b.sourceLine || 0)
@@ -256,7 +267,9 @@ export default function RulesTable({
         return rank(a) - rank(b) || (b.judgedAtMs || 0) - (a.judgedAtMs || 0) || byDocument(a, b);
       }
       if (sort.key === "first-read") {
-        return Number(!limitsTheCode(a)) - Number(!limitsTheCode(b)) || byDocument(a, b);
+        return a.doc.path === b.doc.path
+          ? (sent.get(a.factId) ?? 0) - (sent.get(b.factId) ?? 0)
+          : a.doc.path.localeCompare(b.doc.path);
       }
       return byDocument(a, b);
     };
@@ -566,6 +579,15 @@ export default function RulesTable({
                     }}
                   />
                 </span>
+                {/* Which two units a dependency crosses: beside the status, never in its place. */}
+                {crossing(row) && (
+                  <span
+                    className="docs-outcome-crossing"
+                    title={`This rule is about a dependency between two units: ${crossing(row)![0]} and ${crossing(row)![1]}.`}
+                  >
+                    {crossing(row)![0]} <i aria-hidden="true">→</i> {crossing(row)![1]}
+                  </span>
+                )}
                 {/* This column is narrow, so each line under the pill is short enough to stay one
                     line, and the sentence it stands for is in its title. */}
                 {row.pullNo && (

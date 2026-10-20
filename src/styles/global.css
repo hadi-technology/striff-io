@@ -4355,6 +4355,9 @@
 .docs-outcome.is-unclear, .docs-outcome.is-none { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
 .docs-outcome-when, .docs-outcome-branch { display: block; margin-top: 0.25rem; color: #64748b; font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; }
 .docs-outcome-branch { font-family: "Inter", system-ui, sans-serif; font-size: 0.72rem; }
+/* The two units a dependency crosses, under the status: a small neutral tag, never the status. */
+.docs-outcome-crossing { display: block; width: fit-content; max-width: 100%; margin-top: 0.3rem; padding: 0.05rem 0.4rem; border: 1px solid #dbe3ee; border-radius: 0.3rem; background: #f8fafc; color: #475569; font-family: "IBM Plex Mono", monospace; font-size: 0.66rem; line-height: 1.4; overflow-wrap: anywhere; }
+.docs-outcome-crossing i { font-style: normal; font-size: 0.8rem; line-height: 1; color: #64748b; }
 
 
 /* A name the document wrote in backticks, inside a rule or a sentence in the documents view. */
@@ -4529,7 +4532,7 @@
   .docs-rule-quote { font-size: 0.88rem; }
   /* The outcome line reads as one sentence: pill, then when, then where it stands. */
   .docs-rules td:nth-child(4) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.5rem; }
-  .docs-outcome-when, .docs-outcome-branch { display: inline-block; margin: 0; }
+  .docs-outcome-when, .docs-outcome-branch, .docs-outcome-crossing { display: inline-block; margin: 0; }
 
     }
 
