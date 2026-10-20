@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { copyText } from "../lib/copyText.js";
 import {
   BADGE_FORMATS,
   BADGE_STYLES,
@@ -57,32 +58,6 @@ export interface BadgePanelProps {
   heading?: string;
   /** Closes the panel; given where the panel sits in the page rather than in a dialog. */
   onClose?: () => void;
-}
-
-/** Puts text on the clipboard, by the old route where the browser will not grant the new one. */
-async function copyText(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // Falls through to the old route.
-  }
-  try {
-    const area = document.createElement("textarea");
-    area.value = text;
-    area.setAttribute("readonly", "");
-    area.style.position = "fixed";
-    area.style.opacity = "0";
-    document.body.appendChild(area);
-    area.select();
-    const done = document.execCommand("copy");
-    document.body.removeChild(area);
-    return done;
-  } catch {
-    return false;
-  }
 }
 
 export default function BadgePanel({

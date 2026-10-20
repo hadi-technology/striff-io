@@ -345,6 +345,7 @@ export default function PublicRepo({ initial }: { initial?: BuiltReport }) {
               installationId={0}
               repos={[{ full_name: fullName }]}
               openRepo={fullName}
+              addressLink="public"
               source={docsSource}
               initial={built.current && {
                 catalog: built.current.catalog,
