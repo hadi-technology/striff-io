@@ -203,7 +203,7 @@ async function proxy(event, token, installationId, settings) {
       body: JSON.stringify({
         ...settings,
         repos,
-        userId: String(user.id),
+        githubUserId: String(user.id),
         login: user.login,
         email: email || null,
       }),
