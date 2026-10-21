@@ -3,6 +3,7 @@ import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab, { GitHubMark } from "./DocsTab";
 import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
+import NotificationsPanel from "./NotificationsPanel";
 import { EXTENSION_URL } from "./docRules";
 import { PENDING_DOC_KEY, PENDING_REPO_KEY, docFromSearch, findRepo, repoFromSearch, validDocPath, validRepo, withLink } from "../lib/dashboardDeepLink.js";
 import { signInUrl } from "../lib/githubSignIn.js";
@@ -24,7 +25,7 @@ interface User {
 }
 
 /** The sections of the dashboard: three belong to the account, two to the repository in view. */
-type Section = "repos" | "docs" | "checks" | "metrics" | "billing";
+type Section = "repos" | "docs" | "checks" | "metrics" | "billing" | "notifications";
 
 interface Repo {
   full_name: string;
@@ -110,7 +111,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [autoCheckout, setAutoCheckout] = useState<{ installationId: number; plan: string } | null>(null);
-  const [section, setSection] = useState<Section>("docs");
+  const [section, setSection] = useState<Section>("repos");
   // Which repository the docs and rules view is showing; set by opening one from Repositories.
   const [openRepo, setOpenRepo] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
@@ -256,24 +257,13 @@ export default function Dashboard() {
   const current =
     installations.find((inst) => inst.id === accountId) || installations[0] || null;
 
-  // Opening on the docs means opening on a repository: the one last looked at for this account,
-  // and otherwise its first. Remembered per account, so switching accounts does not carry a
-  // repository that does not belong to it.
+  // The dashboard opens on the account, never on a repository nobody asked for: a repository is
+  // open only when a link names it or the reader chooses it. Switching accounts closes one that
+  // does not belong to the account now in view.
   useEffect(() => {
-    if (!current) return;
+    if (!current || !openRepo) return;
     const repos = current.repositories || [];
-    if (repos.length === 0) return;
-    const remembered = (() => {
-      try {
-        return window.localStorage.getItem(`striff.lastRepo.${current.id}`);
-      } catch {
-        return null;
-      }
-    })();
-    const wanted = repos.find((repo) => repo.full_name === remembered) || repos[0];
-    if (!openRepo || !repos.some((repo) => repo.full_name === openRepo)) {
-      setOpenRepo(wanted.full_name);
-    }
+    if (!repos.some((repo) => repo.full_name === openRepo)) setOpenRepo(null);
   }, [current?.id, current?.repositories?.length]);
 
   useEffect(() => {
@@ -285,14 +275,6 @@ export default function Dashboard() {
     }
   }, [current?.id]);
 
-  useEffect(() => {
-    if (!current || !openRepo) return;
-    try {
-      window.localStorage.setItem(`striff.lastRepo.${current.id}`, openRepo);
-    } catch {
-      // A browser that will not remember is no reason to fail: the first repository is the default.
-    }
-  }, [current?.id, openRepo]);
 
   function signOut() {
     window.location.href = "/.netlify/functions/auth-logout";
@@ -589,10 +571,10 @@ function DashBar({
 }
 
 /**
- * The repository crumb, after the account's: the repository in view as a menu of the account's
- * repositories, or a muted prompt at the account level so the hierarchy shows and a repository is
- * one choice away. A native select laid invisibly over the label keeps the browser's own list,
- * keyboard and screen-reader behaviour.
+ * The repository crumb, after the account's: the repository in view, or a muted prompt at the
+ * account level, opening a menu of the account's repositories drawn like the account menu beside
+ * it. The menu keeps what a native select gave: arrows move, Home and End jump, Escape closes and
+ * hands focus back to the crumb. A long list gets a filter at its top.
  */
 function RepoCrumb({
   repos,
@@ -603,27 +585,120 @@ function RepoCrumb({
   openRepo: string | null;
   onRepo: (fullName: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState("");
+  const wrap = useRef<HTMLDivElement>(null);
   const label = openRepo ? openRepo.split("/")[1] || openRepo : "Select a repository";
+  const filterable = repos.length > 8;
+  const wanted = filter.trim().toLowerCase();
+  const shown = wanted ? repos.filter((r) => r.full_name.toLowerCase().includes(wanted)) : repos;
+
+  function items(): HTMLElement[] {
+    return Array.from(wrap.current?.querySelectorAll<HTMLElement>(".bar-repo-option") || []);
+  }
+
+  function close() {
+    setOpen(false);
+    setFilter("");
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    if (filterable) {
+      wrap.current?.querySelector<HTMLInputElement>(".bar-repo-filter")?.focus();
+    } else {
+      const all = items();
+      (all.find((item) => item.getAttribute("aria-checked") === "true") || all[0])?.focus();
+    }
+
+    function outside(event: MouseEvent) {
+      if (!(event.target as HTMLElement).closest(".bar-repo-wrap")) close();
+    }
+    function keys(event: KeyboardEvent) {
+      const inFilter = (document.activeElement as HTMLElement | null)?.classList.contains("bar-repo-filter");
+      const all = items();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+        wrap.current?.querySelector<HTMLElement>(".bar-repo-pick")?.focus();
+      } else if ((event.key === "ArrowDown" || event.key === "ArrowUp") && all.length) {
+        event.preventDefault();
+        const at = all.indexOf(document.activeElement as HTMLElement);
+        const step = event.key === "ArrowDown" ? 1 : -1;
+        all[at < 0 ? (step > 0 ? 0 : all.length - 1) : (at + step + all.length) % all.length].focus();
+      } else if ((event.key === "Home" || event.key === "End") && all.length && !inFilter) {
+        event.preventDefault();
+        (event.key === "Home" ? all[0] : all[all.length - 1]).focus();
+      } else if (event.key === "Tab") {
+        close();
+      }
+    }
+    document.addEventListener("click", outside);
+    document.addEventListener("keydown", keys);
+    return () => {
+      document.removeEventListener("click", outside);
+      document.removeEventListener("keydown", keys);
+    };
+  }, [open]);
+
   return (
     <div className="bar-crumb-repo">
       <span className="bar-sep" aria-hidden="true">/</span>
-      <span className={`bar-repo-pick${openRepo ? "" : " is-empty"}`}>
-        <span className="bar-repo-label">{label}</span>
-        <Chevron />
-        <select
-          className="bar-repo-select"
-          aria-label="Repository"
-          value={openRepo ?? ""}
-          onChange={(event) => onRepo(event.target.value)}
+      <div className="bar-repo-wrap" ref={wrap}>
+        <button
+          type="button"
+          className={`bar-repo-pick${openRepo ? "" : " is-empty"}`}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={openRepo ? `Repository: ${openRepo}. Change repository` : "Select a repository"}
+          onClick={() => (open ? close() : setOpen(true))}
         >
-          {!openRepo && <option value="" disabled>Select a repository</option>}
-          {repos.map((r) => (
-            <option key={r.full_name} value={r.full_name}>
-              {r.full_name.split("/")[1] || r.full_name}
-            </option>
-          ))}
-        </select>
-      </span>
+          <span className="bar-repo-label">{label}</span>
+          <Chevron />
+        </button>
+        {open && (
+          <div className="bar-menu bar-account-menu bar-repo-menu" role="menu">
+            <p className="bar-menu-who">Repositories</p>
+            {filterable && (
+              <input
+                className="bar-repo-filter"
+                type="search"
+                placeholder="Find a repository"
+                aria-label="Find a repository"
+                value={filter}
+                onChange={(event) => setFilter(event.target.value)}
+              />
+            )}
+            {shown.map((r) => {
+              const current = r.full_name === openRepo;
+              return (
+                <button
+                  key={r.full_name}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={current}
+                  className={`bar-menu-item bar-account-option bar-repo-option${current ? " is-current" : ""}`}
+                  onClick={() => {
+                    close();
+                    if (!current) onRepo(r.full_name);
+                  }}
+                >
+                  <span className="bar-repo-visibility" title={r.private ? "Private" : "Public"}>
+                    <RepoVisibilityIcon private={r.private} />
+                  </span>
+                  <span className="bar-account-option-name">{r.full_name.split("/")[1] || r.full_name}</span>
+                  {current && (
+                    <svg className="bar-account-tick" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="m3.5 8.5 3 3 6-7" />
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
+            {shown.length === 0 && <p className="bar-repo-none">No repository matches.</p>}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -657,6 +732,7 @@ function TabRow({
         ["metrics", "Metrics", "overview", ""],
         ["repos", "Repositories", "repos", String((current.repositories || []).length)],
         ["billing", "Billing", "billing", ""],
+        ["notifications", "Notifications", "notifications", ""],
       ];
   const selected = (current.repositories || []).find((r) => r.full_name === openRepo);
   return (
@@ -871,6 +947,7 @@ const NavIcon = ({ name }: { name: string }) => {
     docs: ["M3.5 1.75h5.5l3.5 3.5v9h-9Z", "m5.75 9.5 1.5 1.5 3-3"],
     checks: ["M8 1.75a6.25 6.25 0 1 0 0 12.5a6.25 6.25 0 1 0 0-12.5Z", "m5.5 8.25 1.75 1.75 3.25-3.5"],
     billing: ["M1.5 3.5h13v9h-13z", "M1.5 6.5h13"],
+    notifications: ["M3.5 11.5V7a4.5 4.5 0 0 1 9 0v4.5l1 1h-11Z", "M6.5 14h3"],
   };
   return createElement(
     "svg",
@@ -1322,6 +1399,16 @@ function InstallationCard({
           ) : installTab === "checks" ? (
             <div className="mt-3 dashboard-metric-fade-in">
               <ChecksTab installationId={installation.id} repo={openRepo || ""} inShell={section !== undefined} actionsSlot={actionsSlot} badge={repoBadge} />
+            </div>
+          ) : installTab === "notifications" ? (
+            <div className="mt-3 dashboard-metric-fade-in">
+              <NotificationsPanel
+                installationId={installation.id}
+                account={installation.account?.login || ""}
+                isOrg={installation.account?.type === "Organization"}
+                repos={repos.map((r) => r.full_name)}
+                onSignedOut={signInAgain}
+              />
             </div>
           ) : installTab === "metrics" ? (
             <div className="mt-3 dashboard-metric-fade-in">
