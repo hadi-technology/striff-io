@@ -559,7 +559,7 @@ function DashBar({
                         onHome();
                       }}
                     >
-                      {current.account?.type === "Organization" ? `Manage ${current.account.login}` : "Manage your account"}
+                      Manage
                     </button>
                   )}
                   <a className="bar-menu-item" href={INSTALL_URL} target="_blank" rel="noopener noreferrer" role="menuitem">
