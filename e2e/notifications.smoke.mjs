@@ -53,7 +53,7 @@ try {
   let puts = [];
   let s = await open(browser, { width: 1280, height: 900 }, member, puts);
   assert.equal(await s.page.getByRole("switch", { name: "Email me when a documented rule breaks" }).getAttribute("aria-checked"), "true");
-  assert.equal(await s.page.getByText("For everyone in this installation").count(), 0, "no admin controls for a member");
+  assert.equal(await s.page.getByText("For everyone at acme").count(), 0, "no admin controls for a member");
   assert.equal(await s.page.getByText(/Updating|Saving/).count(), 0, "no progress states");
   assert.equal(await s.page.getByRole("button", { name: "Save" }).isDisabled(), true, "nothing to save yet");
   await snap(s.page, "desktop-member-all");
@@ -84,10 +84,10 @@ try {
   // An admin sees and saves the installation-wide controls.
   puts = [];
   s = await open(browser, { width: 1280, height: 900 }, admin, puts);
-  await s.page.getByText("For everyone in this installation").waitFor();
+  await s.page.getByText("For everyone at acme", { exact: true }).waitFor();
   await snap(s.page, "desktop-admin");
-  await s.page.getByRole("switch", { name: "Turn off break emails for this installation" }).click();
-  await s.page.getByRole("switch", { name: "Default for new people: all repositories" }).click();
+  await s.page.getByRole("switch", { name: "Turn off break emails for everyone at acme" }).click();
+  await s.page.getByRole("switch", { name: "New people get emails for all repositories" }).click();
   await s.page.getByRole("button", { name: "Save" }).click();
   await s.page.getByText("Saved.").waitFor();
   assert.equal(puts[0].installationEnabled, false);
@@ -97,7 +97,7 @@ try {
   // Unsubscribed through an email link, and an installation that is off.
   s = await open(browser, { width: 1280, height: 900 }, { ...admin, unsubscribedAll: true, installationEnabled: false }, []);
   await s.page.getByText(/You unsubscribed/).waitFor();
-  await s.page.getByText(/turned off for this installation/).waitFor();
+  await s.page.getByText(/turned off for everyone at acme/).waitFor();
   assert.equal(await s.page.getByRole("switch", { name: "Email me when a documented rule breaks" }).getAttribute("aria-checked"), "false");
   await s.context.close();
 

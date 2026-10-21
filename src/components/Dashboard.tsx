@@ -1330,6 +1330,8 @@ function InstallationCard({
             <div className="mt-3 dashboard-metric-fade-in">
               <NotificationsPanel
                 installationId={installation.id}
+                account={installation.account?.login || ""}
+                isOrg={installation.account?.type === "Organization"}
                 repos={repos.map((r) => r.full_name)}
                 onSignedOut={signInAgain}
               />

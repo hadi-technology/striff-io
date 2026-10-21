@@ -55,14 +55,22 @@ function Switch({
  */
 export default function NotificationsPanel({
   installationId,
+  account,
+  isOrg,
   repos,
   onSignedOut,
 }: {
   installationId: number;
+  /** The GitHub account the app is installed on, by login. */
+  account: string;
+  /** Whether that account is an organisation rather than a person. */
+  isOrg: boolean;
   /** The installation's repositories, as full names. */
   repos: string[];
   onSignedOut: (onBlocked: () => void) => void;
 }) {
+  const accountName = isOrg && account ? account : "your account";
+  const everyone = isOrg && account ? `everyone at ${account}` : "everyone on your account";
   const [saved, setSaved] = useState<Form | null>(null);
   const [form, setForm] = useState<Form | null>(null);
   const [admin, setAdmin] = useState(false);
@@ -155,12 +163,13 @@ export default function NotificationsPanel({
       <h3 className="text-sm font-bold text-slate-900">Notifications</h3>
       <p className="mt-1 text-sm text-slate-500">
         When a push to the default branch breaks a rule from your docs, Striff emails you with
-        what broke and where.
+        what broke and where. Breaks it finds in code that was already there come in one daily
+        summary.
       </p>
 
       {!form.installationEnabled && (
         <p className="notif-note" role="status">
-          Break emails are turned off for this installation, so no one gets them.
+          Break emails are turned off for {everyone}.
         </p>
       )}
       {unsubscribed && (
@@ -198,7 +207,7 @@ export default function NotificationsPanel({
           </label>
           {form.scope === "REPOS" && (
             repos.length === 0 ? (
-              <p className="notif-row-hint">No repositories in this installation yet.</p>
+              <p className="notif-row-hint">No repositories in {accountName} yet.</p>
             ) : (
               <ul className="notif-repos" aria-label="Repositories to get emails for">
                 {repos.map((name) => (
@@ -224,17 +233,17 @@ export default function NotificationsPanel({
 
       {admin && (
         <div className="notif-admin">
-          <p className="notif-legend">For everyone in this installation</p>
+          <p className="notif-legend">For {everyone}</p>
           <Switch
             checked={form.defaultForNewRepos}
             onChange={(defaultForNewRepos) => change({ defaultForNewRepos })}
-            label="Default for new people: all repositories"
-            hint="People who sign in after this start with every repository on."
+            label="New people get emails for all repositories"
+            hint={`Anyone who signs in to Striff for ${accountName} after this starts with every repository on.`}
           />
           <Switch
             checked={!form.installationEnabled}
             onChange={(off) => change({ installationEnabled: !off })}
-            label="Turn off break emails for this installation"
+            label={`Turn off break emails for ${everyone}`}
             hint="No one gets them, whatever they chose."
           />
         </div>
