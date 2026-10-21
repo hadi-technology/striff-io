@@ -549,19 +549,6 @@ function DashBar({
               {menuOpen && (
                 <div className="bar-menu" role="menu">
                   <p className="bar-menu-who">{user.login}</p>
-                  {current && (
-                    <button
-                      type="button"
-                      className="bar-menu-item"
-                      role="menuitem"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        onHome();
-                      }}
-                    >
-                      Manage
-                    </button>
-                  )}
                   <a className="bar-menu-item" href={INSTALL_URL} target="_blank" rel="noopener noreferrer" role="menuitem">
                     Add an account
                   </a>
