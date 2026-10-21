@@ -571,10 +571,10 @@ function DashBar({
 }
 
 /**
- * The repository crumb, after the account's: the repository in view as a menu of the account's
- * repositories, or a muted prompt at the account level so the hierarchy shows and a repository is
- * one choice away. A native select laid invisibly over the label keeps the browser's own list,
- * keyboard and screen-reader behaviour.
+ * The repository crumb, after the account's: the repository in view, or a muted prompt at the
+ * account level, opening a menu of the account's repositories drawn like the account menu beside
+ * it. The menu keeps what a native select gave: arrows move, Home and End jump, Escape closes and
+ * hands focus back to the crumb. A long list gets a filter at its top.
  */
 function RepoCrumb({
   repos,
@@ -585,27 +585,120 @@ function RepoCrumb({
   openRepo: string | null;
   onRepo: (fullName: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState("");
+  const wrap = useRef<HTMLDivElement>(null);
   const label = openRepo ? openRepo.split("/")[1] || openRepo : "Select a repository";
+  const filterable = repos.length > 8;
+  const wanted = filter.trim().toLowerCase();
+  const shown = wanted ? repos.filter((r) => r.full_name.toLowerCase().includes(wanted)) : repos;
+
+  function items(): HTMLElement[] {
+    return Array.from(wrap.current?.querySelectorAll<HTMLElement>(".bar-repo-option") || []);
+  }
+
+  function close() {
+    setOpen(false);
+    setFilter("");
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    if (filterable) {
+      wrap.current?.querySelector<HTMLInputElement>(".bar-repo-filter")?.focus();
+    } else {
+      const all = items();
+      (all.find((item) => item.getAttribute("aria-checked") === "true") || all[0])?.focus();
+    }
+
+    function outside(event: MouseEvent) {
+      if (!(event.target as HTMLElement).closest(".bar-repo-wrap")) close();
+    }
+    function keys(event: KeyboardEvent) {
+      const inFilter = (document.activeElement as HTMLElement | null)?.classList.contains("bar-repo-filter");
+      const all = items();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+        wrap.current?.querySelector<HTMLElement>(".bar-repo-pick")?.focus();
+      } else if ((event.key === "ArrowDown" || event.key === "ArrowUp") && all.length) {
+        event.preventDefault();
+        const at = all.indexOf(document.activeElement as HTMLElement);
+        const step = event.key === "ArrowDown" ? 1 : -1;
+        all[at < 0 ? (step > 0 ? 0 : all.length - 1) : (at + step + all.length) % all.length].focus();
+      } else if ((event.key === "Home" || event.key === "End") && all.length && !inFilter) {
+        event.preventDefault();
+        (event.key === "Home" ? all[0] : all[all.length - 1]).focus();
+      } else if (event.key === "Tab") {
+        close();
+      }
+    }
+    document.addEventListener("click", outside);
+    document.addEventListener("keydown", keys);
+    return () => {
+      document.removeEventListener("click", outside);
+      document.removeEventListener("keydown", keys);
+    };
+  }, [open]);
+
   return (
     <div className="bar-crumb-repo">
       <span className="bar-sep" aria-hidden="true">/</span>
-      <span className={`bar-repo-pick${openRepo ? "" : " is-empty"}`}>
-        <span className="bar-repo-label">{label}</span>
-        <Chevron />
-        <select
-          className="bar-repo-select"
-          aria-label="Repository"
-          value={openRepo ?? ""}
-          onChange={(event) => onRepo(event.target.value)}
+      <div className="bar-repo-wrap" ref={wrap}>
+        <button
+          type="button"
+          className={`bar-repo-pick${openRepo ? "" : " is-empty"}`}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={openRepo ? `Repository: ${openRepo}. Change repository` : "Select a repository"}
+          onClick={() => (open ? close() : setOpen(true))}
         >
-          {!openRepo && <option value="" disabled>Select a repository</option>}
-          {repos.map((r) => (
-            <option key={r.full_name} value={r.full_name}>
-              {r.full_name.split("/")[1] || r.full_name}
-            </option>
-          ))}
-        </select>
-      </span>
+          <span className="bar-repo-label">{label}</span>
+          <Chevron />
+        </button>
+        {open && (
+          <div className="bar-menu bar-account-menu bar-repo-menu" role="menu">
+            <p className="bar-menu-who">Repositories</p>
+            {filterable && (
+              <input
+                className="bar-repo-filter"
+                type="search"
+                placeholder="Find a repository"
+                aria-label="Find a repository"
+                value={filter}
+                onChange={(event) => setFilter(event.target.value)}
+              />
+            )}
+            {shown.map((r) => {
+              const current = r.full_name === openRepo;
+              return (
+                <button
+                  key={r.full_name}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={current}
+                  className={`bar-menu-item bar-account-option bar-repo-option${current ? " is-current" : ""}`}
+                  onClick={() => {
+                    close();
+                    if (!current) onRepo(r.full_name);
+                  }}
+                >
+                  <span className="bar-repo-visibility" title={r.private ? "Private" : "Public"}>
+                    <RepoVisibilityIcon private={r.private} />
+                  </span>
+                  <span className="bar-account-option-name">{r.full_name.split("/")[1] || r.full_name}</span>
+                  {current && (
+                    <svg className="bar-account-tick" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="m3.5 8.5 3 3 6-7" />
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
+            {shown.length === 0 && <p className="bar-repo-none">No repository matches.</p>}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
