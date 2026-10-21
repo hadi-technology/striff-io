@@ -105,14 +105,14 @@ test("a malformed installation id never reaches GitHub or the API", async () => 
 test("a save sends the identity from GitHub, not from the request", async () => {
   const res = await put({
     installation_id: 7, enabled: true, scope: "ALL",
-    userId: "1", login: "mallory", email: "mallory@example.org",
+    githubUserId: "1", login: "mallory", email: "mallory@example.org",
   });
   assert.equal(res.statusCode, 200);
   const [call] = apiCalls();
   assert.equal(call.init.method, "PUT");
   assert.equal(new URL(call.url).pathname, "/api/v1/organizations/7/notifications");
   assert.deepEqual(JSON.parse(call.init.body), {
-    enabled: true, scope: "ALL", repos: [], userId: "42", login: "alice", email: EMAIL,
+    enabled: true, scope: "ALL", repos: [], githubUserId: "42", login: "alice", email: EMAIL,
   });
 });
 
