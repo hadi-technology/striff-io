@@ -111,7 +111,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [autoCheckout, setAutoCheckout] = useState<{ installationId: number; plan: string } | null>(null);
-  const [section, setSection] = useState<Section>("docs");
+  const [section, setSection] = useState<Section>("repos");
   // Which repository the docs and rules view is showing; set by opening one from Repositories.
   const [openRepo, setOpenRepo] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
@@ -257,24 +257,13 @@ export default function Dashboard() {
   const current =
     installations.find((inst) => inst.id === accountId) || installations[0] || null;
 
-  // Opening on the docs means opening on a repository: the one last looked at for this account,
-  // and otherwise its first. Remembered per account, so switching accounts does not carry a
-  // repository that does not belong to it.
+  // The dashboard opens on the account, never on a repository nobody asked for: a repository is
+  // open only when a link names it or the reader chooses it. Switching accounts closes one that
+  // does not belong to the account now in view.
   useEffect(() => {
-    if (!current) return;
+    if (!current || !openRepo) return;
     const repos = current.repositories || [];
-    if (repos.length === 0) return;
-    const remembered = (() => {
-      try {
-        return window.localStorage.getItem(`striff.lastRepo.${current.id}`);
-      } catch {
-        return null;
-      }
-    })();
-    const wanted = repos.find((repo) => repo.full_name === remembered) || repos[0];
-    if (!openRepo || !repos.some((repo) => repo.full_name === openRepo)) {
-      setOpenRepo(wanted.full_name);
-    }
+    if (!repos.some((repo) => repo.full_name === openRepo)) setOpenRepo(null);
   }, [current?.id, current?.repositories?.length]);
 
   useEffect(() => {
@@ -286,14 +275,6 @@ export default function Dashboard() {
     }
   }, [current?.id]);
 
-  useEffect(() => {
-    if (!current || !openRepo) return;
-    try {
-      window.localStorage.setItem(`striff.lastRepo.${current.id}`, openRepo);
-    } catch {
-      // A browser that will not remember is no reason to fail: the first repository is the default.
-    }
-  }, [current?.id, openRepo]);
 
   function signOut() {
     window.location.href = "/.netlify/functions/auth-logout";
@@ -568,6 +549,19 @@ function DashBar({
               {menuOpen && (
                 <div className="bar-menu" role="menu">
                   <p className="bar-menu-who">{user.login}</p>
+                  {current && (
+                    <button
+                      type="button"
+                      className="bar-menu-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onHome();
+                      }}
+                    >
+                      {current.account?.type === "Organization" ? `Manage ${current.account.login}` : "Manage your account"}
+                    </button>
+                  )}
                   <a className="bar-menu-item" href={INSTALL_URL} target="_blank" rel="noopener noreferrer" role="menuitem">
                     Add an account
                   </a>
