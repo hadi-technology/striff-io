@@ -3,6 +3,7 @@ import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab, { GitHubMark } from "./DocsTab";
 import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
+import NotificationsPanel from "./NotificationsPanel";
 import { EXTENSION_URL } from "./docRules";
 import { PENDING_DOC_KEY, PENDING_REPO_KEY, docFromSearch, findRepo, repoFromSearch, validDocPath, validRepo, withLink } from "../lib/dashboardDeepLink.js";
 import { signInUrl } from "../lib/githubSignIn.js";
@@ -24,7 +25,7 @@ interface User {
 }
 
 /** The sections of the dashboard: three belong to the account, two to the repository in view. */
-type Section = "repos" | "docs" | "checks" | "metrics" | "billing";
+type Section = "repos" | "docs" | "checks" | "metrics" | "billing" | "notifications";
 
 interface Repo {
   full_name: string;
@@ -657,6 +658,7 @@ function TabRow({
         ["metrics", "Metrics", "overview", ""],
         ["repos", "Repositories", "repos", String((current.repositories || []).length)],
         ["billing", "Billing", "billing", ""],
+        ["notifications", "Notifications", "notifications", ""],
       ];
   const selected = (current.repositories || []).find((r) => r.full_name === openRepo);
   return (
@@ -871,6 +873,7 @@ const NavIcon = ({ name }: { name: string }) => {
     docs: ["M3.5 1.75h5.5l3.5 3.5v9h-9Z", "m5.75 9.5 1.5 1.5 3-3"],
     checks: ["M8 1.75a6.25 6.25 0 1 0 0 12.5a6.25 6.25 0 1 0 0-12.5Z", "m5.5 8.25 1.75 1.75 3.25-3.5"],
     billing: ["M1.5 3.5h13v9h-13z", "M1.5 6.5h13"],
+    notifications: ["M3.5 11.5V7a4.5 4.5 0 0 1 9 0v4.5l1 1h-11Z", "M6.5 14h3"],
   };
   return createElement(
     "svg",
@@ -1322,6 +1325,14 @@ function InstallationCard({
           ) : installTab === "checks" ? (
             <div className="mt-3 dashboard-metric-fade-in">
               <ChecksTab installationId={installation.id} repo={openRepo || ""} inShell={section !== undefined} actionsSlot={actionsSlot} badge={repoBadge} />
+            </div>
+          ) : installTab === "notifications" ? (
+            <div className="mt-3 dashboard-metric-fade-in">
+              <NotificationsPanel
+                installationId={installation.id}
+                repos={repos.map((r) => r.full_name)}
+                onSignedOut={signInAgain}
+              />
             </div>
           ) : installTab === "metrics" ? (
             <div className="mt-3 dashboard-metric-fade-in">
