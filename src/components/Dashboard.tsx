@@ -1353,9 +1353,9 @@ function InstallationCard({
                               {repo.private ? "Private" : "Public"}
                             </span>
                             {isActive && (
-                              <span className="repo-card-active" title="Striff checks pull requests here">
-                                <span className="repo-card-pulse" aria-hidden="true" />
-                                Checking
+                              <span className="repo-card-active" title="Connected: Striff checks every pull request opened or updated here">
+                                <span className="repo-card-dot" aria-hidden="true" />
+                                Connected
                               </span>
                             )}
                           </span>

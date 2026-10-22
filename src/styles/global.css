@@ -5868,7 +5868,8 @@ tr:hover .finding-flag-button,
 }
 .repo-card-vis.is-private { background: #fdf3e3; color: #8a5a18; }
 
-/* Analyzing is a live fact about the repository, so it gets the only colour on the card. */
+/* Connected is a standing fact about the repository, not work in progress, so its dot stays still:
+   a pulse beside it read as a scan that never finished. */
 .repo-card-active {
   display: inline-flex;
   align-items: center;
@@ -5878,21 +5879,13 @@ tr:hover .finding-flag-button,
   padding: 0.12rem 0.5rem;
   color: #17632f;
 }
-.repo-card-pulse {
+.repo-card-dot {
   width: 0.36rem;
   height: 0.36rem;
   border-radius: 999px;
   background: #1a7f37;
-  box-shadow: 0 0 0 0 rgba(26, 127, 55, 0.5);
-  animation: repo-card-pulse 2.4s ease-out infinite;
-}
-@keyframes repo-card-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(26, 127, 55, 0.45); }
-  70% { box-shadow: 0 0 0 0.3rem rgba(26, 127, 55, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(26, 127, 55, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .repo-card-pulse { animation: none; }
   .repo-card:hover { transform: none; }
 }
 
