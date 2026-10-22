@@ -4249,8 +4249,11 @@
 @media (prefers-reduced-motion: reduce) { .docs-split-handle::after { transition: none; } }
 @media print { .docs-split-handle { display: none; } }
 
-.docs-list { border: 1px solid rgba(31, 35, 40, 0.12); border-radius: 0.75rem; background: #fff; overflow: hidden; }
-.docs-filters { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.6rem; border-bottom: 1px solid #edf1f5; }
+/* The explorer is a tinted sidebar beside the white pane it selects into, so the two read as two
+   surfaces; what sits on it (the search, the chips, the open document) is white and stands off it. */
+.docs-list { border: 1px solid rgba(31, 35, 40, 0.16); border-radius: 0.75rem; background: #f3f6f9; overflow: hidden; }
+.docs-filters { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.6rem; border-bottom: 1px solid #e1e7ee; }
+.docs-list .tree-search { background: #fff; }
 .docs-filter {
   border: 1px solid #e2e8f0;
   border-radius: 999px;
@@ -4316,7 +4319,7 @@
 .docs-badge.is-excluded { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
 .docs-badge.is-unreadable { background: #fff; border-color: #f2c1c7; color: #b4233c; }
 
-.docs-pane { border: 1px solid rgba(31, 35, 40, 0.12); border-radius: 0.75rem; background: #fff; padding: 0.9rem 1rem; min-width: 0; }
+.docs-pane { border: 1px solid rgba(31, 35, 40, 0.16); border-radius: 0.75rem; background: #fff; padding: 0.9rem 1rem; min-width: 0; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 6px 16px -8px rgba(15, 23, 42, 0.12); }
 .docs-pane-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .docs-pane-path { font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; color: #0f172a; font-weight: 600; }
 .docs-pane-actions { margin-left: auto; }
@@ -4400,8 +4403,8 @@
 .docs-tree { max-height: max(30rem, calc(100vh - 12rem)); overflow-y: auto; padding: 0.35rem 0.35rem 0.5rem; }
 
 .docs-row { display: flex; align-items: center; gap: 0.25rem; min-height: 30px; border-radius: 0.4rem; }
-.docs-row:hover { background: #f8fafc; }
-.docs-row.is-open { background: #eef4fe; }
+.docs-row:hover { background: #e8edf3; }
+.docs-row.is-open { background: #fff; box-shadow: inset 2px 0 0 #2563eb, 0 0 0 1px #d6e0ec; }
 .docs-row.is-dim .docs-row-name { color: #8a95a1; }
 
 .docs-row-main {
@@ -4472,7 +4475,7 @@
 .docs-menu > button[aria-disabled="true"],
 .docs-menu > button[aria-disabled="true"]:hover { color: #8c959f; background: transparent; cursor: not-allowed; }
 
-.docs-tree-foot { padding: 0.5rem 0.75rem 0.6rem; border-top: 1px solid #edf1f5; color: #64748b; font-size: 0.74rem; }
+.docs-tree-foot { padding: 0.5rem 0.75rem 0.6rem; border-top: 1px solid #e1e7ee; color: #64748b; font-size: 0.74rem; }
 
 /* ---- Dashboard shell: the repository header and its tabs, then the work ----
    The account's sections live in the bar above. Nothing runs down the side, so the document tree
