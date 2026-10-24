@@ -87,3 +87,9 @@ test("paid, reading: what is not read is what is left", () => {
   const h = readingHeader({ state: "paid_reading", documentsRead: 40, documentsTotal: 136, documentsNotRead: 96 });
   assert.equal(words(h), "Striff is reading the other 96 documents: 40 read so far.");
 });
+
+test("an unpaid header names the documents it can check where some are excluded", () => {
+  const status = { state: "unpaid", offerPaidPlan: true, documentsRead: 9, documentsTotal: 12, readAtInstallation: 7, readSince: 2 };
+  assert.match(words(readingHeader(status, NOW, 3)), /^Striff has read 9 of the 12 documents it can check, starting with the ones most tied to your code\./);
+  assert.match(words(readingHeader(status, NOW, 0)), /^Striff has read 9 of your 12 documents, starting/);
+});

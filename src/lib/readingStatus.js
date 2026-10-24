@@ -52,7 +52,7 @@ export function readingHeader(status, now = Date.now(), excluded = 0) {
     case "unpaid":
       line = [
         "Striff has read ",
-        { b: `${read} of your ${total} documents` },
+        { b: `${read} of ${excluded > 0 ? `the ${total} documents it can check` : `your ${total} documents`}` },
         ", starting with the ones most tied to your code. Every pull request and push reads the documents about the code it changes, ",
         { b: "free" },
         ", so this keeps growing as your team works.",

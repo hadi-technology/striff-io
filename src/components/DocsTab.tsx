@@ -2119,10 +2119,12 @@ export default function DocsTab({
                     </button>
                   ))}
                 <button type="button" role="menuitem"
-                  title="Striff won't read this doc, and none of its rules are checked."
+                  title={doc?.state === "SCREENED_OUT"
+                    ? "Striff won't read this doc even when a change touches its code, or when you choose Read it anyway."
+                    : "Striff won't read this doc, and none of its rules are checked."}
                   {...blockedProps}
                   onClick={unlessBlocked(() => exclude(path, false, true))}>
-                  Exclude this doc
+                  {doc?.state === "SCREENED_OUT" ? "Exclude it yourself" : "Exclude this doc"}
                 </button>
               </>
             )}
@@ -3063,7 +3065,8 @@ export default function DocsTab({
                     </button>
                   )}
                   <span className="docs-pane-actions">
-                    {scopeExclude(selected, "doc")}
+                    {/* The badge and the state line already say Striff excluded it. */}
+                    {(selectedDoc ?? detail.document).state !== "SCREENED_OUT" && scopeExclude(selected, "doc")}
                     {rowMenu(selected, selectedDoc ?? detail.document, false, "pane")}
                   </span>
                 </div>
