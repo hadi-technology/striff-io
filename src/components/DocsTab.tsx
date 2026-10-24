@@ -3102,7 +3102,6 @@ export default function DocsTab({
                           name={name}
                           docPath={selected}
                           branch={branch}
-                          lastReadMs={detail.document.lastExtractedMs}
                           onInclude={readOnly ? undefined : async (row) => ruleStateBlocked ?? setRuleStates({ excluded: false, factIds: [row.factId] })}
                           renderStale={(finding: StaleName) => (
                             <>

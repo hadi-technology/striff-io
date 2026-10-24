@@ -2,7 +2,6 @@ import { Component, Fragment, memo, useCallback, useEffect, useMemo, useState, t
 import { parseDoc } from "../lib/docParse.js";
 import { Clamped, when, withCode } from "./docRules";
 import { STANDING_HELP, STANDING_LABEL, standing, type Row } from "./RulesTable";
-import { formatDay } from "../lib/renderClock.js";
 import {
   alignText,
   byStrength,
@@ -386,7 +385,7 @@ function DocCard({ items, onClose }: { items: ReactNode[]; onClose: () => void }
 }
 
 export default function DocumentView({
-  data, rules, stale, owner, name, docPath, branch, lastReadMs, onInclude, renderStale,
+  data, rules, stale, owner, name, docPath, branch, onInclude, renderStale,
 }: {
   data: DocText;
   /** The doc's rules as the Rules tab lists them, with their current exclusion. */
@@ -396,7 +395,6 @@ export default function DocumentView({
   name: string;
   docPath: string;
   branch: string | null;
-  lastReadMs: number | null;
   /** Puts an excluded rule back; absent where nothing may be changed. */
   onInclude?: (rule: Row) => Promise<string | null>;
   /** The body of a stale name's card: the existing wording and its issue link. */
@@ -572,7 +570,7 @@ export default function DocumentView({
             Read at{" "}
             <a href={blobUrl(owner, name, data.commit, docPath)} target="_blank" rel="noopener noreferrer"><code>{sha}</code></a>
             {branch ? ` on ${branch}` : ""}
-            {lastReadMs ? `, ${formatDay(lastReadMs, { day: "numeric", month: "short", year: "numeric" })}` : ""}.
+            .
             {data.mainChanged && (
               <>
                 {" · "}

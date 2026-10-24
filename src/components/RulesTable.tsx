@@ -471,13 +471,6 @@ export default function RulesTable({
                     </svg>
                   </a>
                 </span>
-                {showPath && (
-                  <span className="rules-source-when">
-                    {row.doc.lastExtractedMs
-                      ? `Read ${when(row.doc.lastExtractedMs)}${row.doc.lastExtractedPullNo ? ` on PR #${row.doc.lastExtractedPullNo}` : ""}`
-                      : ""}
-                  </span>
-                )}
               </td>
               )}
               {group.index === 0 && (
