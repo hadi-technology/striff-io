@@ -1565,7 +1565,7 @@ function FaqSection() {
       a: "A private repo counts when, during your billing period, Striff checks one of its pull requests or reads its documents. Connecting it doesn't count, and neither does the nightly re-check of rules Striff has already read.",
     },
     {
-      q: "I enabled 20 repos but only 3 were active \u2014 what do I pay?",
+      q: "I enabled 20 repos but Striff only worked on 3. What do I pay?",
       a: "You pay for the 3 Striff worked on, which is Starter ($29 a month), even though 20 are connected. The usage panel on your installation card lists them.",
     },
     {
@@ -1582,7 +1582,7 @@ function FaqSection() {
     },
     {
       q: "How do I stop being charged?",
-      a: "Open the <b>Billing</b> tab on your installation card and click <b>\"Manage billing\"</b> to open the Stripe portal and cancel your subscription. <b>You keep access until the end of your current billing period</b> \u2014 there is no immediate cutoff. You can also remove all private repos from the GitHub App settings to avoid any future need for a paid plan.",
+      a: "Open the <b>Billing</b> tab on your installation card and click <b>\"Manage billing\"</b> to open the Stripe portal and cancel your subscription. <b>You keep access until the end of your current billing period</b> \u2014 there is no immediate cutoff. Removing private repos from the GitHub App settings does not stop the charge: a subscribed installation pays at least the Starter price, so cancel in the portal to stop it.",
     },
     {
       q: "What happens if I cancel my subscription?",
