@@ -61,9 +61,9 @@ interface BillingInfo {
 }
 
 const PLANS = [
-  { id: "starter", name: "Starter", price: "$29/mo", repos: "Up to 5 active repos", cap: 5 },
-  { id: "team", name: "Team", price: "$59/mo", repos: "Up to 15 active repos", cap: 15 },
-  { id: "scale", name: "Scale", price: "$149/mo", repos: "Up to 50 active repos", cap: 50 },
+  { id: "starter", name: "Starter", price: "$29/mo", repos: "Up to 5 private repos Striff works on a month", cap: 5 },
+  { id: "team", name: "Team", price: "$59/mo", repos: "Up to 15 private repos Striff works on a month", cap: 15 },
+  { id: "scale", name: "Scale", price: "$149/mo", repos: "Up to 50 private repos Striff works on a month", cap: 50 },
 ] as const;
 
 function formatPeriodEnd(periodEndMs?: number): string | null {
