@@ -126,8 +126,8 @@ const documents = [
   doc("CONTRIBUTING.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
   doc("docs/design/inventory-reservations.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
   doc("docs/runbooks/refund-backlog.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
-  doc("docs/runbooks/oncall.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
-  doc("README.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
+  doc("docs/runbooks/oncall.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: who to page, not code structure" }),
+  doc("README.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: setup and usage, not how the code is built" }),
   doc("docs/adr/0007-payments.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 2, alreadyBrokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 12 * DAY }),
   doc("docs/adr/0008-read-models.md", "READ", { extractedContentHash: "71cc4ab9", ruleCount: 1, outdated: true, lastExtractedMs: NOW - 22 * DAY, lastExtractedPullNo: "398" }),
   doc("docs/adr/0003-shared-database.md", "RETIRED", { retiredReason: "Superseded by ADR 0007, which gives billing a store of its own." }),
@@ -142,6 +142,7 @@ const documents = [
 
 const isUnread = (d: { state: string }) => d.state === "NOT_READ" || d.state === "OUTSIDE_FIRST_READING";
 const count = (state: string) => documents.filter((d) => d.state === state).length;
+const screenedOut = documents.filter((d) => d.state === "SCREENED_OUT").length;
 const summary = {
   documents: documents.length,
   read: count("READ"),
@@ -286,23 +287,22 @@ export const demoCatalog: any = {
   lastAttempt: { atMs: NOW - 3 * 60 * 1000, outcome: "listed", reason: null, documents: documents.length },
   reading: null,
   // An unpaid repository: the first reading is done and the rest is read free as pull requests and
-  // pushes touch the code the documents describe. 10 of 15 read: 8 at installation, 2 since.
+  // pushes touch the code the documents describe. The documents Striff excluded (README.md, the
+  // glossary, the on-call runbook) are in no count: 9 of the other 12 are read, 7 at installation
+  // and 2 since, and a paid plan would read the 3 left.
   status: {
     state: "unpaid",
     offerPaidPlan: true,
     privateRepository: false,
     pausedSinceMs: null,
-    documentsRead: documents.length - documents.filter(isUnread).length,
-    documentsTotal: documents.length,
+    documentsRead: documents.length - screenedOut - documents.filter(isUnread).length,
+    documentsTotal: documents.length - screenedOut,
     documentsNotRead: documents.filter(isUnread).length,
-    readAtInstallation: 8,
+    readAtInstallation: 7,
     readSince: 2,
     readSinceThroughPullRequests: 1,
     readSinceThroughPushes: 1,
     readByPlan: 0,
-    // Of the 5 unread: 3 lie outside the first reading's selection, and 2 the worth-reading gate
-    // set aside. A paid plan would read the 3; the 2 are read when a change touches them.
-    documentsReadWhenTouched: 2,
     documentsPaidWouldRead: 3,
   },
   exclusions: [

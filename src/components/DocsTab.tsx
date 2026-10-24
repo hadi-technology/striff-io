@@ -154,8 +154,6 @@ interface ReadingStatus {
   documentsNotRead?: number;
   readAtInstallation?: number;
   readSince?: number;
-  /** Documents the worth-reading gate set aside: read free when a change touches them. */
-  documentsReadWhenTouched?: number;
   /** What a paid plan would read now. */
   documentsPaidWouldRead?: number;
 }
@@ -239,7 +237,7 @@ function refusalOf(code: string | undefined, fallback: string | undefined): { me
       };
     case "nothing_readable":
       return {
-        message: "None of these docs can be read for rules: each was skipped, says it is no longer current, was excluded, or couldn't be read, as the list shows.",
+        message: "None of these docs can be read for rules: each was excluded, says it is no longer current, or couldn't be read, as the list shows.",
         final: true,
       };
     case "code_not_read":
@@ -402,14 +400,15 @@ function isUnread(doc: Doc): boolean {
 
 /** The suffix the stylesheet knows a state by; a document outside the first reading is drawn as an unread one. */
 function stateClass(state: DocState): string {
-  return (state === "OUTSIDE_FIRST_READING" ? "NOT_READ" : state).toLowerCase();
+  // A document Striff excluded is drawn as one a person excluded: same badge, same dim.
+  return (state === "OUTSIDE_FIRST_READING" ? "NOT_READ" : state === "SCREENED_OUT" ? "EXCLUDED" : state).toLowerCase();
 }
 
 const STATE_LABEL: Record<DocState, string> = {
   READ: "Read",
   NOT_READ: "Not read yet",
   OUTSIDE_FIRST_READING: "Not read yet",
-  SCREENED_OUT: "Skipped",
+  SCREENED_OUT: "Excluded",
   RETIRED: "Retired",
   UNREADABLE: "Couldn't read",
   EXCLUDED: "Excluded",
@@ -449,13 +448,15 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
       return READ_FREE_LINE;
     case "NOT_READ":
       return "Striff hasn't read this doc yet. It reads a doc the first time a pull request changes code the doc talks about.";
-    case "SCREENED_OUT":
+    case "SCREENED_OUT": {
+      // Striff's own verdict on the document, in the gate's words where it gave them.
+      const why = doc.screenReason ? screenWhy(doc.screenReason).replace(/\.$/, "") : "";
+      const said = `Striff excluded this doc: ${why || "it states nothing about this repository's code that it could check"}.`;
       if (doc.forced) {
-        return `Striff skipped this doc: it found no rule in it to check${doc.screenReason ? ` (${screenWhy(doc.screenReason)})` : ""}. ${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
+        return `${said} ${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read it anyway${doc.forcedReason ? `: “${doc.forcedReason}”` : ""}, so it will on the next pull request that changes code this doc talks about.`;
       }
-      return doc.screenReason
-        ? `Skipped: ${screenWhy(doc.screenReason)}`
-        : "Striff skipped this doc: it found no rule in it that could be checked against code.";
+      return said;
+    }
     case "RETIRED":
       return doc.retiredReason
         ? `This doc says it is no longer current: ${doc.retiredReason}`
@@ -467,9 +468,9 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
         return `You excluded this repository${covering.excludedBy ? `, ${covering.excludedBy}` : ""}${covering.reason ? `: “${covering.reason}”` : ""}. Striff doesn't read any doc in it, so it costs nothing, and these rules aren't checked. Including the repository again brings every doc back.`;
       }
       if (covering && covering.path !== doc.path) {
-        return `This doc is inside ${covering.path}/, a folder you excluded${covering.excludedBy ? `, ${covering.excludedBy}` : ""}${covering.reason ? `: “${covering.reason}”` : ""}. Striff doesn't read anything under it, so it costs nothing, and these rules aren't checked. Including the folder again brings every doc under it back.`;
+        return `Excluded with the folder \`${covering.path}/\`${covering.excludedBy ? ` by ${covering.excludedBy}` : ""}${covering.reason ? `: “${covering.reason}”` : ""}. Striff doesn't read anything under it, so it costs nothing, and these rules aren't checked. Including the folder again brings every doc under it back.`;
       }
-      return `You excluded this doc${doc.excludedBy ? `, ${doc.excludedBy}` : ""}${doc.excludedReason ? `: “${doc.excludedReason}”` : ""}. Striff doesn't read it, so it costs nothing, and its rules aren't checked.`;
+      return `${doc.excludedBy || "You"} excluded this doc${doc.excludedReason ? `: “${doc.excludedReason}”` : ""}. Striff doesn't read it, so it costs nothing, and its rules aren't checked.`;
     default:
       return "";
   }
@@ -496,7 +497,6 @@ type DocFilter =
   | "all"
   | "notRead"
   | "unreadable"
-  | "skipped"
   | "retired"
   | "excluded"
   | "forced";
@@ -516,7 +516,6 @@ const DOC_FILTER_TEST: Record<Exclude<DocFilter, "results" | "excluded">, (doc: 
   all: () => true,
   notRead: (doc) => isUnread(doc),
   unreadable: (doc) => doc.state === "UNREADABLE",
-  skipped: (doc) => doc.state === "SCREENED_OUT",
   retired: (doc) => doc.state === "RETIRED",
 };
 
@@ -531,12 +530,11 @@ interface Chip<K> { key: K; label: string; dot: string; always: boolean; help: s
 const DOC_CHIPS: Chip<DocFilter>[] = [
   { key: "results", label: "With results", dot: "", always: false, help: "Documents with a rule that holds or is broken, or a stale name." },
   { key: "all", label: "All", dot: "", always: true, help: "Every document in this repository, whatever state it is in." },
-  { key: "notRead", label: "Not read yet", dot: "unread", always: true, help: "Documents Striff hasn't read yet, so any rule in them is not counted here." },
+  { key: "notRead", label: "Not read yet", dot: "unread", always: true, help: "Documents Striff means to read and hasn't yet, so any rule in them is not counted here." },
   { key: "unreadable", label: "Couldn't read", dot: "broken", always: false, help: "Documents Striff couldn't finish reading. That isn't counted as “no rules”." },
-  { key: "skipped", label: "Skipped", dot: "other", always: true, help: "Documents Striff skipped because it found no rule in them that could be checked against code." },
   { key: "retired", label: "Retired", dot: "other", always: false, help: "Documents that say they are no longer current, so their rules aren't checked." },
-  { key: "excluded", label: "Excluded", dot: "other", always: true, help: "Documents excluded here: Striff doesn't read them and none of their rules are checked." },
-  { key: "forced", label: "Read anyway", dot: "other", always: false, hidden: true, help: "Documents Striff skipped that this repository asked it to read regardless." },
+  { key: "excluded", label: "Excluded", dot: "other", always: true, help: "Documents Striff doesn't read, so none of their rules are checked: ones Striff excluded, with its reason, and ones excluded here." },
+  { key: "forced", label: "Read anyway", dot: "other", always: false, hidden: true, help: "Documents Striff excluded that this repository asked it to read regardless." },
 ];
 
 /** The chips above the tree that count rules. */
@@ -788,8 +786,8 @@ export interface DocsSource {
  * happens next, in the words readingHeader chooses for the API's status. Plan offers are a link
  * after the sentence and, where the repository has no plan, one Subscribe button.
  */
-function ReadingStatusHeader({ status, onBilling }: { status?: ReadingStatus | null; onBilling?: () => void }) {
-  const header = readingHeader(status);
+function ReadingStatusHeader({ status, excluded, onBilling }: { status?: ReadingStatus | null; excluded: number; onBilling?: () => void }) {
+  const header = readingHeader(status, Date.now(), excluded);
   if (!header) return null;
   const pct = header.growth && header.growth.total > 0
     ? Math.min(100, Math.round((header.growth.read / header.growth.total) * 100))
@@ -1653,7 +1651,7 @@ export default function DocsTab({
     }
   }
 
-  /** Asks for a document a screen skipped to be read anyway, or leaves it to the screens again. */
+  /** Asks for a document Striff excluded to be read anyway, or leaves it excluded again. */
   async function setForced(path: string, forced: boolean) {
     const ok = await write({ paths: [path], forced }, "force-read",
       `Couldn't ${forced ? "ask for" : "stop"} reading ${path}.`);
@@ -1713,7 +1711,7 @@ export default function DocsTab({
   const excludedDocs = useMemo(() => {
     const paths = new Set<string>();
     for (const doc of allDocs) {
-      if (doc.state === "EXCLUDED" || coveringPath(doc.path, rulesIndex?.legacyPaths)) paths.add(doc.path);
+      if (doc.state === "EXCLUDED" || doc.state === "SCREENED_OUT" || coveringPath(doc.path, rulesIndex?.legacyPaths)) paths.add(doc.path);
     }
     return paths;
   }, [catalog, rulesIndex]);
@@ -2113,7 +2111,7 @@ export default function DocsTab({
                 {doc?.state === "SCREENED_OUT" &&
                   (doc.forced ? (
                     <button type="button" role="menuitem" onClick={() => setForced(path, false)}>
-                      Go back to skipping it
+                      Go back to excluding it
                     </button>
                   ) : (
                     <button type="button" role="menuitem" onClick={() => setForced(path, true)}>
@@ -2168,7 +2166,7 @@ export default function DocsTab({
         )}
         {/* A doc whose rules were set aside as a whole before exclusion covered it: excluded,
             in the same word, though its state is still what reading it found. */}
-        {doc.state !== "EXCLUDED" && excludedDocs.has(doc.path) && (
+        {doc.state !== "EXCLUDED" && doc.state !== "SCREENED_OUT" && excludedDocs.has(doc.path) && (
           <span className="docs-badge is-excluded" title="Excluded: pull requests aren't checked against this doc's rules.">
             Excluded
           </span>
@@ -2190,12 +2188,14 @@ export default function DocsTab({
         {doc.state !== "READ" && !beingRead && (
           <span
             className={`docs-badge is-${stateClass(doc.state)}`}
-            title={doc.state === "EXCLUDED" ? "Excluded: Striff doesn't read this doc, and none of its rules are checked." : undefined}
+            title={doc.state === "EXCLUDED" || doc.state === "SCREENED_OUT"
+              ? stateLineOf(doc, coveringFolder(doc.path, catalog?.exclusions)).replace(/`/g, "").split(/(?<=\.)\s/)[0]
+              : undefined}
           >
             {STATE_LABEL[doc.state]}
           </span>
         )}
-        {/* A setting rather than a state: this repository asked for a skipped doc to be read. */}
+        {/* A setting rather than a state: this repository asked for an excluded doc to be read. */}
         {doc.forced && doc.state !== "READ" && doc.state !== "EXCLUDED" && !beingRead && (
           <span className="docs-badge is-forced" title={`${doc.forcedBy ? `${doc.forcedBy} asked` : "You asked"} Striff to read this doc whatever its screens say.`}>
             Read anyway
@@ -2609,7 +2609,11 @@ export default function DocsTab({
           {/* How far Striff has read the repository, from the API's own status. A public page is
               a snapshot with no plan to speak of, and an older server sends no status. */}
           {catalog && !source && (
-            <ReadingStatusHeader status={catalog.status} onBilling={onOpenBilling} />
+            <ReadingStatusHeader
+              status={catalog.status}
+              excluded={catalog.documents.filter((doc) => doc.state === "SCREENED_OUT").length}
+              onBilling={onOpenBilling}
+            />
           )}
           {inShell && actionsSlot && createPortal(
             <>
@@ -2974,6 +2978,8 @@ export default function DocsTab({
                       : codeNotRead
                       // Not "found no rule": nothing looked, because there is no code it reads.
                       ? CODE_NOT_READ
+                      : scopeDocs.length > 0 && scopeDocs.every((doc) => excludedDocs.has(doc.path))
+                      ? "These docs are excluded, so Striff reads none of them and checks none of their rules."
                       : !scopeDocs.some(isUnread)
                       ? "Striff read these docs and found no architectural rule in them."
                       : isRunning(reading)

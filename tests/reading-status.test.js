@@ -73,18 +73,17 @@ test("the offer names what a paid plan would read, and says all of them where th
   assert.equal(readingHeader(base).offerText, "Don't want to wait? A paid plan reads all of them now.");
 });
 
-test("paid, all read, with documents left to the changes that touch them", () => {
-  const h = readingHeader({ state: "paid_all_read", documentsRead: 13, documentsTotal: 15, documentsReadWhenTouched: 2 });
-  assert.equal(words(h), "Striff has read 13 of your 15 documents. The other 2 are read free when a change touches the code they describe.");
-  assert.equal(h.growth.text, "13 read");
-  const none = readingHeader({ state: "paid_all_read", documentsRead: 15, documentsTotal: 15, documentsReadWhenTouched: 0 });
-  assert.equal(words(none), "Striff has read all 15 documents.");
-  assert.equal(readingHeader({ state: "paid_all_read", documentsRead: 15, documentsTotal: 15 }).line[0], "Striff has read all 15 documents.");
+test("paid, all read: documents Striff excluded are not counted, and the header says what was checked", () => {
+  const status = { state: "paid_all_read", documentsRead: 15, documentsTotal: 15 };
+  assert.equal(words(readingHeader(status, NOW, 4)), "Striff has read all 15 documents it can check.");
+  assert.equal(words(readingHeader(status, NOW, 0)), "Striff has read all 15 documents.");
+  assert.equal(words(readingHeader(status, NOW)), "Striff has read all 15 documents.");
+  // A field an earlier API sent changes nothing: no clause about reading free when a change touches code.
+  const old = readingHeader({ ...status, documentsReadWhenTouched: 2 }, NOW, 0);
+  assert.doesNotMatch(words(old), /touches/);
 });
 
-test("paid, reading: the documents left to a change are not counted as left to read", () => {
-  const h = readingHeader({ state: "paid_reading", documentsRead: 40, documentsTotal: 136, documentsNotRead: 96, documentsReadWhenTouched: 6 });
-  assert.equal(words(h), "Striff is reading the other 90 documents: 40 read so far.");
-  const older = readingHeader({ state: "paid_reading", documentsRead: 40, documentsTotal: 136, documentsNotRead: 96 });
-  assert.equal(words(older), "Striff is reading the other 96 documents: 40 read so far.");
+test("paid, reading: what is not read is what is left", () => {
+  const h = readingHeader({ state: "paid_reading", documentsRead: 40, documentsTotal: 136, documentsNotRead: 96 });
+  assert.equal(words(h), "Striff is reading the other 96 documents: 40 read so far.");
 });
