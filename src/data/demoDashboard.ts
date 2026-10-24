@@ -121,7 +121,12 @@ function doc(path: string, state: string, extra: Record<string, unknown> = {}) {
 const documents = [
   doc("AGENTS.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 4, brokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 2 * DAY }),
   doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 12, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: ARCH_READ, totalChars: ARCH_TEXT.length }),
-  doc("CONTRIBUTING.md", "NOT_READ"),
+  // Outside the first reading: nothing has changed the code these describe yet, so they are read
+  // free when something does. They are listed, never shown as having no rules.
+  doc("CONTRIBUTING.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
+  doc("docs/design/inventory-reservations.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
+  doc("docs/runbooks/refund-backlog.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
+  doc("docs/runbooks/oncall.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: describes who to page, states no rule about the code" }),
   doc("README.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: describes setup and usage, not how the code is built" }),
   doc("docs/adr/0007-payments.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 2, alreadyBrokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 12 * DAY }),
   doc("docs/adr/0008-read-models.md", "READ", { extractedContentHash: "71cc4ab9", ruleCount: 1, outdated: true, lastExtractedMs: NOW - 22 * DAY, lastExtractedPullNo: "398" }),
@@ -135,12 +140,14 @@ const documents = [
   doc("docs/drafts/sagas.md", "EXCLUDED"),
 ];
 
+const isUnread = (d: { state: string }) => d.state === "NOT_READ" || d.state === "OUTSIDE_FIRST_READING";
 const count = (state: string) => documents.filter((d) => d.state === state).length;
 const summary = {
   documents: documents.length,
   read: count("READ"),
   outdated: documents.filter((d) => d.outdated).length,
-  notRead: count("NOT_READ"),
+  notRead: count("NOT_READ") + count("OUTSIDE_FIRST_READING"),
+  outsideFirstReading: count("OUTSIDE_FIRST_READING"),
   screenedOut: count("SCREENED_OUT"),
   retired: count("RETIRED"),
   unreadable: count("UNREADABLE"),
@@ -278,6 +285,22 @@ export const demoCatalog: any = {
   lastScanMs: NOW - 3 * 60 * 1000,
   lastAttempt: { atMs: NOW - 3 * 60 * 1000, outcome: "listed", reason: null, documents: documents.length },
   reading: null,
+  // An unpaid repository: the first reading is done and the rest is read free as pull requests and
+  // pushes touch the code the documents describe. 12 of 15 read: 9 at installation, 3 since.
+  status: {
+    state: "unpaid",
+    offerPaidPlan: true,
+    privateRepository: false,
+    pausedSinceMs: null,
+    documentsRead: documents.length - documents.filter(isUnread).length,
+    documentsTotal: documents.length,
+    documentsNotRead: documents.filter(isUnread).length,
+    readAtInstallation: 9,
+    readSince: 3,
+    readSinceThroughPullRequests: 2,
+    readSinceThroughPushes: 1,
+    readByPlan: 0,
+  },
   exclusions: [
     { path: "docs/drafts", folder: true, excludedBy: "maria-k", reason: "Drafts aren't decisions yet", atMs: NOW - 9 * DAY },
     { path: "docs/legacy/payments-v1.md", folder: false, excludedBy: "maria-k", reason: "Describes the v1 flow we're retiring", atMs: NOW - 20 * DAY },
@@ -389,7 +412,7 @@ export function demoDoc(path: string): any {
   return {
     document: document_,
     rules: own,
-    history: document_.state === "NOT_READ" ? [] : history,
+    history: isUnread(document_) ? [] : history,
   };
 }
 

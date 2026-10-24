@@ -19,6 +19,7 @@ import {
   ruleCounts,
 } from "../lib/ruleStates.js";
 import RevisionLine from "./RevisionLine";
+import { readingHeader } from "../lib/readingStatus.js";
 import { Clamped, mark, plainText, snippet, useWatch, withCode, when } from "./docRules";
 import RulesTable, {
   pathStem,
@@ -63,6 +64,7 @@ type TextEntry =
 
 type DocState =
   | "NOT_READ"
+  | "OUTSIDE_FIRST_READING"
   | "READ"
   | "SCREENED_OUT"
   | "RETIRED"
@@ -115,6 +117,8 @@ interface Summary {
   read: number;
   outdated: number;
   notRead: number;
+  /** The part of notRead that lies outside the first reading: read free when a change touches the code it describes. */
+  outsideFirstReading?: number;
   screenedOut: number;
   retired: number;
   unreadable: number;
@@ -131,6 +135,25 @@ interface Summary {
    * Absent from an older server, and then nothing is known to wait.
    */
   waitingToBeReadAgain?: number;
+}
+
+/**
+ * Where a repository stands in being read, as the API says it. `state` is null where the
+ * repository's visibility is not known, and then the header says nothing new.
+ */
+interface ReadingStatus {
+  state:
+    | "unpaid_waiting" | "unpaid_reading" | "unpaid" | "private_no_plan" | "private_paused"
+    | "paid_waiting_for_pull_request" | "paid_reading" | "paid_all_read"
+    | null;
+  offerPaidPlan?: boolean;
+  privateRepository?: boolean;
+  pausedSinceMs?: number | null;
+  documentsRead?: number;
+  documentsTotal?: number;
+  documentsNotRead?: number;
+  readAtInstallation?: number;
+  readSince?: number;
 }
 
 interface Catalog {
@@ -155,6 +178,8 @@ interface Catalog {
   } | null;
   /** Where the last whole-repository reading got to, null where none was asked for. */
   reading: Reading | null;
+  /** How far the reading of this repository has got; absent from an older server. */
+  status?: ReadingStatus | null;
   summary: Summary;
   documents: Doc[];
   exclusions: Exclusion[];
@@ -205,7 +230,7 @@ function refusalOf(code: string | undefined, fallback: string | undefined): { me
   switch (code) {
     case "nothing_to_read":
       return {
-        message: "Striff has read every document it can read here, so a reading has nothing to do. Pull requests and merges keep its rules current.",
+        message: "No document is left for a reading to read right now. Pull requests and pushes keep its rules current, and read any document about the code they change.",
         final: true,
       };
     case "nothing_readable":
@@ -363,9 +388,23 @@ interface Detail {
   rules: Rule[];
 }
 
+/** What a document outside the first reading, and every unread one, is told. */
+const READ_FREE_LINE = "Read free when a change touches the code it describes.";
+
+/** Whether nothing has read this document yet: not read, or outside the first reading. */
+function isUnread(doc: Doc): boolean {
+  return doc.state === "NOT_READ" || doc.state === "OUTSIDE_FIRST_READING";
+}
+
+/** The suffix the stylesheet knows a state by; a document outside the first reading is drawn as an unread one. */
+function stateClass(state: DocState): string {
+  return (state === "OUTSIDE_FIRST_READING" ? "NOT_READ" : state).toLowerCase();
+}
+
 const STATE_LABEL: Record<DocState, string> = {
   READ: "Read",
   NOT_READ: "Not read yet",
+  OUTSIDE_FIRST_READING: "Not read yet",
   SCREENED_OUT: "Skipped",
   RETIRED: "Retired",
   UNREADABLE: "Couldn't read",
@@ -402,6 +441,8 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
         return "Striff has read this doc.";
       }
       return "";
+    case "OUTSIDE_FIRST_READING":
+      return READ_FREE_LINE;
     case "NOT_READ":
       return "Striff hasn't read this doc yet. It reads a doc the first time a pull request changes code the doc talks about.";
     case "SCREENED_OUT":
@@ -469,7 +510,7 @@ type Filter = DocFilter | RuleChip;
 const DOC_FILTER_TEST: Record<Exclude<DocFilter, "results" | "excluded">, (doc: Doc) => boolean> = {
   forced: (doc) => doc.forced,
   all: () => true,
-  notRead: (doc) => doc.state === "NOT_READ",
+  notRead: (doc) => isUnread(doc),
   unreadable: (doc) => doc.state === "UNREADABLE",
   skipped: (doc) => doc.state === "SCREENED_OUT",
   retired: (doc) => doc.state === "RETIRED",
@@ -738,6 +779,61 @@ export interface DocsSource {
   action?: ReactNode;
 }
 
+/**
+ * The header over the documents: how many of the repository's documents Striff has read, and what
+ * happens next, in the words readingHeader chooses for the API's status. Plan offers are a link
+ * after the sentence and, where the repository has no plan, one Subscribe button.
+ */
+function ReadingStatusHeader({ status, onBilling }: { status?: ReadingStatus | null; onBilling?: () => void }) {
+  const header = readingHeader(status);
+  if (!header) return null;
+  const pct = header.growth && header.growth.total > 0
+    ? Math.min(100, Math.round((header.growth.read / header.growth.total) * 100))
+    : 0;
+  /** A button or link to billing: the shell's Billing tab where there is one, the pricing page otherwise. */
+  const toBilling = (className: string, label: string) =>
+    onBilling ? (
+      <button type="button" className={className} onClick={onBilling}>{label}</button>
+    ) : (
+      <a className={className} href="/pricing">{label}</a>
+    );
+  return (
+    <div className="docs-reading">
+      <p className="docs-reading-line">
+        {header.line.map((part, i) => (typeof part === "string" ? part : <b key={i}>{part.b}</b>))}
+        {header.offer && (
+          <>
+            {" "}
+            {toBilling("docs-reading-offer", "Don't want to wait? A paid plan reads all of them now.")}
+          </>
+        )}
+      </p>
+      {header.subscribe && (
+        <p className="docs-reading-action">
+          {toBilling("dashboard-button dashboard-button-primary", "Subscribe")}
+        </p>
+      )}
+      {header.growth && (
+        <div className="docs-growth">
+          {header.growth.bar && (
+            <div
+              className="docs-growth-bar"
+              role="progressbar"
+              aria-label="Documents read"
+              aria-valuemin={0}
+              aria-valuemax={header.growth.total}
+              aria-valuenow={header.growth.read}
+            >
+              <i style={{ width: `${pct}%` }} />
+            </div>
+          )}
+          <span className="docs-growth-text">{header.growth.text}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DocsTab({
   installationId,
   repos,
@@ -749,6 +845,7 @@ export default function DocsTab({
   actionsSlot,
   badge,
   addressLink,
+  onOpenBilling,
 }: {
   installationId: number;
   /** The repositories to pick from; the dashboard's carry whether each is private, and its branch. */
@@ -801,7 +898,13 @@ export default function DocsTab({
    * address is not read or written.
    */
   addressLink?: "dashboard" | "public";
+  /**
+   * Opens the installation's billing page, for the plan offers in the header. Left out (the demo),
+   * they link to the pricing page.
+   */
+  onOpenBilling?: () => void;
 }) {
+  const [unreadOpen, setUnreadOpen] = useState(false);
   const [repo, setRepo] = useState<string>(openRepo || repos[0]?.full_name || "");
   const [catalog, setCatalog] = useState<Catalog | null>(normalizeCatalog(initial?.catalog) ?? null);
   const [detail, setDetail] = useState<Detail | null>(null);
@@ -1678,7 +1781,18 @@ export default function DocsTab({
     [catalog, filter, staleByDoc, resultDocs, excludedDocs, ruleDocs]
   );
 
-  const tree = useMemo(() => buildTree(documents, name), [documents, name]);
+  /**
+   * The documents nothing has read sit in one group under the tree, not among the folders: a
+   * folder of documents Striff has not read is not a place its rules are missing from.
+   */
+  const unreadDocs = useMemo(
+    () => (filter === "results" || filter === "all" || filter === "notRead" ? allDocs.filter(isUnread) : []),
+    [catalog, filter]
+  );
+  const tree = useMemo(
+    () => buildTree(documents.filter((doc) => !isUnread(doc)), name),
+    [documents, name]
+  );
 
   /* ─── What is selected, and what it scopes ──────────────────────── */
 
@@ -2021,7 +2135,7 @@ export default function DocsTab({
     // already read is in the step too and is answered from what is held, which is not reading,
     // and one a screen or the repository keeps out is not read at all.
     const beingRead = readingNow.has(doc.path)
-      && (doc.state === "NOT_READ" || doc.state === "UNREADABLE"
+      && (isUnread(doc) || doc.state === "UNREADABLE"
         || (doc.state === "READ" && doc.outdated));
     return (
       <>
@@ -2054,7 +2168,7 @@ export default function DocsTab({
         )}
         {doc.state !== "READ" && !beingRead && (
           <span
-            className={`docs-badge is-${doc.state.toLowerCase()}`}
+            className={`docs-badge is-${stateClass(doc.state)}`}
             title={doc.state === "EXCLUDED" ? "Excluded: Striff doesn't read this doc, and none of its rules are checked." : undefined}
           >
             {STATE_LABEL[doc.state]}
@@ -2212,8 +2326,12 @@ export default function DocsTab({
   // Why a reading could do nothing here, said in the button's place. Code Striff does not read wins
   // over documents waiting, as it does on the server: a reading of them would check nothing.
   const readClosed = readRefused || (codeNotRead ? CODE_NOT_READ : null);
+  // A reading of the whole repository is a paid plan's: the API refuses it otherwise, so it is
+  // offered only where the repository is being read in full.
+  const readingStatus = catalog?.status ?? null;
+  const paidReading = readingStatus?.state === "paid_reading";
   /** Whether the read button is on offer above, for the sentences that point at it. */
-  const readOffered = !readOnly && readWaiting > 0 && !readClosed;
+  const readOffered = !readOnly && paidReading && readWaiting > 0 && !readClosed;
 
   /** The repository's counts, beside the heading. */
   const tally = summary && (
@@ -2306,6 +2424,7 @@ export default function DocsTab({
              documents a reading could not finish as waiting for ever, leaving the control
              offered on a repository where it had nothing left to achieve. */
           waiting={readWaiting}
+          canAsk={paidReading}
           closed={readClosed}
           busy={asking || busy}
           onRead={readRepository}
@@ -2466,6 +2585,11 @@ export default function DocsTab({
             </p>
           )}
           {catalog && <RevisionLine catalog={catalog} />}
+          {/* How far Striff has read the repository, from the API's own status. A public page is
+              a snapshot with no plan to speak of, and an older server sends no status. */}
+          {catalog && !source && (
+            <ReadingStatusHeader status={catalog.status} onBilling={onOpenBilling} />
+          )}
           {inShell && actionsSlot && createPortal(
             <>
               <button
@@ -2588,6 +2712,35 @@ export default function DocsTab({
             </div>
             <div className="docs-tree" role="tree">
               {renderNode(tree, 0)}
+              {unreadDocs.length > 0 && (() => {
+                // Opened by choosing the "Not read yet" chip, or by opening one of its documents.
+                const open = unreadOpen || filter === "notRead" || unreadDocs.some((doc) => doc.path === selected);
+                return (
+                  <div className="docs-unread">
+                    <button
+                      type="button"
+                      className="docs-unread-head"
+                      aria-expanded={open}
+                      onClick={() => setUnreadOpen(!unreadOpen)}
+                    >
+                      {open ? <ChevronDown /> : <ChevronRight />}
+                      Not read yet ({unreadDocs.length})
+                    </button>
+                    {open && unreadDocs.map((doc) => (
+                      <div key={doc.path} className={`docs-row docs-unread-row${selected === doc.path ? " is-open" : ""}`}>
+                        <button type="button" className="docs-row-main" onClick={() => openDoc(doc.path)}>
+                          <FileIcon />
+                          <span className="docs-unread-text">
+                            <span className="docs-row-name">{doc.path}</span>
+                            <span className="docs-unread-note">{READ_FREE_LINE}</span>
+                          </span>
+                        </button>
+                        <span className="docs-row-meta">{rowMenu(doc.path, doc)}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
             <div className="docs-tree-foot">
               {catalog.summary.documents} doc{catalog.summary.documents === 1 ? "" : "s"}
@@ -2800,14 +2953,14 @@ export default function DocsTab({
                       : codeNotRead
                       // Not "found no rule": nothing looked, because there is no code it reads.
                       ? CODE_NOT_READ
-                      : !scopeDocs.some((doc) => doc.state === "NOT_READ")
+                      : !scopeDocs.some(isUnread)
                       ? "Striff read these docs and found no architectural rule in them."
                       : isRunning(reading)
                       ? "Striff is reading these docs now. Their rules appear here as they are read; refresh to see them."
                       // Points at the button only where the button is there, with its number.
                       : readOffered
                       ? `Nothing here has been read yet. Use Read ${readWaiting} doc${readWaiting === 1 ? "" : "s"} now, above, to read ${readWaiting === 1 ? "it" : "them"} without waiting for a pull request.`
-                      : "Nothing here has been read yet. Striff reads a doc the first time a pull request changes code that doc talks about."}
+                      : `Nothing here has been read yet. ${READ_FREE_LINE}`}
                   </p>
                 )}
                 {rulesIndex && scopeRows.length > 0 && !namesOnly && (
@@ -2889,10 +3042,10 @@ export default function DocsTab({
                 {/* The state as the catalogue has it, which excluding the doc changes at once. */}
                 {stateLine(selectedDoc ?? detail.document,
                   coveringFolder(detail.document.path, catalog?.exclusions)) !== "" && (
-                  <p className={`docs-state-line is-${(selectedDoc ?? detail.document).state.toLowerCase()}`}>
+                  <p className={`docs-state-line is-${stateClass((selectedDoc ?? detail.document).state)}`}>
                     <span
                       className={`docs-sdot is-${
-                        (selectedDoc ?? detail.document).state.toLowerCase()
+                        stateClass((selectedDoc ?? detail.document).state)
                       }`}
                     />
                     <span>

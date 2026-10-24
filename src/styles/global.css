@@ -7771,3 +7771,33 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
   .notif-panel { padding: 0.85rem; border-radius: 0.6rem; }
   .notif-actions .dashboard-button { width: 100%; }
 }
+
+/* How far Striff has read the repository: one sentence, at most one button, a slim bar and the
+   growth in words. Quiet by design -- a repository still being read is not a repository in trouble. */
+.docs-reading { max-width: 44rem; margin-top: 0.75rem; }
+.docs-reading-line { margin: 0; color: #334155; font-size: 0.88rem; line-height: 1.55; }
+.docs-reading-line b { color: #0f172a; font-weight: 700; }
+.docs-reading-offer {
+  display: inline; padding: 0; border: 0; background: none; font: inherit; cursor: pointer;
+  color: #2563eb; text-decoration: none;
+}
+.docs-reading-offer:hover { text-decoration: underline; }
+.docs-reading-action { margin: 0.6rem 0 0; }
+.docs-growth { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.6rem; flex-wrap: wrap; }
+.docs-growth-bar { flex: 0 1 12rem; width: 12rem; max-width: 100%; height: 6px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+.docs-growth-bar i { display: block; height: 100%; border-radius: 999px; background: #17794a; }
+.docs-growth-text { color: #57606a; font-size: 0.8rem; }
+
+/* The documents nothing has read, collapsed under the tree. */
+.docs-unread { margin-top: 0.35rem; border-top: 1px solid #f1f4f7; padding-top: 0.25rem; }
+.docs-unread-head {
+  display: flex; align-items: center; gap: 0.4rem; width: 100%; min-height: 30px; padding: 0 0.5rem;
+  border: 0; border-radius: 0.4rem; background: none; cursor: pointer; text-align: left;
+  color: #57606a; font-size: 0.82rem; font-weight: 600;
+}
+.docs-unread-head:hover { background: #e8edf3; }
+.docs-unread-row { align-items: flex-start; padding-left: 0.5rem; }
+.docs-unread-row .docs-row-main { align-items: flex-start; padding-top: 0.3rem; padding-bottom: 0.3rem; }
+.docs-unread-row .docs-row-main svg { margin-top: 0.15rem; }
+.docs-unread-text { display: flex; flex-direction: column; min-width: 0; gap: 0.1rem; text-align: left; }
+.docs-unread-note { color: #8a95a1; font-size: 0.74rem; line-height: 1.35; white-space: normal; }

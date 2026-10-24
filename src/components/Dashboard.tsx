@@ -1394,7 +1394,7 @@ function InstallationCard({
             </div>
           ) : installTab === "docs" ? (
             <div className="mt-3 dashboard-metric-fade-in">
-              <DocsTab installationId={installation.id} repos={repos} openRepo={openRepo} addressLink="dashboard" inShell={section !== undefined} actionsSlot={actionsSlot} badge={repoBadge} />
+              <DocsTab installationId={installation.id} repos={repos} openRepo={openRepo} addressLink="dashboard" inShell={section !== undefined} actionsSlot={actionsSlot} badge={repoBadge} onOpenBilling={() => setInstallTab("billing")} />
             </div>
           ) : installTab === "checks" ? (
             <div className="mt-3 dashboard-metric-fade-in">
@@ -1533,7 +1533,7 @@ function UsagePanel({
         )}
       </div>
       <p className="mt-3 text-sm text-slate-500">
-        Private repos count when Striff checks a pull request on them or reads their documents. Plans start at $29 a month.
+        Private repos count when Striff checks a pull request on them or reads their documents after a push. Plans start at $29 a month.
         {cap ? ` ${activeCount} of ${cap} before ${capitalizeTier(nextTier || "")}.` : ""}
       </p>
       {activeNames.length > 0 && (
@@ -1558,11 +1558,15 @@ function FaqSection() {
   const items: { q: string; a: string }[] = [
     {
       q: "How does Striff pricing work?",
-      a: "Public repositories are free: no limits, no card. Private repositories need a plan at $29, $59 or $149 a month. Which one you pay follows how many private repos Striff worked on during your billing period, meaning it checked one of their pull requests or read their documents. Connecting a repo is free, and a quiet month costs $29, the Starter price. Tier details are on the <a href=\"/pricing\" class=\"font-semibold text-blue-600 hover:underline\">pricing page</a>.",
+      a: "Public repositories are free: no limits, no card. Private repositories need a plan at $29, $59 or $149 a month. Which one you pay follows how many private repos Striff worked on during your billing period, meaning it checked one of their pull requests or read their documents after a push. Connecting a repo is free, and a quiet month costs $29, the Starter price. Tier details are on the <a href=\"/pricing\" class=\"font-semibold text-blue-600 hover:underline\">pricing page</a>.",
     },
     {
       q: "What makes a repo billable?",
-      a: "A private repo counts when, during your billing period, Striff checks one of its pull requests or reads its documents. Connecting it doesn't count, and neither does the nightly re-check of rules Striff has already read.",
+      a: "A private repo counts when, during your billing period, Striff checks one of its pull requests or reads its documents after a push. Connecting it doesn't count, and neither does the nightly re-check of rules Striff has already read.",
+    },
+    {
+      q: "Does Striff read all my documents for free?",
+      a: "Yes, as your team works. Striff reads your most important documents when you install it, and every pull request and push reads the documents about the code it changes, at no cost. A document about code nobody changes waits until someone does. A paid plan reads them all at once.",
     },
     {
       q: "I enabled 20 repos but Striff only worked on 3. What do I pay?",

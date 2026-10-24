@@ -204,3 +204,31 @@ test("the text of a doc goes to its own API path with the path and version", asy
   assert.equal(url.searchParams.get("version"), "h1");
   assert.ok(url.searchParams.get("token"));
 });
+
+test("the catalogue's reading status and the unread state reach the page whole", async () => {
+  const catalog = {
+    status: { state: "unpaid", offerPaidPlan: true, documentsRead: 12, documentsTotal: 15, readAtInstallation: 9, readSince: 3 },
+    summary: { notRead: 3, outsideFirstReading: 3 },
+    documents: [{ path: "CONTRIBUTING.md", state: "OUTSIDE_FIRST_READING", screenReason: "Read free when a change touches the code it describes." }],
+  };
+  globalThis.fetch = async (url) => {
+    const u = new URL(String(url));
+    if (u.origin === "https://api.example") return json(catalog);
+    return json({ full_name: "acme/widgets", permissions }, 200);
+  };
+  const res = await request("GET", null);
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(JSON.parse(res.body), catalog);
+});
+
+test("a whole-repository reading the API refuses is refused with the API's own words", async () => {
+  const refusal = { error: "plan_required", message: "Reading every document is part of a paid plan." };
+  globalThis.fetch = async (url) => {
+    const u = new URL(String(url));
+    if (u.origin === "https://api.example") return json(refusal, 402);
+    return json({ full_name: "acme/widgets", permissions }, 200);
+  };
+  const res = await request("POST", null);
+  assert.equal(res.statusCode, 402);
+  assert.deepEqual(JSON.parse(res.body), refusal);
+});

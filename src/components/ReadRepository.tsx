@@ -17,7 +17,8 @@ import { useEffect, useState } from "react";
  * read every few documents, so what this says is how far the run had got when the page was
  * loaded, and a refresh is how a reader asks again:
  *
- * - documents waiting → "Read 3 docs now"
+ * - documents waiting on a repository read in full (a paid plan's) → "Read 3 docs now"; on any
+ *   other repository nothing is offered, since the API refuses the press
  * - asked for, or a run already going → no button, and "In progress" beside a dot that pulses,
  *   with how many documents are left to read. A greyed button still read as something to press,
  *   and its label as an offer still open.
@@ -160,6 +161,7 @@ export default function ReadRepository({
   reading: given,
   waiting,
   closed,
+  canAsk = true,
   busy,
   onRead,
 }: {
@@ -178,6 +180,12 @@ export default function ReadRepository({
    * a page load old.
    */
   closed?: string | null;
+  /**
+   * Whether the reader may ask for a reading of the whole repository: only where it is being read
+   * in full, a paid plan's. Where not, a reading already going is still shown and nothing is
+   * offered, since the API would refuse the press.
+   */
+  canAsk?: boolean;
   /** Whether another request is in flight from this page. */
   busy?: boolean;
   /** Asks for a reading. Resolves false where the API refused it, so the control can recover. */
@@ -255,7 +263,7 @@ export default function ReadRepository({
           title={reading?.state === "queued"
             ? "This reading is queued behind other work and starts on its own."
             : (reading?.docsTotal || 0) > 0
-            ? `Striff is reading this repository. It has been through ${reading!.docsDone || 0} of its ${reading!.docsTotal} documents, counting the ones it had already read.`
+            ? `Striff is reading this repository's documents: ${reading!.docsDone || 0} of ${reading!.docsTotal} so far, counting the ones it had already read.`
             : "Striff is reading this repository's code, and reads its documents next."}
         >
           <span className="read-repo-pulse" aria-hidden="true" />
@@ -289,6 +297,7 @@ export default function ReadRepository({
 
   // "Read 3" beside a count of documents read could be a count itself. It has to name what it does
   // to what, in the fewest words that still say it: read documents, here, now.
+  if (!canAsk) return null;
   const label = stopped ? "Try again" : `Read ${waiting} doc${waiting === 1 ? "" : "s"} now`;
   const help = "Reads the documents waiting to be read and checks every rule it finds against your default branch. Takes a few minutes.";
 
