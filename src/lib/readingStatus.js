@@ -25,12 +25,17 @@ export function paidUntilDate(ms, now = Date.now()) {
   });
 }
 
+/** A count the API sent, or null where it did not: never a guess. */
+function count(value) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
 /**
  * The header for a status.
  *
  * @param {object | null | undefined} status the catalogue's `status`
  * @param {number} [now] the time to date a pause against
- * @returns {null | { line: (string | { b: string })[], offer: boolean, subscribe: boolean,
+ * @returns {null | { offerText: string, line: (string | { b: string })[], offer: boolean, subscribe: boolean,
  *     growth: null | { read: number, total: number, text: string, bar: boolean } }}
  *     null where there is nothing new to say: no status, or a repository whose visibility is
  *     not known.
@@ -74,17 +79,26 @@ export function readingHeader(status, now = Date.now()) {
     case "paid_waiting_for_pull_request":
       line = ["Striff reads this repository's documents when its first pull request is checked."];
       break;
-    case "paid_reading":
-      line = [`Striff is reading the other ${notRead} documents: ${read} read so far.`];
+    case "paid_reading": {
+      // The documents the gate set aside are read when a change touches them, not by this reading.
+      const touched = count(status.documentsReadWhenTouched);
+      const left = touched === null ? notRead : Math.max(0, notRead - touched);
+      line = [`Striff is reading the other ${left} documents: ${read} read so far.`];
       break;
-    case "paid_all_read":
-      line = [`Striff has read all ${total} documents.`];
+    }
+    case "paid_all_read": {
+      const touched = count(status.documentsReadWhenTouched);
+      line = touched
+        ? [`Striff has read ${read} of your ${total} documents. The other ${touched} are read free when a change touches the code they describe.`]
+        : [`Striff has read all ${total} documents.`];
       break;
+    }
     default:
       // A state a newer server invented: say nothing rather than something untrue.
       return null;
   }
 
+  const touchedLeft = status.state === "paid_all_read" ? count(status.documentsReadWhenTouched) : null;
   let growth = null;
   if (GROWING.has(status.state) && total > 0) {
     const atInstall = status.readAtInstallation ?? 0;
@@ -96,10 +110,19 @@ export function readingHeader(status, now = Date.now()) {
       text: `${atInstall} read at installation${since > 0 ? `, ${since} more since through pull requests and pushes` : ""}.`,
     };
   } else if (status.state === "paid_all_read" && total > 0) {
-    growth = { read: total, total, bar: false, text: `${total} read` };
+    growth = touchedLeft
+      ? { read, total, bar: false, text: `${read} read` }
+      : { read: total, total, bar: false, text: `${total} read` };
   }
 
+  // What a paid plan would read now; absent from an older API, which says "all of them".
+  const wouldRead = count(status.documentsPaidWouldRead);
+  const offerText = wouldRead === null
+    ? "Don't want to wait? A paid plan reads all of them now."
+    : `Don't want to wait? A paid plan reads the other ${wouldRead} now.`;
+
   return {
+    offerText,
     line,
     offer: status.state === "unpaid" && status.offerPaidPlan === true,
     subscribe,

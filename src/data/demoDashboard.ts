@@ -300,6 +300,10 @@ export const demoCatalog: any = {
     readSinceThroughPullRequests: 1,
     readSinceThroughPushes: 1,
     readByPlan: 0,
+    // Of the 5 unread: 3 lie outside the first reading's selection, and 2 the worth-reading gate
+    // set aside. A paid plan would read the 3; the 2 are read when a change touches them.
+    documentsReadWhenTouched: 2,
+    documentsPaidWouldRead: 3,
   },
   exclusions: [
     { path: "docs/drafts", folder: true, excludedBy: "maria-k", reason: "Drafts aren't decisions yet", atMs: NOW - 9 * DAY },

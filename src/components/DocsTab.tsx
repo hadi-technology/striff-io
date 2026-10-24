@@ -154,6 +154,10 @@ interface ReadingStatus {
   documentsNotRead?: number;
   readAtInstallation?: number;
   readSince?: number;
+  /** Documents the worth-reading gate set aside: read free when a change touches them. */
+  documentsReadWhenTouched?: number;
+  /** What a paid plan would read now. */
+  documentsPaidWouldRead?: number;
 }
 
 interface Catalog {
@@ -804,7 +808,7 @@ function ReadingStatusHeader({ status, onBilling }: { status?: ReadingStatus | n
         {header.offer && (
           <>
             {" "}
-            {toBilling("docs-reading-offer", "Don't want to wait? A paid plan reads all of them now.")}
+            {toBilling("docs-reading-offer", header.offerText)}
           </>
         )}
       </p>

@@ -65,3 +65,26 @@ test("no customer text names a limit", () => {
     assert.doesNotMatch(words(h) + (h.growth?.text || ""), /\b(limit|cap|budget|only \d+)\b/i);
   }
 });
+
+test("the offer names what a paid plan would read, and says all of them where the API does not say", () => {
+  const base = { state: "unpaid", offerPaidPlan: true, documentsRead: 10, documentsTotal: 15 };
+  assert.equal(readingHeader({ ...base, documentsPaidWouldRead: 3 }).offerText, "Don't want to wait? A paid plan reads the other 3 now.");
+  assert.equal(readingHeader({ ...base, documentsPaidWouldRead: 1 }).offerText, "Don't want to wait? A paid plan reads the other 1 now.");
+  assert.equal(readingHeader(base).offerText, "Don't want to wait? A paid plan reads all of them now.");
+});
+
+test("paid, all read, with documents left to the changes that touch them", () => {
+  const h = readingHeader({ state: "paid_all_read", documentsRead: 13, documentsTotal: 15, documentsReadWhenTouched: 2 });
+  assert.equal(words(h), "Striff has read 13 of your 15 documents. The other 2 are read free when a change touches the code they describe.");
+  assert.equal(h.growth.text, "13 read");
+  const none = readingHeader({ state: "paid_all_read", documentsRead: 15, documentsTotal: 15, documentsReadWhenTouched: 0 });
+  assert.equal(words(none), "Striff has read all 15 documents.");
+  assert.equal(readingHeader({ state: "paid_all_read", documentsRead: 15, documentsTotal: 15 }).line[0], "Striff has read all 15 documents.");
+});
+
+test("paid, reading: the documents left to a change are not counted as left to read", () => {
+  const h = readingHeader({ state: "paid_reading", documentsRead: 40, documentsTotal: 136, documentsNotRead: 96, documentsReadWhenTouched: 6 });
+  assert.equal(words(h), "Striff is reading the other 90 documents: 40 read so far.");
+  const older = readingHeader({ state: "paid_reading", documentsRead: 40, documentsTotal: 136, documentsNotRead: 96 });
+  assert.equal(words(older), "Striff is reading the other 96 documents: 40 read so far.");
+});
