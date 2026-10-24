@@ -93,3 +93,38 @@ test("an unpaid header names the documents it can check where some are excluded"
   assert.match(words(readingHeader(status, NOW, 3)), /^Striff has read 9 of the 12 documents it can check, starting with the ones most tied to your code\./);
   assert.match(words(readingHeader(status, NOW, 0)), /^Striff has read 9 of your 12 documents, starting/);
 });
+
+test("the gap counts any document the status leaves out, so a person's exclusions say it can check", () => {
+  // The page passes listed documents less documentsTotal: 3 person-excluded documents make 3.
+  const status = { state: "unpaid", offerPaidPlan: true, documentsRead: 9, documentsTotal: 12, documentsNotRead: 3, readAtInstallation: 9, readSince: 0 };
+  assert.match(words(readingHeader(status, NOW, 3)), /^Striff has read 9 of the 12 documents it can check,/);
+});
+
+test("unpaid with nothing left reads like paid, with no offer and no bar", () => {
+  const status = { state: "unpaid", offerPaidPlan: true, documentsRead: 3, documentsTotal: 3, documentsNotRead: 0, readAtInstallation: 3, readSince: 0 };
+  const h = readingHeader(status, NOW, 2);
+  assert.equal(words(h), "Striff has read all 3 documents it can check.");
+  assert.equal(h.offer, false);
+  assert.deepEqual(h.growth, { read: 3, total: 3, bar: false, text: "3 read at installation." });
+  assert.equal(words(readingHeader(status, NOW, 0)), "Striff has read all 3 documents.");
+});
+
+test("nothing to check says why, and says nothing at all where nothing is excluded either", () => {
+  for (const state of ["unpaid", "paid_all_read"]) {
+    const status = { state, offerPaidPlan: true, documentsRead: 0, documentsTotal: 0, documentsNotRead: 0 };
+    const h = readingHeader(status, NOW, 4);
+    assert.equal(words(h), "None of this repository's documents states something Striff can check against its code. Each excluded document says why.");
+    assert.equal(h.offer, false);
+    assert.equal(h.growth, null);
+    assert.equal(readingHeader(status, NOW, 0), null);
+  }
+});
+
+test("one document is never '1 documents'", () => {
+  assert.equal(words(readingHeader({ state: "paid_reading", documentsRead: 4, documentsTotal: 5, documentsNotRead: 1 })), "Striff is reading the other 1 document: 4 read so far.");
+  assert.equal(words(readingHeader({ state: "paid_all_read", documentsRead: 1, documentsTotal: 1 })), "Striff has read all 1 document.");
+  assert.equal(words(readingHeader({ state: "paid_all_read", documentsRead: 1, documentsTotal: 1 }, NOW, 2)), "Striff has read all 1 document it can check.");
+  assert.match(words(readingHeader({ state: "unpaid", documentsRead: 1, documentsTotal: 2, documentsNotRead: 1 }, NOW, 1)), /^Striff has read 1 of the 2 documents it can check,/);
+  assert.match(words(readingHeader({ state: "unpaid", documentsRead: 1, documentsTotal: 1 + 1, documentsNotRead: 1 })), /^Striff has read 1 of your 2 documents,/);
+  assert.equal(readingHeader({ state: "unpaid", offerPaidPlan: true, documentsRead: 1, documentsTotal: 2, documentsNotRead: 1, documentsPaidWouldRead: 1 }).offerText, "Don't want to wait? A paid plan reads the other 1 now.");
+});

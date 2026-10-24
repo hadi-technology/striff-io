@@ -1566,7 +1566,7 @@ function FaqSection() {
     },
     {
       q: "Does Striff read all my documents for free?",
-      a: "Yes, as your team works. Striff reads your most important documents when you install it, and every pull request and push reads the documents about the code it changes, at no cost. A document about code nobody changes waits until someone does. A paid plan reads the rest at once. Documents Striff can't check anything in, like CLI references, release notes or contributor lists, are excluded on every plan, with the reason shown; choose Read it anyway on one to have it read.",
+      a: "Yes, as your team works. Striff reads your most important documents when you install it, and every pull request and push reads the documents about the code it changes, at no cost. A document about code nobody changes waits until someone does. A paid plan reads the rest at once. Documents Striff can't check anything in, like CLI references, release notes or contributor lists, are excluded on every plan, with the reason shown. Choose Read it anyway on one and Striff reads it the next time a pull request changes code it names.",
     },
     {
       q: "I enabled 20 repos but Striff only worked on 3. What do I pay?",

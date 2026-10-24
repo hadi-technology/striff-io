@@ -2613,7 +2613,10 @@ export default function DocsTab({
           {catalog && !source && (
             <ReadingStatusHeader
               status={catalog.status}
-              excluded={catalog.documents.filter((doc) => doc.state === "SCREENED_OUT").length}
+              // The documents no count in the status includes: excluded, retired, unreadable.
+              excluded={typeof catalog.status?.documentsTotal === "number"
+                ? Math.max(0, catalog.documents.length - catalog.status.documentsTotal)
+                : 0}
               onBilling={onOpenBilling}
             />
           )}

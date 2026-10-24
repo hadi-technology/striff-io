@@ -35,7 +35,8 @@ function count(value) {
  *
  * @param {object | null | undefined} status the catalogue's `status`
  * @param {number} [now] the time to date a pause against
- * @param {number} [excluded] how many documents Striff itself excluded, which no count here includes
+ * @param {number} [excluded] how many of the repository's documents are in no count here (excluded,
+ *     retired, unreadable): the listed documents less `documentsTotal`
  * @returns {null | { offerText: string, line: (string | { b: string })[], offer: boolean, subscribe: boolean,
  *     growth: null | { read: number, total: number, text: string, bar: boolean } }}
  *     null where there is nothing new to say: no status, or a repository whose visibility is
@@ -46,13 +47,30 @@ export function readingHeader(status, now = Date.now(), excluded = 0) {
   const read = status.documentsRead ?? 0;
   const total = status.documentsTotal ?? 0;
   const notRead = status.documentsNotRead ?? Math.max(0, total - read);
+  const documents = (n) => `${n} document${n === 1 ? "" : "s"}`;
+  const checkable = excluded > 0 ? " it can check" : "";
+  const allRead = `Striff has read all ${total === 1 ? "1 document" : `${total} documents`}${checkable}.`;
+  // Nothing in the repository can be checked: what there is to say is why, and there is no count,
+  // offer or growth to give.
+  if ((status.state === "unpaid" || status.state === "paid_all_read") && total === 0) {
+    if (!(excluded > 0)) return null;
+    return {
+      offerText: "",
+      line: ["None of this repository's documents states something Striff can check against its code. Each excluded document says why."],
+      offer: false,
+      subscribe: false,
+      growth: null,
+    };
+  }
+  // Everything that can be read has been: the same words as a paid plan's, and nothing to offer.
+  const unpaidAllRead = status.state === "unpaid" && notRead === 0;
   let line;
   let subscribe = false;
   switch (status.state) {
     case "unpaid":
-      line = [
+      line = unpaidAllRead ? [allRead] : [
         "Striff has read ",
-        { b: `${read} of ${excluded > 0 ? `the ${total} documents it can check` : `your ${total} documents`}` },
+        { b: `${read} of ${excluded > 0 ? `the ${documents(total)} it can check` : `your ${documents(total)}`}` },
         ", starting with the ones most tied to your code. Every pull request and push reads the documents about the code it changes, ",
         { b: "free" },
         ", so this keeps growing as your team works.",
@@ -81,14 +99,11 @@ export function readingHeader(status, now = Date.now(), excluded = 0) {
       line = ["Striff reads this repository's documents when its first pull request is checked."];
       break;
     case "paid_reading":
-      line = [`Striff is reading the other ${notRead} documents: ${read} read so far.`];
+      line = [`Striff is reading the other ${documents(notRead)}: ${read} read so far.`];
       break;
     case "paid_all_read":
-      // Documents Striff excluded are not among the total, and are not unread: say what was read
-      // is everything that can be checked, where some were.
-      line = [excluded > 0
-        ? `Striff has read all ${total} documents it can check.`
-        : `Striff has read all ${total} documents.`];
+      // Documents Striff excluded are not among the total, and are not unread.
+      line = [allRead];
       break;
     default:
       // A state a newer server invented: say nothing rather than something untrue.
@@ -102,7 +117,7 @@ export function readingHeader(status, now = Date.now(), excluded = 0) {
     growth = {
       read,
       total,
-      bar: true,
+      bar: !unpaidAllRead,
       text: `${atInstall} read at installation${since > 0 ? `, ${since} more since through pull requests and pushes` : ""}.`,
     };
   } else if (status.state === "paid_all_read" && total > 0) {
@@ -118,7 +133,7 @@ export function readingHeader(status, now = Date.now(), excluded = 0) {
   return {
     offerText,
     line,
-    offer: status.state === "unpaid" && status.offerPaidPlan === true,
+    offer: status.state === "unpaid" && !unpaidAllRead && status.offerPaidPlan === true,
     subscribe,
     growth,
   };
