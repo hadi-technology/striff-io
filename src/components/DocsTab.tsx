@@ -110,24 +110,6 @@ interface Doc {
   stateBeforeExclusion?: DocState;
 }
 
-/** Whether a doc that has been read was read in part and not from all of it. */
-function readInPart(doc: Doc): boolean {
-  return doc.state === "READ" && doc.readChars != null && doc.totalChars != null
-    && doc.readChars < doc.totalChars;
-}
-
-/**
- * What a reader is told about a doc read in part, empty where it was read whole. It says how much
- * was read and what that leaves out, because "read" on its own would claim the rest. The part left
- * out is not always the end: a long doc is read a part at a time, and a part that was not read is
- * read by a later pull request, so the line does not say "the first".
- */
-function partLine(doc: Doc): string {
-  if (!readInPart(doc)) return "";
-  const share = Math.max(1, Math.round((100 * (doc.readChars as number)) / (doc.totalChars as number)));
-  return ` This is a long doc: Striff has read ${(doc.readChars as number).toLocaleString("en-US")} of its ${(doc.totalChars as number).toLocaleString("en-US")} characters, about ${share}%. What the rest says isn't checked.`;
-}
-
 interface Summary {
   documents: number;
   read: number;
@@ -391,7 +373,8 @@ const STATE_LABEL: Record<DocState, string> = {
 };
 
 /**
- * What state this document is in, in one sentence.
+ * What state this document is in, in one sentence; empty for a read document with rules, whose
+ * state needs no sentence.
  *
  * @param doc the document
  * @param covering the folder rule that excludes it, where a folder rather than the document itself
@@ -399,7 +382,7 @@ const STATE_LABEL: Record<DocState, string> = {
  *     hunting for one that is not on this document at all
  */
 function stateLine(doc: Doc, covering?: Exclusion | null): string {
-  return stateLineOf(doc, covering) + partLine(doc);
+  return stateLineOf(doc, covering);
 }
 
 /**
@@ -418,12 +401,7 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
         // this one says so; this one saying "Striff has rules for this doc" contradicted it.
         return "Striff has read this doc.";
       }
-      if (!doc.lastExtractedMs) {
-        // A repository read before Striff kept a catalogue: the rules are real, the date is not
-        // known, and inventing one would be worse than saying so.
-        return "Striff has rules for this doc from a reading it made before it kept a record of when. They refresh on the next pull request that changes code this doc talks about.";
-      }
-      return `Rules last read ${when(doc.lastExtractedMs)}${doc.lastExtractedPullNo ? ` on PR #${doc.lastExtractedPullNo}` : ""}.`;
+      return "";
     case "NOT_READ":
       return "Striff hasn't read this doc yet. It reads a doc the first time a pull request changes code the doc talks about.";
     case "SCREENED_OUT":
@@ -2909,17 +2887,20 @@ export default function DocsTab({
                   </span>
                 </div>
                 {/* The state as the catalogue has it, which excluding the doc changes at once. */}
-                <p className={`docs-state-line is-${(selectedDoc ?? detail.document).state.toLowerCase()}`}>
-                  <span
-                    className={`docs-sdot is-${
-                      (selectedDoc ?? detail.document).state.toLowerCase()
-                    }`}
-                  />
-                  <span>
-                    {withCode(stateLine(selectedDoc ?? detail.document,
-                      coveringFolder(detail.document.path, catalog?.exclusions)))}
-                  </span>
-                </p>
+                {stateLine(selectedDoc ?? detail.document,
+                  coveringFolder(detail.document.path, catalog?.exclusions)) !== "" && (
+                  <p className={`docs-state-line is-${(selectedDoc ?? detail.document).state.toLowerCase()}`}>
+                    <span
+                      className={`docs-sdot is-${
+                        (selectedDoc ?? detail.document).state.toLowerCase()
+                      }`}
+                    />
+                    <span>
+                      {withCode(stateLine(selectedDoc ?? detail.document,
+                        coveringFolder(detail.document.path, catalog?.exclusions)))}
+                    </span>
+                  </p>
+                )}
 
                 {/* How many rules came out of this doc, said in words.
                     A doc Striff read and found nothing in used to show the extraction date and
