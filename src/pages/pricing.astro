@@ -18,14 +18,6 @@ const githubInstallUrl = "https://github.com/apps/striffs/installations/new";
         <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600" data-reveal>
           Start free on public pull requests. Private repos are billed at <strong>$29, $59, or $149 a month</strong>, flat. Which one you land on follows how many private repos Striff <strong>worked on</strong> that period, meaning it checked one of their pull requests or read their documents, not how many you connected, so connect as many as you like. Your price never changes in the middle of a billing period, and a quiet month costs $29, the Starter price.
         </p>
-        <!-- The tiers are price points you land on, not a choice made up front, and the whole
-             point of banding rather than metering is that the bill is predictable. So the two
-             questions a band raises (what happens when I cross one, and when does it bite)
-             get answered here, above the cards, rather than below them. -->
-        <p class="pricing-note" data-reveal>
-          <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13ZM8 4a.9.9 0 1 0 0 1.8A.9.9 0 0 0 8 4Zm.75 3.5a.75.75 0 0 0-1.5 0v4a.75.75 0 0 0 1.5 0Z"/></svg>
-          <span>Every paid plan is the same product. The only thing that changes is how many private repos Striff can work on. Nothing to pick up front either: every tier below starts with the same install. Crossing a band never stops a review and never charges you mid-period. Striff keeps analyzing every repo you have enabled, and next month's bill reflects how many private repos Striff worked on this month. Prices are USD, billed through Stripe.</span>
-        </p>
       </div>
 
       <div class="grid gap-5 lg:grid-cols-4 items-stretch" data-reveal>
@@ -104,6 +96,15 @@ const githubInstallUrl = "https://github.com/apps/striffs/installations/new";
         </div>
         <a href="/contact/" class="btn-primary inline-flex shrink-0">Talk to us</a>
       </div>
+
+      <!-- The tiers are price points you land on, not a choice made up front, and the whole
+           point of banding rather than metering is that the bill is predictable. So the two
+           questions a band raises (what happens when I cross one, and when does it bite)
+           are answered here, under the cards, so the prices come first. -->
+      <p class="pricing-note" style="margin-top:0" data-reveal>
+        <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13ZM8 4a.9.9 0 1 0 0 1.8A.9.9 0 0 0 8 4Zm.75 3.5a.75.75 0 0 0-1.5 0v4a.75.75 0 0 0 1.5 0Z"/></svg>
+        <span>Every paid plan is the same product. The only thing that changes is how many private repos Striff can work on. Nothing to pick up front either: every tier above starts with the same install. Crossing a band never stops a review and never charges you mid-period. Striff keeps analyzing every repo you have enabled, and next month's bill reflects how many private repos Striff worked on this month. Prices are USD, billed through Stripe.</span>
+      </p>
 
       <!-- How it works -->
       <div class="mt-6" data-reveal>
