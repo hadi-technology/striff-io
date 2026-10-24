@@ -5,7 +5,7 @@ const githubInstallUrl = "https://github.com/apps/striffs/installations/new";
 ---
 <BaseLayout
   title="Pricing | Striff"
-  description="Free for public repositories, documented rules included. Private-repo teams pay based on active repos (repos that actually generated a diagram), starting at $29/mo for up to 5."
+  description="Free for public repositories, documented rules included. Private repositories need a plan from $29 a month, based on how many private repos Striff works on: it checks one of their pull requests or reads their documents. A quiet month costs $29."
   canonical="https://striff.io/pricing"
 >
   <main class="pricing-page text-slate-900">
@@ -16,7 +16,7 @@ const githubInstallUrl = "https://github.com/apps/striffs/installations/new";
           Free for public repos. Private repos cost one of three flat monthly prices.
         </h1>
         <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600" data-reveal>
-          Start free on public pull requests. Private repos are billed at <strong>$29, $59, or $149 a month</strong>, flat. Which one you land on follows how many repos were actually <strong>active</strong> (generated a diagram) that period, not how many you connected, so connect as many as you like. Your price never changes in the middle of a billing period, and a fully quiet month drops to $0.
+          Start free on public pull requests. Private repos are billed at <strong>$29, $59, or $149 a month</strong>, flat. Which one you land on follows how many private repos Striff <strong>worked on</strong> that period, meaning it checked one of their pull requests or read their documents, not how many you connected, so connect as many as you like. Your price never changes in the middle of a billing period, and a quiet month costs $29, the Starter price.
         </p>
         <!-- The tiers are price points you land on, not a choice made up front, and the whole
              point of banding rather than metering is that the bill is predictable. So the two
@@ -110,7 +110,7 @@ const githubInstallUrl = "https://github.com/apps/striffs/installations/new";
         <h2 class="text-xl font-bold text-slate-950">How billing works</h2>
         <div class="mt-5 grid gap-6 text-sm leading-7 text-slate-600 md:grid-cols-3">
           <p><strong class="text-slate-900">1.</strong> Install the GitHub App and connect as many private repositories as you want. Connecting is always free.</p>
-          <p><strong class="text-slate-900">2.</strong> Your tier is based on how many of those repos actually <strong>generated a diagram</strong> during your billing period, not how many you've connected. It adjusts automatically in both directions: upgrades and downgrades apply from your <strong>next invoice</strong>, never mid-period, and a fully quiet month drops to $0.</p>
+          <p><strong class="text-slate-900">2.</strong> Your tier is based on how many of those repos Striff <strong>worked on</strong> during your billing period, meaning it checked one of their pull requests or read their documents, not how many you've connected. It adjusts automatically in both directions, never below Starter: upgrades and downgrades apply from your <strong>next invoice</strong>, never mid-period, and a quiet month costs $29.</p>
           <p><strong class="text-slate-900">3.</strong> Stripe handles billing: invoices, cancellation, and the customer portal are all self-serve.</p>
         </div>
       </div>

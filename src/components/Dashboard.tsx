@@ -1533,7 +1533,7 @@ function UsagePanel({
         )}
       </div>
       <p className="mt-3 text-sm text-slate-500">
-        Only repos that generate a diagram count toward your bill.
+        Private repos count when Striff checks a pull request on them or reads their documents. Plans start at $29 a month.
         {cap ? ` ${activeCount} of ${cap} before ${capitalizeTier(nextTier || "")}.` : ""}
       </p>
       {activeNames.length > 0 && (
@@ -1558,19 +1558,19 @@ function FaqSection() {
   const items: { q: string; a: string }[] = [
     {
       q: "How does Striff pricing work?",
-      a: "<b>Public repositories are completely free</b> \u2014 no limits, no credit card required. Private repositories need a paid plan (Starter, Team, or Scale). Each tier has a flat monthly price, but the tier you land on is based on <b>how many repos actually generated a diagram during your billing period</b> \u2014 not how many you've connected. Connect as many private repos as you want; you're only billed for the ones that produce a diagram. Full tier details are on the <a href=\"/pricing\" class=\"font-semibold text-blue-600 hover:underline\">pricing page</a>.",
+      a: "Public repositories are free: no limits, no card. Private repositories need a plan at $29, $59 or $149 a month. Which one you pay follows how many private repos Striff worked on during your billing period, meaning it checked one of their pull requests or read their documents. Connecting a repo is free, and a quiet month costs $29, the Starter price. Tier details are on the <a href=\"/pricing\" class=\"font-semibold text-blue-600 hover:underline\">pricing page</a>.",
     },
     {
       q: "What makes a repo billable?",
-      a: "A repo counts toward your bill only when it <b>produces at least one architectural diagram</b> during your current billing period. Simply connecting a repo to the GitHub App is free \u2014 it only becomes billable once a pull request triggers a diagram.",
+      a: "A private repo counts when, during your billing period, Striff checks one of its pull requests or reads its documents. Connecting it doesn't count, and neither does the nightly re-check of rules Striff has already read.",
     },
     {
       q: "I enabled 20 repos but only 3 were active \u2014 what do I pay?",
-      a: "You'd be billed for <b>3 active repos</b>, which falls in the Starter tier ($29/mo) \u2014 not Scale, even though 20 repos are connected. The \"Usage this billing period\" panel on your installation card shows exactly how many repos are active and which tier that puts you in.",
+      a: "You pay for the 3 Striff worked on, which is Starter ($29 a month), even though 20 are connected. The usage panel on your installation card lists them.",
     },
     {
       q: "Will I be charged automatically if I add more repos?",
-      a: "<b>Not just for connecting them.</b> Adding private repos to your Striff installation doesn't change your bill by itself \u2014 only repos that go on to generate a diagram count. Your tier then adjusts <b>automatically in both directions</b>: if more repos were active than your tier covers you're upgraded, and if fewer were active you're downgraded \u2014 a fully quiet month drops to <b>$0</b>. Changes are never charged mid-period; the adjusted tier applies from your next invoice.",
+      a: "Not for connecting them. Your plan follows how many private repos Striff works on: more than your plan covers moves you up, fewer moves you down, never below Starter. A change never applies mid-period; it shows on your next invoice.",
     },
     {
       q: "How do I enable Striff on private repositories?",
