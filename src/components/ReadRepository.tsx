@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { progressTitle, selectedLeft } from "../lib/readingProgress.js";
 
 /**
  * Asking Striff to read a whole repository now.
@@ -80,6 +81,10 @@ export interface Reading {
   docsDone?: number;
   /** The documents being read now; empty between steps. */
   readingPaths?: string[];
+  /** Documents the run chose to read; null before it has chosen, or where it records none. */
+  docsSelected?: number | null;
+  /** Of those, how many are still to read; null where docsSelected is. */
+  docsSelectedLeft?: number | null;
 }
 
 /** Who asked for a reading Striff started by itself because the page was viewed. */
@@ -260,21 +265,15 @@ export default function ReadRepository({
         <span
           className="read-repo-progress"
           role="status"
-          title={reading?.state === "queued"
-            ? "This reading is queued behind other work and starts on its own."
-            : (reading?.docsTotal || 0) > 0
-            ? `Striff is reading this repository's documents: ${reading!.docsDone || 0} of ${reading!.docsTotal} so far, counting the ones it had already read.`
-            : "Striff is reading this repository's code, and reads its documents next."}
+          title={progressTitle(reading)}
         >
           <span className="read-repo-pulse" aria-hidden="true" />
           In progress
-          {/* The number the button had, going down: documents nothing has read yet. How many of
-              the repository's documents the run has been through was shown here and did not
-              add up to anything beside it -- "13 of 73" under a button that had said 25, because
-              the run passes over the documents already read as well. */}
-          {waiting > 0 && (
+          {/* Only the run's own count of the documents it chose to read. The catalogue's count of
+              unread documents includes ones this reading never touches, so it is not used. */}
+          {selectedLeft(reading) !== null && (
             <span className="read-repo-count">
-              {waiting} doc{waiting === 1 ? "" : "s"} left to read
+              {selectedLeft(reading)} doc{selectedLeft(reading) === 1 ? "" : "s"} left to read
             </span>
           )}
         </span>

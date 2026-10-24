@@ -595,7 +595,7 @@ function sortNodes(nodes: TreeNode[]): TreeNode[] {
  * repository itself was simply never given a row, which made "every rule in this repository" a
  * special case instead of the thing you click first.
  */
-function buildTree(documents: Doc[], repoName: string): TreeNode {
+function buildTree(documents: Doc[], repoName: string, ruleCount: (doc: Doc) => number = (doc) => doc.ruleCount): TreeNode {
   const root: TreeNode = { name: repoName, path: "", children: [], rules: 0, broken: 0 };
   for (const doc of documents) {
     const segments = doc.path.split("/");
@@ -614,7 +614,7 @@ function buildTree(documents: Doc[], repoName: string): TreeNode {
   }
   const total = (node: TreeNode): TreeNode => {
     node.children = sortNodes(node.children.map(total));
-    node.rules = (node.doc?.ruleCount || 0) + node.children.reduce((sum, c) => sum + c.rules, 0);
+    node.rules = (node.doc ? ruleCount(node.doc) : 0) + node.children.reduce((sum, c) => sum + c.rules, 0);
     const ownBroken = node.doc && node.doc.state !== "EXCLUDED" ? node.doc.brokenRules : 0;
     node.broken = ownBroken + node.children.reduce((sum, c) => sum + c.broken, 0);
     return node;
@@ -1725,6 +1725,23 @@ export default function DocsTab({
     [rulesIndex]
   );
 
+  /**
+   * How many rules each document lists: the rules the table shows for it, which leave out any
+   * Striff could not judge. Every count of a document's rules is this one, so the tree, the pane
+   * and the table agree. Until the rules have come, or where the list is cut short, the
+   * catalogue's own count stands in.
+   */
+  const listedCounts = useMemo(() => {
+    if (!rulesIndex || rulesIndex.truncated) return null;
+    return new Map<string, number>(
+      rulesIndex.documents.map((group) => [
+        group.document.path,
+        group.rules.filter((rule) => standing(rule) !== "unclear").length,
+      ])
+    );
+  }, [rulesIndex]);
+  const listedRules = (doc: Doc): number => (listedCounts ? listedCounts.get(doc.path) ?? 0 : doc.ruleCount);
+
   /** The documents holding each kind of rule a chip counts, by the doc's path. */
   const ruleDocs = useMemo(() => {
     const byChip: Record<RuleChip, Set<string>> = {
@@ -1790,8 +1807,8 @@ export default function DocsTab({
     [catalog, filter]
   );
   const tree = useMemo(
-    () => buildTree(documents.filter((doc) => !isUnread(doc)), name),
-    [documents, name]
+    () => buildTree(documents.filter((doc) => !isUnread(doc)), name, listedRules),
+    [documents, name, listedCounts]
   );
 
   /* ─── What is selected, and what it scopes ──────────────────────── */
@@ -2210,12 +2227,12 @@ export default function DocsTab({
           </button>
           <span className="docs-row-meta">
             {rowBadges(doc)}
-            {doc.ruleCount > 0 && (
+            {listedRules(doc) > 0 && (
               <span
                 className="docs-count"
-                title={`${doc.ruleCount} rule${doc.ruleCount === 1 ? "" : "s"} read from this doc`}
+                title={`${listedRules(doc)} rule${listedRules(doc) === 1 ? "" : "s"} read from this doc`}
               >
-                {doc.ruleCount}
+                {listedRules(doc)}
               </span>
             )}
             {rowMenu(doc.path, doc)}
@@ -2481,7 +2498,7 @@ export default function DocsTab({
                     >
                       <span className="docs-palette-main">{marked(doc.path)}</span>
                       <span className="docs-palette-sub">
-                        {doc.ruleCount > 0 ? `${doc.ruleCount} rules` : STATE_LABEL[doc.state]}
+                        {listedRules(doc) > 0 ? `${listedRules(doc)} rules` : STATE_LABEL[doc.state]}
                         {doc.brokenRules > 0 ? ` · ${doc.brokenRules} broken` : ""}
                       </span>
                     </button>
@@ -2973,6 +2990,7 @@ export default function DocsTab({
                     fileStem={scopeFileStem}
                     showPath
                     filter={ruleFilter}
+                    onShowAll={() => setFilter("all")}
                     docCount={scopeRuleDocs}
                     truncated={!!rulesIndex.truncated}
                     onOpenDoc={(path) => openDoc(path)}
@@ -3134,30 +3152,19 @@ export default function DocsTab({
                 )}
 
                 {(paneTab === "rules" || !hasDocumentTab) && (<>
-                {(detail.document.state === "READ" || detail.rules.length > 0) && (
+                {/* The count is of the rules listed below, never of more: a rule Striff could not
+                    judge is not listed, so it is not counted. A doc whose rules were all set aside
+                    that way says nothing here, since "found no rule" would be untrue. */}
+                {scopeRows.length > 0 ? (
                   <p className="docs-rule-count">
-                    {detail.rules.length === 0 ? (
-                      <>
-                        <b>0 rules</b> read from this doc. Striff read it and found no
-                        architectural rule in it.
-                      </>
-                    ) : (
-                      <>
-                        <b>{detail.rules.length} rule{detail.rules.length === 1 ? "" : "s"}</b>{" "}
-                        read from this doc
-                        {scopeRows.length < detail.rules.length && (
-                          <>
-                            {", "}
-                            {detail.rules.length - scopeRows.length} of which haven't been checked
-                            yet, so {detail.rules.length - scopeRows.length === 1 ? "it is" : "they are"}{" "}
-                            not listed
-                          </>
-                        )}
-                        .
-                      </>
-                    )}
+                    <b>{scopeRows.length} rule{scopeRows.length === 1 ? "" : "s"}</b> read from this doc.
                   </p>
-                )}
+                ) : detail.document.state === "READ" && detail.rules.length === 0 ? (
+                  <p className="docs-rule-count">
+                    <b>0 rules</b> read from this doc. Striff read it and found no
+                    architectural rule in it.
+                  </p>
+                ) : null}
 
                 {scopeRows.length > 0 && (
                   <RulesTable
@@ -3169,6 +3176,7 @@ export default function DocsTab({
                     fileStem={scopeFileStem}
                     showPath={false}
                     filter={ruleFilter}
+                    onShowAll={() => setFilter("all")}
                     docCount={1}
                     issues={!source && takesIssues}
                     readOnly={!!source}

@@ -7801,3 +7801,10 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
 .docs-unread-row .docs-row-main svg { margin-top: 0.15rem; }
 .docs-unread-text { display: flex; flex-direction: column; min-width: 0; gap: 0.1rem; text-align: left; }
 .docs-unread-note { color: #8a95a1; font-size: 0.74rem; line-height: 1.35; white-space: normal; }
+
+/* Says the list is narrower than what is selected, and how to widen it. */
+.rules-narrowed { margin: 0.6rem 0 0.25rem; color: #334155; font-size: 0.82rem; line-height: 1.5; }
+.rules-narrowed b { color: #0f172a; }
+.rules-narrowed-clear { padding: 0; border: 0; background: none; font: inherit; color: #2563eb; cursor: pointer; }
+.rules-narrowed-clear:hover { text-decoration: underline; }
+@media print { .rules-narrowed { display: none; } }

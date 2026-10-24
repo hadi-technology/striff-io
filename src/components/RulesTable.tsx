@@ -190,6 +190,7 @@ export default function RulesTable({
   docCount,
   truncated,
   onOpenDoc,
+  onShowAll,
   issues = true,
   readOnly = false,
   demo = false,
@@ -209,6 +210,8 @@ export default function RulesTable({
   showPath: boolean;
   /** Which rules to show, driven by the counts above the table. */
   filter: RuleFilter;
+  /** Clears the count chosen above the table, for the line that says the list is narrowed. */
+  onShowAll?: () => void;
   /** How many documents these rules came from, for the line under the table. */
   docCount: number;
   /** Whether the repository holds more rules than one answer carries. */
@@ -395,6 +398,29 @@ export default function RulesTable({
           )}
         </div>
       </div>
+
+      {/* Said above the list, where the eye lands, whenever the list is narrower than the scope:
+          a count or a search can leave two rules of a hundred and three, and nothing else says why. */}
+      {(filter !== "all" || term !== "") && (
+        <p className="rules-narrowed" role="status">
+          Showing <b>{shown.length}</b> of {rows.length} rule{rows.length === 1 ? "" : "s"}:{" "}
+          {[
+            filter !== "all" ? (filter === "excluded" ? "Excluded" : STANDING_LABEL[filter]) : null,
+            term !== "" ? `matching “${query.trim()}”` : null,
+          ].filter(Boolean).join(" · ")}
+          {" · "}
+          <button
+            type="button"
+            className="rules-narrowed-clear"
+            onClick={() => {
+              setQuery("");
+              onShowAll?.();
+            }}
+          >
+            Show all
+          </button>
+        </p>
+      )}
 
       {/* Only on paper: what was printed, of what, and when. */}
       <div className="rules-print-head">

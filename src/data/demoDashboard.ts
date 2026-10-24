@@ -126,13 +126,13 @@ const documents = [
   doc("CONTRIBUTING.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
   doc("docs/design/inventory-reservations.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
   doc("docs/runbooks/refund-backlog.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
-  doc("docs/runbooks/oncall.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: describes who to page, states no rule about the code" }),
-  doc("README.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: describes setup and usage, not how the code is built" }),
+  doc("docs/runbooks/oncall.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
+  doc("README.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
   doc("docs/adr/0007-payments.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 2, alreadyBrokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 12 * DAY }),
   doc("docs/adr/0008-read-models.md", "READ", { extractedContentHash: "71cc4ab9", ruleCount: 1, outdated: true, lastExtractedMs: NOW - 22 * DAY, lastExtractedPullNo: "398" }),
   doc("docs/adr/0003-shared-database.md", "RETIRED", { retiredReason: "Superseded by ADR 0007, which gives billing a store of its own." }),
   doc("docs/design/event-flow.md", "UNREADABLE"),
-  doc("docs/glossary.md", "SCREENED_OUT", { screenedBy: "worth_reading", screenReason: "worth_reading: defines terms, states no rule about the code", forced: true, forcedBy: "maria-k", forcedReason: "It names the modules the ADRs talk about" }),
+  doc("docs/glossary.md", "SCREENED_OUT", { screenedBy: "genre", screenReason: "genre: a list of term definitions, not statements about how the code is built", forced: true, forcedBy: "maria-k", forcedReason: "It names the modules the ADRs talk about" }),
   // Excluded by the team: Striff reads neither, and none of their rules is checked. The server
   // counts an excluded doc's rules apart from its rule count, as it does any excluded rule.
   doc("docs/legacy/payments-v1.md", "EXCLUDED", { extractedContentHash: "5e0a7d13", lastExtractedMs: NOW - 60 * DAY, lastExtractedPullNo: "301", excludedBy: "maria-k", excludedReason: "Describes the v1 flow we're retiring" }),
@@ -286,7 +286,7 @@ export const demoCatalog: any = {
   lastAttempt: { atMs: NOW - 3 * 60 * 1000, outcome: "listed", reason: null, documents: documents.length },
   reading: null,
   // An unpaid repository: the first reading is done and the rest is read free as pull requests and
-  // pushes touch the code the documents describe. 12 of 15 read: 9 at installation, 3 since.
+  // pushes touch the code the documents describe. 10 of 15 read: 8 at installation, 2 since.
   status: {
     state: "unpaid",
     offerPaidPlan: true,
@@ -295,9 +295,9 @@ export const demoCatalog: any = {
     documentsRead: documents.length - documents.filter(isUnread).length,
     documentsTotal: documents.length,
     documentsNotRead: documents.filter(isUnread).length,
-    readAtInstallation: 9,
-    readSince: 3,
-    readSinceThroughPullRequests: 2,
+    readAtInstallation: 8,
+    readSince: 2,
+    readSinceThroughPullRequests: 1,
     readSinceThroughPushes: 1,
     readByPlan: 0,
   },
