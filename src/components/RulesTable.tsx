@@ -8,6 +8,7 @@ import { RuleSwitch } from "./RuleStateControls";
 import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
 import { standing } from "../lib/standing.js";
+import { collapse } from "../lib/ruleCollapse.js";
 
 /**
  * A list of rules, whatever a reader selected to get it.
@@ -62,6 +63,11 @@ export interface Rule {
    * resolved both ends to code in different units; absent or empty otherwise, and then no tag.
    */
   crossUnits?: string[] | null;
+  /**
+   * What the check took the sentence to mean, where its words do not name what was checked; absent
+   * where every name the rule uses is written in the sentence.
+   */
+  readingNote?: string | null;
 }
 
 /** The pair of units a rule crosses, or null where the server named none. */
@@ -72,6 +78,21 @@ function crossing(row: Rule): [string, string] | null {
 
 /** One rule with the document it came from, which is how every scope reads them. */
 export type Row = Rule & { doc: RowDoc };
+
+/**
+ * One line of the table: a rule, or the first of the rules a collapsed line stands for.
+ * `stands` is how many rules the line is; `text` is the sentence a collapsed line says, and `open`
+ * whether a reader has listed its rules one by one.
+ */
+interface Entry {
+  row: Row;
+  stands: number;
+  /** How many rules the line it belongs to stands for, listed or not. */
+  size: number;
+  text: string | null;
+  open: boolean;
+  lead: boolean;
+}
 
 /**
  * How a rule stands, in one answer.
@@ -230,6 +251,8 @@ export default function RulesTable({
   /** A switch that failed says so on its own row until it is tried again. */
   const [stateError, setStateError] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
+  /** The collapsed lines a reader opened, by the id of the first rule each stands for. */
+  const [openLines, setOpenLines] = useState<Set<string>>(new Set());
   const [exportOpen, setExportOpen] = useState(false);
   const exportButton = useRef<HTMLButtonElement | null>(null);
   // Each document's rules in the order the server sent them (broken first, then the rules that
@@ -283,15 +306,42 @@ export default function RulesTable({
     return bySentence(sorted);
   }, [rows, filter, term, sort]);
 
-  /** Each sentence's rules in the order shown, so its first row can hold the sentence for all of them. */
+  /**
+   * The rules as lines on screen. A run of same-standing rules a sentence says about different
+   * names is one line until a reader opens it, and every rule in it is listed, each with its own
+   * pill, once they do. `shown` stays every rule, for the counts and the export.
+   */
+  const visible = useMemo(() => {
+    const entries: Entry[] = [];
+    for (const line of collapse(shown, sentenceKey) as { rows: Row[]; text: string | null }[]) {
+      const lead = line.rows[0];
+      if (line.text && !openLines.has(lead.factId)) {
+        entries.push({ row: lead, stands: line.rows.length, size: line.rows.length, text: line.text, open: false, lead: true });
+      } else {
+        line.rows.forEach((row, at) =>
+          entries.push({ row, stands: 1, size: line.rows.length, text: line.text, open: !!line.text, lead: at === 0 }));
+      }
+    }
+    return entries;
+  }, [shown, openLines]);
+
+  /** Each sentence's lines in the order shown, so its first row can hold the sentence for all of them. */
   const sentences = useMemo(() => {
-    const members = new Map<string, Row[]>();
-    for (const row of shown) {
-      const key = sentenceKey(row);
-      members.set(key, [...(members.get(key) || []), row]);
+    const members = new Map<string, Entry[]>();
+    for (const entry of visible) {
+      const key = sentenceKey(entry.row);
+      members.set(key, [...(members.get(key) || []), entry]);
     }
     return members;
-  }, [shown]);
+  }, [visible]);
+
+  function toggleLine(id: string) {
+    setOpenLines((was) => {
+      const next = new Set(was);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }
 
   /** The same click on a column twice turns it round; a different column starts at the top. */
   function orderBy(key: SortKey) {
@@ -442,13 +492,19 @@ export default function RulesTable({
           </tr>
         </thead>
         <tbody>
-          {shown.map((row) => {
-            const members = sentences.get(sentenceKey(row)) || [row];
-            const group = { size: members.length, index: members.indexOf(row) };
-            const grouped = group.size > 1;
+          {visible.map((entry) => {
+            const { row } = entry;
+            const folded = entry.text !== null && !entry.open;
+            const members = sentences.get(sentenceKey(row)) || [entry];
+            const group = {
+              size: members.length,
+              index: members.indexOf(entry),
+              rules: members.reduce((sum, one) => sum + one.stands, 0),
+            };
+            const grouped = group.rules > 1;
             // One sentence's rules share its cells only where they all mark the same words in it;
             // otherwise the sentence is shown plain and each rule names the words it checks.
-            const sameWords = members.every((r) => r.checkedFrom === row.checkedFrom && r.checkedTo === row.checkedTo);
+            const sameWords = members.every((one) => one.row.checkedFrom === row.checkedFrom && one.row.checkedTo === row.checkedTo);
             return (
             <tr
               key={row.factId}
@@ -468,10 +524,11 @@ export default function RulesTable({
                   : "",
                 grouped ? "in-sentence" : "",
                 grouped && group.index === 0 ? "sentence-first" : "",
+                folded ? "is-collapsed" : "",
               ].filter(Boolean).join(" ")}
             >
               {group.index === 0 && (
-              <td className={`rules-source${grouped ? " rules-shared" : ""}`} rowSpan={grouped ? group.size : undefined}>
+              <td className={`rules-source${grouped ? " rules-shared" : ""}`} rowSpan={group.size > 1 ? group.size : undefined}>
                 <span className="rules-source-where">
                   {showPath ? (
                     <button type="button" className="rules-source-link" onClick={() => onOpenDoc?.(row.doc.path)}>
@@ -500,19 +557,50 @@ export default function RulesTable({
               </td>
               )}
               {group.index === 0 && (
-                <td className={`docs-rule-quote${grouped ? " rules-shared" : ""}`} rowSpan={grouped ? group.size : undefined}>
+                <td className={`docs-rule-quote${grouped ? " rules-shared" : ""}`} rowSpan={group.size > 1 ? group.size : undefined}>
                   <Clamped lines={4}>
                     {grouped && !sameWords
                       ? withCode(row.quote || "", term)
                       : withChecked(row.quote, row.checkedFrom, row.checkedTo, term)}
                   </Clamped>
                   {grouped && (
-                    <span className="rules-sentence-count">{group.size} rules from this sentence</span>
+                    <span className="rules-sentence-count">{group.rules} rules from this sentence</span>
                   )}
                 </td>
               )}
               <td className="docs-rule-statement">
-                <Clamped lines={4}>{withCode(row.statement, term)}</Clamped>
+                {folded ? (
+                  <>
+                    <span className="rules-collapsed-text">{withCode(entry.text || "", term)}</span>
+                    <button
+                      type="button"
+                      className="rules-collapse-toggle"
+                      aria-expanded={false}
+                      onClick={() => toggleLine(row.factId)}
+                    >
+                      Show all {entry.stands} rules
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {entry.open && entry.lead && (
+                      <button
+                        type="button"
+                        className="rules-collapse-toggle"
+                        aria-expanded={true}
+                        onClick={() => toggleLine(row.factId)}
+                      >
+                        Fold these {entry.size} rules into one line
+                      </button>
+                    )}
+                    <Clamped lines={4}>{withCode(row.statement, term)}</Clamped>
+                  </>
+                )}
+                {row.readingNote && !folded && (
+                  <span className="rules-reading-note" title="The sentence does not write these names; they are Striff's reading of its words.">
+                    {withCode(row.readingNote, term)}
+                  </span>
+                )}
                 {grouped && !sameWords && checkedWords(row) && (
                   <span className="rules-checks" title="The words of the sentence this rule checks.">
                     checks “{checkedWords(row)}”
@@ -572,7 +660,7 @@ export default function RulesTable({
                       {STANDING_LABEL[standing(row)]}
                     </span>
                   )}
-                  {ruleStates && (
+                  {ruleStates && !folded && (
                     <RuleSwitch
                       compact
                       excluded={!!row.excluded}
@@ -585,7 +673,7 @@ export default function RulesTable({
                       }}
                     />
                   )}
-                  <FlagFinding
+                  {!folded && <FlagFinding
                     demo={demo}
                     flagged={{
                       kind: "rule",
@@ -596,7 +684,12 @@ export default function RulesTable({
                       standing: row.status === "PRE_EXISTING" ? "already broken" : standing(row),
                       id: row.factId,
                     }}
-                  />
+                  />}
+                  {folded && (
+                    <span className="rules-collapsed-count" title={`One line for ${entry.stands} rules that all stand the same way. Show all lists each with its own pill.`}>
+                      all {entry.stands}
+                    </span>
+                  )}
                 </span>
                 {/* Which two units a dependency crosses: beside the status, never in its place. */}
                 {crossing(row) && (

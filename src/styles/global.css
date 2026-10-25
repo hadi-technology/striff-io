@@ -7579,6 +7579,35 @@ button.check-verdict { cursor: pointer; }
   color: #57606a;
   cursor: default;
 }
+/* A line standing for many rules that say the same thing of different names, and the notes under a rule. */
+.rules-collapse-toggle {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #0b5cad;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.rules-collapse-toggle:hover { color: #08457f; }
+.rules-collapsed-count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #57606a;
+  cursor: default;
+}
+.rules-reading-note {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  color: #57606a;
+  cursor: default;
+}
 @media (max-width: 860px) {
   .rules-table tr.in-sentence:not(.sentence-first) { padding-left: 0.75rem; border-left: 2px solid #e2e8f0; }
 }
