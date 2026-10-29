@@ -3770,35 +3770,22 @@
 .faq-a em { font-style: italic; color: var(--ink-soft); }
 
 /* ============================================================================
-   PROBLEM PANEL — REAL AGENTS, EACH ALIVE IN ITS OWN WAY
-   Every agent carries its own mark and a small motion that suits it: the Claude
-   spark and the OpenAI knot turn, the Gemini star twinkles, Copilot blinks, and
-   Ollama bobs. Staggered, so the feed never pulses in unison.
+   PROBLEM PANEL — AGENTS BY THE WORK THEY DO
+   Each agent is a monogram in its own colour, the way the language chips under the hero are:
+   named for its job, never for a vendor. The graph's two lanes take the colours of the agents
+   that opened them.
    ========================================================================== */
-.gs-item-icon svg { width: 1rem; height: 1rem; transform-origin: 50% 50%; }
-
-.ag-claude .gs-item-icon { background: rgba(217, 119, 87, 0.16); }
-.ag-claude .gs-item-icon svg { fill: #d97757; animation: ag-spin 10s linear infinite; }
-.ag-claude .gs-item-text b { color: #f4a78a; }
-
-.ag-codex .gs-item-icon { background: rgba(255, 255, 255, 0.08); }
-.ag-codex .gs-item-icon svg { fill: #e5e7eb; animation: ag-spin 14s linear infinite reverse; }
-.ag-codex .gs-item-text b { color: #e5e7eb; }
-
-.ag-gemini .gs-item-icon { background: rgba(138, 180, 248, 0.14); }
-.ag-gemini .gs-item-icon svg { fill: url(#gs-gemini); animation: ag-twinkle 2.6s ease-in-out infinite; }
-.ag-gemini .gs-item-text b { color: #a8c7fa; }
-
-.ag-copilot .gs-item-icon { background: rgba(139, 92, 246, 0.18); }
-.ag-copilot .gs-item-icon svg { fill: #e9e5ff; animation: ag-blink 4.2s ease-in-out infinite; }
-.ag-copilot .gs-item-text b { color: #c4b5fd; }
-
-.ag-ollama .gs-item-icon { background: rgba(148, 163, 184, 0.16); }
-.ag-ollama .gs-item-icon svg { fill: #e2e8f0; animation: ag-bob 2.4s ease-in-out infinite; }
-.ag-ollama .gs-item-text b { color: #cbd5e1; }
-
-.gs-item:nth-child(2n) .gs-item-icon svg { animation-delay: -1.3s; }
-.gs-item:nth-child(3n) .gs-item-icon svg { animation-delay: -2.1s; }
+.gs-item-icon { color: #e2e8f0; font-family: Inter, system-ui, sans-serif; font-size: 0.72rem; font-weight: 800; line-height: 1; }
+.ag-feature .gs-item-icon { background: rgba(138, 180, 248, 0.18); color: #a8c7fa; }
+.ag-feature .gs-item-text b { color: #a8c7fa; }
+.ag-refactor .gs-item-icon { background: rgba(217, 119, 87, 0.18); color: #f4a78a; }
+.ag-refactor .gs-item-text b { color: #f4a78a; }
+.ag-test .gs-item-icon { background: rgba(52, 211, 153, 0.16); color: #6ee7b7; }
+.ag-test .gs-item-text b { color: #6ee7b7; }
+.ag-deps .gs-item-icon { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+.ag-deps .gs-item-text b { color: #c4b5fd; }
+.ag-docs .gs-item-icon { background: rgba(148, 163, 184, 0.18); color: #cbd5e1; }
+.ag-docs .gs-item-text b { color: #cbd5e1; }
 
 /* graph lanes take the colour of the agent that opened them */
 .gs-line-a { stroke: #8ab4f8; }
@@ -3810,31 +3797,14 @@
 .gs-agent-bg { fill: #0f172a; stroke-width: 1.6; }
 .gs-agent-a .gs-agent-bg { stroke: #8ab4f8; filter: drop-shadow(0 0 5px rgba(138, 180, 248, 0.7)); }
 .gs-agent-b .gs-agent-bg { stroke: #d97757; filter: drop-shadow(0 0 5px rgba(217, 119, 87, 0.7)); }
-.gs-agent-a .gs-agent-mark { fill: url(#gs-gemini); }
-.gs-agent-b .gs-agent-mark { fill: #d97757; }
-.gs-agent-mark { transform-box: fill-box; transform-origin: center; }
-.gs-agent-a .gs-agent-mark { animation: ag-twinkle 2.6s ease-in-out infinite; }
-.gs-agent-b .gs-agent-mark { animation: ag-spin 10s linear infinite; }
+.gs-agent-mark { font-family: Inter, system-ui, sans-serif; font-size: 10px; font-weight: 800; text-anchor: middle; }
+.gs-agent-a .gs-agent-mark { fill: #a8c7fa; }
+.gs-agent-b .gs-agent-mark { fill: #f4a78a; }
 
 .gs-caption strong { color: #f8fafc; font-weight: 700; }
 
-@keyframes ag-spin { to { transform: rotate(360deg); } }
-@keyframes ag-twinkle {
-  0%, 100% { transform: scale(0.84) rotate(0deg); opacity: 0.85; }
-  50% { transform: scale(1.08) rotate(45deg); opacity: 1; }
-}
-@keyframes ag-blink {
-  0%, 88%, 100% { transform: scaleY(1); }
-  92% { transform: scaleY(0.15); }
-}
-@keyframes ag-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-1.5px); }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .gs-item-icon svg, .gs-agent-mark { animation: none !important; }
-}@media (min-width: 1181px) {}
+@media (min-width: 1181px) {}
 
 /* Pre-existing: already broken before this PR. Amber, so it reads as inherited debt
    rather than as either a pass or something this change did. */
