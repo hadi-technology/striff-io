@@ -20,14 +20,14 @@ s = s.replace('<svg ', '<svg class="sd" role="img" aria-labelledby="sd-title" ',
 rules = {
   # rule 1, broken: the composition into legacy, both ends and the package it reaches
   'lnk12': '1', 'ent0010': '1', 'ent0009': '1',
-  'ent0004': '2 5 7 8 12',          # CheckoutService
-  'ent0006': '1 3 6 11 12',         # CsvExporter
+  'ent0004': '2 5 6 8',             # CheckoutService
+  'ent0006': '1 3 8',               # CsvExporter
   'ent0005': '3',                   # checkout.export
-  'ent0008': '2 4 9 10 11',         # Order
-  'ent0007': '4 9',                 # core.orders
-  'lnk13': '12',                    # CheckoutService -> CsvExporter
+  'ent0008': '2 4 7',               # Order
+  'ent0007': '4',                   # core.orders
+  'lnk13': '8',                     # CheckoutService -> CsvExporter
   'lnk14': '2',                     # CheckoutService -> Order
-  'lnk11': '11',                    # CsvExporter -> Order
+  'lnk11': '',                      # CsvExporter -> Order
 }
 for el, r in rules.items():
     s, n = re.subn(r'(<g class="(?:link|entity|cluster)"[^>]*\bid="%s")' % el, r'\1 data-rules="%s"' % r, s)
