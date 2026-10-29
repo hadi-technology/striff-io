@@ -219,7 +219,10 @@ const teamsPoints = [
 ];
 /** The four things a lead checks before bringing a tool in, said as facts rather than asked. */
 const teamsTrust = [
-  { icon: "quiet", title: "Quiet by design", body: "Every break is confirmed by a second reading of the doc and the code before anyone sees it." },
+  // Measured 2026-10-30 from striff-api (read-only): of the open-source pull requests on installed
+  // repositories where documented rules were checked, 2 of 52 (3.8%) broke one; of the 307 such
+  // pull requests checked from 2026-10-15 on, rules included or not, 1 did.
+  { icon: "quiet", title: "Quiet by design", body: "The check stays green unless a documented rule breaks. Across our open-source users, fewer than 4% of pull requests have broken one." },
   { icon: "lock", title: "Your code stays yours", body: "Parsed in memory, never stored. Self-hosted deployment on Enterprise." },
   { icon: "price", title: "Flat, predictable pricing", body: "$29, $59 or $149 a month by private repos used. Free for open source." },
   { icon: "bolt", title: "Value on the first pull request", body: "It reads the docs you already have. Nothing to configure." },
