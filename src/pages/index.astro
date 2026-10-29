@@ -139,11 +139,11 @@ const sampleRules = [
   {
     n: 1,
     status: "broken",
-    badge: "Broken by this PR",
+    badge: "Broken",
     rule: "Nothing in `checkout` depends on `legacy`",
     doc: "AGENTS.md#L18",
     quote: "Never import from legacy/ in new code; use the equivalents in core/.",
-    breaks: "checkout.export.CsvExporter → legacy.pricing.PriceCalculator (added in this pull request)",
+    breaks: "checkout.export.CsvExporter \u2192 legacy.pricing.PriceCalculator (added in this pull request)",
   },
   {
     n: 2,
@@ -168,6 +168,70 @@ const sampleRules = [
     rule: "Nothing in `core` depends on `checkout`",
     doc: "ARCHITECTURE.md#L22",
     quote: "core never depends on feature modules such as checkout.",
+  },
+  {
+    n: 5,
+    status: "holds",
+    badge: "Holds",
+    rule: "`CheckoutService` has a `checkout` method",
+    doc: "specs/checkout.md#L14",
+    quote: "CheckoutService.checkout(cartId) places the order and charges the customer in one call.",
+  },
+  {
+    n: 6,
+    status: "holds",
+    badge: "Holds",
+    rule: "`CsvExporter` has an `export` method",
+    doc: "docs/adr/0012-exports.md#L14",
+    quote: "Each exporter exposes export(orders) and nothing else.",
+  },
+  {
+    n: 7,
+    status: "holds",
+    badge: "Holds",
+    rule: "`CheckoutService` depends on `PaymentGateway`",
+    doc: "docs/adr/0007-payments.md#L12",
+    quote: "Checkout talks to payments only through the PaymentGateway interface.",
+  },
+  {
+    n: 8,
+    status: "holds",
+    badge: "Holds",
+    rule: "Nothing in `checkout` depends on `com.stripe`",
+    doc: "docs/adr/0007-payments.md#L13",
+    quote: "Only the billing module talks to the Stripe SDK.",
+  },
+  {
+    n: 9,
+    status: "holds",
+    badge: "Holds",
+    rule: "`Order` is in `core.orders`",
+    doc: "CLAUDE.md#L41",
+    quote: "Order and OrderRepository live in core.orders; do not create order types elsewhere.",
+  },
+  {
+    n: 10,
+    status: "holds",
+    badge: "Holds",
+    rule: "`Order` has `id` and `totalCents`",
+    doc: "specs/orders.md#L7",
+    quote: "An Order carries its id and its total in cents as totalCents, never as a float.",
+  },
+  {
+    n: 11,
+    status: "holds",
+    badge: "Holds",
+    rule: "`CsvExporter` depends on `core.orders`",
+    doc: "docs/adr/0012-exports.md#L10",
+    quote: "Exporters read orders from core.orders and never query the database themselves.",
+  },
+  {
+    n: 12,
+    status: "holds",
+    badge: "Holds",
+    rule: "Only `CheckoutService` depends on `checkout.export`",
+    doc: "ARCHITECTURE.md#L40",
+    quote: "CheckoutService is the only way into checkout.export.",
   },
 ];
 
@@ -625,7 +689,7 @@ const structuredData = JSON.stringify([
                           <td class="ghcheck-status"><span class={`ghbadge is-${r.status}`}>{r.badge}</span></td>
                           <td class="ghcheck-cell">
                             <span class="ghcheck-rule-line"><b class="ghcheck-rule-text"><InlineCodeText text={r.rule} /></b> &middot; <span class="ghcheck-doc">{r.doc}</span></span>
-                            {r.breaks && <span class="ghcheck-quote">&ldquo;{r.quote}&rdquo;</span>}
+                            <span class="ghcheck-quote">&ldquo;{r.quote}&rdquo;</span>
                             {r.breaks && <span class="ghcheck-breaks"><b>What breaks it:</b> <span class="ghcheck-mono">{r.breaks}</span></span>}
                           </td>
                         </tr>
@@ -656,13 +720,22 @@ const structuredData = JSON.stringify([
 
         <script is:inline>
         // A rule row lights its part of the diagram: hover or focus picks the row, and leaving the
-        // table goes back to the broken rule, which is the one a reader needs first.
+        // table goes back to the broken rule, which is the one a reader needs first. Each diagram
+        // element lists the rules it bears on in data-rules.
         (function () {
           var box = document.querySelector("[data-sc]");
           if (!box) return;
           var home = box.getAttribute("data-active");
-          var pick = function (n) { box.setAttribute("data-active", n); };
-          box.querySelectorAll("[data-rule]").forEach(function (row) {
+          var rows = Array.prototype.slice.call(box.querySelectorAll("[data-rule]"));
+          var marks = Array.prototype.slice.call(box.querySelectorAll(".sd [data-rules]"));
+          var pick = function (n) {
+            box.setAttribute("data-active", n);
+            rows.forEach(function (row) { row.classList.toggle("is-lit", row.getAttribute("data-rule") === n); });
+            marks.forEach(function (el) {
+              el.classList.toggle("is-lit", (" " + el.getAttribute("data-rules") + " ").indexOf(" " + n + " ") !== -1);
+            });
+          };
+          rows.forEach(function (row) {
             var n = row.getAttribute("data-rule");
             row.addEventListener("mouseenter", function () { pick(n); });
             row.addEventListener("focus", function () { pick(n); });
@@ -673,6 +746,7 @@ const structuredData = JSON.stringify([
             table.addEventListener("mouseleave", function () { pick(home); });
             table.addEventListener("focusout", function (e) { if (!table.contains(e.relatedTarget)) pick(home); });
           }
+          pick(home);
         })();
         </script>
 

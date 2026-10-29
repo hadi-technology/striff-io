@@ -15,7 +15,7 @@ export const heroExampleTally = { broken: 1, held: 41 };
 export const heroExampleRules = [
   {
     verdict: "violated",
-    verdictLabel: "Broken by this PR",
+    verdictLabel: "Broken",
     craft: "Agent instructions",
     quote: "Never import from `legacy/` in new code; use the equivalents in `core/`.",
     doc: "AGENTS.md",

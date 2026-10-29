@@ -6662,9 +6662,7 @@ a.ghcheck-doc:hover { text-decoration: underline; }
 @media (max-width: 1100px) { .sc-body { grid-template-columns: minmax(0, 1fr); } }
 .sc-row { cursor: pointer; transition: background-color 0.2s ease; }
 .sc-row:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }
-.sc[data-active="2"] .sc-row[data-rule="2"],
-.sc[data-active="3"] .sc-row[data-rule="3"],
-.sc[data-active="4"] .sc-row[data-rule="4"] { background: #effaf2; }
+.sc .sc-row.is-holds.is-lit { background: #effaf2; }
 .sc .sc-row.is-broken { background: #fff5f4; }
 .sc[data-active="1"] .sc-row.is-broken { background: #ffebe9; box-shadow: inset 3px 0 0 #cf222e; }
 
@@ -6682,19 +6680,13 @@ a.ghcheck-doc:hover { text-decoration: underline; }
 @media (max-width: 1100px) { .sc-diagram { position: static; max-width: 27rem; margin: 0 auto; } }
 .sc-diagram .sd { display: block; width: 100%; height: auto; }
 
-/* The rule in view at full strength, the rest set back. */
+/* The rule in view at full strength, the rest set back. The script marks what the rule bears on
+   with is-lit, rows and diagram elements alike. */
 .sd g[data-rules] { transition: opacity 0.25s ease; }
-/* :where keeps this weaker than the highlight below, which names the rule. */
-.sc[data-active] .sd :where(g.entity, g.link)[data-rules] { opacity: 0.35; }
-.sc[data-active="1"] .sd g[data-rules~="1"],
-.sc[data-active="2"] .sd g[data-rules~="2"],
-.sc[data-active="3"] .sd g[data-rules~="3"],
-.sc[data-active="4"] .sd g[data-rules~="4"] { opacity: 1; }
-.sc[data-active="2"] .sd g.entity[data-rules~="2"] > rect:first-child,
-.sc[data-active="3"] .sd g.entity[data-rules~="3"] > rect:first-child,
-.sc[data-active="4"] .sd g.entity[data-rules~="4"] > rect:first-child { stroke: #1a7f37; stroke-width: 2.5; }
-.sc[data-active="2"] .sd g.link[data-rules~="2"] path { stroke: #1a7f37; stroke-width: 2.5; }
-.sc[data-active="2"] .sd g.link[data-rules~="2"] polygon { fill: #1a7f37; stroke: #1a7f37; }
+.sc[data-active] .sd :where(g.entity, g.link)[data-rules]:not(.is-lit) { opacity: 0.35; }
+.sc:not([data-active="1"]) .sd g.entity.is-lit > rect:first-child { stroke: #1a7f37; stroke-width: 2.5; }
+.sc:not([data-active="1"]) .sd g.link.is-lit path { stroke: #1a7f37; stroke-width: 2.5; }
+.sc:not([data-active="1"]) .sd g.link.is-lit polygon { fill: #1a7f37; stroke: #1a7f37; }
 .sd .sd-overlay { pointer-events: none; transition: opacity 0.25s ease; }
 .sc:not([data-active="1"]) .sd .sd-overlay { opacity: 0; }
 
