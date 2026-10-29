@@ -228,15 +228,6 @@ const teamsTrust = [
   { icon: "bolt", title: "Value on the first pull request", body: "It reads the docs you already have. Nothing to configure." },
 ];
 /**
- * Public repositories whose pull requests Striff checks today (check runs visible on GitHub), each
- * beside the people quoted above. Names and avatars only: the projects speak for themselves.
- */
-const teamsInUse = [
-  { name: "objectionary/eo", url: "https://github.com/objectionary/eo", avatar: "/oss-avatars/objectionary.png" },
-  { name: "AArnott/Nerdbank.MessagePack", url: "https://github.com/AArnott/Nerdbank.MessagePack", avatar: "/oss-avatars/aarnott.jpg" },
-  { name: "catatafishen/agentbridge", url: "https://github.com/catatafishen/agentbridge", avatar: "/oss-avatars/catatafishen.jpg" },
-];
-/**
  * What people who run Striff have said, quoted as they wrote it (an ellipsis marks a
  * cut), linked to where they said it when that is public; a private email is quoted only with
  * its author's permission. The block is not rendered while the list is empty.
@@ -642,7 +633,7 @@ const structuredData = JSON.stringify([
             <div class="ghcheck-body sc-body">
               <div class="sc-rules">
                 <h3 class="ghcheck-h">Documented rules</h3>
-                <p class="ghcheck-allhold"><b>This pull request breaks 1 of {heroExampleTally.broken + heroExampleTally.held} documented rules.</b> It is listed first.</p>
+                <p class="ghcheck-allhold"><b>This pull request breaks 1 of the {sampleRules.length} documented rules about the code it changes.</b></p>
                 <div class="ghcheck-table-wrap">
                   <table class="ghcheck-table is-rules">
                     <thead><tr><th class="ghcheck-n">#</th><th class="ghcheck-status">Status</th><th>Rule</th></tr></thead>
@@ -661,7 +652,6 @@ const structuredData = JSON.stringify([
                     </tbody>
                   </table>
                 </div>
-                <p class="ghcheck-more">Rows {sampleRules.length + 1}&ndash;{heroExampleTally.broken + heroExampleTally.held}, all holding, are trimmed here.</p>
               </div>
 
               <!-- The diagram: the classes the change touched, by package. Edges carry the number of
@@ -911,15 +901,6 @@ const structuredData = JSON.stringify([
         )}
 
         <div class="teams-foot" data-reveal>
-          <p class="teams-inuse">
-            <span>Running on pull requests in</span>
-            {teamsInUse.map((repo) => (
-              <a href={repo.url} target="_blank" rel="noopener noreferrer">
-                <img src={repo.avatar} alt="" width="20" height="20" loading="lazy" />
-                {repo.name}
-              </a>
-            ))}
-          </p>
           <p class="teams-more">
             Also in the dashboard: <a href="/demo/#docs">every rule by document</a> &middot; <a href="/demo/#checks">every pull request checked</a>
           </p>

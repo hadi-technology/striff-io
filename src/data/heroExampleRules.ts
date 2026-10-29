@@ -9,8 +9,9 @@
 
 export const heroExampleRepo = "acme/checkout-service";
 
-/** Illustrative counts for the example card: one rule broken, the rest held. */
-export const heroExampleTally = { broken: 1, held: 41 };
+/** Illustrative counts for the example card: one rule broken, the rest held. The check section
+ * shows the same pull request and lists all eight (sampleRules in pages/index.astro). */
+export const heroExampleTally = { broken: 1, held: 7 };
 
 export const heroExampleRules = [
   {
@@ -34,45 +35,34 @@ export const heroExampleRules = [
   {
     verdict: "held",
     verdictLabel: "Holds",
-    craft: "Payments ADR",
-    quote: "Every payment provider implements `PaymentGateway`, and only the `billing` module talks to the Stripe SDK.",
-    doc: "docs/adr/0007-payments.md",
-    line: 12,
-    statement: "Every class in `billing.providers` implements `PaymentGateway`, and only `billing` depends on `com.stripe`",
-    logic: [
-      [
-        String.raw`\htmlClass{lg-q}{\forall}\, c.`,
-        String.raw`\mathrm{in}(c, \mathtt{billing.providers})`,
-        String.raw`\rightarrow\ \mathrm{implements}(c, \mathtt{PaymentGateway})`
-      ],
-      [
-        String.raw`\wedge\ \htmlClass{lg-q}{\forall}\, c, d.`,
-        String.raw`(\mathrm{refs}(c, d)`,
-        String.raw`\wedge\ \mathrm{in}(d, \mathtt{com.stripe}))`,
-        String.raw`\rightarrow\ \mathrm{in}(c, \mathtt{billing})`
-      ]
-    ],
+    craft: "Layering",
+    quote: "`core` never depends on feature modules such as `checkout`.",
+    doc: "ARCHITECTURE.md",
+    line: 22,
+    statement: "Nothing in `core` depends on `checkout`",
+    logic: [[
+      String.raw`\htmlClass{lg-q}{\neg\exists}\, c, d.`,
+      String.raw`\mathrm{in}(c, \mathtt{core})`,
+      String.raw`\wedge\ \mathrm{in}(d, \mathtt{checkout})`,
+      String.raw`\wedge\ \mathrm{refs}(c, d)`
+    ]],
     base: true,
     head: true
   },
   {
     verdict: "held",
     verdictLabel: "Holds",
-    craft: "Peer modules",
-    quote: "Feature modules never depend on each other; shared code goes in `common`.",
-    doc: "ARCHITECTURE.md",
-    line: 42,
-    statement: "No feature module depends on another feature module, where the features are `cart`, `catalog` and `accounts`",
-    logic: [
-      [
-        String.raw`\htmlClass{lg-q}{\neg\exists}\, c, d.`,
-        String.raw`\mathrm{in\_group}(c, \textsf{feature})`,
-        String.raw`\wedge\ \mathrm{in\_group}(d, \textsf{feature})`,
-        String.raw`\wedge\ \neg\,\mathrm{same\_group}(c, d, \textsf{feature})`,
-        String.raw`\wedge\ \mathrm{refs}(c, d)`
-      ],
-      [String.raw`\textsf{feature} \coloneqq \{`, String.raw`\mathtt{cart},`, String.raw`\mathtt{catalog},`, String.raw`\mathtt{accounts}\,\}`]
-    ],
+    craft: "Payments ADR",
+    quote: "Only the `billing` module talks to the Stripe SDK.",
+    doc: "docs/adr/0007-payments.md",
+    line: 13,
+    statement: "Nothing in `checkout` depends on `com.stripe`",
+    logic: [[
+      String.raw`\htmlClass{lg-q}{\neg\exists}\, c, d.`,
+      String.raw`\mathrm{in}(c, \mathtt{checkout})`,
+      String.raw`\wedge\ \mathrm{in}(d, \mathtt{com.stripe})`,
+      String.raw`\wedge\ \mathrm{refs}(c, d)`
+    ]],
     base: true,
     head: true
   }
