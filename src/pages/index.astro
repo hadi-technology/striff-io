@@ -6,9 +6,6 @@ import RuleRows from "../components/RuleRows.astro";
 import Formula from "../components/Formula.astro";
 import { heroExampleRules, heroExampleRepo, heroExampleTally } from "../data/heroExampleRules";
 import MetricsTab from "../components/MetricsTab";
-import { Image } from "astro:assets";
-import dashDocsRules from "../assets/dash-docs-rules.webp";
-import dashChecks from "../assets/dash-checks.webp";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 import { ossRepos, reportPath } from "../data/ossFindings";
 import { loadTallies } from "../data/ossTally.js";
@@ -124,95 +121,90 @@ const pipeline = [
 
 
 /**
- * A real Striff check: catatafishen/agentbridge #1201, a pull request from an outside contributor,
- * checked on 2026-10-27 against head ee6b80d. Every rule, document, line and quoted sentence is
- * copied from the check's own output (the summary of the run below). Five of its nine held rules are
- * shown, keeping their numbers; rows 3, 5, 7 and 9 are trimmed. Row 10 is the one the check listed as
- * already broken on master. Verified by hand: AGENTS.md:599 praises MessageFormatter.kt for "Zero UI
- * dependencies" and the file imports com.github.catatafishen.agentbridge.ui.toolSubtitleKey (line 3),
- * since b55868a9e5 (2026-05-19). Striff's verifier confirmed the same accusation on 2026-10-29.
- * Nothing here is written for the website.
- *
- * https://github.com/catatafishen/agentbridge/runs/122211791267
+ * The check section's sample: an illustrative example, not a real run, and labelled as one. It is
+ * the same invented pull request as the hero card (acme/checkout-service #418, feat/csv-export):
+ * the change adds checkout.export.CsvExporter, which imports legacy.pricing.PriceCalculator and so
+ * breaks the AGENTS.md rule the hero leads with. Each rule names the diagram elements it is about
+ * (`marks`), so hovering a row lights its part of the diagram and the broken path is drawn in red.
  */
-const realCheck = {
-  repo: "catatafishen/agentbridge",
-  pr: 1201,
-  branch: "fix/thinking-display-toggle",
-  prUrl: "https://github.com/catatafishen/agentbridge/pull/1201",
-  runUrl: "https://github.com/catatafishen/agentbridge/runs/122211791267",
-  held: 9,
+const sampleCheck = {
+  repo: "acme/checkout-service",
+  pr: 418,
+  branch: "feat/csv-export",
 };
-const realCheckRules = [
+const sampleRules = [
   {
     n: 1,
-    rule: "`BroadcastChatPanel` depends on `NativeChatPanel`",
-    doc: "CONVERSATION-PERSISTENCE.md#L15",
-    from: "from a diagram: BCP \u2192 NativeChatPanel",
+    status: "broken",
+    badge: "Broken by this PR",
+    rule: "Nothing in `checkout` depends on `legacy`",
+    doc: "AGENTS.md#L18",
+    quote: "Never import from legacy/ in new code; use the equivalents in core/.",
+    breaks: "checkout.export.CsvExporter → legacy.pricing.PriceCalculator (added in this pull request)",
   },
   {
     n: 2,
-    rule: "`ChatToolWindowContent` depends on `AgentEditSession`",
-    doc: "INLINE-DIFF-REVIEW.md#L387",
-    quote: "ChatToolWindowContent.onSendStopClicked calls AgentEditSession.removeApprovedAll() on the first message of a fresh\u2026",
+    status: "holds",
+    badge: "Holds",
+    rule: "`CheckoutController` depends on `CheckoutService`",
+    doc: "ARCHITECTURE.md#L31",
+    quote: "CheckoutController hands every request to CheckoutService and holds no logic of its own.",
+  },
+  {
+    n: 3,
+    status: "holds",
+    badge: "Holds",
+    rule: "`CheckoutService` depends on `OrderRepository`",
+    doc: "ARCHITECTURE.md#L36",
+    quote: "CheckoutService reads and writes orders through OrderRepository only.",
   },
   {
     n: 4,
-    rule: "`ChatToolWindowContent` depends on `ChatInputSettings`",
-    doc: "INLINE-DIFF-REVIEW.md#L389",
-    quote: "ChatToolWindowContent.setSendingState(false) branches on ChatInputSettings.unhandledNudgeMode to either auto-send\u2026",
-  },
-  {
-    n: 6,
-    rule: "`ChatToolWindowContent` depends on `AgentNudgeService`",
-    doc: "NUDGE-ARCHITECTURE.md#L14",
-    from: "from a table row: Component ChatToolWindowContent, Role UI subscriber + producer Registers an AgentNudgeService.Listener to manage the\u2026",
-  },
-  {
-    n: 8,
-    rule: "`ChatToolWindowContent` has a `restoreUnhandledNudgeIfNeeded` method",
-    doc: "NUDGE-ARCHITECTURE.md#L138",
-    quote: "restoreUnhandledNudgeIfNeeded() in ChatToolWindowContent uses the locally-tracked pendingHumanText to restore\u2026",
+    status: "holds",
+    badge: "Holds",
+    rule: "Only `billing` depends on `com.stripe`",
+    doc: "docs/adr/0007-payments.md#L12",
+    quote: "Every payment provider implements PaymentGateway, and only the billing module talks to the Stripe SDK.",
   },
 ];
-const realCheckAlreadyBroken = {
-  n: 10,
-  rule: "`MessageFormatter` may not depend on `com.github.catatafishen.agentbridge.ui`",
-  doc: "AGENTS.md",
-  docUrl: "https://github.com/catatafishen/agentbridge/blob/ee6b80d25790e2673b5e106bc11d92540e742b09/AGENTS.md?plain=1#L599",
-  quote: "MessageFormatter.kt \u2014 pure formatting utilities (formatTimestamp, escapeHtml, escapeJs). Zero UI\u2026",
-  breaks: "com.github.catatafishen.agentbridge.ui.ChatDataModelKt (before this pull request)",
-  codeUrl: "https://github.com/catatafishen/agentbridge/blob/ee6b80d25790e2673b5e106bc11d92540e742b09/plugin-core/src/main/java/com/github/catatafishen/agentbridge/bridge/MessageFormatter.kt#L3",
-};
 
 /**
- * For-teams: the dashboard's three views, one panel each, every panel a door into the demo's
- * matching tab. The docs-and-rules and checks panels are photographed; the metrics panel is the live component
- * on the example workspace.
+ * For teams: the section for the engineering lead, not the reviewer. It sells what changes for the
+ * organisation (the docs become guardrails, drift is visible before it is a rewrite, nothing to roll
+ * out), shows the one dashboard view that is the lead's own (metrics, live, on the demo workspace),
+ * and answers the four questions a lead asks before bringing a tool in. The other two dashboard
+ * views are links into the demo.
  */
-const teamsPanels = [
+const teamsPoints = [
   {
-    view: "docs",
-    eyebrow: "Docs & rules",
-    title: "Every rule your docs state, for a repository, a folder or one file",
-    body: "Your architecture docs, ADRs and agent instructions as a tree. Pick a document for its own rules, a folder for every rule beneath it, or the repository for all of them: the sentence each rule came from, the rule it became, and whether the default branch still keeps it. Sort, search and export what you picked.",
-    cta: "Open the docs and rules"
+    title: "The docs your team wrote become the guardrails",
+    body: "ADRs, design docs and AGENTS.md are checked on every pull request, by people and agents alike. No rules to write, no new process to teach.",
   },
   {
-    view: "checks",
-    eyebrow: "Checks",
-    title: "What every pull request was checked against",
-    body: "Each pull request Striff checked, newest first: how many of your documented rules it was held to, which it kept and which it broke, the documents read to get there, and the pull request one click away.",
-    cta: "Open the checks"
+    title: "See drift before it turns into a rewrite",
+    body: "Which repositories broke a documented rule this month, which pull requests did it, and which docs have gone stale. The places your clean-up time should go.",
   },
   {
-    view: "metrics",
-    eyebrow: "Metrics",
-    title: "Which repositories are drifting, month over month",
-    body: "Rules broken, held and already broken, the share of pull requests that broke none, and the repositories and pull requests flagged most. Where the fix-up time should go this quarter.",
-    cta: "Open the metrics"
-  }
+    title: "Nothing to roll out",
+    body: "One install covers the organisation. No per-developer setup, and the check is advisory until you choose to make it required.",
+  },
 ];
+const teamsAnswers = [
+  { q: "Will it be noisy?", a: "Every break is confirmed by a second, independent reading of the doc and the code before anyone sees it. Rules it can't settle are counted, never guessed." },
+  { q: "Is our code safe?", a: "Source is parsed in memory and not stored. Self-hosted deployment is available on Enterprise." },
+  { q: "What does it cost?", a: "A flat monthly price by how many private repos Striff works on: $29, $59 or $149. Public repos are free." },
+  { q: "How long to get value?", a: "The first pull request after install. Striff reads the docs you already have; there is nothing to configure." },
+];
+/** Public repositories whose pull requests Striff checks today (check runs visible on GitHub). */
+const teamsInUse = [
+  { name: "objectionary/eo", url: "https://github.com/objectionary/eo" },
+  { name: "AArnott/Nerdbank.MessagePack", url: "https://github.com/AArnott/Nerdbank.MessagePack" },
+];
+/**
+ * What people who run Striff say. Empty until each quote is approved by the person who wrote it;
+ * the block is not rendered while it is empty. { quote, name, role }.
+ */
+const teamsQuotes: { quote: string; name: string; role: string }[] = [];
 
 
 const plans = [
@@ -571,224 +563,123 @@ const structuredData = JSON.stringify([
             One check, beside your CI: every rule your docs state about the code the change touched, whether it still holds, and the sentence it came from.
           </p>
           <p class="diagram-source">
-            <span class="diagram-source-label">A real one, unedited:</span>
-            <a class="diagram-source-pr" href={realCheck.prUrl} target="_blank" rel="noopener noreferrer">
-              {realCheck.repo} #{realCheck.pr}
-            </a>
-            <a class="diagram-source-run" href={realCheck.runUrl} target="_blank" rel="noopener noreferrer">Open the check itself &rarr;</a>
+            <span class="diagram-source-label">Example &middot; {sampleCheck.repo} #{sampleCheck.pr}. Point at a rule to see it on the diagram.</span>
           </p>
         </div>
 
-        <!-- The check as GitHub renders it: the summary, the rules table as the check posts it, the
-             rule that was already broken, and the diagram, which the check embeds at the end of the
-             same comment. -->
+        <!-- The check as GitHub renders it, with the rules beside the diagram the check embeds.
+             Each rule row names the diagram elements it is about (data-rule / data-rules); the
+             one in focus is lit and the rest dimmed. The broken rule is in focus by default, so
+             the red path is the first thing read. -->
         <div class="check-report" data-reveal>
-          <div class="ghcheck">
+          <div class="ghcheck sc" data-sc data-active="1">
             <div class="ghcheck-head">
               <span class="ghcheck-mark"><img src="/icon.svg" alt="" width="18" height="18" /></span>
               <span class="ghcheck-title">
                 <b>Striff</b>
-                <i>{realCheck.repo} &middot; #{realCheck.pr} &middot; {realCheck.branch}</i>
+                <i>{sampleCheck.repo} &middot; #{sampleCheck.pr} &middot; {sampleCheck.branch}</i>
               </span>
-              <span class="ghcheck-state">
-                <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
-                Successful
+              <span class="ghcheck-state is-bad">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.06 1.06L6.94 8 4.97 9.97a.75.75 0 1 0 1.06 1.06L8 9.06l1.97 1.97a.75.75 0 0 0 1.06-1.06L9.06 8l1.97-1.97a.75.75 0 0 0-1.06-1.06L8 6.94Z"/></svg>
+                1 rule broken
               </span>
             </div>
 
-            <div class="ghcheck-body">
-              <h3 class="ghcheck-h">Documented rules</h3>
-              <p class="ghcheck-allhold">All {realCheck.held} documented rules about the code this pull request changes hold.</p>
-
-              <!-- The rules as the check posts them: a numbered three-column table (#, Status, Rule),
-                   each row the number, the state badge alone in the Status cell, then the rule
-                   and its line in the docs and the sentence it came from. -->
-              <div class="ghcheck-table-wrap">
-                <table class="ghcheck-table is-rules">
-                  <thead><tr><th class="ghcheck-n">#</th><th class="ghcheck-status">Status</th><th>Rule</th></tr></thead>
-                  <tbody>
-                    {realCheckRules.map((r) => (
-                      <tr>
-                        <td class="ghcheck-n"><b>{r.n}</b></td>
-                        <td class="ghcheck-status"><span class="ghbadge is-holds">Holds</span></td>
-                        <td class="ghcheck-cell">
-                          <span class="ghcheck-rule-line"><b class="ghcheck-rule-text"><InlineCodeText text={r.rule} /></b> &middot; <code class="ghcheck-doc">{r.doc}</code></span>
-                          {r.quote ? <span class="ghcheck-quote">&ldquo;{r.quote}&rdquo;</span> : <span class="ghcheck-from">{r.from}</span>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p class="ghcheck-more">Rows 3, 5, 7 and 9 trimmed.</p>
-
-              <!-- The check folds this table under a summary line; it is opened here because it is
-                   the row worth reading. -->
-              <details class="ghcheck-details" open>
-                <summary><span aria-hidden="true">&#9888;&#65039;</span> 1 documented rule was already broken on master before this pull request.</summary>
+            <div class="ghcheck-body sc-body">
+              <div class="sc-rules">
+                <h3 class="ghcheck-h">Documented rules</h3>
+                <p class="ghcheck-allhold"><b>This pull request breaks 1 documented rule.</b> It is listed first.</p>
                 <div class="ghcheck-table-wrap">
                   <table class="ghcheck-table is-rules">
                     <thead><tr><th class="ghcheck-n">#</th><th class="ghcheck-status">Status</th><th>Rule</th></tr></thead>
                     <tbody>
-                      <tr>
-                        <td class="ghcheck-n"><b>{realCheckAlreadyBroken.n}</b></td>
-                        <td class="ghcheck-status"><span class="ghbadge is-already">Already broken</span></td>
-                        <td class="ghcheck-cell">
-                          <span class="ghcheck-rule-line"><b class="ghcheck-rule-text"><InlineCodeText text={realCheckAlreadyBroken.rule} /></b> &middot; <a class="ghcheck-doc" href={realCheckAlreadyBroken.docUrl} target="_blank" rel="noopener noreferrer">{realCheckAlreadyBroken.doc}</a></span>
-                          <span class="ghcheck-quote">&ldquo;{realCheckAlreadyBroken.quote}&rdquo;</span>
-                          <span class="ghcheck-breaks"><b>What breaks it:</b> <span class="ghcheck-mono">{realCheckAlreadyBroken.breaks}</span></span>
-                        </td>
-                      </tr>
+                      {sampleRules.map((r) => (
+                        <tr class={`sc-row is-${r.status}`} data-rule={r.n} tabindex="0">
+                          <td class="ghcheck-n"><b>{r.n}</b></td>
+                          <td class="ghcheck-status"><span class={`ghbadge is-${r.status}`}>{r.badge}</span></td>
+                          <td class="ghcheck-cell">
+                            <span class="ghcheck-rule-line"><b class="ghcheck-rule-text"><InlineCodeText text={r.rule} /></b> &middot; <span class="ghcheck-doc">{r.doc}</span></span>
+                            <span class="ghcheck-quote">&ldquo;{r.quote}&rdquo;</span>
+                            {r.breaks && <span class="ghcheck-breaks"><b>What breaks it:</b> <span class="ghcheck-mono">{r.breaks}</span></span>}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
-              </details>
+              </div>
 
-              <!-- Why row 10 is worth a homepage, in one line: the pattern agents are told to copy
-                   breaks the rule it is praised for. -->
-              <p class="ghcheck-why">
-                <b>Row 10:</b> <span class="ghcheck-mono">AGENTS.md</span> tells agents to copy <span class="ghcheck-mono">MessageFormatter.kt</span> for its &ldquo;zero UI dependencies&rdquo;. <a href={realCheckAlreadyBroken.codeUrl} target="_blank" rel="noopener noreferrer">It imports from <span class="ghcheck-mono">ui</span></a>.
-              </p>
+              <!-- The diagram: the classes the change touched, by package. Edges carry the number of
+                   the rule they bear on. The red edge is the one that breaks rule 1; it is drawn
+                   last and keeps flowing. -->
+              <figure class="sc-diagram">
+                <svg viewBox="0 0 700 430" role="img" aria-labelledby="sc-diagram-title">
+                  <title id="sc-diagram-title">The classes pull request 418 touched. The new CsvExporter in checkout imports PriceCalculator from legacy, which breaks rule 1; the other three rules hold.</title>
+                  <defs>
+                    <marker id="sc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sc-arrow" /></marker>
+                    <marker id="sc-arrow-add" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sc-arrow-add" /></marker>
+                    <marker id="sc-arrow-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sc-arrow-bad" /></marker>
+                  </defs>
 
-              <!-- The diagram is not a second section. The check embeds it here, at the end of the
-                   same comment, and it is wide because a real architecture is wide. -->
-              <figure class="ghcheck-figure">
-                <!-- The whole diagram, opened on the chat panel. Cropping the SVG instead meant
-                     panning ran off the edge of the file into white; a window onto the real thing
-                     has more diagram in every direction, which is what a reader expects when a
-                     caption invites them to drag. The whole diagram is a click away and the
-                     frame pans and zooms. -->
-                <div
-                  class="ghcheck-diagram"
-                  data-panzoom
-                  data-focus-x="480"
-                  data-focus-y="180"
-                  data-focus-w="1300"
-                  data-focus-h="720"
-                >
-                  <img src="/examples/agentbridge-1201-diagram.svg" width="3568" height="2260" alt="Striff's diagram of catatafishen/agentbridge pull request 1201: the fifteen components the change touched and how they connect, opened on the chat panel and the new thinking-display toggle, with added members in green, removed in red and changed in blue" loading="lazy" draggable="false" data-panzoom-img />
-                  <!-- What the colours mean, at the moment of looking at them. As prose under
-                       the frame this was a sentence nobody read on the way past; as three chips
-                       on the diagram it answers the question the diagram raises. -->
-                  <p class="ghcheck-legend">
-                    <span class="is-add">added</span>
-                    <span class="is-del">removed</span>
-                    <span class="is-mod">changed</span>
-                    <em>one box, one class</em>
-                  </p>
-                  <div class="ghcheck-zoom" role="group" aria-label="Zoom the diagram">
-                    <button type="button" data-panzoom-out aria-label="Zoom out">&minus;</button>
-                    <button type="button" data-panzoom-reset>Reset</button>
-                    <button type="button" data-panzoom-in aria-label="Zoom in">+</button>
-                    <button type="button" data-panzoom-max aria-label="Maximize the diagram" title="Maximize">
-                      <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M6 2.5H2.5V6" /><path d="M10 2.5h3.5V6" /><path d="M6 13.5H2.5V10" /><path d="M10 13.5h3.5V10" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
+                  <!-- packages -->
+                  <g class="sc-pkg" data-rules="1 2 3"><rect x="16" y="16" width="372" height="240" rx="14" /><text x="32" y="38">checkout</text></g>
+                  <g class="sc-pkg" data-rules="3"><rect x="16" y="300" width="214" height="114" rx="14" /><text x="32" y="322">core</text></g>
+                  <g class="sc-pkg is-legacy" data-rules="1"><rect x="476" y="120" width="208" height="124" rx="14" /><text x="492" y="142">legacy</text></g>
+                  <g class="sc-pkg" data-rules="4"><rect x="250" y="300" width="434" height="114" rx="14" /><text x="266" y="322">billing</text></g>
+
+                  <!-- edges: drawn under the classes -->
+                  <path class="sc-edge" data-rules="2" pathLength="1" d="M112 102 L112 150" marker-end="url(#sc-arrow)" style="--d:0.2s" />
+                  <path class="sc-edge" data-rules="3" pathLength="1" d="M112 196 C112 260 120 290 122 340" marker-end="url(#sc-arrow)" style="--d:0.45s" />
+                  <path class="sc-edge" data-rules="4" pathLength="1" d="M186 186 C 260 230 300 290 330 340" marker-end="url(#sc-arrow)" style="--d:0.7s" />
+                  <path class="sc-edge is-added" data-rules="1" pathLength="1" d="M188 173 L232 173" marker-end="url(#sc-arrow-add)" style="--d:0.95s" />
+                  <path class="sc-edge is-broken" data-rules="1" pathLength="1" d="M368 173 C 420 173 450 182 502 182" marker-end="url(#sc-arrow-bad)" style="--d:1.25s" />
+                  <path class="sc-flow" d="M368 173 C 420 173 450 182 502 182" />
+
+                  <!-- classes -->
+                  <g class="sc-node" data-rules="2"><rect x="36" y="58" width="152" height="44" rx="8" /><text x="112" y="85">CheckoutController</text></g>
+                  <g class="sc-node" data-rules="1 2 3 4"><rect x="36" y="152" width="152" height="44" rx="8" /><text x="112" y="179">CheckoutService</text></g>
+                  <g class="sc-node is-added" data-rules="1"><rect x="234" y="152" width="134" height="44" rx="8" /><text x="301" y="179">CsvExporter</text><text class="sc-tag" x="301" y="214">new in this PR</text></g>
+                  <g class="sc-node is-broken" data-rules="1"><rect class="sc-pulse" x="504" y="160" width="160" height="44" rx="8" /><rect x="504" y="160" width="160" height="44" rx="8" /><text x="584" y="187">PriceCalculator</text></g>
+                  <g class="sc-node" data-rules="3"><rect x="36" y="342" width="172" height="44" rx="8" /><text x="122" y="369">OrderRepository</text></g>
+                  <g class="sc-node" data-rules="4"><rect x="270" y="342" width="150" height="44" rx="8" /><text x="345" y="369">PaymentGateway</text></g>
+                  <g class="sc-node" data-rules="4"><rect x="504" y="342" width="160" height="44" rx="8" /><text x="584" y="369">StripeGateway</text></g>
+                  <path class="sc-edge is-impl" data-rules="4" pathLength="1" d="M504 364 L424 364" marker-end="url(#sc-arrow)" style="--d:0.8s" />
+
+                  <!-- rule numbers on the edges they bear on -->
+                  <g class="sc-badge" data-rules="2"><circle cx="126" cy="126" r="10" /><text x="126" y="130">2</text></g>
+                  <g class="sc-badge" data-rules="3"><circle cx="100" cy="270" r="10" /><text x="100" y="274">3</text></g>
+                  <g class="sc-badge" data-rules="4"><circle cx="262" cy="262" r="10" /><text x="262" y="266">4</text></g>
+                  <g class="sc-badge is-broken" data-rules="1"><circle cx="432" cy="164" r="11" /><text x="432" y="168">1</text></g>
+                </svg>
+                <figcaption class="sc-legend">
+                  <span class="is-added">new in this PR</span>
+                  <span class="is-broken">breaks a rule</span>
+                  <span>the numbers are the rules</span>
+                </figcaption>
               </figure>
-
-              <p class="ghcheck-caption">
-                Every check also draws the classes the change touched. Drag to pan.
-              </p>
-
-              <p class="ghcheck-foot">
-                <img src="/icon.svg" alt="" width="14" height="14" />
-                <span><b>Striff</b> maps how this pull request changes the architecture and checks it against the rules written in the repository&rsquo;s own docs.</span>
-              </p>
             </div>
           </div>
         </div>
 
         <script is:inline>
-        // Pan and zoom for the diagram inside the check: the difference between a picture of a
-        // diagram and a diagram.
+        // A rule row lights its part of the diagram: hover or focus picks the row, and leaving the
+        // table goes back to the broken rule, which is the one a reader needs first.
         (function () {
-          var frame = document.querySelector("[data-panzoom]");
-          if (!frame) return;
-          var img = frame.querySelector("[data-panzoom-img]");
-          // The image is laid out at the diagram's own size, so one unit of scale is one SVG
-          // unit. Home is whatever scale and offset puts the focus region in the frame; from
-          // there every direction has more diagram in it rather than more nothing.
-          var FX = +frame.dataset.focusX, FY = +frame.dataset.focusY;
-          var FW = +frame.dataset.focusW, FH = +frame.dataset.focusH;
-          var k = 1, tx = 0, ty = 0, dragging = false, lastX = 0, lastY = 0;
-
-          function apply() {
-            img.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + k + ")";
-          }
-          function zoom(next, ox, oy) {
-            next = Math.min(2.5, Math.max(0.06, next));
-            var box = frame.getBoundingClientRect();
-            var cx = (ox === undefined ? box.width / 2 : ox) - tx;
-            var cy = (oy === undefined ? box.height / 2 : oy) - ty;
-            tx -= cx * (next / k - 1);
-            ty -= cy * (next / k - 1);
-            k = next;
-            apply();
-          }
-          function fit() {
-            var box = frame.getBoundingClientRect();
-            if (!box.width || !box.height) return;
-            k = Math.min(box.width / FW, box.height / FH);
-            tx = -FX * k + (box.width - FW * k) / 2;
-            ty = -FY * k + (box.height - FH * k) / 2;
-            apply();
-          }
-
-          frame.addEventListener("pointerdown", function (e) {
-            if (e.target.closest(".ghcheck-zoom")) return;
-            dragging = true; lastX = e.clientX; lastY = e.clientY;
-            frame.setPointerCapture(e.pointerId);
-            frame.classList.add("is-grabbing");
+          var box = document.querySelector("[data-sc]");
+          if (!box) return;
+          var home = box.getAttribute("data-active");
+          var pick = function (n) { box.setAttribute("data-active", n); };
+          box.querySelectorAll("[data-rule]").forEach(function (row) {
+            var n = row.getAttribute("data-rule");
+            row.addEventListener("mouseenter", function () { pick(n); });
+            row.addEventListener("focus", function () { pick(n); });
+            row.addEventListener("click", function () { pick(n); });
           });
-          frame.addEventListener("pointermove", function (e) {
-            if (!dragging) return;
-            tx += e.clientX - lastX; ty += e.clientY - lastY;
-            lastX = e.clientX; lastY = e.clientY;
-            apply();
-          });
-          function release(e) {
-            if (!dragging) return;
-            dragging = false;
-            frame.classList.remove("is-grabbing");
-            try { frame.releasePointerCapture(e.pointerId); } catch (err) {}
+          var table = box.querySelector("tbody");
+          if (table) {
+            table.addEventListener("mouseleave", function () { pick(home); });
+            table.addEventListener("focusout", function (e) { if (!table.contains(e.relatedTarget)) pick(home); });
           }
-          frame.addEventListener("pointerup", release);
-          frame.addEventListener("pointercancel", release);
-          // Ctrl/meta-free wheel still scrolls the page unless the pointer is over the frame and
-          // the reader means to zoom, which is what the deliberate preventDefault is for.
-          frame.addEventListener("wheel", function (e) {
-            e.preventDefault();
-            var box = frame.getBoundingClientRect();
-            zoom(k * (e.deltaY < 0 ? 1.12 : 1 / 1.12), e.clientX - box.left, e.clientY - box.top);
-          }, { passive: false });
-
-          var inBtn = frame.querySelector("[data-panzoom-in]");
-          var outBtn = frame.querySelector("[data-panzoom-out]");
-          var resetBtn = frame.querySelector("[data-panzoom-reset]");
-          if (inBtn) inBtn.addEventListener("click", function () { zoom(k * 1.25); });
-          if (outBtn) outBtn.addEventListener("click", function () { zoom(k / 1.25); });
-          if (resetBtn) resetBtn.addEventListener("click", fit);
-          var maxBtn = frame.querySelector("[data-panzoom-max]");
-          if (maxBtn) {
-            maxBtn.addEventListener("click", function () {
-              if (document.fullscreenElement) { document.exitFullscreen(); return; }
-              if (frame.requestFullscreen) {
-                frame.requestFullscreen().then(fit).catch(function () {
-                  window.open("/examples/agentbridge-1201-diagram.svg", "_blank", "noopener");
-                });
-              } else {
-                window.open("/examples/agentbridge-1201-diagram.svg", "_blank", "noopener");
-              }
-            });
-            document.addEventListener("fullscreenchange", function () { window.setTimeout(fit, 60); });
-          }
-          // The image is lazy, so its box may be zero until it loads; fit again when it is there.
-          fit();
-          if (!img.complete) img.addEventListener("load", fit, { once: true });
-          window.addEventListener("resize", fit);
         })();
         </script>
 
@@ -906,60 +797,79 @@ const structuredData = JSON.stringify([
     </section>
 
     <!-- ==================== FOR TEAMS ==================== -->
-    <!-- The one section on the page for the lead rather than the reviewer. It sells the
-         dashboard and nothing else: the two views, each a door into the demo, which is the
-         real dashboard on an invented repository. The check itself is sold above. -->
+    <!-- The one section on the page for the engineering lead rather than the reviewer: what
+         changes for the organisation, the lead's own view of it (metrics, live on the demo
+         workspace), the four questions asked before bringing a tool in, and who runs it. -->
     <section id="teams" class="scroll-mt-24 bg-slate-100/60 pb-20 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
-        <div class="teams-head" data-reveal>
-          <div class="teams-head-copy">
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For teams</p>
-            <h2 class="mt-3 text-balance">Every rule your docs state, and which repositories still keep them.</h2>
-            <p class="section-subcopy mt-4">
-              The check reads one pull request at a time. The dashboard is the same reading of your documents, added up across the organization: each sentence that makes a claim about the code, the rule it became, whether the default branch keeps it, and which repositories and pull requests broke one this month.
-            </p>
+        <div class="teams-lead" data-reveal>
+          <div class="teams-lead-copy">
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For engineering leaders</p>
+            <h2 class="mt-3 text-balance">The architecture your team agreed on keeps holding, however fast you ship.</h2>
+            <ul class="teams-points">
+              {teamsPoints.map((point) => (
+                <li>
+                  <span class="teams-point-mark" aria-hidden="true">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+                  </span>
+                  <span><b>{point.title}.</b> {point.body}</span>
+                </li>
+              ))}
+            </ul>
+            <div class="teams-head-actions mt-7">
+              <a class="btn-primary" href="/demo/#metrics">Open the dashboard demo</a>
+              <a class="btn-secondary" href="/pricing/">Team pricing</a>
+            </div>
           </div>
-          <div class="teams-head-actions">
-            <a class="btn-primary" href="/demo/">Open the dashboard demo</a>
-            <a class="btn-secondary" href="/pricing/">Team pricing</a>
+
+          <!-- A div with a covering link, not a link around the preview: the live component renders
+               its own controls, and an <a> around them is invalid nesting that breaks hydration. -->
+          <div class="teams-lead-art">
+            <span class="teams-lead-label">Metrics &middot; example workspace</span>
+            <div class="teams-panel-live" data-metrics-preview inert>
+              <div class="teams-panel-live-scale" data-metrics-preview-scale>
+                <div class="dashboard-shell">
+                  <div class="dashboard-installation-card">
+                    <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="teams-panel-fade" aria-hidden="true"></div>
+            <a class="teams-lead-link" href="/demo/#metrics"><span class="sr-only">Open the metrics view in the dashboard demo</span></a>
           </div>
         </div>
 
-        <div class="teams-panels mt-10">
-          {teamsPanels.map((panel) => (
-            <article class="teams-panel" data-reveal>
-              <div class="teams-panel-art">
-                {panel.view === "docs" && (
-                  <figure class="teams-panel-shot">
-                    <Image src={dashDocsRules} alt="The docs and rules page: the repository's documents in a tree with the repository itself selected, and every rule beneath it beside them — the sentence each came from, the rule it became, and whether the code keeps it." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 30vw" loading="lazy" />
-                  </figure>
-                )}
-                {panel.view === "checks" && (
-                  <figure class="teams-panel-shot">
-                    <Image src={dashChecks} alt="The checks page: each pull request Striff checked, newest first, with how many documented rules it was held to, how many it kept and broke, and a link to the pull request." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 30vw" loading="lazy" />
-                  </figure>
-                )}
-                {panel.view === "metrics" && (
-                  <div class="teams-panel-live" data-metrics-preview inert>
-                    <div class="teams-panel-live-scale" data-metrics-preview-scale>
-                      <div class="dashboard-shell">
-                        <div class="dashboard-installation-card">
-                          <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div class="teams-panel-fade" aria-hidden="true"></div>
-              </div>
-              <div class="teams-panel-body">
-                <p class="teams-panel-eyebrow">{panel.eyebrow}</p>
-                <h3 class="teams-panel-title">{panel.title}</h3>
-                <p class="teams-panel-text">{panel.body}</p>
-                <a class="teams-panel-cta" href={`/demo/#${panel.view}`}>{panel.cta} &rarr;</a>
-              </div>
-            </article>
+        <dl class="teams-answers" data-reveal>
+          {teamsAnswers.map((item) => (
+            <div class="teams-answer">
+              <dt>{item.q}</dt>
+              <dd>{item.a}</dd>
+            </div>
           ))}
+        </dl>
+
+        {teamsQuotes.length > 0 && (
+          <div class="teams-quotes" data-reveal>
+            {teamsQuotes.map((q) => (
+              <figure class="teams-quote">
+                <blockquote>&ldquo;{q.quote}&rdquo;</blockquote>
+                <figcaption><b>{q.name}</b> &middot; {q.role}</figcaption>
+              </figure>
+            ))}
+          </div>
+        )}
+
+        <div class="teams-foot" data-reveal>
+          <p class="teams-inuse">
+            <span>Checking pull requests today in</span>
+            {teamsInUse.map((repo) => (
+              <a href={repo.url} target="_blank" rel="noopener noreferrer">{repo.name}</a>
+            ))}
+          </p>
+          <p class="teams-more">
+            Also in the dashboard: <a href="/demo/#docs">every rule by document</a> &middot; <a href="/demo/#checks">every pull request checked</a>
+          </p>
         </div>
       </div>
     </section>

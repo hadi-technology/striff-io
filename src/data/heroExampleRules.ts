@@ -21,7 +21,7 @@ export const heroExampleRules = [
     doc: "AGENTS.md",
     line: 18,
     statement: "Nothing in `checkout` depends on `legacy`",
-    witness: "`CartService` now imports `legacy.pricing.PriceCalculator`",
+    witness: "`CsvExporter`, new in this pull request, imports `legacy.pricing.PriceCalculator`",
     logic: [[
       String.raw`\htmlClass{lg-q}{\neg\exists}\, c, d.`,
       String.raw`\mathrm{in}(c, \mathtt{checkout})`,
