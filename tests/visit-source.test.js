@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-const { classifyVisitSource, reportRepoFromPath } = await import("../src/lib/visitSource.js");
+const { classifyVisitSource, reportRepoFromPath, withInstallState } = await import("../src/lib/visitSource.js");
 
 const visit = (href, referrer) => classifyVisitSource({ href, referrer });
 
@@ -58,4 +58,27 @@ test("a report page is /<owner>/<repo>, never one of the site's own pages", () =
   assert.equal(reportRepoFromPath("/-acme/widgets"), null);
   assert.equal(reportRepoFromPath("/acme/.."), null);
   assert.equal(reportRepoFromPath("/acme/%E0%A4%A"), null);
+});
+
+test("UTM tags on outreach links classify as email, and linkedin as linkedin", () => {
+  const here = "https://striff.io/?utm_source=outreach&utm_medium=email&utm_campaign=stale_docs";
+  assert.equal(visit(here, ""), "email");
+  assert.equal(visit("https://striff.io/?utm_medium=EMAIL", "https://mail.google.com/"), "email");
+  assert.equal(visit("https://striff.io/?utm_source=outreach", ""), "email");
+  assert.equal(visit("https://striff.io/?utm_source=linkedin", ""), "linkedin");
+});
+
+test("a ref still wins over UTM tags, and other UTM tags change nothing", () => {
+  assert.equal(visit("https://striff.io/?ref=badge&utm_medium=email", ""), "badge");
+  assert.equal(visit("https://striff.io/?utm_source=newsletter&utm_medium=social", ""), "direct");
+});
+
+test("an install link with no state gets site.<location>; one with a state is left alone", () => {
+  const link = "https://github.com/apps/striffs/installations/new";
+  assert.equal(withInstallState(link, "hero"), `${link}?state=site.hero`);
+  assert.equal(withInstallState(`${link}?x=1`, "pricing_card"), `${link}?x=1&state=site.pricing_card`);
+  assert.equal(withInstallState(link, "How It Works!"), `${link}?state=site.how_it_works_`);
+  const stated = `${link}?state=report_card%3Aacme%2Fwidgets`;
+  assert.equal(withInstallState(stated, "hero"), stated);
+  assert.equal(withInstallState("not a url", "hero"), "not a url");
 });

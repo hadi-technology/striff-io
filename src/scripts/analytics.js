@@ -22,6 +22,9 @@
  * install_app_clicked carries both explicitly as well, so the click is attributed even where the
  * super properties did not reach it.
  *
+ * A click on an install link with no state also adds state=site.<location>, the same location,
+ * so the setup page can say which button the install began from.
+ *
  * Pricing page views are already covered by $pageview with $pathname, so there is no separate
  * event for them.
  */
@@ -32,6 +35,7 @@ import {
   VISIT_SOURCE_KEY,
   classifyVisitSource,
   reportRepoFromPath,
+  withInstallState,
 } from "../lib/visitSource.js";
 
 const INSTALL_URL_FRAGMENT = "github.com/apps/striffs";
@@ -118,7 +122,10 @@ export function initAnalytics() {
 
       const href = link.getAttribute("href") || "";
       if (href.includes(INSTALL_URL_FRAGMENT)) {
-        capture("install_app_clicked", Object.assign({ location: locationOf(link) }, attribution));
+        const location = locationOf(link);
+        capture("install_app_clicked", Object.assign({ location }, attribution));
+        // The state GitHub hands back to the setup page; a link that carries one keeps it.
+        link.setAttribute("href", withInstallState(link.href, location));
       } else if (href.includes(EXTENSION_URL_FRAGMENT)) {
         capture("extension_clicked", { location: locationOf(link) });
       }

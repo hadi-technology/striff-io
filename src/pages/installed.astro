@@ -81,15 +81,38 @@ const apiBaseUrl = "https://api.striff.io";
     // first_source is where the reader's first recorded visit came from, kept by
     // scripts/analytics.js. Left off where this browser kept none, so the super property of the
     // same name, if analytics registered one, is not overwritten with nothing.
+    let firstSource = null;
+    let visitSource = null;
+    try {
+      firstSource = window.localStorage.getItem("striff_first_source");
+      visitSource = window.sessionStorage.getItem("striff_visit_source");
+    } catch (e) {
+      // No storage: the arrival goes without them.
+    }
     if (setupAction === "install" && window.posthog) {
       const installed = { source: params.get("state") || "direct", installation_id: installationId };
-      try {
-        const firstSource = window.localStorage.getItem("striff_first_source");
-        if (firstSource) installed.first_source = firstSource;
-      } catch (e) {
-        // No storage: the event goes without it.
-      }
+      if (firstSource) installed.first_source = firstSource;
       window.posthog.capture("app_installed", installed);
+    }
+
+    // The arrival is also reported to the site's own function, which keeps it where an ad blocker
+    // cannot drop it. Fire and forget: it never delays or breaks the page.
+    if (setupAction === "install" && installationId) {
+      try {
+        fetch("/.netlify/functions/install-arrival", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            installation_id: installationId,
+            state: params.get("state"),
+            first_source: firstSource,
+            visit_source: visitSource,
+          }),
+          keepalive: true,
+        }).catch(() => {});
+      } catch (e) {
+        // Nothing to do: the page is unaffected.
+      }
     }
 
     if (setupAction === "update") {

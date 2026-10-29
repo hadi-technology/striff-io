@@ -49,7 +49,8 @@ function githubSource(url) {
  * The visit's source, or null where the page was reached from another page of this site and so
  * says nothing new about where the visit came from.
  *
- * An explicit `ref` among {@link REF_SOURCES} wins. Otherwise the referrer decides: a GitHub
+ * An explicit `ref` among {@link REF_SOURCES} wins. Then UTM tags: `utm_medium=email` or
+ * `utm_source=outreach` is "email", `utm_source=linkedin` is "linkedin". Otherwise the referrer decides: a GitHub
  * pull request is "github_pr", a GitHub repository's front page or a file in it "github_readme",
  * the rest of GitHub "github", any other site "external", and no referrer "direct".
  *
@@ -60,6 +61,15 @@ export function classifyVisitSource(visit) {
   const here = parse(visit.href);
   const ref = here ? (here.searchParams.get("ref") || "").toLowerCase() : "";
   if (REF_SOURCES.includes(ref)) return ref;
+
+  // Outreach links carry UTM tags rather than a `ref`: an email medium or the outreach source is
+  // an email, and a linkedin source is linkedin. An explicit `ref` above wins over both.
+  if (here) {
+    const medium = (here.searchParams.get("utm_medium") || "").toLowerCase();
+    const utmSource = (here.searchParams.get("utm_source") || "").toLowerCase();
+    if (medium === "email" || utmSource === "outreach") return "email";
+    if (utmSource === "linkedin") return "linkedin";
+  }
 
   const from = parse(visit.referrer);
   if (!from) return "direct";
@@ -90,4 +100,28 @@ export function reportRepoFromPath(pathname) {
   if (!/^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/.test(owner)) return null;
   if (!/^[A-Za-z0-9._-]{1,100}$/.test(name) || name === "." || name === "..") return null;
   return `${owner}/${name}`;
+}
+
+/** The text of an install link's `state` that a place on the page can be written into. */
+function stateToken(location) {
+  const token = String(location || "page").toLowerCase().replace(/[^a-z0-9_-]+/g, "_").slice(0, 60);
+  return token || "page";
+}
+
+/**
+ * The install link's address with `state=site.<location>` added where it has no state, so GitHub
+ * returns it to the setup page and the install is attributed to the place on the page that was
+ * clicked. A link that already carries a state is returned unchanged, as is an address that cannot
+ * be parsed.
+ *
+ * @param {string} href the link's address
+ * @param {string} location where on the page the click happened
+ * @returns {string}
+ */
+export function withInstallState(href, location) {
+  const url = parse(href);
+  if (!url) return href;
+  if (url.searchParams.get("state")) return href;
+  url.searchParams.set("state", `site.${stateToken(location)}`);
+  return url.toString();
 }
