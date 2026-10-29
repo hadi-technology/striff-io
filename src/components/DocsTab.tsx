@@ -2410,7 +2410,7 @@ export default function DocsTab({
       <button
         type="button"
         className="docs-tally-item"
-        title="Every rule read from this repository's documents."
+        title="Every rule read from this repository's documents that Striff could check. A rule it couldn't check isn't counted here."
         onClick={() => setFilter("all")}
       >
         <b>{repoCounts.all}</b>
