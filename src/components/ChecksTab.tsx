@@ -159,6 +159,9 @@ export default function ChecksTab({
 
   return (
     <div className="checks-tab">
+      {!sample && !source && (
+        <CheckSettings installationId={installationId} repo={repo} account={account} isOrg={isOrg} onSignedOut={onSignedOut} />
+      )}
       <div className="checks-head">
         <div>
           {!inShell && (
@@ -202,10 +205,6 @@ export default function ChecksTab({
           </button>
         )}
       </div>
-
-      {!sample && !source && (
-        <CheckSettings installationId={installationId} repo={repo} account={account} isOrg={isOrg} onSignedOut={onSignedOut} />
-      )}
 
       {error && <p className="dashboard-inline-error">{error}</p>}
       {!answer && loading && <p className="dashboard-metric-caption">Loading checks…</p>}
