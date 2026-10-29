@@ -206,7 +206,7 @@ const teamsInUse = [
  * cut), linked to where they said it when that is public; a private email is quoted only with
  * its author's permission. The block is not rendered while the list is empty.
  */
-const teamsQuotes: { quote: string; name: string; role: string; avatar?: string; url?: string; where: string }[] = [
+const teamsQuotes: { quote: string; name: string; role: string; avatar?: string; url?: string; where?: string }[] = [
   {
     quote: "\u2026Striff, the tool that finds inconsistencies between documentation and the source code. We installed it already to the EO and it works good. It\u2019s free for open repositories. I recommend.",
     name: "Yegor Bugayenko",
@@ -220,7 +220,6 @@ const teamsQuotes: { quote: string; name: string; role: string; avatar?: string;
     name: "Henrik Westerg\u00e5rd",
     role: "Maintainer of AgentBridge",
     avatar: "/oss-avatars/catatafishen.jpg",
-    where: "by email, October 2026",
   },
 ];
 
@@ -875,7 +874,7 @@ const structuredData = JSON.stringify([
                 <blockquote>&ldquo;{q.quote}&rdquo;</blockquote>
                 <figcaption>
                   {q.avatar && <img src={q.avatar} alt="" width="36" height="36" loading="lazy" />}
-                  <span><b>{q.name}</b> &middot; {q.role}<br />{q.url ? <a href={q.url} target="_blank" rel="noopener noreferrer">{q.where}</a> : q.where}</span>
+                  <span><b>{q.name}</b> &middot; {q.role}{q.url && q.where && <><br /><a href={q.url} target="_blank" rel="noopener noreferrer">{q.where}</a></>}</span>
                 </figcaption>
               </figure>
             ))}
