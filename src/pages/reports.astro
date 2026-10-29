@@ -1,0 +1,101 @@
+---
+/**
+ * Every public report this build made, on one crawlable page.
+ *
+ * Each report is a page of its own (src/pages/[owner]/[repo].astro), and before this page the only
+ * way a search engine learned of most of them was the sitemap. This lists the same reports the
+ * sitemap does (built, and with something a search can land on), split by whether the docs have
+ * drifted from the code, so every report is one link from a page the site links to.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ReportLinks from "../components/ReportLinks.astro";
+import { SITE, headDay, reportFacts, reportHead, reportUrlPath, scriptJson, staticReports } from "../lib/staticReports.js";
+
+const githubAppUrl = "https://github.com/apps/striffs/installations/new";
+
+const items = (await staticReports())
+  .filter((report) => reportHead(report).indexable)
+  .map((report) => ({
+    full: `${report.page.repoOwner}/${report.page.repoName}`,
+    path: reportUrlPath(report.page.repoOwner, report.page.repoName),
+    facts: reportFacts(report),
+  }))
+  .sort((a, b) => a.full.toLowerCase().localeCompare(b.full.toLowerCase()));
+
+const drifted = items.filter((item) => item.facts.broken > 0 || item.facts.names > 0);
+const holding = items.filter((item) => item.facts.broken === 0 && item.facts.names === 0);
+const rules = items.reduce((sum, item) => sum + item.facts.holds + item.facts.broken, 0);
+const newest = items.reduce((latest, item) => Math.max(latest, item.facts.refreshedAtMs || 0), 0);
+
+const title = "Open-source architecture docs, checked against code | Striff";
+const description = items.length
+  ? `${items.length} open-source repositories' architecture docs, checked against their code: the rules each states, which still hold, and the names gone stale.`
+  : "Open-source repositories' architecture docs, checked against their code: the rules each states, which still hold, and the names gone stale.";
+
+const itemList = scriptJson({
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Striff's open-source architecture reports",
+  numberOfItems: items.length,
+  itemListElement: items.map((item, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: `${item.full} architecture docs`,
+    url: `${SITE}${item.path}`,
+  })),
+});
+---
+<BaseLayout title={title} ogTitle="Open-source architecture docs, checked against the code" description={description} canonical="https://striff.io/reports/">
+  <script slot="head" type="application/ld+json" is:inline set:html={itemList} />
+  <main class="demo-page text-slate-900">
+    <section class="mx-auto max-w-[95rem] px-6 pt-14 pb-8 md:pt-20">
+      <div class="max-w-3xl">
+        <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Open-source reports</p>
+        <h1 class="mt-3 text-4xl font-extrabold tracking-tight text-slate-950 md:text-5xl">
+          Open-source architecture docs, checked against the code.
+        </h1>
+        <p class="section-subcopy mt-4">
+          Each report is one public repository read the way Striff reads yours: the sentences its
+          own docs, ADRs and agent instructions write about the code become rules, and each rule is
+          checked against the code on the default branch. A report lists every rule with the
+          sentence it came from, whether the code still keeps it, and the names the docs write that
+          the code no longer has.
+          {items.length > 0 && <> These {items.length} reports cover {rules.toLocaleString("en-US")} checked rules{newest ? `, the newest read ${headDay(newest)}` : ""}.</>}
+        </p>
+        <p class="mt-4 text-sm text-slate-600">
+          Striff is free on public repositories.
+          <a class="font-semibold text-blue-600 hover:underline" href={githubAppUrl} target="_blank" rel="noopener noreferrer">Install the GitHub App</a>
+          and every pull request is checked against your own docs, or
+          <a class="font-semibold text-blue-600 hover:underline" href="/">see how it works</a>.
+        </p>
+      </div>
+    </section>
+
+    {items.length === 0 ? (
+      <section class="mx-auto max-w-[95rem] px-6 pb-20">
+        <p class="max-w-3xl text-slate-600">No public reports are published right now. Check back soon.</p>
+      </section>
+    ) : (
+      <>
+        {drifted.length > 0 && (
+          <section class="mx-auto max-w-[95rem] px-6 pb-12" aria-labelledby="drifted">
+            <h2 id="drifted" class="text-2xl font-bold tracking-tight text-slate-950">Docs that have drifted from the code</h2>
+            <p class="mt-2 max-w-3xl text-sm text-slate-600">
+              A rule the code no longer keeps, or a name the docs still write that the code no longer has.
+            </p>
+            <div class="mt-5"><ReportLinks items={drifted} showDate /></div>
+          </section>
+        )}
+        {holding.length > 0 && (
+          <section class="mx-auto max-w-[95rem] px-6 pb-20" aria-labelledby="holding">
+            <h2 id="holding" class="text-2xl font-bold tracking-tight text-slate-950">Docs the code still keeps</h2>
+            <p class="mt-2 max-w-3xl text-sm text-slate-600">
+              Every rule checked holds, and every name the docs write is still in the code.
+            </p>
+            <div class="mt-5"><ReportLinks items={holding} showDate /></div>
+          </section>
+        )}
+      </>
+    )}
+  </main>
+</BaseLayout>

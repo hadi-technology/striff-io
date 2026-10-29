@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 const {
-  isReportAddress, loadReports, reportFacts, reportHead, scriptJson, sourceFromEnv, viewRequest,
+  isReportAddress, loadReports, relatedReports, reportFacts, reportHead, reportUrlPath, scriptJson, sourceFromEnv,
+  viewRequest,
 } = await import("../src/lib/staticReports.js");
 
 const quiet = { info() {}, warn() {} };
@@ -107,15 +108,34 @@ test("the counts are the page's: nothing undecided, and names only in listed doc
 
 test("the head names the repository and its counts, points at itself and never says installed", () => {
   const head = reportHead({ ...answers("acme", "widgets"), builtAtMs: 0 });
-  assert.equal(head.title, "acme/widgets: 2 documented rules checked against the code | Striff");
+  assert.equal(head.title, "acme/widgets architecture docs: 2 rules checked, 1 broken | Striff");
   assert.equal(head.canonical, "https://striff.io/acme/widgets/");
   assert.equal(head.robots, "index,follow");
-  assert.match(head.description, /^Striff read 2 docs in acme\/widgets and checked the 2 rules they state against the code: 1 holds, 1 broken\. 1 stale name in the docs\. Public, read-only report, last read Oct 2, 2026\.$/);
+  assert.equal(head.description, "The architecture docs in acme/widgets, checked against its code: 2 rules from 2 docs, 1 holds, 1 broken, 1 stale name. Last read Oct 2, 2026.");
+  assert.ok(head.description.length <= 160);
   assert.doesNotMatch(head.description, /install|every pull request/i);
   const ld = JSON.parse(head.jsonLd);
   assert.equal(ld["@type"], "WebPage");
   assert.equal(ld.url, head.canonical);
   assert.equal(ld.about.codeRepository, "https://github.com/acme/widgets");
+});
+
+test("a report's address is its lower-cased path, the canonical's own", () => {
+  assert.equal(reportUrlPath("Netflix", "Mantis.Core"), "/netflix/mantis.core/");
+  const head = reportHead({ ...answers("Acme", "Widgets"), builtAtMs: 0 });
+  assert.equal(head.canonical, `https://striff.io${reportUrlPath("Acme", "Widgets")}`);
+});
+
+test("related reports: the same owner's first, then the ones after it, never itself or an unindexable one", () => {
+  const empty = { rules: { documents: [], truncated: false }, staleNames: { findings: [], lastSeenMs: null } };
+  const reports = [
+    answers("zeta", "last"), answers("acme", "widgets"), answers("acme", "gears"),
+    answers("beta", "one"), answers("Gamma", "Two"), answers("delta", "nothing", empty),
+  ].map((each) => ({ ...each, builtAtMs: 0 }));
+  const related = relatedReports(reports[1], reports, 4);
+  assert.deepEqual(related.map((each) => each.full), ["acme/gears", "beta/one", "Gamma/Two", "zeta/last"]);
+  assert.equal(related[2].path, "/gamma/two/");
+  assert.equal(relatedReports(reports[1], reports, 2).length, 2);
 });
 
 test("a page with nothing decided is built but not indexed", () => {

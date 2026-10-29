@@ -10,18 +10,31 @@
  */
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import PublicRepo from "../../components/PublicRepo";
-import { reportHead, staticReports } from "../../lib/staticReports.js";
+import ReportLinks from "../../components/ReportLinks.astro";
+import { SITE, relatedReports, reportHead, scriptJson, staticReports } from "../../lib/staticReports.js";
 
 export async function getStaticPaths() {
   const reports = await staticReports();
   return reports.map((report) => ({
     params: { owner: report.page.repoOwner, repo: report.page.repoName },
-    props: { report },
+    props: { report, related: relatedReports(report, reports) },
   }));
 }
 
-const { report } = Astro.props;
+const { report, related } = Astro.props;
 const head = reportHead(report);
+const full = `${report.page.repoOwner}/${report.page.repoName}`;
+
+// Home > Reports > this report, for the trail a results page can show above the title.
+const breadcrumbs = scriptJson({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Striff", item: `${SITE}/` },
+    { "@type": "ListItem", position: 2, name: "Open-source reports", item: `${SITE}/reports/` },
+    { "@type": "ListItem", position: 3, name: full, item: head.canonical },
+  ],
+});
 ---
 <BaseLayout
   title={head.title}
@@ -31,9 +44,21 @@ const head = reportHead(report);
   robots={head.robots}
 >
   <script slot="head" type="application/ld+json" is:inline set:html={head.jsonLd} />
+  <script slot="head" type="application/ld+json" is:inline set:html={breadcrumbs} />
   <main class="demo-page text-slate-900">
     <section class="mx-auto max-w-[95rem] px-6 pt-14 pb-20 md:pt-20">
       <PublicRepo client:load initial={report} />
+    </section>
+    <!-- Other reports, as plain links: without them a report is reachable only from the sitemap. -->
+    <section class="mx-auto max-w-[95rem] px-6 pb-20" aria-labelledby="more-reports">
+      <div class="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 id="more-reports" class="text-xl font-bold tracking-tight text-slate-950">More open-source reports</h2>
+        <a class="text-sm font-semibold text-blue-600 hover:underline" href="/reports/">Every report &rarr;</a>
+      </div>
+      <p class="mt-2 max-w-3xl text-sm text-slate-600">
+        Other public repositories whose docs Striff read and checked against their code.
+      </p>
+      {related.length > 0 && <div class="mt-5"><ReportLinks items={related} /></div>}
     </section>
   </main>
 </BaseLayout>

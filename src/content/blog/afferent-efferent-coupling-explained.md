@@ -1,6 +1,8 @@
 ---
 title: "What coupling metrics measure, and why a coupling delta is not a finding"
 description: "What afferent and efferent coupling measure, how to read them alongside complexity, inheritance depth and encapsulation, and why none of these numbers should reach a reviewer as a finding on its own."
+seoTitle: "Afferent and efferent coupling, explained"
+seoDescription: "What afferent and efferent coupling measure, how to read them with complexity and inheritance depth, and why a coupling delta alone is not a finding."
 date: 2026-08-18
 category: "Architecture"
 cover: "coupling"

@@ -1,0 +1,85 @@
+---
+/**
+ * A list of public reports as plain links, each with its tally: the rules that hold, the rules that
+ * are broken and the names its docs write that the code no longer has. Server-rendered, so a
+ * crawler that runs no script still finds every report from the hub and from each report's
+ * neighbours.
+ */
+import { headDay } from "../lib/staticReports.js";
+
+interface Item {
+  full: string;
+  path: string;
+  facts: { holds: number; broken: number; names: number; namesTruncated: boolean; refreshedAtMs: number | null };
+}
+
+const { items, showDate = false } = Astro.props as { items: Item[]; showDate?: boolean };
+---
+<ul class="report-links">
+  {items.map((item) => (
+    <li>
+      <a href={item.path} class="report-link">
+        <span class="report-link-name">{item.full}</span>
+        <span class="report-link-tally">
+          <span class="is-held"><b>{item.facts.holds}</b> held</span>
+          <span class={item.facts.broken > 0 ? "is-broken" : "is-none"}><b>{item.facts.broken}</b> broken</span>
+          <span class={item.facts.names > 0 ? "is-stale" : "is-none"}><b>{item.facts.names}{item.facts.namesTruncated ? "+" : ""}</b> out of date</span>
+        </span>
+        {showDate && item.facts.refreshedAtMs && (
+          <span class="report-link-date">Read {headDay(item.facts.refreshedAtMs)}</span>
+        )}
+      </a>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .report-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .report-link {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    gap: 0.4rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    background: #fff;
+    padding: 0.85rem 1rem;
+    color: #0f172a;
+    text-decoration: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .report-link:hover,
+  .report-link:focus-visible {
+    border-color: #93c5fd;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+  }
+  .report-link-name {
+    overflow-wrap: anywhere;
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .report-link-tally {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.85rem;
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+  .report-link-tally b { font-weight: 700; }
+  .report-link-tally .is-held b { color: #15803d; }
+  .report-link-tally .is-broken b { color: #b91c1c; }
+  .report-link-tally .is-stale b { color: #b45309; }
+  .report-link-tally .is-none { color: #94a3b8; }
+  .report-link-date {
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+</style>

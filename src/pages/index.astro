@@ -60,20 +60,11 @@ const ossShown = await loadTallies(ossRepos);
 const tallyWords = (t: { held: number; broken: number; staleNames: number }) =>
   `${t.held} rule${t.held === 1 ? "" : "s"} held, ${t.broken} broken, ${t.staleNames} stale name${t.staleNames === 1 ? "" : "s"}`;
 
-// The browser extension's homepage section.
-const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
-const extensionVideoId = "YR_DYyJwM-k";
-const extensionHighlights = [
-  { icon: "diagram", color: "blue", point: "An interactive diagram of any public pull request" },
-  { icon: "sparkle", color: "amber", point: "Its documented rules checked, one click from the diagram" },
-  { icon: "comment", color: "emerald", point: "Comment straight from the diagram" },
-  { icon: "bolt", color: "rose", point: "Works on repositories you do not own" }
-];
-
 // The languages the parser (Clarpse, via striff-lib) reads, shown under the hero card.
-// Monograms in each language's own colour rather than four mismatched logo styles.
+// Monograms in each language's own colour rather than mismatched logo styles.
 const heroLanguages = [
   { name: "Java", mark: "J", color: "#e76f00" },
+  { name: "Kotlin", mark: "Kt", color: "#7f52ff" },
   { name: "Python", mark: "Py", color: "#3776ab" },
   { name: "C#", mark: "C#", color: "#7b3fbd" },
   { name: "TypeScript", mark: "TS", color: "#3178c6" }
@@ -86,10 +77,12 @@ const heroLanguages = [
 
 /**
  * How a documented rule becomes a verdict: the code parsed, the prose read, the rule grounded and
- * compiled, the formula checked at both revisions.
+ * compiled, the formula checked at both revisions, and a break confirmed before it is shown.
  *
- * One of the four stages involves a language model, it is the one that reads English, and nothing
- * downstream of it asks a model anything. There used to be a fifth, "Narrate", which said a model
+ * Two of the five stages involve a language model. Read proposes rules from English. Verify
+ * (striff-api, doc-verify, since 2026-10-28) re-reads the sentence and the code for an accusing
+ * verdict and can only withhold it: shown only when every run confirms it on shared evidence,
+ * otherwise counted as couldn't check. Neither decides that a rule holds. There used to be a stage, "Narrate", which said a model
  * ranked and explained the results. It does not: the rules are ordered by CheckRunFormatter and
  * the English reading of a rule is composed from the rule's own body by ArchRuleRenderer, both of
  * them programs. The stage was describing the review notes, which are a different part of the
@@ -106,7 +99,7 @@ const pipeline = [
   {
     kind: "neural",
     name: "Read",
-    body: "Your documents go to a language model, which proposes candidate rules from prose. The only step that reads English, and the only one that can be wrong without being caught \u2014 which is what the next step is for.",
+    body: "Your documents go to a language model, which proposes candidate rules from prose. It is the step most likely to be wrong, which is what the next step is for.",
     out: "\u201cNever import from legacy/ in new code\u201d \u00b7 AGENTS.md:18"
   },
   {
@@ -121,49 +114,76 @@ const pipeline = [
     body: "The formula is model-checked at both revisions. Which of the two satisfy it is the whole verdict: satisfied before and not after is a rule this change broke; unsatisfied at both was already broken and is not blamed on the change. The sentence you read on the check is composed from the formula, so it cannot drift from what was actually checked.",
     tex: String.raw`\mathcal{M}_{\mathrm{before}} \models \varphi \qquad \mathcal{M}_{\mathrm{after}} \nvDash \varphi`
   },
+  {
+    kind: "neural",
+    name: "Verify",
+    body: "A rule the formula says is broken is not shown yet. An agent re-reads the sentence and the code, twice and independently, and the break reaches you only if both readings confirm it on the same evidence. This step can hold an accusation back; it can never make one, and it never decides that a rule holds.",
+    out: "Broken \u00b7 confirmed 2 of 2 \u2192 shown"
+  },
 ];
 
 
 /**
- * Six of the twenty-four rules from a real Striff check: catatafishen/agentbridge #1102, run on
- * 2026-09-27 against commit 32538d6. The rule text, the document, the line and the quoted sentence
- * are copied from the check's own output and shown in the layout the check posts today (that run
- * predates it). Nothing here is written for the website.
+ * A real Striff check: catatafishen/agentbridge #1201, a pull request from an outside contributor,
+ * checked on 2026-10-27 against head ee6b80d. Every rule, document, line and quoted sentence is
+ * copied from the check's own output (the summary of the run below). Five of its nine held rules are
+ * shown, keeping their numbers; rows 3, 5, 7 and 9 are trimmed. Row 10 is the one the check listed as
+ * already broken on master. Verified by hand: AGENTS.md:599 praises MessageFormatter.kt for "Zero UI
+ * dependencies" and the file imports com.github.catatafishen.agentbridge.ui.toolSubtitleKey (line 3),
+ * since b55868a9e5 (2026-05-19). Striff's verifier confirmed the same accusation on 2026-10-29.
+ * Nothing here is written for the website.
  *
- * https://github.com/catatafishen/agentbridge/runs/108628049213
+ * https://github.com/catatafishen/agentbridge/runs/122211791267
  */
+const realCheck = {
+  repo: "catatafishen/agentbridge",
+  pr: 1201,
+  branch: "fix/thinking-display-toggle",
+  prUrl: "https://github.com/catatafishen/agentbridge/pull/1201",
+  runUrl: "https://github.com/catatafishen/agentbridge/runs/122211791267",
+  held: 9,
+};
 const realCheckRules = [
   {
-    rule: "`FileTool` has a `getGitFileStatus` method",
-    doc: "AGENTS.md#L338",
-    quote: "Append git status annotation (tracked/untracked/staged) using FileTool.getGitFileStatus()",
+    n: 1,
+    rule: "`BroadcastChatPanel` depends on `NativeChatPanel`",
+    doc: "CONVERSATION-PERSISTENCE.md#L15",
+    from: "from a diagram: BCP \u2192 NativeChatPanel",
   },
   {
-    rule: "`McpProtocolHandler` has a `truncateIfNeeded` method",
-    doc: "AGENTS.md#L373",
-    quote: "The truncateIfNeeded() in McpProtocolHandler provides a safety net, but tools should self-limit",
+    n: 2,
+    rule: "`ChatToolWindowContent` depends on `AgentEditSession`",
+    doc: "INLINE-DIFF-REVIEW.md#L387",
+    quote: "ChatToolWindowContent.onSendStopClicked calls AgentEditSession.removeApprovedAll() on the first message of a fresh\u2026",
   },
   {
-    rule: "`ConversationService` depends on `ConversationWriter`",
-    doc: "docs/CONVERSATION-PERSISTENCE.md",
-    quote: "ConversationService (serialized async write queue) depends on ConversationWriter (synchronized SQLite writes)",
+    n: 4,
+    rule: "`ChatToolWindowContent` depends on `ChatInputSettings`",
+    doc: "INLINE-DIFF-REVIEW.md#L389",
+    quote: "ChatToolWindowContent.setSendingState(false) branches on ChatInputSettings.unhandledNudgeMode to either auto-send\u2026",
   },
   {
-    rule: "`FileTool` depends on `AgentEditSession`",
-    doc: "docs/INLINE-DIFF-REVIEW.md#L379",
-    quote: "FileTool.writeFile (all variants), FileTool.createFile, FileTool.deleteFile call AgentEditSession.ensureStarted()",
+    n: 6,
+    rule: "`ChatToolWindowContent` depends on `AgentNudgeService`",
+    doc: "NUDGE-ARCHITECTURE.md#L14",
+    from: "from a table row: Component ChatToolWindowContent, Role UI subscriber + producer Registers an AgentNudgeService.Listener to manage the\u2026",
   },
   {
-    rule: "`McpHttpServer` depends on `McpProtocolHandler`",
-    doc: "docs/MCP-ARCHITECTURE.md",
-    quote: "McpHttpServer 127.0.0.1:port depends on McpProtocolHandler JSON-RPC handler",
-  },
-  {
-    rule: "`GitCommitTool` depends on `GitTool`",
-    doc: "docs/bugs/COMMIT-NOT-FOUND-IN-LOG-BUG.md",
-    quote: "GitCommitTool.java calls showNewCommitInLog(root) after a successful commit",
+    n: 8,
+    rule: "`ChatToolWindowContent` has a `restoreUnhandledNudgeIfNeeded` method",
+    doc: "NUDGE-ARCHITECTURE.md#L138",
+    quote: "restoreUnhandledNudgeIfNeeded() in ChatToolWindowContent uses the locally-tracked pendingHumanText to restore\u2026",
   },
 ];
+const realCheckAlreadyBroken = {
+  n: 10,
+  rule: "`MessageFormatter` may not depend on `com.github.catatafishen.agentbridge.ui`",
+  doc: "AGENTS.md",
+  docUrl: "https://github.com/catatafishen/agentbridge/blob/ee6b80d25790e2673b5e106bc11d92540e742b09/AGENTS.md?plain=1#L599",
+  quote: "MessageFormatter.kt \u2014 pure formatting utilities (formatTimestamp, escapeHtml, escapeJs). Zero UI\u2026",
+  breaks: "com.github.catatafishen.agentbridge.ui.ChatDataModelKt (before this pull request)",
+  codeUrl: "https://github.com/catatafishen/agentbridge/blob/ee6b80d25790e2673b5e106bc11d92540e742b09/plugin-core/src/main/java/com/github/catatafishen/agentbridge/bridge/MessageFormatter.kt#L3",
+};
 
 /**
  * For-teams: the dashboard's three views, one panel each, every panel a door into the demo's
@@ -200,7 +220,7 @@ const plans = [
     eyebrow: "Free",
     icon: "globe",
     title: "Public repositories",
-    body: "Your documented rules checked on every public pull request, with a diagram of each change, plus the browser extension for any public PR you visit.",
+    body: "Your documented rules checked on every public pull request, with a diagram of each change. Free for open source, forever.",
     price: "$0",
     priceDetail: "forever"
   },
@@ -233,16 +253,16 @@ const faqs: { id?: string; q: string; a: string }[] = [
   },
   {
     q: `Does Striff work with spec-driven development?`,
-    a: `<strong>Yes: it is the check that comes after the spec.</strong> Spec-driven workflows help you write a spec and build from it, and nothing in them checks, on the pull requests that follow, that the code still does what the spec says it does. Striff reads the specs, plans and design docs committed to your repository alongside your <code>AGENTS.md</code>, <code>CLAUDE.md</code> and ADRs, turns each sentence that makes a claim about the structure of the code into a rule, and checks every pull request against it. <em>A sentence that describes work still to come is not held against code nobody has written yet.</em> When a change contradicts the spec, the check quotes the line: that is spec drift, caught while it is still a one-line fix.`
+    a: `<strong>Yes: it is the check that comes after the spec.</strong> Spec-driven workflows help you write a spec and build from it, and nothing in them checks, on the pull requests that follow, that the code still does what the spec says it does. Striff reads the specs, plans and design docs committed to your repository alongside your <code>AGENTS.md</code>, <code>CLAUDE.md</code> and ADRs, turns each sentence that makes a claim about the structure of the code into a rule, and checks every pull request against it. <em>A sentence that describes work still to come is not held against code nobody has written yet.</em> When a change contradicts the spec, the check quotes the line: that is <a href="/spec-drift/" class="font-semibold text-blue-600 hover:underline">spec drift</a>, caught while it is still a one-line fix.`
   },
   {
     id: "languages",
     q: `What languages does Striff support?`,
-    a: `The diagram runs on <strong>Java, TypeScript, Python and C#</strong>. Striff parses source into a full structural model with its own parser, not regex or text matching, so references, inheritance and dependencies resolve the way a compiler sees them. Go is coming.`
+    a: `Striff reads <strong>Java, Kotlin, TypeScript, Python and C#</strong>. Striff parses source into a full structural model with its own parser, not regex or text matching, so references, inheritance and dependencies resolve the way a compiler sees them. Go is coming.`
   },
   {
     q: `Is it just an LLM wrapper?`,
-    a: `<strong>No, and the architecture is the answer.</strong> Every verdict is produced by <em>deterministic</em> analysis of the structure your change actually creates: the parser builds a model of both revisions, each documented rule is a query over that model, and a rule is held when nothing in the pull request breaks it. The model is <strong>fact-gated</strong>, which means it can rank findings, explain them and write the summary of what your PR did structurally, but it <em>cannot originate one, rename one, or turn "could not answer" into a pass.</em> That last constraint is why a rule Striff cannot answer from the code is left out of the results instead of quietly counted as green.`
+    a: `<strong>No, and the architecture is the answer.</strong> A language model reads your docs and proposes rules; a program decides whether each one holds. The parser builds a model of the code at both revisions, each documented rule becomes a query over that model, and a rule is held when nothing in the pull request breaks it. When a rule looks broken, <strong>an agent re-reads the sentence and the code twice, independently, before you see it</strong>, and the break is shown only if both readings confirm it on the same evidence. That step can hold an accusation back; <em>it cannot invent one, and it cannot turn &ldquo;could not answer&rdquo; into a pass.</em> A rule Striff cannot answer from the code is reported as one it couldn&rsquo;t check, never counted as green.`
   },
   {
     q: `Will it slow down or block my pull requests?`,
@@ -250,19 +270,23 @@ const faqs: { id?: string; q: string; a: string }[] = [
   },
   {
     q: `What do I need to set up?`,
-    a: `<strong>Just install the GitHub App.</strong> It works on public and private repos alike and posts checks automatically on every PR, with <em>no per-developer setup</em>. Plans start at <strong>$29/month</strong>, based on how many private repos Striff <em>works on</em> each month (it checks one of their pull requests or reads their documents after a push), not how many you connect. A quiet month costs $29, the Starter price. To try Striff on somebody else&rsquo;s public pull request first, use the <a href="#extension" class="font-semibold text-blue-600 hover:underline">browser extension</a>.`
+    a: `<strong>Just install the GitHub App.</strong> It works on public and private repos alike and posts checks automatically on every PR, with <em>no per-developer setup</em>. Plans start at <strong>$29/month</strong>, based on how many private repos Striff <em>works on</em> each month (it checks one of their pull requests or reads their documents after a push), not how many you connect. A quiet month costs $29, the Starter price. <strong>Public repositories are free.</strong>`
   },
   {
-    q: `Do I need to install anything to use the browser extension?`,
-    a: `<strong>No.</strong> The extension runs in your browser on any public pull request you visit, so you can point it at somebody else&rsquo;s repository without touching it, and it is <strong>free on every public pull request</strong>, with no account. The analysis itself runs on Striff&rsquo;s servers. A free GitHub token raises GitHub&rsquo;s rate limits: on a public pull request it is only sent to GitHub; on a private repository or a very large pull request, Striff&rsquo;s servers use it to fetch the code themselves.`
+    q: `Is this the same as writing architecture tests?`,
+    a: `<strong>It is architecture tests you don&rsquo;t have to write.</strong> Each sentence in your docs that makes a checkable claim about the code (a dependency direction, where a class lives, what a module must not import, which methods a type has) becomes a check that runs on every pull request. The docs stay the source of truth: when someone edits a sentence, the rule changes with it on the next pull request, and nothing has to be kept in sync by hand.`
   },
   {
-    q: `Does the extension check documented rules too?`,
-    a: `<strong>Yes.</strong> One load brings up the diagram and checks the rules that repository&rsquo;s own documents state. When it finishes, a &ldquo;Findings&rdquo; button with the rule count on it opens the full list beside the diagram. Same pipeline as the GitHub App, on a repository you do not have to own.`
+    q: `Does Striff tell me what it couldn&rsquo;t check?`,
+    a: `<strong>Yes.</strong> Every rule has one of five states: <em>Held</em>, <em>Newly broken</em> by this pull request, <em>Already broken</em> before it, <em>Restored</em> by it, or <em>Couldn&rsquo;t check</em>. A rule the code can&rsquo;t settle, or a break the verifier would not confirm, is counted under Couldn&rsquo;t check and never passed off as held. The dashboard lists each document Striff read and the rules it took from it, so you can see what is covered and what isn&rsquo;t.`
+  },
+  {
+    q: `What happens when a rule breaks?`,
+    a: `The check on the pull request lists it first, quotes the sentence, links the line in the doc and names the code that breaks it. In the dashboard, every finding can be <strong>opened as a GitHub issue that is already written</strong>, or <strong>copied as a prompt for your coding agent</strong> to fix the code or update the doc. A rule that breaks on the default branch is emailed to the people watching the repository.`
   },
   {
     q: `Is my source code sent to a third party or stored?`,
-    a: `Your code is parsed on Striff's servers <strong>in memory and not persisted</strong>. The AI explanation layer works from the structural model (component names, relationships, metrics, and doc excerpts), <em>not your raw source files</em>. For teams that need full control, <strong>self-hosted deployment</strong> is available on the Enterprise plan.`
+    a: `Your code is parsed on Striff's servers <strong>in memory, and the source itself is not stored</strong>. Rules are proposed from your documents and verdicts are computed from the structural model of your code. When a rule looks broken, the verifier reads the files involved to confirm it, and the notes it made on that decision are kept for a limited time. For teams that need full control, <strong>self-hosted deployment</strong> is available on the Enterprise plan.`
   }
 ];
 
@@ -280,7 +304,7 @@ const structuredData = JSON.stringify([
     name: "Striff",
     url: "https://striff.io/",
     logo: "https://striff.io/icon-192.png",
-    sameAs: ["https://github.com/hadi-technology", extensionUrl]
+    sameAs: ["https://github.com/hadi-technology"]
   },
   {
     "@context": "https://schema.org",
@@ -309,8 +333,8 @@ const structuredData = JSON.stringify([
 ---
 
 <BaseLayout
-  title="Striff - Your specs and architecture docs, checked on every pull request"
-  description="Striff turns the sentences in your specs, AGENTS.md, ADRs and architecture docs into rules and checks every GitHub pull request against them, catching spec drift before the merge."
+  title="Striff: your specs and architecture docs, checked on every PR"
+  description="Striff turns the sentences in your specs, AGENTS.md, ADRs and architecture docs into rules and checks every GitHub pull request against them."
   canonical="https://striff.io/"
   ogImage="https://striff.io/og-image.png"
 >
@@ -455,6 +479,7 @@ const structuredData = JSON.stringify([
                 ))}
               </div>
             </div>
+            <a class="proof-strip-all" href="/reports/">All reports &rarr;</a>
           </div>
         </section>
       </div>
@@ -469,7 +494,7 @@ const structuredData = JSON.stringify([
               <p class="text-xs font-bold uppercase tracking-[0.2em] text-rose-500">The problem</p>
               <h2 class="mt-3 text-balance">Nobody re-reads the docs on every pull request.</h2>
               <p class="section-subcopy mt-4">
-                Spec-driven development made your docs the instructions: coding agents read your specs and architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. That gap is spec drift. Left unchecked, each merge drifts a little further from what your team agreed, until <strong>every change costs more than it should and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
+                Spec-driven development made your docs the instructions: coding agents read your specs and architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. That gap is <a href="/spec-drift/" class="font-semibold text-blue-600 hover:underline">spec drift</a>. Left unchecked, each merge drifts a little further from what your team agreed, until <strong>every change costs more than it should and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
               </p>
               <p class="problem-stat">
                 In <a href="/blog/architecture-matters-more-not-less/">our survey of 335 open-source repositories</a> that write their architecture down, <strong>63% already hand their coding agents docs to build from</strong>, and <strong>only 8% of those run anything that checks the code still matches.</strong>
@@ -543,27 +568,27 @@ const structuredData = JSON.stringify([
           <p class="examples-kicker">The check</p>
           <h2 class="mt-3 text-balance">What Striff posts on a pull request.</h2>
           <p class="section-subcopy mt-4">
-            One check, beside your CI. It says what the change moved, lists every rule your own documents state about the code it touched, says whether each one still holds and quotes the sentence it came from, and draws the classes involved.
+            One check, beside your CI. It lists every rule your own documents state about the code the change touched, says whether each one still holds, quotes the sentence it came from, and draws the classes involved. Rules the code was already breaking before the change are listed apart, so nobody is blamed for them and nobody forgets them.
           </p>
           <p class="diagram-source">
-            <span class="diagram-source-label">Below is one from a public repository, its rules unedited, in the layout Striff posts today:</span>
-            <a class="diagram-source-pr" href="https://github.com/catatafishen/agentbridge/pull/1102" target="_blank" rel="noopener noreferrer">
-              catatafishen/agentbridge #1102
+            <span class="diagram-source-label">Below is a real one from October, from a public repository, unedited:</span>
+            <a class="diagram-source-pr" href={realCheck.prUrl} target="_blank" rel="noopener noreferrer">
+              {realCheck.repo} #{realCheck.pr}
             </a>
-            <a class="diagram-source-run" href="https://github.com/catatafishen/agentbridge/runs/108628049213" target="_blank" rel="noopener noreferrer">Open the check itself &rarr;</a>
+            <a class="diagram-source-run" href={realCheck.runUrl} target="_blank" rel="noopener noreferrer">Open the check itself &rarr;</a>
           </p>
         </div>
 
-        <!-- The check as GitHub renders it: the summary, the rules table as the check now posts
-             it, and the diagram, which the check embeds at the end of the same
-             comment. Split across two sections it asked a reader to believe they were one run. -->
+        <!-- The check as GitHub renders it: the summary, the rules table as the check posts it, the
+             rule that was already broken, and the diagram, which the check embeds at the end of the
+             same comment. -->
         <div class="check-report" data-reveal>
           <div class="ghcheck">
             <div class="ghcheck-head">
               <span class="ghcheck-mark"><img src="/icon.svg" alt="" width="18" height="18" /></span>
               <span class="ghcheck-title">
                 <b>Striff</b>
-                <i>catatafishen/agentbridge &middot; #1102 &middot; fix/issues-1074-and-later</i>
+                <i>{realCheck.repo} &middot; #{realCheck.pr} &middot; {realCheck.branch}</i>
               </span>
               <span class="ghcheck-state">
                 <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
@@ -573,7 +598,7 @@ const structuredData = JSON.stringify([
 
             <div class="ghcheck-body">
               <h3 class="ghcheck-h">Documented rules</h3>
-              <p class="ghcheck-allhold">All 24 documented rules about the code this pull request changes hold.</p>
+              <p class="ghcheck-allhold">All {realCheck.held} documented rules about the code this pull request changes hold.</p>
 
               <!-- The rules as the check posts them: a numbered three-column table (#, Status, Rule),
                    each row the number, the state badge alone in the Status cell, then the rule
@@ -582,38 +607,72 @@ const structuredData = JSON.stringify([
                 <table class="ghcheck-table is-rules">
                   <thead><tr><th class="ghcheck-n">#</th><th class="ghcheck-status">Status</th><th>Rule</th></tr></thead>
                   <tbody>
-                    {realCheckRules.map((r, i) => (
+                    {realCheckRules.map((r) => (
                       <tr>
-                        <td class="ghcheck-n"><b>{i + 1}</b></td>
+                        <td class="ghcheck-n"><b>{r.n}</b></td>
                         <td class="ghcheck-status"><span class="ghbadge is-holds">Holds</span></td>
                         <td class="ghcheck-cell">
                           <span class="ghcheck-rule-line"><b class="ghcheck-rule-text"><InlineCodeText text={r.rule} /></b> &middot; <code class="ghcheck-doc">{r.doc}</code></span>
-                          <span class="ghcheck-quote">&ldquo;{r.quote}&rdquo;</span>
+                          {r.quote ? <span class="ghcheck-quote">&ldquo;{r.quote}&rdquo;</span> : <span class="ghcheck-from">{r.from}</span>}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <p class="ghcheck-more">Rows {realCheckRules.length + 1}&ndash;24, all holding, are trimmed here.</p>
+              <p class="ghcheck-more">Rows 3, 5, 7 and 9, the same sentences read for the methods they name, are trimmed here.</p>
+
+              <!-- The check folds this table under a summary line; it is opened here because it is
+                   the row worth reading. -->
+              <details class="ghcheck-details" open>
+                <summary><span aria-hidden="true">&#9888;&#65039;</span> 1 documented rule was already broken on master before this pull request.</summary>
+                <div class="ghcheck-table-wrap">
+                  <table class="ghcheck-table is-rules">
+                    <thead><tr><th class="ghcheck-n">#</th><th class="ghcheck-status">Status</th><th>Rule</th></tr></thead>
+                    <tbody>
+                      <tr>
+                        <td class="ghcheck-n"><b>{realCheckAlreadyBroken.n}</b></td>
+                        <td class="ghcheck-status"><span class="ghbadge is-already">Already broken</span></td>
+                        <td class="ghcheck-cell">
+                          <span class="ghcheck-rule-line"><b class="ghcheck-rule-text"><InlineCodeText text={realCheckAlreadyBroken.rule} /></b> &middot; <a class="ghcheck-doc" href={realCheckAlreadyBroken.docUrl} target="_blank" rel="noopener noreferrer">{realCheckAlreadyBroken.doc}</a></span>
+                          <span class="ghcheck-quote">&ldquo;{realCheckAlreadyBroken.quote}&rdquo;</span>
+                          <span class="ghcheck-breaks"><b>What breaks it:</b> <code>{realCheckAlreadyBroken.breaks}</code></span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+
+              <!-- Why row 10 is worth a homepage: the file the repository's agent instructions hold
+                   up as the pattern to copy breaks the rule it is praised for. -->
+              <aside class="ghcheck-why">
+                <p class="ghcheck-why-kicker">Why row 10 matters</p>
+                <p>
+                  This repository&rsquo;s <code>AGENTS.md</code> lists <code>MessageFormatter.kt</code> under &ldquo;Exemplary Patterns Already in the Codebase&rdquo;, the files its coding agents are told to copy, and praises it for having zero UI dependencies. Since a refactor in May, <a href={realCheckAlreadyBroken.codeUrl} target="_blank" rel="noopener noreferrer">its third line imports from the <code>ui</code> package</a>. An agent that follows the instructions copies the dependency along with the pattern.
+                </p>
+                <p>
+                  The pull request didn&rsquo;t cause it, so the check still passes and lists it apart. Nobody reviewing this change would have re-read line 599 of <code>AGENTS.md</code>. Before an accusation like this is shown, an agent now re-reads the sentence and the code twice to confirm it, and this one was confirmed.
+                </p>
+              </aside>
 
               <!-- The diagram is not a second section. The check embeds it here, at the end of the
                    same comment, and it is wide because a real architecture is wide. -->
               <figure class="ghcheck-figure">
-                <!-- The whole diagram, opened on the git tools. Cropping the SVG instead meant
+                <!-- The whole diagram, opened on the chat panel. Cropping the SVG instead meant
                      panning ran off the edge of the file into white; a window onto the real thing
                      has more diagram in every direction, which is what a reader expects when a
                      caption invites them to drag. The whole diagram is a click away and the
-                     frame pans and zooms, which is what the extension does on GitHub itself. -->
+                     frame pans and zooms. -->
                 <div
                   class="ghcheck-diagram"
                   data-panzoom
-                  data-focus-x="10120"
-                  data-focus-y="1708"
-                  data-focus-w="1313"
-                  data-focus-h="465"
+                  data-focus-x="480"
+                  data-focus-y="180"
+                  data-focus-w="1300"
+                  data-focus-h="720"
                 >
-                  <img src="/examples/agentbridge-1102-diagram.svg" width="12796" height="3793" alt="Striff's diagram of catatafishen/agentbridge pull request 1102: the fifty classes the change touched and how they connect, opened on the git tools, with added members in green, removed in red and changed in blue" loading="lazy" draggable="false" data-panzoom-img />
+                  <img src="/examples/agentbridge-1201-diagram.svg" width="3568" height="2260" alt="Striff's diagram of catatafishen/agentbridge pull request 1201: the fifteen components the change touched and how they connect, opened on the chat panel and the new thinking-display toggle, with added members in green, removed in red and changed in blue" loading="lazy" draggable="false" data-panzoom-img />
                   <!-- What the colours mean, at the moment of looking at them. As prose under
                        the frame this was a sentence nobody read on the way past; as three chips
                        on the diagram it answers the question the diagram raises. -->
@@ -653,8 +712,8 @@ const structuredData = JSON.stringify([
         </div>
 
         <script is:inline>
-        // Pan and zoom for the diagram inside the check. The extension does this on GitHub; here
-        // it is the difference between a picture of a diagram and a diagram.
+        // Pan and zoom for the diagram inside the check: the difference between a picture of a
+        // diagram and a diagram.
         (function () {
           var frame = document.querySelector("[data-panzoom]");
           if (!frame) return;
@@ -728,10 +787,10 @@ const structuredData = JSON.stringify([
               if (document.fullscreenElement) { document.exitFullscreen(); return; }
               if (frame.requestFullscreen) {
                 frame.requestFullscreen().then(fit).catch(function () {
-                  window.open("/examples/agentbridge-1102-diagram.svg", "_blank", "noopener");
+                  window.open("/examples/agentbridge-1201-diagram.svg", "_blank", "noopener");
                 });
               } else {
-                window.open("/examples/agentbridge-1102-diagram.svg", "_blank", "noopener");
+                window.open("/examples/agentbridge-1201-diagram.svg", "_blank", "noopener");
               }
             });
             document.addEventListener("fullscreenchange", function () { window.setTimeout(fit, 60); });
@@ -762,7 +821,7 @@ const structuredData = JSON.stringify([
          where a number came from, the check answers what you actually get. -->
     <section id="pipeline" class="pipeline-section scroll-mt-24 pb-20 pt-20">
       <div class="mx-auto max-w-[90rem] px-6">
-        <!-- The five steps run across, because they are a sequence and a reader follows a
+        <!-- The steps run across, because they are a sequence and a reader follows a
              sequence left to right. Underneath, the two things the sequence produces sit side by
              side: what a reviewer is handed, and what one rule of it actually compiled to. -->
         <div class="compute-stack">
@@ -770,7 +829,7 @@ const structuredData = JSON.stringify([
             <div class="compute-intro compute-intro-wide">
               <h2 class="text-balance">Every verdict is computed, not generated.</h2>
               <p class="section-subcopy mt-4">
-                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> <strong>The language model is asked exactly one question, at the start, and it is asked in English</strong> &mdash; the grounding, the verdict and the sentence you read are all computed, and nothing is needed beyond the documents your repository already has.
+                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> <strong>A language model proposes the rules and double-checks a break before you see it; it never decides that a rule holds.</strong> The grounding, the verdict and the sentence you read are all computed, and nothing is needed beyond the documents your repository already has.
               </p>
             </div>
             <p class="compute-label"><span>01</span> How a documented rule becomes a verdict</p>
@@ -802,7 +861,7 @@ const structuredData = JSON.stringify([
       </div>
 
       <script is:inline>
-        // Walks the five steps, revealing what each one produced. Plain DOM: the page is
+        // Walks the steps, revealing what each one produced. Plain DOM: the page is
         // static and this is the only thing on it that needs a clock.
         (function () {
           var flow = document.querySelector(".pipeline-flow.is-across");
@@ -915,75 +974,6 @@ const structuredData = JSON.stringify([
       </div>
     </section>
 
-    <!-- ==================== BROWSER EXTENSION ==================== -->
-    <!-- The App checks every pull request a team opens; the extension is one person looking at
-         one pull request on demand, including in a repository they do not own. The walkthrough
-         loads lazily from the no-cookie player and never autoplays, so it adds no cookie
-         surface and nothing to the homepage's first paint. -->
-    <section id="extension" class="section-dark scroll-mt-24 pb-16 pt-16">
-      <div class="mx-auto max-w-[90rem] px-6">
-        <div class="chrome-ext-grid" data-reveal>
-          <div class="chrome-ext-copy">
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Free Chrome extension</p>
-            <h2 class="mt-3 text-balance">See what any GitHub pull request really touches.</h2>
-            <p class="section-subcopy mt-4">
-              Reviewing an unfamiliar change means holding somebody else&rsquo;s dependency graph in your head. The extension draws it in a tab beside Files changed, so <strong>you see what a change touches before you approve it</strong>. The same load checks the rules that repository states in its own documents, and a Findings button opens them beside the diagram.
-            </p>
-
-            <ul class="chrome-ext-list">
-              {extensionHighlights.map((item) => (
-                <li class="chrome-ext-point">
-                  <span class={`icon-badge icon-badge-${item.color}`} aria-hidden="true">
-                    {item.icon === "diagram" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M8.5 7.5 11 16M15.5 7.5 13 16M9 6h6"/></svg>
-                    )}
-                    {item.icon === "sparkle" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="m6 6 2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg>
-                    )}
-                    {item.icon === "comment" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 1 1-3.2-6.4"/><path d="M21 3v6h-6"/><path d="M8 12h6M8 9h3"/></svg>
-                    )}
-                    {item.icon === "bolt" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>
-                    )}
-                  </span>
-                  <span class="chrome-ext-point-text">{item.point}</span>
-                </li>
-              ))}
-            </ul>
-
-            <p class="section-subcopy mt-6">
-              <strong>Use the extension</strong> for one pull request, on demand, in any public repository, including ones you do not own. <strong>Use the GitHub App</strong> to check every pull request your team opens, post the result where the whole team reviews, and keep the history that becomes your dashboard.
-            </p>
-
-            <a class="btn-chrome chrome-ext-cta" href={extensionUrl} target="_blank" rel="noopener noreferrer">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="4" />
-                <line x1="21.17" y1="8" x2="12" y2="8" />
-                <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
-                <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
-              </svg>
-              Add to Chrome
-            </a>
-          </div>
-
-          <div class="chrome-ext-video rounded-3xl border border-white/10 bg-slate-950 shadow-xl">
-            <div class="aspect-video overflow-hidden rounded-3xl">
-              <iframe
-                class="h-full w-full"
-                src={`https://www.youtube-nocookie.com/embed/${extensionVideoId}?rel=0&modestbranding=1&playsinline=1`}
-                title="Striff Chrome extension walkthrough"
-                loading="lazy"
-                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- ==================== ADOPTION / CTA ==================== -->
     <section class="bg-slate-50 pb-20 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
@@ -1033,16 +1023,6 @@ const structuredData = JSON.stringify([
               Get started
             </a>
             <a class="btn-secondary" href="/pricing/">Team pricing</a>
-            <a class="btn-chrome" href="#extension">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="4" />
-                <line x1="21.17" y1="8" x2="12" y2="8" />
-                <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
-                <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
-              </svg>
-              Browser extension
-            </a>
           </div>
         </div>
       </div>

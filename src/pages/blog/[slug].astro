@@ -29,7 +29,7 @@ export async function getStaticPaths() {
 
 const { post, related } = Astro.props;
 const { Content, headings } = await render(post);
-const { title, seoTitle, description, date, ogImage, author, authorRole, authorAvatar, category, cover } = post.data;
+const { title, seoTitle, seoDescription, description, date, ogImage, author, authorRole, authorAvatar, category, cover } = post.data;
 
 const minutes = readingMinutes(post);
 const url = postUrl(post.slug);
@@ -81,7 +81,7 @@ const jsonLd = JSON.stringify({
 }).replace(/</g, "\\u003c");
 ---
 
-<BaseLayout title={`${seoTitle ?? title} · ${BLOG_NAME}`} ogTitle={title} description={description} canonical={url} ogImage={image} ogType="article" scheme="auto">
+<BaseLayout title={`${seoTitle ?? title} | Striff`} ogTitle={title} description={seoDescription ?? description} canonical={url} ogImage={image} ogType="article" scheme="auto">
   <Fragment slot="head">
     <BlogHead />
     <meta name="author" content={author} />

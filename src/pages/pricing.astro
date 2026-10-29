@@ -4,8 +4,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 const githubInstallUrl = "https://github.com/apps/striffs/installations/new";
 ---
 <BaseLayout
-  title="Pricing | Striff"
-  description="Free for public repositories, documented rules included. Private repositories need a plan from $29 a month, based on how many private repos Striff works on: it checks one of their pull requests or reads their documents after a push. A quiet month costs $29."
+  title="Pricing: free for open source, from $29/mo | Striff"
+  description="Striff is free for public repositories. Private repositories start at $29 a month, priced by how many private repos Striff works on each month."
   canonical="https://striff.io/pricing"
 >
   <main class="pricing-page text-slate-900">
@@ -31,13 +31,11 @@ const githubInstallUrl = "https://github.com/apps/striffs/installations/new";
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> AI notes on the components each PR changes</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Architecture diagram of every change</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span> Metrics dashboard</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span> Browser extension for any public PR</li>
           </ul>
           <!-- The secondary link sits above the button so that the primary CTA is the last
                element in every card and the four buttons land on one line. With the link
                below it, this card's button floated a row higher than the other three. -->
           <div class="mt-auto flex flex-col gap-2">
-            <a href="/#extension" class="inline-flex w-full items-center justify-center py-2 text-xs font-medium text-blue-600 hover:underline">Get the browser extension</a>
             <a href={githubInstallUrl} class="btn-secondary inline-flex w-full justify-center" target="_blank" rel="noopener noreferrer">Install free</a>
           </div>
         </article>

@@ -5920,22 +5920,6 @@ tr:hover .finding-flag-button,
 }
 .docs-rule-count b { color: #16202b; font-weight: 700; }
 
-/* The extension, at the foot of a list of rules: a note, not a banner. It sits below the table
-   so it is read after the thing someone came for, and never in front of it. */
-.extension-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  margin: 0.9rem 0 0;
-  border-top: 1px solid #f0f3f7;
-  padding-top: 0.85rem;
-  color: #6b7684;
-  font-size: 0.8rem;
-  line-height: 1.55;
-}
-.extension-note svg { flex: 0 0 auto; margin-top: 0.15rem; color: #97a2ae; }
-.extension-note a { color: #1d4ed8; font-weight: 600; }
-@media print { .extension-note { display: none; } }
 
 /* ─── The public demo ───────────────────────────────────────────────────────
    The dashboard's own views, dropped into a marketing page. They were built to
@@ -6469,6 +6453,58 @@ tr:hover .finding-flag-button,
   font-style: italic;
   line-height: 1.5;
 }
+/* A rule read from a diagram or a table row has no sentence to quote; the check says where it
+   came from instead, in plain text. */
+.ghcheck-from { color: #57606a; font-size: 0.84rem; line-height: 1.5; }
+a.ghcheck-doc { text-decoration: none; }
+a.ghcheck-doc:hover { text-decoration: underline; }
+.ghcheck-breaks { color: #24292f; font-size: 0.84rem; line-height: 1.5; }
+.ghcheck-breaks code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+/* The table the check folds under a summary line, as GitHub draws a <details>. */
+.ghcheck-details { margin: 1.1rem 0 0; }
+.ghcheck-details > summary {
+  cursor: pointer;
+  color: #24292f;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.55;
+}
+.ghcheck-details > summary + .ghcheck-table-wrap { margin-top: 0.6rem; }
+
+/* Why the already-broken row matters: the page's note, set apart from the check it annotates. */
+.ghcheck-why {
+  margin: 1.1rem 0 0;
+  border: 1px solid #f0d58c;
+  border-left: 4px solid #9a6700;
+  border-radius: 0.75rem;
+  background: #fff8e6;
+  padding: 0.9rem 1.1rem;
+  color: #3d3320;
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+.ghcheck-why p + p { margin-top: 0.55rem; }
+.ghcheck-why .ghcheck-why-kicker {
+  margin: 0 0 0.35rem;
+  color: #9a6700;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.ghcheck-why code {
+  border-radius: 0.3rem;
+  background: rgba(154, 103, 0, 0.1);
+  padding: 0.05em 0.3em;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.85em;
+}
+.ghcheck-why a { color: #1d4ed8; font-weight: 600; }
 
 .ghcheck-caption {
   margin: 0.7rem 0 0;
@@ -6543,8 +6579,8 @@ tr:hover .finding-flag-button,
    rather than the edge of a cropped file. */
 .ghcheck-diagram img {
   display: block;
-  width: 12796px;
-  height: 3793px;
+  width: 3568px;
+  height: 2260px;
   max-width: none;
   transform-origin: 0 0;
   will-change: transform;
@@ -7157,6 +7193,16 @@ tr:hover .finding-flag-button,
   gap: 1.5rem;
   padding: 0.85rem 0.5rem;
 }
+
+/* Where the strip's repositories come from: every published report, on a page of its own. */
+.proof-strip-all {
+  flex: none;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.proof-strip-all:hover { text-decoration: underline; }
 
 .proof-strip-label {
   flex: none;

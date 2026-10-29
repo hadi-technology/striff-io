@@ -1,0 +1,468 @@
+---
+/**
+ * The spec drift page: what the term means, what it looks like in real repositories, and how to
+ * catch it. A standing reference rather than a dated post, so it lives at /spec-drift/ and wears
+ * the blog's reading layout without joining the blog's list.
+ *
+ * Every example is a public repository's own document against its own code, checked by hand
+ * against the default branch in October 2026, and every number is one the blog already published
+ * with its method. The FAQ is data: the page renders it and the FAQPage structured data repeats
+ * it, so the two cannot say different things.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import BlogHead from "../components/blog/BlogHead.astro";
+import PostCover from "../components/blog/PostCover.astro";
+import { SITE } from "../lib/blog";
+import "../styles/blog.css";
+
+const url = `${SITE}/spec-drift/`;
+const installUrl = "https://github.com/apps/striffs/installations/new";
+const published = "2026-10-29";
+const modified = "2026-10-29";
+
+const title = "Spec drift: what it is and how to catch it";
+const description =
+  "Spec drift is when code stops matching its specs, ADRs and AGENTS.md. Real examples, how to find it by hand, and how to catch it on every pull request.";
+const definition =
+  "Spec drift is the gap that opens when the code no longer does what its committed specs, design docs, ADRs or agent instruction files (AGENTS.md, CLAUDE.md) say it does.";
+
+const toc = [
+  { id: "what-is-spec-drift", text: "What is spec drift?" },
+  { id: "why-agents-make-it-worse", text: "Why coding agents make it worse" },
+  { id: "what-it-looks-like", text: "What spec drift looks like in real repositories" },
+  { id: "spec-driven-development", text: "Spec drift in spec-driven development" },
+  { id: "detect-by-hand", text: "How to detect spec drift by hand" },
+  { id: "detect-on-every-pull-request", text: "How to catch spec drift on every pull request" },
+  { id: "write-checkable-docs", text: "How to write docs that stay checkable" },
+  { id: "faq", text: "Spec drift FAQ" },
+];
+
+const faqs: { q: string; a: string }[] = [
+  {
+    q: "What is spec drift?",
+    a: `Spec drift is the gap between what a repository&rsquo;s committed documents say about the code and what the code does. The documents are specs, design docs, ADRs, READMEs and agent instruction files such as <code>AGENTS.md</code> and <code>CLAUDE.md</code>. A refactor moves a call, deletes a class or adds a dependency, the document is not in the diff, and from that merge on the sentence is false.`,
+  },
+  {
+    q: "Is spec drift the same as documentation drift?",
+    a: `Mostly, with a difference in stakes. Documentation drift usually means docs that fell behind the code and mislead a human reader. Spec drift is the same gap in documents that something builds from: a coding agent reads the spec or <code>AGENTS.md</code> as instructions, so a stale sentence steers the next change instead of only confusing the next reader.`,
+  },
+  {
+    q: "Can AGENTS.md or CLAUDE.md drift?",
+    a: `Yes, and they drift the same way any architecture doc does: they name classes, say where things live and say what must not depend on what. In <a href="https://github.com/catatafishen/agentbridge/blob/master/AGENTS.md">agentbridge</a>, <code>AGENTS.md</code> holds up <code>MessageFormatter.kt</code> as an exemplary pattern with zero UI dependencies, and the file has imported from the <code>ui</code> package since a refactor in May 2026. An agent told to copy that file is copying the break.`,
+  },
+  {
+    q: "How do I detect spec drift in CI?",
+    a: `Turn the checkable sentences in your docs into rules and evaluate them on every pull request, at the base and at the head, so a rule the change broke is told apart from one that was already broken. Striff does this as a GitHub check: it reads the docs already in the repository, quotes the sentence behind each rule, and needs no rule files or configuration.`,
+  },
+  {
+    q: "Which sentences can be checked automatically?",
+    a: `Claims about structure: that a named class exists or has a member, where a type lives, what depends on what, and what must never depend on what. Statements of intent or behaviour (&ldquo;we prefer composition&rdquo;, &ldquo;retries are idempotent&rdquo;) are not claims a parser can answer, and Striff counts them as <em>couldn&rsquo;t check</em> rather than reporting them as passing.`,
+  },
+  {
+    q: "Does Striff work on private repositories, and what does it cost?",
+    a: `Striff is free on public repositories, documented rules included. Private repositories need a plan from $29 a month, based on how many private repositories Striff works on in a month. See <a href="/pricing/">pricing</a>.`,
+  },
+];
+
+const plainText = (html: string) =>
+  html
+    .replace(/<[^>]+>/g, "")
+    .replace(/&rsquo;/g, "’")
+    .replace(/&ldquo;/g, "“")
+    .replace(/&rdquo;/g, "”")
+    .replace(/&amp;/g, "&");
+
+const jsonLd = JSON.stringify([
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: title,
+    description,
+    datePublished: published,
+    dateModified: modified,
+    author: { "@type": "Organization", name: "Striff", url: SITE },
+    publisher: {
+      "@type": "Organization",
+      name: "Striff",
+      url: SITE,
+      logo: { "@type": "ImageObject", url: `${SITE}/icon-192.png` },
+    },
+    mainEntityOfPage: url,
+    image: `${SITE}/og-image.png`,
+    about: { "@id": `${url}#term` },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "DefinedTerm",
+    "@id": `${url}#term`,
+    name: "Spec drift",
+    alternateName: ["specification drift", "documentation drift", "architecture drift"],
+    description: definition,
+    url,
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.q,
+      acceptedAnswer: { "@type": "Answer", text: plainText(faq.a) },
+    })),
+  },
+]).replace(/</g, "\\u003c");
+---
+
+<BaseLayout title={`${title} | Striff`} ogTitle={title} description={description} canonical={url} ogType="article" scheme="auto">
+  <Fragment slot="head">
+    <BlogHead />
+    <meta property="article:published_time" content={published} />
+    <meta property="article:modified_time" content={modified} />
+    <script type="application/ld+json" is:inline set:html={jsonLd} />
+  </Fragment>
+
+  <main class="sb sb-post">
+    <div class="sb-progress" aria-hidden="true"></div>
+
+    <article>
+      <header class="sb-hero">
+        <div class="sb-shell">
+          <div class="sb-frame">
+            <div class="sb-hero-main">
+              <p class="sb-kicker">
+                <a class="sb-kicker-home" href="/blog/">Striff Engineering</a>
+                <span class="sb-kicker-sep" aria-hidden="true">/</span>
+                <span class="sb-cat sb-tone-blue">Guide</span>
+              </p>
+              <h1 class="sb-title">{title}</h1>
+              <p class="sb-dek">{definition} Here is what it looks like in real repositories, and how to catch it before it merges.</p>
+              <div class="sb-hero-meta">
+                <p class="sb-meta">
+                  <span>Updated <time datetime={modified}>October 29, 2026</time></span>
+                  <span>10 min read</span>
+                </p>
+              </div>
+              <div class="sb-hero-art" data-cv-host>
+                <PostCover slug="spec-drift" category="Architecture" cover="docs-to-checks" variant="hero" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="sb-shell">
+        <div class="sb-frame sb-body">
+          <div class="sb-main">
+            <details class="sb-toc-mobile">
+              <summary>
+                On this page
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+              </summary>
+              <ol>
+                {toc.map((heading) => (
+                  <li><a href={`#${heading.id}`}>{heading.text}</a></li>
+                ))}
+              </ol>
+            </details>
+
+            <div class="sb-prose" data-sb-prose>
+              <h2 id="what-is-spec-drift">What is spec drift?</h2>
+              <p>
+                <strong>Spec drift</strong> is the gap that opens when the code no longer does what its committed
+                specs, design docs, ADRs or agent instruction files say it does. It almost never arrives as a
+                decision. A refactor moves a call into a new class, a cleanup deletes a type, a quick fix reaches
+                across a module boundary. The pull request is reviewed on its diff, the document is not in the diff,
+                and from the merge on the sentence describes code that no longer exists.
+              </p>
+              <p>
+                Nothing fails when that happens. Tests check behaviour, and the behaviour is usually fine. The
+                document is simply wrong, and it stays wrong until someone happens to read it closely enough to
+                notice, which for most architecture docs is never.
+              </p>
+
+              <h2 id="why-agents-make-it-worse">Why coding agents make it worse</h2>
+              <p>
+                A stale document used to cost a new contributor an afternoon. Now it has a second reader that does
+                not get suspicious. Coding agents are handed <code>AGENTS.md</code>, <code>CLAUDE.md</code>, specs
+                and design docs as context and treat them as instructions. When a sentence says
+                <code>NodeWorker</code> calls <code>RepairScheduler</code> and the code says otherwise, the quickest way
+                for an agent to make the sentence true again is to re-create the dependency your last refactor removed.
+                A stale spec is a set of instructions for undoing your own work.
+              </p>
+              <p>
+                Agents also change more code, faster, than the docs were ever reviewed against. In
+                <a href="/blog/architecture-matters-more-not-less/">our survey of 335 open-source repositories</a> that
+                describe their architecture in their own docs, sixty-three percent give their coding agents documents
+                to build from. Of those, 8% run any tool that checks the code against an architecture rule.
+              </p>
+              <div class="bp-keystat bp-keystat--danger" data-reveal>
+                <div class="bp-keystat-value">8%</div>
+                <div class="bp-keystat-body">
+                  of the repositories that hand their agents docs to build from <b>run anything that checks the code against an architecture rule</b>.
+                  <span class="bp-keystat-src">Striff survey of 335 repositories, September 2026</span>
+                </div>
+              </div>
+
+              <h2 id="what-it-looks-like">What spec drift looks like in real repositories</h2>
+              <p>
+                Spec drift comes in a few recurring shapes. Each example below is a public repository&rsquo;s own
+                document against its own code, with links to the line and the commit, so you can check it without
+                taking our word for it.
+              </p>
+
+              <h3>A refactor moves the work, and the doc still credits the old class</h3>
+              <p>
+                Ericsson&rsquo;s <a href="https://github.com/Ericsson/ecchronos">ecChronos</a> documents its
+                <code>core.impl</code> module class by class. Of <code>NodeWorker</code> the README says: &ldquo;Calls
+                <code>RepairScheduler.putConfigurations()</code> to keep jobs up to date.&rdquo; Pull request
+                <a href="https://github.com/Ericsson/ecchronos/pull/1786">#1786</a> moved that call into a new class,
+                <code>SchemaRefresher</code>, and after the change <code>NodeWorker</code> no longer references
+                <code>RepairScheduler</code> at all. The refactor was fine. The README was not in the diff.
+                <a href="/blog/design-docs-are-enforceable-now/">The full walk-through</a> shows the rule, both
+                revisions and the line that moved.
+              </p>
+
+              <h3>The exemplar breaks the rule it is praised for</h3>
+              <p>
+                In <a href="https://github.com/catatafishen/agentbridge">agentbridge</a>, an IDE plugin that gives coding
+                agents access to the IDE, <code>AGENTS.md</code> has a section called &ldquo;Exemplary Patterns Already in the
+                Codebase&rdquo;. It points agents at <code>MessageFormatter.kt</code> as &ldquo;pure formatting
+                utilities&rdquo; with &ldquo;Zero UI dependencies&rdquo;. Since a
+                <a href="https://github.com/catatafishen/agentbridge/commit/b55868a9e5">refactor in May 2026</a> that moved
+                shared types out of the <code>ui</code> package, the file imports
+                <code>com.github.catatafishen.agentbridge.ui.toolSubtitleKey</code>.
+              </p>
+              <div class="bp-figure" data-reveal>
+                <p class="bp-figure-title">catatafishen/agentbridge · already broken on master</p>
+                <div class="bp-facts">
+                  <div class="bp-facts-line"><span class="bp-facts-key">doc   </span>AGENTS.md, &ldquo;Exemplary Patterns Already in the Codebase&rdquo;</div>
+                  <div class="bp-facts-line"><span class="bp-facts-key">says  </span><span class="bp-facts-quote">"MessageFormatter.kt — pure formatting utilities … Zero UI dependencies."</span></div>
+                  <div class="bp-facts-line"><span class="bp-facts-key">rule  </span>MessageFormatter may not depend on com.github.catatafishen.agentbridge.ui</div>
+                  <div class="bp-facts-line"><span class="bp-facts-key">code  </span>MessageFormatter.kt:3 imports agentbridge.ui.toolSubtitleKey</div>
+                  <div class="bp-facts-line"><span class="bp-facts-flag">✗ ALREADY BROKEN</span>  false before the pull request and after it</div>
+                </div>
+                <p class="bp-figure-caption">
+                  From Striff&rsquo;s <a href="https://github.com/catatafishen/agentbridge/runs/122211791267">check on pull request #1201</a>,
+                  October 27, 2026. The pull request did not cause it, so the check lists it apart from the nine rules the change
+                  was held to, as already broken on the default branch.
+                </p>
+              </div>
+              <p>
+                This is the drift that matters most for agents. The document does not merely describe the code; it
+                tells the next agent which file to copy. Copying it now reproduces the dependency the document says
+                is absent.
+              </p>
+
+              <h3>The doc names a class the code deleted</h3>
+              <p>
+                The same repository&rsquo;s <code>docs/KNOWLEDGE-GRAPH.md</code> still lists
+                <code>KnowledgeGraphPanel</code> as the settings UI. The class was removed on June 10, 2026
+                (<a href="https://github.com/catatafishen/agentbridge/commit/e99aae3174d6e7f1298dc3925229e1bccab487b3">e99aae3</a>),
+                and <code>docs/ACCEPTED-API-WARNINGS.md</code> still lists three tools deleted a month earlier
+                (<a href="https://github.com/catatafishen/agentbridge/commit/dce714488c9aeee98af644f0530369818e4fb33c">dce7144</a>).
+                Names that outlive their classes are the most common kind of spec drift and the cheapest to fix.
+              </p>
+              <p>
+                In <a href="https://github.com/objectionary/eo">objectionary/eo</a>, the Maven plugin&rsquo;s README said
+                <code>org.eolang.parser.Program</code> runs the XSLT transformations and <code>org.eolang.parser.Pack</code>
+                holds the list of them. Neither class exists any more. After Striff&rsquo;s report on the repository listed
+                both names as out of date, the maintainer replaced them with <code>Pipeline</code> and <code>Canonical</code>
+                in <a href="https://github.com/objectionary/eo/commit/9c2adafbc83580dd15f29a43f8b5d032ada15538">one commit</a>.
+                The <a href="/objectionary/eo/">public report on eo</a> shows every rule its docs state today.
+              </p>
+
+              <h3>How often it happens</h3>
+              <p>
+                Rarely per pull request, which is exactly why nobody notices. Across 609 public pull requests in 542
+                repositories, Striff read 7,161 rules out of those repositories&rsquo; own documentation and could answer
+                5,674 of them from the parsed code. Roughly two percent of the answered rules accused: 97 broken by the
+                change under review, 53 already broken before it.
+                <a href="/blog/design-docs-are-enforceable-now/">The numbers and the method</a> are in the original post,
+                with five disagreements from large repositories checked by hand.
+              </p>
+
+              <h2 id="spec-driven-development">Spec drift in spec-driven development</h2>
+              <p>
+                Spec-driven development comes in roughly three levels. In <em>spec-first</em> work, a spec drives one
+                task and can be thrown away when the task ends, so it cannot drift in any way that matters. In
+                <em>spec-anchored</em> work, the spec is kept after the task and every later change is made from it.
+                In <em>spec-as-source</em> work, people edit only the spec and never the code.
+              </p>
+              <p>
+                Spec drift is the failure mode of the second level, and most teams are at the second level whether
+                they call it that or not: a repository that hands its agents <code>AGENTS.md</code>, <code>CLAUDE.md</code>
+                or architecture docs is spec-anchored in practice. The spec outlives the task, the next task starts
+                from it, and the workflows that help you write a spec and build from it do not check, on the pull
+                requests that follow, that the code still matches it.
+              </p>
+
+              <h2 id="detect-by-hand">How to detect spec drift by hand</h2>
+              <p>
+                If you want to know how far one document has drifted today, read it with the code open beside it and
+                check only the sentences that make a claim about structure:
+              </p>
+              <ol>
+                <li><strong>Names.</strong> Search the code for every class, module and function the document names. A name that only appears in docs is drift.</li>
+                <li><strong>Locations.</strong> Where the document says something lives (&ldquo;the parsers live in <code>core.parse</code>&rdquo;), open that package.</li>
+                <li><strong>Dependency directions.</strong> For every &ldquo;A calls B&rdquo; or &ldquo;A uses B&rdquo;, check the imports of A.</li>
+                <li><strong>&ldquo;Must not&rdquo; rules.</strong> For every ban (&ldquo;the core never imports from plugins&rdquo;), search for the forbidden import. These are the rules an agent in a hurry breaks first.</li>
+                <li><strong>Exemplars.</strong> Every file an agent file holds up as a model to copy, check against the property it is praised for.</li>
+              </ol>
+              <p>
+                Then do it again after every merge that touches those files, which is where the manual approach stops
+                working. <a href="/blog/architecture-review-checklist/">The pull request review checklist</a> covers
+                the by-hand version in more depth, with the arithmetic on how long it takes.
+              </p>
+
+              <h2 id="detect-on-every-pull-request">How to catch spec drift on every pull request</h2>
+              <p>
+                The way to keep a spec true is to check it at the moment it can go false: on the pull request, while
+                the fix is still one line and the author still remembers why the call moved. That is what Striff does,
+                as a GitHub check beside your tests.
+              </p>
+              <ol>
+                <li><strong>It reads the docs you already have.</strong> Specs, design docs, ADRs, READMEs, <code>AGENTS.md</code> and <code>CLAUDE.md</code>. There are no rule files to write and nothing to configure.</li>
+                <li><strong>It turns checkable sentences into rules.</strong> A language model proposes rules from the prose. A rule that names a class the parsed code does not contain is dropped, so a rule cannot be invented by inventing a name.</li>
+                <li><strong>It checks both revisions.</strong> Each rule is evaluated against a parse of the code before and after the pull request, so the check can say which change broke it.</li>
+                <li><strong>It double-checks every accusation.</strong> Before a broken rule is shown, an independent agent re-reads the document and the code, twice, and the finding is withheld unless every run confirms it.</li>
+                <li><strong>It quotes the sentence.</strong> Every rule on the check links the document and line it came from, so the reviewer decides whether the code or the sentence is wrong.</li>
+              </ol>
+              <p>Each rule gets one of these verdicts on the pull request:</p>
+              <ul>
+                <li><strong>Held:</strong> nothing in this change breaks it.</li>
+                <li><strong>Violated:</strong> true before this change and false after it. This change caused the drift.</li>
+                <li><strong>Already broken:</strong> false before the change too. Reported, and never blamed on the author in front of you.</li>
+                <li><strong>Restored:</strong> broken before, true after.</li>
+                <li><strong>Couldn&rsquo;t check:</strong> the rule could not be answered from the code (it names generated code a source parse cannot see, say), or an accusation was not confirmed. It is counted and left out, never shown as passing.</li>
+              </ul>
+              <p>
+                Separately, a check notes the documents that still name files a pull request deleted or renamed, which is the cheapest drift to fix at the moment it happens. On the default branch, the
+                dashboard keeps every rule&rsquo;s standing, so you can see which documents have already drifted
+                without waiting for a pull request to touch them. <a href="/demo/">The demo</a> shows it on an example
+                repository, and public reports such as <a href="/apache/pinot/">apache/pinot</a> and
+                <a href="/dotnet/benchmarkdotnet/">dotnet/benchmarkdotnet</a> show it on real ones.
+                <a href="/blog/grounded-ai-findings/">How every finding traces back to your docs or your code</a> goes
+                through what a check says and how to verify it.
+              </p>
+
+              <h2 id="write-checkable-docs">How to write docs that stay checkable</h2>
+              <p>
+                You do not have to change how you write. A README written for people produces rules. A few habits make
+                more of it checkable:
+              </p>
+              <ul>
+                <li><strong>Name real things.</strong> <code>NodeWorker</code> is checkable; &ldquo;the worker&rdquo; is only checkable if one class answers to it.</li>
+                <li><strong>Say where things live and what they use.</strong> &ldquo;<code>ConnectionType</code> is in <code>utils</code>&rdquo; and &ldquo;<code>NodeWorker</code> calls <code>RepairScheduler</code>&rdquo; are claims a parser can answer at both revisions.</li>
+                <li><strong>Write the bans down.</strong> &ldquo;The domain module must not depend on infrastructure&rdquo; becomes a rule the moment it is written.</li>
+                <li><strong>Leave intent as prose.</strong> &ldquo;We prefer composition&rdquo; is not a claim about structure, and nothing should pretend to check it.</li>
+                <li><strong>Treat agent files as architecture docs.</strong> The rules you give your agents are the ones most worth checking against the code they write.</li>
+              </ul>
+
+              <h2 id="faq">Spec drift FAQ</h2>
+              {faqs.map((faq) => (
+                <Fragment>
+                  <h3>{faq.q}</h3>
+                  <p set:html={faq.a} />
+                </Fragment>
+              ))}
+            </div>
+          </div>
+
+          <aside class="sb-rail" aria-label="Table of contents">
+            <nav class="sb-toc">
+              <p class="sb-label">On this page</p>
+              <ol>
+                {toc.map((heading) => (
+                  <li><a href={`#${heading.id}`} data-toc-link={heading.id}>{heading.text}</a></li>
+                ))}
+              </ol>
+            </nav>
+          </aside>
+        </div>
+      </div>
+
+      <footer class="sb-shell">
+        <div class="sb-frame">
+          <div class="sb-frame-main">
+            <section class="sb-cta" aria-labelledby="sb-cta-title">
+              <div>
+                <p class="sb-label">The Striff GitHub App</p>
+                <h2 id="sb-cta-title" class="sb-cta-title">Catch spec drift on the pull request that causes it. Free for public repositories.</h2>
+              </div>
+              <div class="sb-cta-actions">
+                <a class="sb-btn sb-btn--primary" href={installUrl} target="_blank" rel="noopener noreferrer">
+                  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" /></svg>
+                  Install the GitHub App
+                  <span class="sr-only"> (opens in a new tab)</span>
+                </a>
+                <a class="sb-btn sb-btn--quiet" href="/demo/">See the demo</a>
+              </div>
+            </section>
+          </div>
+        </div>
+      </footer>
+    </article>
+  </main>
+
+  <script is:inline>
+    (function () {
+      // Reading progress, for browsers without scroll-driven animations (the CSS covers the rest).
+      var bar = document.querySelector(".sb-progress");
+      if (bar && !(window.CSS && CSS.supports("animation-timeline: scroll()"))) {
+        var pending = false;
+        var draw = function () {
+          pending = false;
+          var root = document.documentElement;
+          var max = root.scrollHeight - root.clientHeight;
+          bar.style.transform = "scaleX(" + (max > 0 ? Math.min(1, root.scrollTop / max) : 0) + ")";
+        };
+        window.addEventListener("scroll", function () {
+          if (pending) return;
+          pending = true;
+          requestAnimationFrame(draw);
+        }, { passive: true });
+        draw();
+      }
+
+      // Table of contents: the active section is the last heading above the upper third of the screen.
+      var links = Array.prototype.slice.call(document.querySelectorAll("[data-toc-link]"));
+      var targets = links.map(function (link) {
+        return document.getElementById(link.getAttribute("data-toc-link"));
+      });
+      if (links.length) {
+        var current = -2;
+        var queued = false;
+        var update = function () {
+          queued = false;
+          var line = window.innerHeight * 0.3;
+          var active = -1;
+          for (var i = 0; i < targets.length; i++) {
+            if (targets[i] && targets[i].getBoundingClientRect().top <= line) active = i;
+          }
+          if (active === current) return;
+          current = active;
+          links.forEach(function (link, i) {
+            var on = i === active;
+            link.classList.toggle("is-active", on);
+            if (on) link.setAttribute("aria-current", "location");
+            else link.removeAttribute("aria-current");
+          });
+        };
+        window.addEventListener("scroll", function () {
+          if (queued) return;
+          queued = true;
+          requestAnimationFrame(update);
+        }, { passive: true });
+        window.addEventListener("resize", update);
+        update();
+      }
+
+      // The phone table of contents closes once a section is chosen.
+      var mobileToc = document.querySelector(".sb-toc-mobile");
+      if (mobileToc) {
+        mobileToc.addEventListener("click", function (event) {
+          if (event.target.closest("a")) mobileToc.open = false;
+        });
+      }
+    })();
+  </script>
+</BaseLayout>

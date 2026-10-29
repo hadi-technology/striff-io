@@ -5,7 +5,7 @@ import type { FindingIssue } from "./findingIssue.ts";
 import FlagFinding from "./FlagFinding";
 import FloatingPanel from "./FloatingPanel";
 import { RuleSwitch } from "./RuleStateControls";
-import { Clamped, ExtensionNote, mark, plainText, when, withChecked, withCode } from "./docRules";
+import { Clamped, mark, plainText, when, withChecked, withCode } from "./docRules";
 import { clockNow, formatDay } from "../lib/renderClock.js";
 import { standing } from "../lib/standing.js";
 import { collapse } from "../lib/ruleCollapse.js";
@@ -770,7 +770,6 @@ export default function RulesTable({
       </div>
       )}
 
-      {rows.length > 0 && <ExtensionNote />}
     </div>
   );
 }
