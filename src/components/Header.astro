@@ -14,7 +14,6 @@ const currentFor = (section: string) => (path === section ? "page" : within(sect
 
 const navLinks = [
   { label: "For teams", href: "/#teams", section: "" },
-  { label: "Spec drift", href: "/spec-drift/", section: "/spec-drift" },
   { label: "Pricing", href: "/pricing/", section: "/pricing" },
   { label: "Blog", href: "/blog/", section: "/blog" },
   { label: "Contact", href: "/contact/", section: "/contact" },
@@ -88,7 +87,7 @@ const isDashboard = path === "/dashboard" || path.startsWith("/dashboard/") || p
           ))}
         </ul>
       </nav>
-      <div class="sh-mactions sh-stagger" style="--i:5">
+      <div class="sh-mactions sh-stagger" style="--i:4">
         {!isDashboard && (
           <a class="sh-cta sh-cta--block" href={installUrl} target="_blank" rel="noopener noreferrer">
             <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -104,7 +103,7 @@ const isDashboard = path === "/dashboard" || path.startsWith("/dashboard/") || p
           <AuthButton client:load />
         </div>
       </div>
-      <p class="sh-mfoot sh-stagger" style="--i:6">
+      <p class="sh-mfoot sh-stagger" style="--i:5">
         <a href="/blog/rss.xml">RSS feed</a>
         <span aria-hidden="true">·</span>
         <a href="https://github.com/hadi-technology/striff-lib">GitHub</a>

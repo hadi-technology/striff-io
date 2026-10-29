@@ -568,10 +568,10 @@ const structuredData = JSON.stringify([
           <p class="examples-kicker">The check</p>
           <h2 class="mt-3 text-balance">What Striff posts on a pull request.</h2>
           <p class="section-subcopy mt-4">
-            One check, beside your CI. It lists every rule your own documents state about the code the change touched, says whether each one still holds, quotes the sentence it came from, and draws the classes involved. Rules the code was already breaking before the change are listed apart, so nobody is blamed for them and nobody forgets them.
+            One check, beside your CI: every rule your docs state about the code the change touched, whether it still holds, and the sentence it came from.
           </p>
           <p class="diagram-source">
-            <span class="diagram-source-label">Below is a real one from October, from a public repository, unedited:</span>
+            <span class="diagram-source-label">A real one, unedited:</span>
             <a class="diagram-source-pr" href={realCheck.prUrl} target="_blank" rel="noopener noreferrer">
               {realCheck.repo} #{realCheck.pr}
             </a>
@@ -620,7 +620,7 @@ const structuredData = JSON.stringify([
                   </tbody>
                 </table>
               </div>
-              <p class="ghcheck-more">Rows 3, 5, 7 and 9, the same sentences read for the methods they name, are trimmed here.</p>
+              <p class="ghcheck-more">Rows 3, 5, 7 and 9 trimmed.</p>
 
               <!-- The check folds this table under a summary line; it is opened here because it is
                    the row worth reading. -->
@@ -636,7 +636,7 @@ const structuredData = JSON.stringify([
                         <td class="ghcheck-cell">
                           <span class="ghcheck-rule-line"><b class="ghcheck-rule-text"><InlineCodeText text={realCheckAlreadyBroken.rule} /></b> &middot; <a class="ghcheck-doc" href={realCheckAlreadyBroken.docUrl} target="_blank" rel="noopener noreferrer">{realCheckAlreadyBroken.doc}</a></span>
                           <span class="ghcheck-quote">&ldquo;{realCheckAlreadyBroken.quote}&rdquo;</span>
-                          <span class="ghcheck-breaks"><b>What breaks it:</b> <code>{realCheckAlreadyBroken.breaks}</code></span>
+                          <span class="ghcheck-breaks"><b>What breaks it:</b> <span class="ghcheck-mono">{realCheckAlreadyBroken.breaks}</span></span>
                         </td>
                       </tr>
                     </tbody>
@@ -644,17 +644,11 @@ const structuredData = JSON.stringify([
                 </div>
               </details>
 
-              <!-- Why row 10 is worth a homepage: the file the repository's agent instructions hold
-                   up as the pattern to copy breaks the rule it is praised for. -->
-              <aside class="ghcheck-why">
-                <p class="ghcheck-why-kicker">Why row 10 matters</p>
-                <p>
-                  This repository&rsquo;s <code>AGENTS.md</code> lists <code>MessageFormatter.kt</code> under &ldquo;Exemplary Patterns Already in the Codebase&rdquo;, the files its coding agents are told to copy, and praises it for having zero UI dependencies. Since a refactor in May, <a href={realCheckAlreadyBroken.codeUrl} target="_blank" rel="noopener noreferrer">its third line imports from the <code>ui</code> package</a>. An agent that follows the instructions copies the dependency along with the pattern.
-                </p>
-                <p>
-                  The pull request didn&rsquo;t cause it, so the check still passes and lists it apart. Nobody reviewing this change would have re-read line 599 of <code>AGENTS.md</code>. Before an accusation like this is shown, an agent now re-reads the sentence and the code twice to confirm it, and this one was confirmed.
-                </p>
-              </aside>
+              <!-- Why row 10 is worth a homepage, in one line: the pattern agents are told to copy
+                   breaks the rule it is praised for. -->
+              <p class="ghcheck-why">
+                <b>Row 10:</b> <span class="ghcheck-mono">AGENTS.md</span> tells agents to copy <span class="ghcheck-mono">MessageFormatter.kt</span> for its &ldquo;zero UI dependencies&rdquo;. <a href={realCheckAlreadyBroken.codeUrl} target="_blank" rel="noopener noreferrer">It imports from <span class="ghcheck-mono">ui</span></a>.
+              </p>
 
               <!-- The diagram is not a second section. The check embeds it here, at the end of the
                    same comment, and it is wide because a real architecture is wide. -->
@@ -696,11 +690,7 @@ const structuredData = JSON.stringify([
               </figure>
 
               <p class="ghcheck-caption">
-                Every check carries a <b>diagram</b>. It draws the part of your
-                architecture that the pull request touched, in UML class notation: a box for each
-                class, its members inside it, and a line for each dependency between them. Color
-                marks what the change added, removed and altered. Drag it to pan, or open it full
-                size.
+                Every check also draws the classes the change touched. Drag to pan.
               </p>
 
               <p class="ghcheck-foot">

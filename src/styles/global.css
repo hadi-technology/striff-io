@@ -6459,11 +6459,6 @@ tr:hover .finding-flag-button,
 a.ghcheck-doc { text-decoration: none; }
 a.ghcheck-doc:hover { text-decoration: underline; }
 .ghcheck-breaks { color: #24292f; font-size: 0.84rem; line-height: 1.5; }
-.ghcheck-breaks code {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.78rem;
-  overflow-wrap: anywhere;
-}
 
 /* The table the check folds under a summary line, as GitHub draws a <details>. */
 .ghcheck-details { margin: 1.1rem 0 0; }
@@ -6476,35 +6471,17 @@ a.ghcheck-doc:hover { text-decoration: underline; }
 }
 .ghcheck-details > summary + .ghcheck-table-wrap { margin-top: 0.6rem; }
 
-/* Why the already-broken row matters: the page's note, set apart from the check it annotates. */
+/* Why the already-broken row matters: the page's one-line note under the check's own table. */
 .ghcheck-why {
-  margin: 1.1rem 0 0;
-  border: 1px solid #f0d58c;
-  border-left: 4px solid #9a6700;
-  border-radius: 0.75rem;
-  background: #fff8e6;
-  padding: 0.9rem 1.1rem;
+  margin: 0.8rem 0 0;
+  border-left: 3px solid #9a6700;
+  padding: 0.15rem 0 0.15rem 0.75rem;
   color: #3d3320;
-  font-size: 0.92rem;
-  line-height: 1.65;
-}
-.ghcheck-why p + p { margin-top: 0.55rem; }
-.ghcheck-why .ghcheck-why-kicker {
-  margin: 0 0 0.35rem;
-  color: #9a6700;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.ghcheck-why code {
-  border-radius: 0.3rem;
-  background: rgba(154, 103, 0, 0.1);
-  padding: 0.05em 0.3em;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.85em;
+  font-size: 0.9rem;
+  line-height: 1.6;
 }
 .ghcheck-why a { color: #1d4ed8; font-weight: 600; }
+.ghcheck-mono { font-family: "IBM Plex Mono", monospace; font-size: 0.85em; overflow-wrap: anywhere; }
 
 .ghcheck-caption {
   margin: 0.7rem 0 0;
