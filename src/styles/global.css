@@ -6158,7 +6158,6 @@ tr:hover .finding-flag-button,
   font-weight: 600;
 }
 .teams-inuse a img { width: 20px; height: 20px; border-radius: 999px; }
-.teams-inuse-stars { color: #64748b; font-family: Inter, system-ui, sans-serif; font-size: 0.78rem; font-weight: 600; }
 .teams-inuse a:hover, .teams-more a:hover { text-decoration: underline; }
 .teams-more { margin: 0; }
 .teams-more a { color: #1d4ed8; font-weight: 600; }

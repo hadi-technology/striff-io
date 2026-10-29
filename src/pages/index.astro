@@ -196,13 +196,13 @@ const teamsAnswers = [
   { q: "How long to get value?", a: "The first pull request after install. Striff reads the docs you already have; there is nothing to configure." },
 ];
 /**
- * Public repositories whose pull requests Striff checks today (check runs visible on GitHub). Stars
- * are static, as in the hero strip (src/data/ossFindings.ts), counted on 2026-10-29.
+ * Public repositories whose pull requests Striff checks today (check runs visible on GitHub), each
+ * beside the people quoted above. Names and avatars only: the projects speak for themselves.
  */
 const teamsInUse = [
-  { name: "objectionary/eo", url: "https://github.com/objectionary/eo", stars: "1.5k", avatar: "/oss-avatars/objectionary.png" },
-  { name: "AArnott/Nerdbank.MessagePack", url: "https://github.com/AArnott/Nerdbank.MessagePack", stars: "181", avatar: "/oss-avatars/aarnott.jpg" },
-  { name: "catatafishen/agentbridge", url: "https://github.com/catatafishen/agentbridge", stars: "89", avatar: "/oss-avatars/catatafishen.jpg" },
+  { name: "objectionary/eo", url: "https://github.com/objectionary/eo", avatar: "/oss-avatars/objectionary.png" },
+  { name: "AArnott/Nerdbank.MessagePack", url: "https://github.com/AArnott/Nerdbank.MessagePack", avatar: "/oss-avatars/aarnott.jpg" },
+  { name: "catatafishen/agentbridge", url: "https://github.com/catatafishen/agentbridge", avatar: "/oss-avatars/catatafishen.jpg" },
 ];
 /**
  * What people who run Striff have said, quoted as they wrote it (an ellipsis marks a
@@ -213,7 +213,7 @@ const teamsQuotes: { quote: string; name: string; role: string; avatar?: string;
   {
     quote: "\u2026Striff, the tool that finds inconsistencies between documentation and the source code. We installed it already to the EO and it works good. It\u2019s free for open repositories. I recommend.",
     name: "Yegor Bugayenko",
-    role: "Creator of EO",
+    role: "Creator of EO, author of Elegant Objects",
     avatar: "/oss-avatars/yegor256.jpg",
     url: "https://t.me/yegor256news/1870",
     where: "on Telegram, October 2026",
@@ -886,12 +886,11 @@ const structuredData = JSON.stringify([
 
         <div class="teams-foot" data-reveal>
           <p class="teams-inuse">
-            <span>Checking pull requests today in</span>
+            <span>Running on pull requests in</span>
             {teamsInUse.map((repo) => (
               <a href={repo.url} target="_blank" rel="noopener noreferrer">
                 <img src={repo.avatar} alt="" width="20" height="20" loading="lazy" />
                 {repo.name}
-                <span class="teams-inuse-stars">{repo.stars}<span aria-hidden="true"> &#9733;</span><span class="sr-only"> stars</span></span>
               </a>
             ))}
           </p>
