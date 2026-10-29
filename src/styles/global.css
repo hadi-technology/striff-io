@@ -6120,53 +6120,76 @@ tr:hover .finding-flag-button,
 .teams-quotes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
-  gap: 2rem 3.5rem;
-  margin-top: 3.5rem;
+  gap: 1.25rem;
+  margin-top: 3rem;
 }
-.teams-quote { position: relative; margin: 0; padding-left: 2.6rem; }
-/* The opening mark, set large in the quote's own face, hanging in the margin. */
+/* A card per quote: white on the section's grey, with depth, so it reads as someone speaking. */
+.teams-quote {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 18px 40px -24px rgba(15, 23, 42, 0.28);
+  padding: 2.1rem 1.75rem 1.5rem 4.1rem;
+}
+/* The opening mark, set large in the quote's own face, hanging in the card's margin. */
 .teams-quote::before {
   content: "\201C";
   position: absolute;
-  top: -0.9rem;
-  left: -0.1rem;
-  color: #93b4f5;
+  top: 1.1rem;
+  left: 1.35rem;
+  color: #2563eb;
   font-family: "Source Serif 4", Georgia, serif;
-  font-size: 4.5rem;
+  font-size: 4.2rem;
   line-height: 1;
 }
 .teams-quote blockquote {
+  flex: 1 1 auto;
   margin: 0;
   color: var(--ink);
   font-family: "Source Serif 4", Georgia, serif;
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1.55;
   letter-spacing: -0.005em;
   text-wrap: pretty;
 }
-.teams-quote figcaption { display: flex; align-items: center; gap: 0.75rem; margin-top: 1.1rem; color: var(--ink-muted); font-size: 0.85rem; line-height: 1.45; }
+.teams-quote figcaption { display: flex; align-items: center; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1.1rem; border-top: 1px solid #eef2f6; color: var(--ink-muted); font-size: 0.85rem; line-height: 1.45; }
 .teams-quote figcaption img { width: 36px; height: 36px; border-radius: 999px; }
 .teams-quote figcaption b { color: var(--ink); }
 .teams-quote figcaption a { color: #1d4ed8; }
 .teams-quote figcaption a:hover { text-decoration: underline; }
-.teams-quote figcaption > a.teams-quote-repo {
+/* GitHub chips: dark, the way GitHub's own buttons read, with the star in GitHub's gold. */
+.teams-quote figcaption > a.teams-quote-repo,
+.teams-inuse a {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  margin-left: auto;
-  border: 1px solid rgba(15, 23, 42, 0.1);
+  gap: 0.45rem;
+  border: 1px solid #24292f;
   border-radius: 999px;
-  padding: 0.25rem 0.7rem;
-  color: var(--ink);
+  background: #24292f;
+  padding: 0.3rem 0.8rem;
+  color: #fff;
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.78rem;
   font-weight: 600;
   white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 0.15s ease, transform 0.15s ease;
 }
-.teams-quote figcaption > a.teams-quote-repo:hover { border-color: rgba(37, 99, 235, 0.4); text-decoration: none; }
-.teams-quote-stars { color: #64748b; font-family: Inter, system-ui, sans-serif; font-weight: 600; }
+.teams-quote figcaption > a.teams-quote-repo { margin-left: auto; }
+.teams-quote figcaption > a.teams-quote-repo:hover,
+.teams-inuse a:hover { background: #32383f; text-decoration: none; transform: translateY(-1px); }
+.teams-quote-repo svg { color: #9198a1; }
+.teams-quote-stars { display: inline-flex; align-items: center; gap: 0.2rem; margin-left: 0.15rem; border-left: 1px solid #3d444d; padding-left: 0.55rem; color: #f0f6fc; font-family: Inter, system-ui, sans-serif; font-weight: 600; }
+.teams-quote-stars [aria-hidden] { color: #e3b341; }
 @media (max-width: 640px) {
+  .teams-quote { padding: 1.4rem 1.25rem 1.25rem; }
+  .teams-quote::before { position: static; display: block; height: 2rem; font-size: 3.4rem; }
+  .teams-quote blockquote { font-size: 1.12rem; }
   .teams-quote figcaption { flex-wrap: wrap; }
   .teams-quote figcaption > a.teams-quote-repo { margin-left: 0; }
 }
@@ -6182,21 +6205,9 @@ tr:hover .finding-flag-button,
 }
 .teams-inuse { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.6rem; margin: 0; }
 .teams-inuse > span { color: #64748b; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
-.teams-inuse a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 999px;
-  background: #fff;
-  padding: 0.25rem 0.75rem 0.25rem 0.3rem;
-  color: var(--ink);
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-.teams-inuse a img { width: 20px; height: 20px; border-radius: 999px; }
-.teams-inuse a:hover, .teams-more a:hover { text-decoration: underline; }
+.teams-inuse a { padding-left: 0.3rem; }
+.teams-inuse a img { width: 20px; height: 20px; border-radius: 999px; background: #fff; }
+.teams-more a:hover { text-decoration: underline; }
 .teams-more { margin: 0; }
 .teams-more a { color: #1d4ed8; font-weight: 600; }
 
