@@ -12,6 +12,9 @@ const blog = defineCollection({
     // The page's <title>, when the headline written for readers is not the phrase people search
     // for. The headline stays on the page, in the feed and in social previews.
     seoTitle: z.string().optional(),
+    // The meta description, when the dek written for readers is longer than a search result shows
+    // (about 155 characters). The dek stays on the page and in the post's card.
+    seoDescription: z.string().optional(),
     ogImage: z.string().optional(),
     // A draft stays in the repository but is never built, listed or linked.
     draft: z.boolean().optional(),

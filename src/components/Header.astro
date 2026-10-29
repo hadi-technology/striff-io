@@ -20,7 +20,6 @@ const navLinks = [
 ];
 const inBlog = within("/blog");
 const installUrl = "https://github.com/apps/striffs/installations/new";
-const extensionHref = "/#extension";
 // On the dashboard the call to action is already answered: "Add an account" in the bar installs
 // on another account, and someone with no installation at all is met by an install button in the
 // empty state. A second one in the header would only compete with the page's own.
@@ -53,12 +52,6 @@ const isDashboard = path === "/dashboard" || path.startsWith("/dashboard/") || p
     </nav>
 
     <div class="sh-actions">
-      <a class="sh-ghost" href={extensionHref}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /><line x1="21.17" y1="8" x2="12" y2="8" /><line x1="3.95" y1="6.06" x2="8.54" y2="14" /><line x1="10.88" y1="21.94" x2="15.46" y2="14" />
-        </svg>
-        Extension
-      </a>
       <div class="sh-auth"><AuthButton client:load /></div>
       {!isDashboard && (
         <>
@@ -104,12 +97,6 @@ const isDashboard = path === "/dashboard" || path.startsWith("/dashboard/") || p
             <span class="sr-only"> (opens in a new tab)</span>
           </a>
         )}
-        <a class="sh-ghost sh-ghost--block" href={extensionHref}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /><line x1="21.17" y1="8" x2="12" y2="8" /><line x1="3.95" y1="6.06" x2="8.54" y2="14" /><line x1="10.88" y1="21.94" x2="15.46" y2="14" />
-          </svg>
-          Get the Chrome extension
-        </a>
         <!-- Returning customers reach their dashboard from here; without it the only sign-in
              affordance is desktop-only and a phone is a dead end. -->
         <div class="mobile-auth-slot sh-auth sh-auth--block">

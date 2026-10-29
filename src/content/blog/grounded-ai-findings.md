@@ -1,6 +1,8 @@
 ---
 title: "Every Striff finding comes with a receipt"
 description: "AI review comments are easy to write and hard to trust. What a Striff check on your pull request actually says, where each line of it comes from, and how to verify any of it yourself in under a minute."
+seoTitle: "Grounded AI code review: every finding has a receipt"
+seoDescription: "What a Striff check on your pull request says, where each line of it comes from, and how to verify any of it yourself in under a minute."
 date: 2026-08-24
 category: "Product"
 cover: "receipt"
@@ -97,5 +99,4 @@ It also changes what your docs are for. A sentence in your README becomes a rule
 The quickest test is a pull request whose history you already know, so you can judge every line of the check yourself.
 
 - Your public repositories are free. [Install the GitHub App](https://github.com/apps/striffs/installations/new) and open a pull request. Rules, diagram and review notes, on every PR.
-- For someone else's public pull request, the [free Chrome extension](/#extension) shows the same review in a tab beside Files changed, without installing anything on the repository.
 - Private repositories start at $29 a month. [See pricing](/pricing/).

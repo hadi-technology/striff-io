@@ -6,50 +6,35 @@ import RuleRows from "../components/RuleRows.astro";
 import Formula from "../components/Formula.astro";
 import { heroExampleRules, heroExampleRepo, heroExampleTally } from "../data/heroExampleRules";
 import MetricsTab from "../components/MetricsTab";
-import { Image } from "astro:assets";
-import dashDocsRules from "../assets/dash-docs-rules.webp";
-import dashChecks from "../assets/dash-checks.webp";
+// The example check's diagram: striff-lib's own output for the invented #418, annotated by
+// tools/example-diagram/annotate.py.
+import exampleDiagram from "../assets/examples/acme-418-diagram.svg?raw";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 import { ossRepos, reportPath } from "../data/ossFindings";
 import { loadTallies } from "../data/ossTally.js";
 
 // ---- Problem-section visualization: agents doing the work ----
 // Every push, PR and merge in the feed is authored by an agent, and the side branches in
-// the graph are agent lanes too.
-const agentName = {
-  claude: "claude",
-  codex: "codex",
-  gemini: "gemini",
-  copilot: "copilot",
-  ollama: "ollama"
-};
-// Literal class names (kept out of interpolation so Tailwind's purge keeps them).
-const agentClass = {
-  claude: "ag-claude",
-  codex: "ag-codex",
-  gemini: "ag-gemini",
-  copilot: "ag-copilot",
-  ollama: "ag-ollama"
-};
-// Brand marks from Simple Icons (CC0 path data; each mark remains its owner's trademark).
-const agentIcon = {
-  claude: "m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z",
-  codex: "M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z",
-  gemini: "M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81",
-  copilot: "M23.922 16.997C23.061 18.492 18.063 22.02 12 22.02 5.937 22.02.939 18.492.078 16.997A.641.641 0 0 1 0 16.741v-2.869a.883.883 0 0 1 .053-.22c.372-.935 1.347-2.292 2.605-2.656.167-.429.414-1.055.644-1.517a10.098 10.098 0 0 1-.052-1.086c0-1.331.282-2.499 1.132-3.368.397-.406.89-.717 1.474-.952C7.255 2.937 9.248 1.98 11.978 1.98c2.731 0 4.767.957 6.166 2.093.584.235 1.077.546 1.474.952.85.869 1.132 2.037 1.132 3.368 0 .368-.014.733-.052 1.086.23.462.477 1.088.644 1.517 1.258.364 2.233 1.721 2.605 2.656a.841.841 0 0 1 .053.22v2.869a.641.641 0 0 1-.078.256Zm-11.75-5.992h-.344a4.359 4.359 0 0 1-.355.508c-.77.947-1.918 1.492-3.508 1.492-1.725 0-2.989-.359-3.782-1.259a2.137 2.137 0 0 1-.085-.104L4 11.746v6.585c1.435.779 4.514 2.179 8 2.179 3.486 0 6.565-1.4 8-2.179v-6.585l-.098-.104s-.033.045-.085.104c-.793.9-2.057 1.259-3.782 1.259-1.59 0-2.738-.545-3.508-1.492a4.359 4.359 0 0 1-.355-.508Zm2.328 3.25c.549 0 1 .451 1 1v2c0 .549-.451 1-1 1-.549 0-1-.451-1-1v-2c0-.549.451-1 1-1Zm-5 0c.549 0 1 .451 1 1v2c0 .549-.451 1-1 1-.549 0-1-.451-1-1v-2c0-.549.451-1 1-1Zm3.313-6.185c.136 1.057.403 1.913.878 2.497.442.544 1.134.938 2.344.938 1.573 0 2.292-.337 2.657-.751.384-.435.558-1.15.558-2.361 0-1.14-.243-1.847-.705-2.319-.477-.488-1.319-.862-2.824-1.025-1.487-.161-2.192.138-2.533.529-.269.307-.437.808-.438 1.578v.021c0 .265.021.562.063.893Zm-1.626 0c.042-.331.063-.628.063-.894v-.02c-.001-.77-.169-1.271-.438-1.578-.341-.391-1.046-.69-2.533-.529-1.505.163-2.347.537-2.824 1.025-.462.472-.705 1.179-.705 2.319 0 1.211.175 1.926.558 2.361.365.414 1.084.751 2.657.751 1.21 0 1.902-.394 2.344-.938.475-.584.742-1.44.878-2.497Z",
-  ollama: "M16.361 10.26a.894.894 0 0 0-.558.47l-.072.148.001.207c0 .193.004.217.059.353.076.193.152.312.291.448.24.238.51.3.872.205a.86.86 0 0 0 .517-.436.752.752 0 0 0 .08-.498c-.064-.453-.33-.782-.724-.897a1.06 1.06 0 0 0-.466 0zm-9.203.005c-.305.096-.533.32-.65.639a1.187 1.187 0 0 0-.06.52c.057.309.31.59.598.667.362.095.632.033.872-.205.14-.136.215-.255.291-.448.055-.136.059-.16.059-.353l.001-.207-.072-.148a.894.894 0 0 0-.565-.472 1.02 1.02 0 0 0-.474.007Zm4.184 2c-.131.071-.223.25-.195.383.031.143.157.288.353.407.105.063.112.072.117.136.004.038-.01.146-.029.243-.02.094-.036.194-.036.222.002.074.07.195.143.253.064.052.076.054.255.059.164.005.198.001.264-.03.169-.082.212-.234.15-.525-.052-.243-.042-.28.087-.355.137-.08.281-.219.324-.314a.365.365 0 0 0-.175-.48.394.394 0 0 0-.181-.033c-.126 0-.207.03-.355.124l-.085.053-.053-.032c-.219-.13-.259-.145-.391-.143a.396.396 0 0 0-.193.032zm.39-2.195c-.373.036-.475.05-.654.086-.291.06-.68.195-.951.328-.94.46-1.589 1.226-1.787 2.114-.04.176-.045.234-.045.53 0 .294.005.357.043.524.264 1.16 1.332 2.017 2.714 2.173.3.033 1.596.033 1.896 0 1.11-.125 2.064-.727 2.493-1.571.114-.226.169-.372.22-.602.039-.167.044-.23.044-.523 0-.297-.005-.355-.045-.531-.288-1.29-1.539-2.304-3.072-2.497a6.873 6.873 0 0 0-.855-.031zm.645.937a3.283 3.283 0 0 1 1.44.514c.223.148.537.458.671.662.166.251.26.508.303.82.02.143.01.251-.043.482-.08.345-.332.705-.672.957a3.115 3.115 0 0 1-.689.348c-.382.122-.632.144-1.525.138-.582-.006-.686-.01-.853-.042-.57-.107-1.022-.334-1.35-.68-.264-.28-.385-.535-.45-.946-.03-.192.025-.509.137-.776.136-.326.488-.73.836-.963.403-.269.934-.46 1.422-.512.187-.02.586-.02.773-.002zm-5.503-11a1.653 1.653 0 0 0-.683.298C5.617.74 5.173 1.666 4.985 2.819c-.07.436-.119 1.04-.119 1.503 0 .544.064 1.24.155 1.721.02.107.031.202.023.208a8.12 8.12 0 0 1-.187.152 5.324 5.324 0 0 0-.949 1.02 5.49 5.49 0 0 0-.94 2.339 6.625 6.625 0 0 0-.023 1.357c.091.78.325 1.438.727 2.04l.13.195-.037.064c-.269.452-.498 1.105-.605 1.732-.084.496-.095.629-.095 1.294 0 .67.009.803.088 1.266.095.555.288 1.143.503 1.534.071.128.243.393.264.407.007.003-.014.067-.046.141a7.405 7.405 0 0 0-.548 1.873c-.062.417-.071.552-.071.991 0 .56.031.832.148 1.279L3.42 24h1.478l-.05-.091c-.297-.552-.325-1.575-.068-2.597.117-.472.25-.819.498-1.296l.148-.29v-.177c0-.165-.003-.184-.057-.293a.915.915 0 0 0-.194-.25 1.74 1.74 0 0 1-.385-.543c-.424-.92-.506-2.286-.208-3.451.124-.486.329-.918.544-1.154a.787.787 0 0 0 .223-.531c0-.195-.07-.355-.224-.522a3.136 3.136 0 0 1-.817-1.729c-.14-.96.114-2.005.69-2.834.563-.814 1.353-1.336 2.237-1.475.199-.033.57-.028.776.01.226.04.367.028.512-.041.179-.085.268-.19.374-.431.093-.215.165-.333.36-.576.234-.29.46-.489.822-.729.413-.27.884-.467 1.352-.561.17-.035.25-.04.569-.04.319 0 .398.005.569.04a4.07 4.07 0 0 1 1.914.997c.117.109.398.457.488.602.034.057.095.177.132.267.105.241.195.346.374.43.14.068.286.082.503.045.343-.058.607-.053.943.016 1.144.23 2.14 1.173 2.581 2.437.385 1.108.276 2.267-.296 3.153-.097.15-.193.27-.333.419-.301.322-.301.722-.001 1.053.493.539.801 1.866.708 3.036-.062.772-.26 1.463-.533 1.854a2.096 2.096 0 0 1-.224.258.916.916 0 0 0-.194.25c-.054.109-.057.128-.057.293v.178l.148.29c.248.476.38.823.498 1.295.253 1.008.231 2.01-.059 2.581a.845.845 0 0 0-.044.098c0 .006.329.009.732.009h.73l.02-.074.036-.134c.019-.076.057-.3.088-.516.029-.217.029-1.016 0-1.258-.11-.875-.295-1.57-.597-2.226-.032-.074-.053-.138-.046-.141.008-.005.057-.074.108-.152.376-.569.607-1.284.724-2.228.031-.26.031-1.378 0-1.628-.083-.645-.182-1.082-.348-1.525a6.083 6.083 0 0 0-.329-.7l-.038-.064.131-.194c.402-.604.636-1.262.727-2.04a6.625 6.625 0 0 0-.024-1.358 5.512 5.512 0 0 0-.939-2.339 5.325 5.325 0 0 0-.95-1.02 8.097 8.097 0 0 1-.186-.152.692.692 0 0 1 .023-.208c.208-1.087.201-2.443-.017-3.503-.19-.924-.535-1.658-.98-2.082-.354-.338-.716-.482-1.15-.455-.996.059-1.8 1.205-2.116 3.01a6.805 6.805 0 0 0-.097.726c0 .036-.007.066-.015.066a.96.96 0 0 1-.149-.078A4.857 4.857 0 0 0 12 3.03c-.832 0-1.687.243-2.456.698a.958.958 0 0 1-.148.078c-.008 0-.015-.03-.015-.066a6.71 6.71 0 0 0-.097-.725C8.997 1.392 8.337.319 7.46.048a2.096 2.096 0 0 0-.585-.041Zm.293 1.402c.248.197.523.759.682 1.388.03.113.06.244.069.292.007.047.026.152.041.233.067.365.098.76.102 1.24l.002.475-.12.175-.118.178h-.278c-.324 0-.646.041-.954.124l-.238.06c-.033.007-.038-.003-.057-.144a8.438 8.438 0 0 1 .016-2.323c.124-.788.413-1.501.696-1.711.067-.05.079-.049.157.013zm9.825-.012c.17.126.358.46.498.888.28.854.36 2.028.212 3.145-.019.14-.024.151-.057.144l-.238-.06a3.693 3.693 0 0 0-.954-.124h-.278l-.119-.178-.119-.175.002-.474c.004-.669.066-1.19.214-1.772.157-.623.434-1.185.68-1.382.078-.062.09-.063.159-.012z"
+// the graph are agent lanes too. The agents are named for the work they do, never for a vendor
+// or a product: the picture is many agents changing one repository, not whose agents they are.
+const agents = {
+  feature: { name: "feature-agent", mark: "F", cls: "ag-feature" },
+  refactor: { name: "refactor-agent", mark: "R", cls: "ag-refactor" },
+  test: { name: "test-agent", mark: "T", cls: "ag-test" },
+  deps: { name: "deps-bot", mark: "B", cls: "ag-deps" },
+  docs: { name: "docs-agent", mark: "D", cls: "ag-docs" }
 };
 const activityFeed = [
-  { agent: "claude", text: "opened #1841", time: "2m ago" },
-  { agent: "codex", text: "pushed 4 commits", time: "4m ago" },
-  { agent: "gemini", text: "merged #1838", time: "7m ago" },
-  { agent: "copilot", text: "rewrote 31 files", time: "9m ago" },
-  { agent: "ollama", text: "opened #1843", time: "12m ago" },
-  { agent: "claude", text: "merged #1841", time: "14m ago" },
-  { agent: "codex", text: "closed #302", time: "15m ago" },
-  { agent: "gemini", text: "pushed 9 commits", time: "19m ago" },
-  { agent: "copilot", text: "merged #1842", time: "21m ago" },
-  { agent: "ollama", text: "pushed 2 commits", time: "23m ago" }
+  { agent: "feature", text: "opened #1841", time: "2m ago" },
+  { agent: "test", text: "pushed 4 commits", time: "4m ago" },
+  { agent: "deps", text: "merged #1838", time: "7m ago" },
+  { agent: "refactor", text: "rewrote 31 files", time: "9m ago" },
+  { agent: "docs", text: "opened #1843", time: "12m ago" },
+  { agent: "feature", text: "merged #1841", time: "14m ago" },
+  { agent: "deps", text: "closed #302", time: "15m ago" },
+  { agent: "test", text: "pushed 9 commits", time: "19m ago" },
+  { agent: "refactor", text: "merged #1842", time: "21m ago" },
+  { agent: "docs", text: "pushed 2 commits", time: "23m ago" }
 ];
 
 const githubAppUrl = "https://github.com/apps/striffs/installations/new";
@@ -60,20 +45,11 @@ const ossShown = await loadTallies(ossRepos);
 const tallyWords = (t: { held: number; broken: number; staleNames: number }) =>
   `${t.held} rule${t.held === 1 ? "" : "s"} held, ${t.broken} broken, ${t.staleNames} stale name${t.staleNames === 1 ? "" : "s"}`;
 
-// The browser extension's homepage section.
-const extensionUrl = "https://chromewebstore.google.com/detail/striffs-for-github/gcbcjajnjbplgkhnbemlkadgnjnfjoen";
-const extensionVideoId = "YR_DYyJwM-k";
-const extensionHighlights = [
-  { icon: "diagram", color: "blue", point: "An interactive diagram of any public pull request" },
-  { icon: "sparkle", color: "amber", point: "Its documented rules checked, one click from the diagram" },
-  { icon: "comment", color: "emerald", point: "Comment straight from the diagram" },
-  { icon: "bolt", color: "rose", point: "Works on repositories you do not own" }
-];
-
 // The languages the parser (Clarpse, via striff-lib) reads, shown under the hero card.
-// Monograms in each language's own colour rather than four mismatched logo styles.
+// Monograms in each language's own colour rather than mismatched logo styles.
 const heroLanguages = [
   { name: "Java", mark: "J", color: "#e76f00" },
+  { name: "Kotlin", mark: "Kt", color: "#7f52ff" },
   { name: "Python", mark: "Py", color: "#3776ab" },
   { name: "C#", mark: "C#", color: "#7b3fbd" },
   { name: "TypeScript", mark: "TS", color: "#3178c6" }
@@ -88,8 +64,9 @@ const heroLanguages = [
  * How a documented rule becomes a verdict: the code parsed, the prose read, the rule grounded and
  * compiled, the formula checked at both revisions.
  *
- * One of the four stages involves a language model, it is the one that reads English, and nothing
- * downstream of it asks a model anything. There used to be a fifth, "Narrate", which said a model
+ * One of the four stages involves a language model: Read, which proposes rules from English. (The
+ * verifier that re-reads a break before it is shown, striff-api's doc-verify, is described in the
+ * FAQ and the leaders section rather than here.) There used to be a stage, "Narrate", which said a model
  * ranked and explained the results. It does not: the rules are ordered by CheckRunFormatter and
  * the English reading of a rule is composed from the rule's own body by ArchRuleRenderer, both of
  * them programs. The stage was describing the review notes, which are a different part of the
@@ -106,7 +83,7 @@ const pipeline = [
   {
     kind: "neural",
     name: "Read",
-    body: "Your documents go to a language model, which proposes candidate rules from prose. The only step that reads English, and the only one that can be wrong without being caught \u2014 which is what the next step is for.",
+    body: "Your documents go to a language model, which proposes candidate rules from prose. It is the step most likely to be wrong, which is what the next step is for.",
     out: "\u201cNever import from legacy/ in new code\u201d \u00b7 AGENTS.md:18"
   },
   {
@@ -125,73 +102,138 @@ const pipeline = [
 
 
 /**
- * Six of the twenty-four rules from a real Striff check: catatafishen/agentbridge #1102, run on
- * 2026-09-27 against commit 32538d6. The rule text, the document, the line and the quoted sentence
- * are copied from the check's own output and shown in the layout the check posts today (that run
- * predates it). Nothing here is written for the website.
- *
- * https://github.com/catatafishen/agentbridge/runs/108628049213
+ * The check section's sample: an illustrative example, not a real run, and labelled as one. It is
+ * the same invented pull request as the hero card (acme/checkout-service #418, feat/csv-export):
+ * the change adds checkout.export.CsvExporter, which imports legacy.pricing.PriceCalculator and so
+ * breaks the AGENTS.md rule the hero leads with. Each rule names the diagram elements it is about
+ * (`marks`), so hovering a row lights its part of the diagram and the broken path is drawn in red.
  */
-const realCheckRules = [
+const sampleCheck = {
+  repo: "acme/checkout-service",
+  pr: 418,
+  branch: "feat/csv-export",
+};
+const sampleRules = [
   {
-    rule: "`FileTool` has a `getGitFileStatus` method",
-    doc: "AGENTS.md#L338",
-    quote: "Append git status annotation (tracked/untracked/staged) using FileTool.getGitFileStatus()",
+    n: 1,
+    status: "broken",
+    badge: "Broken",
+    rule: "Nothing in `checkout` depends on `legacy`",
+    doc: "AGENTS.md#L18",
+    quote: "Never import from legacy/ in new code; use the equivalents in core/.",
+    breaks: "checkout.export.CsvExporter \u2192 legacy.pricing.PriceCalculator (added in this pull request)",
   },
   {
-    rule: "`McpProtocolHandler` has a `truncateIfNeeded` method",
-    doc: "AGENTS.md#L373",
-    quote: "The truncateIfNeeded() in McpProtocolHandler provides a safety net, but tools should self-limit",
+    n: 2,
+    status: "holds",
+    badge: "Holds",
+    rule: "`CheckoutService` depends on `core.orders`",
+    doc: "ARCHITECTURE.md#L36",
+    quote: "CheckoutService reads and writes orders through core.orders only.",
   },
   {
-    rule: "`ConversationService` depends on `ConversationWriter`",
-    doc: "docs/CONVERSATION-PERSISTENCE.md",
-    quote: "ConversationService (serialized async write queue) depends on ConversationWriter (synchronized SQLite writes)",
+    n: 3,
+    status: "holds",
+    badge: "Holds",
+    rule: "Every exporter lives in `checkout.export`",
+    doc: "docs/adr/0012-exports.md#L9",
+    quote: "Exporters live in checkout.export, one class per format.",
   },
   {
-    rule: "`FileTool` depends on `AgentEditSession`",
-    doc: "docs/INLINE-DIFF-REVIEW.md#L379",
-    quote: "FileTool.writeFile (all variants), FileTool.createFile, FileTool.deleteFile call AgentEditSession.ensureStarted()",
+    n: 4,
+    status: "holds",
+    badge: "Holds",
+    rule: "Nothing in `core` depends on `checkout`",
+    doc: "ARCHITECTURE.md#L22",
+    quote: "core never depends on feature modules such as checkout.",
   },
   {
-    rule: "`McpHttpServer` depends on `McpProtocolHandler`",
-    doc: "docs/MCP-ARCHITECTURE.md",
-    quote: "McpHttpServer 127.0.0.1:port depends on McpProtocolHandler JSON-RPC handler",
+    n: 5,
+    status: "holds",
+    badge: "Holds",
+    rule: "`CheckoutService` has a `checkout` method",
+    doc: "specs/checkout.md#L14",
+    quote: "CheckoutService.checkout(cartId) places the order and charges the customer in one call.",
   },
   {
-    rule: "`GitCommitTool` depends on `GitTool`",
-    doc: "docs/bugs/COMMIT-NOT-FOUND-IN-LOG-BUG.md",
-    quote: "GitCommitTool.java calls showNewCommitInLog(root) after a successful commit",
+    n: 6,
+    status: "holds",
+    badge: "Holds",
+    rule: "Nothing in `checkout` depends on `com.stripe`",
+    doc: "docs/adr/0007-payments.md#L13",
+    quote: "Only the billing module talks to the Stripe SDK.",
+  },
+  {
+    n: 7,
+    status: "holds",
+    badge: "Holds",
+    rule: "`Order` has `id` and `totalCents`",
+    doc: "specs/orders.md#L7",
+    quote: "An Order carries its id and its total in cents as totalCents, never as a float.",
+  },
+  {
+    n: 8,
+    status: "holds",
+    badge: "Holds",
+    rule: "Only `CheckoutService` depends on `checkout.export`",
+    doc: "CLAUDE.md#L52",
+    quote: "CheckoutService is the only way into checkout.export; nothing else calls an exporter.",
   },
 ];
 
 /**
- * For-teams: the dashboard's three views, one panel each, every panel a door into the demo's
- * matching tab. The docs-and-rules and checks panels are photographed; the metrics panel is the live component
- * on the example workspace.
+ * For teams: the section for the engineering lead, not the reviewer. It sells what changes for the
+ * organisation (the docs become guardrails, drift is visible before it is a rewrite, nothing to roll
+ * out), shows the one dashboard view that is the lead's own (metrics, live, on the demo workspace),
+ * and answers the four questions a lead asks before bringing a tool in. The other two dashboard
+ * views are links into the demo.
  */
-const teamsPanels = [
+const teamsPoints = [
   {
-    view: "docs",
-    eyebrow: "Docs & rules",
-    title: "Every rule your docs state, for a repository, a folder or one file",
-    body: "Your architecture docs, ADRs and agent instructions as a tree. Pick a document for its own rules, a folder for every rule beneath it, or the repository for all of them: the sentence each rule came from, the rule it became, and whether the default branch still keeps it. Sort, search and export what you picked.",
-    cta: "Open the docs and rules"
+    title: "The docs your team wrote become the guardrails",
+    body: "ADRs, design docs and AGENTS.md are checked on every pull request, by people and agents alike. No rules to write, no new process to teach.",
   },
   {
-    view: "checks",
-    eyebrow: "Checks",
-    title: "What every pull request was checked against",
-    body: "Each pull request Striff checked, newest first: how many of your documented rules it was held to, which it kept and which it broke, the documents read to get there, and the pull request one click away.",
-    cta: "Open the checks"
+    title: "See drift before it turns into a rewrite",
+    body: "Which repositories broke a documented rule this month, which pull requests did it, and which docs have gone stale. The places your clean-up time should go.",
   },
   {
-    view: "metrics",
-    eyebrow: "Metrics",
-    title: "Which repositories are drifting, month over month",
-    body: "Rules broken, held and already broken, the share of pull requests that broke none, and the repositories and pull requests flagged most. Where the fix-up time should go this quarter.",
-    cta: "Open the metrics"
-  }
+    title: "Nothing to roll out",
+    body: "One install covers the organisation. No per-developer setup, and the check is advisory until you choose to make it required.",
+  },
+];
+/** The four things a lead checks before bringing a tool in, said as facts rather than asked. */
+const teamsTrust = [
+  // Measured 2026-10-30 from striff-api (read-only): of the open-source pull requests on installed
+  // repositories where documented rules were checked, 2 of 52 (3.8%) broke one; of the 307 such
+  // pull requests checked from 2026-10-15 on, rules included or not, 1 did.
+  { icon: "quiet", title: "Quiet by design", body: "The check stays green unless a documented rule breaks. Across our open-source users, fewer than 4% of pull requests have broken one." },
+  { icon: "lock", title: "Your code stays yours", body: "Parsed in memory, never stored. Self-hosted deployment on Enterprise." },
+  { icon: "price", title: "Flat, predictable pricing", body: "$29, $59 or $149 a month by private repos used. Free for open source." },
+  { icon: "bolt", title: "Value on the first pull request", body: "It reads the docs you already have. Nothing to configure." },
+];
+/**
+ * What people who run Striff have said, quoted as they wrote it (an ellipsis marks a
+ * cut), linked to where they said it when that is public; a private email is quoted only with
+ * its author's permission. The block is not rendered while the list is empty.
+ */
+const teamsQuotes: { quote: string; name: string; role: string; avatar?: string; url?: string; where?: string; repo?: { name: string; url: string; stars: string } }[] = [
+  {
+    quote: "\u2026Striff, the tool that finds inconsistencies between documentation and the source code. We installed it already to the EO and it works good. It\u2019s free for open repositories. I recommend.",
+    name: "Yegor Bugayenko",
+    role: "Founder of Zerocracy, author of Elegant Objects",
+    avatar: "/oss-avatars/yegor256.jpg",
+    url: "https://t.me/yegor256news/1870",
+    where: "on Telegram, October 2026",
+    repo: { name: "objectionary/eo", url: "https://github.com/objectionary/eo", stars: "1.5k" },
+  },
+  {
+    quote: "It is difficult to keep architecture documentation in sync when the codebase and architecture are changing so quickly, especially with AI-driven development. \u2026 I installed Striff on the AgentBridge repo and it has already flagged a few things!",
+    name: "Henrik Westerg\u00e5rd",
+    role: "Maintainer of AgentBridge",
+    avatar: "/oss-avatars/catatafishen.jpg",
+    repo: { name: "catatafishen/agentbridge", url: "https://github.com/catatafishen/agentbridge", stars: "89" },
+  },
 ];
 
 
@@ -200,7 +242,7 @@ const plans = [
     eyebrow: "Free",
     icon: "globe",
     title: "Public repositories",
-    body: "Your documented rules checked on every public pull request, with a diagram of each change, plus the browser extension for any public PR you visit.",
+    body: "Your documented rules checked on every public pull request, with a diagram of each change. Free for open source, forever.",
     price: "$0",
     priceDetail: "forever"
   },
@@ -233,16 +275,16 @@ const faqs: { id?: string; q: string; a: string }[] = [
   },
   {
     q: `Does Striff work with spec-driven development?`,
-    a: `<strong>Yes: it is the check that comes after the spec.</strong> Spec-driven workflows help you write a spec and build from it, and nothing in them checks, on the pull requests that follow, that the code still does what the spec says it does. Striff reads the specs, plans and design docs committed to your repository alongside your <code>AGENTS.md</code>, <code>CLAUDE.md</code> and ADRs, turns each sentence that makes a claim about the structure of the code into a rule, and checks every pull request against it. <em>A sentence that describes work still to come is not held against code nobody has written yet.</em> When a change contradicts the spec, the check quotes the line: that is spec drift, caught while it is still a one-line fix.`
+    a: `<strong>Yes: it is the check that comes after the spec.</strong> Spec-driven workflows help you write a spec and build from it, and nothing in them checks, on the pull requests that follow, that the code still does what the spec says it does. Striff reads the specs, plans and design docs committed to your repository alongside your <code>AGENTS.md</code>, <code>CLAUDE.md</code> and ADRs, turns each sentence that makes a claim about the structure of the code into a rule, and checks every pull request against it. <em>A sentence that describes work still to come is not held against code nobody has written yet.</em> When a change contradicts the spec, the check quotes the line: that is <a href="/spec-drift/" class="font-semibold text-blue-600 hover:underline">spec drift</a>, caught while it is still a one-line fix.`
   },
   {
     id: "languages",
     q: `What languages does Striff support?`,
-    a: `The diagram runs on <strong>Java, TypeScript, Python and C#</strong>. Striff parses source into a full structural model with its own parser, not regex or text matching, so references, inheritance and dependencies resolve the way a compiler sees them. Go is coming.`
+    a: `Striff reads <strong>Java, Kotlin, TypeScript, Python and C#</strong>. Striff parses source into a full structural model with its own parser, not regex or text matching, so references, inheritance and dependencies resolve the way a compiler sees them. Go is coming.`
   },
   {
     q: `Is it just an LLM wrapper?`,
-    a: `<strong>No, and the architecture is the answer.</strong> Every verdict is produced by <em>deterministic</em> analysis of the structure your change actually creates: the parser builds a model of both revisions, each documented rule is a query over that model, and a rule is held when nothing in the pull request breaks it. The model is <strong>fact-gated</strong>, which means it can rank findings, explain them and write the summary of what your PR did structurally, but it <em>cannot originate one, rename one, or turn "could not answer" into a pass.</em> That last constraint is why a rule Striff cannot answer from the code is left out of the results instead of quietly counted as green.`
+    a: `<strong>No, and the architecture is the answer.</strong> A language model reads your docs and proposes rules; a program decides whether each one holds. The parser builds a model of the code at both revisions, each documented rule becomes a query over that model, and a rule is held when nothing in the pull request breaks it. When a rule looks broken, <strong>an agent re-reads the sentence and the code twice, independently, before you see it</strong>, and the break is shown only if both readings confirm it on the same evidence. That step can hold an accusation back; <em>it cannot invent one, and it cannot turn &ldquo;could not answer&rdquo; into a pass.</em> A rule Striff cannot answer from the code is reported as one it couldn&rsquo;t check, never counted as green.`
   },
   {
     q: `Will it slow down or block my pull requests?`,
@@ -250,19 +292,23 @@ const faqs: { id?: string; q: string; a: string }[] = [
   },
   {
     q: `What do I need to set up?`,
-    a: `<strong>Just install the GitHub App.</strong> It works on public and private repos alike and posts checks automatically on every PR, with <em>no per-developer setup</em>. Plans start at <strong>$29/month</strong>, based on how many private repos Striff <em>works on</em> each month (it checks one of their pull requests or reads their documents after a push), not how many you connect. A quiet month costs $29, the Starter price. To try Striff on somebody else&rsquo;s public pull request first, use the <a href="#extension" class="font-semibold text-blue-600 hover:underline">browser extension</a>.`
+    a: `<strong>Just install the GitHub App.</strong> It works on public and private repos alike and posts checks automatically on every PR, with <em>no per-developer setup</em>. Plans start at <strong>$29/month</strong>, based on how many private repos Striff <em>works on</em> each month (it checks one of their pull requests or reads their documents after a push), not how many you connect. A quiet month costs $29, the Starter price. <strong>Public repositories are free.</strong>`
   },
   {
-    q: `Do I need to install anything to use the browser extension?`,
-    a: `<strong>No.</strong> The extension runs in your browser on any public pull request you visit, so you can point it at somebody else&rsquo;s repository without touching it, and it is <strong>free on every public pull request</strong>, with no account. The analysis itself runs on Striff&rsquo;s servers. A free GitHub token raises GitHub&rsquo;s rate limits: on a public pull request it is only sent to GitHub; on a private repository or a very large pull request, Striff&rsquo;s servers use it to fetch the code themselves.`
+    q: `Is this the same as writing architecture tests?`,
+    a: `<strong>It is architecture tests you don&rsquo;t have to write.</strong> Each sentence in your docs that makes a checkable claim about the code (a dependency direction, where a class lives, what a module must not import, which methods a type has) becomes a check that runs on every pull request. The docs stay the source of truth: when someone edits a sentence, the rule changes with it on the next pull request, and nothing has to be kept in sync by hand.`
   },
   {
-    q: `Does the extension check documented rules too?`,
-    a: `<strong>Yes.</strong> One load brings up the diagram and checks the rules that repository&rsquo;s own documents state. When it finishes, a &ldquo;Findings&rdquo; button with the rule count on it opens the full list beside the diagram. Same pipeline as the GitHub App, on a repository you do not have to own.`
+    q: `Does Striff tell me what it couldn&rsquo;t check?`,
+    a: `<strong>Yes.</strong> Every rule has one of five states: <em>Held</em>, <em>Newly broken</em> by this pull request, <em>Already broken</em> before it, <em>Restored</em> by it, or <em>Couldn&rsquo;t check</em>. A rule the code can&rsquo;t settle, or a break the verifier would not confirm, is counted under Couldn&rsquo;t check and never passed off as held. The dashboard lists each document Striff read and the rules it took from it, so you can see what is covered and what isn&rsquo;t.`
+  },
+  {
+    q: `What happens when a rule breaks?`,
+    a: `The check on the pull request lists it first, quotes the sentence, links the line in the doc and names the code that breaks it. In the dashboard, every finding can be <strong>opened as a GitHub issue that is already written</strong>, or <strong>copied as a prompt for your coding agent</strong> to fix the code or update the doc. A rule that breaks on the default branch is emailed to the people watching the repository.`
   },
   {
     q: `Is my source code sent to a third party or stored?`,
-    a: `Your code is parsed on Striff's servers <strong>in memory and not persisted</strong>. The AI explanation layer works from the structural model (component names, relationships, metrics, and doc excerpts), <em>not your raw source files</em>. For teams that need full control, <strong>self-hosted deployment</strong> is available on the Enterprise plan.`
+    a: `Your code is parsed on Striff's servers <strong>in memory, and the source itself is not stored</strong>. Rules are proposed from your documents and verdicts are computed from the structural model of your code. When a rule looks broken, the verifier reads the files involved to confirm it, and the notes it made on that decision are kept for a limited time. For teams that need full control, <strong>self-hosted deployment</strong> is available on the Enterprise plan.`
   }
 ];
 
@@ -280,7 +326,7 @@ const structuredData = JSON.stringify([
     name: "Striff",
     url: "https://striff.io/",
     logo: "https://striff.io/icon-192.png",
-    sameAs: ["https://github.com/hadi-technology", extensionUrl]
+    sameAs: ["https://github.com/hadi-technology"]
   },
   {
     "@context": "https://schema.org",
@@ -309,8 +355,8 @@ const structuredData = JSON.stringify([
 ---
 
 <BaseLayout
-  title="Striff - Your specs and architecture docs, checked on every pull request"
-  description="Striff turns the sentences in your specs, AGENTS.md, ADRs and architecture docs into rules and checks every GitHub pull request against them, catching spec drift before the merge."
+  title="Striff: your specs and architecture docs, checked on every PR"
+  description="Striff turns the sentences in your specs, AGENTS.md, ADRs and architecture docs into rules and checks every GitHub pull request against them."
   canonical="https://striff.io/"
   ogImage="https://striff.io/og-image.png"
 >
@@ -321,7 +367,7 @@ const structuredData = JSON.stringify([
          fidelity: an illustrative example (acme/checkout-service, labelled Example), not a
          real run. Each row is the sentence, the file and line it is on, the rule it became,
          and what happened to it on this pull request; the broken row leads because that is
-         the row a reviewer needs first. The real ecChronos run is in the report below. -->
+         the row a reviewer needs first. The check section below shows the same pull request in full. -->
     <section class="hero-section relative overflow-hidden">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="hero-copy relative z-10 mx-auto max-w-4xl space-y-5 text-center" data-reveal>
@@ -455,6 +501,7 @@ const structuredData = JSON.stringify([
                 ))}
               </div>
             </div>
+            <a class="proof-strip-all" href="/reports/">All reports &rarr;</a>
           </div>
         </section>
       </div>
@@ -469,7 +516,7 @@ const structuredData = JSON.stringify([
               <p class="text-xs font-bold uppercase tracking-[0.2em] text-rose-500">The problem</p>
               <h2 class="mt-3 text-balance">Nobody re-reads the docs on every pull request.</h2>
               <p class="section-subcopy mt-4">
-                Spec-driven development made your docs the instructions: coding agents read your specs and architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. That gap is spec drift. Left unchecked, each merge drifts a little further from what your team agreed, until <strong>every change costs more than it should and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
+                Spec-driven development made your docs the instructions: coding agents read your specs and architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. That gap is <a href="/spec-drift/" class="font-semibold text-blue-600 hover:underline">spec drift</a>. Left unchecked, each merge drifts a little further from what your team agreed, until <strong>every change costs more than it should and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
               </p>
               <p class="problem-stat">
                 In <a href="/blog/architecture-matters-more-not-less/">our survey of 335 open-source repositories</a> that write their architecture down, <strong>63% already hand their coding agents docs to build from</strong>, and <strong>only 8% of those run anything that checks the code still matches.</strong>
@@ -480,7 +527,6 @@ const structuredData = JSON.stringify([
             <!-- The firehose, run by agents: every lane is an agent's branch and every row in the
                  feed is an agent acting on the repo. -->
             <figure class="gs" data-reveal aria-hidden="true">
-              <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="gs-gemini" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f8df9" /><stop offset="55%" stop-color="#9b72cb" /><stop offset="100%" stop-color="#d96570" /></linearGradient></defs></svg>
               <div class="gs-head">
                 <span class="gs-live"><span class="gs-live-dot"></span><span class="gs-live-repo">5 agents</span> working on acme-corp</span>
                 <span class="gs-head-tag">last hour</span>
@@ -500,8 +546,8 @@ const structuredData = JSON.stringify([
                         <circle class="gs-dot gs-dot-main" cx="30" cy="160" r="5" />
                         <circle class="gs-dot gs-dot-main" cx="30" cy="224" r="5" />
                         <circle class="gs-dot gs-dot-main" cx="30" cy="288" r="5" />
-                        <g class="gs-agent gs-agent-a"><circle cx="70" cy="196" r="9.5" class="gs-agent-bg" /><g transform="translate(64 190) scale(0.5)"><g class="gs-agent-mark"><path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81" /></g></g></g>
-                        <g class="gs-agent gs-agent-b"><circle cx="104" cy="168" r="9.5" class="gs-agent-bg" /><g transform="translate(98 162) scale(0.5)"><g class="gs-agent-mark"><path d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z" /></g></g></g>
+                        <g class="gs-agent gs-agent-a"><circle cx="70" cy="196" r="9.5" class="gs-agent-bg" /><text class="gs-agent-mark" x="70" y="200">F</text></g>
+                        <g class="gs-agent gs-agent-b"><circle cx="104" cy="168" r="9.5" class="gs-agent-bg" /><text class="gs-agent-mark" x="104" y="172">R</text></g>
                         <circle class="gs-dot gs-dot-b" cx="104" cy="102" r="4.5" />
                         <circle class="gs-merge gs-merge-a" cx="30" cy="144" r="6.5" />
                         <circle class="gs-merge gs-merge-b" cx="30" cy="64" r="6.5" />
@@ -516,9 +562,9 @@ const structuredData = JSON.stringify([
                   <div class="gs-feed">
                   <div class="gs-feed-scroll">
                     {[0, 1].map(() => activityFeed.map((a) => (
-                      <div class={`gs-item ${agentClass[a.agent]}`}>
-                        <span class="gs-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d={agentIcon[a.agent]} /></svg></span>
-                        <span class="gs-item-text"><b>{agentName[a.agent]}</b> {a.text}</span>
+                      <div class={`gs-item ${agents[a.agent].cls}`}>
+                        <span class="gs-item-icon" aria-hidden="true">{agents[a.agent].mark}</span>
+                        <span class="gs-item-text"><b>{agents[a.agent].name}</b> {a.text}</span>
                         <span class="gs-item-meta">{a.time}</span>
                       </div>
                     )))}
@@ -543,203 +589,102 @@ const structuredData = JSON.stringify([
           <p class="examples-kicker">The check</p>
           <h2 class="mt-3 text-balance">What Striff posts on a pull request.</h2>
           <p class="section-subcopy mt-4">
-            One check, beside your CI. It says what the change moved, lists every rule your own documents state about the code it touched, says whether each one still holds and quotes the sentence it came from, and draws the classes involved.
+            One check, beside your CI: every rule your docs state about the code the change touched, whether it still holds, and the sentence it came from.
           </p>
           <p class="diagram-source">
-            <span class="diagram-source-label">Below is one from a public repository, its rules unedited, in the layout Striff posts today:</span>
-            <a class="diagram-source-pr" href="https://github.com/catatafishen/agentbridge/pull/1102" target="_blank" rel="noopener noreferrer">
-              catatafishen/agentbridge #1102
-            </a>
-            <a class="diagram-source-run" href="https://github.com/catatafishen/agentbridge/runs/108628049213" target="_blank" rel="noopener noreferrer">Open the check itself &rarr;</a>
+            <span class="diagram-source-label">Example &middot; {sampleCheck.repo} #{sampleCheck.pr}. Point at a rule to see it on the diagram.</span>
           </p>
         </div>
 
-        <!-- The check as GitHub renders it: the summary, the rules table as the check now posts
-             it, and the diagram, which the check embeds at the end of the same
-             comment. Split across two sections it asked a reader to believe they were one run. -->
+        <!-- The check as GitHub renders it, with the rules beside the diagram the check embeds.
+             Each rule row names the diagram elements it is about (data-rule / data-rules); the
+             one in focus is lit and the rest dimmed. The broken rule is in focus by default, so
+             the red path is the first thing read. -->
         <div class="check-report" data-reveal>
-          <div class="ghcheck">
+          <div class="ghcheck sc" data-sc data-active="1">
             <div class="ghcheck-head">
               <span class="ghcheck-mark"><img src="/icon.svg" alt="" width="18" height="18" /></span>
               <span class="ghcheck-title">
                 <b>Striff</b>
-                <i>catatafishen/agentbridge &middot; #1102 &middot; fix/issues-1074-and-later</i>
+                <i>{sampleCheck.repo} &middot; #{sampleCheck.pr} &middot; {sampleCheck.branch}</i>
               </span>
-              <span class="ghcheck-state">
-                <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
-                Successful
+              <span class="ghcheck-state is-bad">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.06 1.06L6.94 8 4.97 9.97a.75.75 0 1 0 1.06 1.06L8 9.06l1.97 1.97a.75.75 0 0 0 1.06-1.06L9.06 8l1.97-1.97a.75.75 0 0 0-1.06-1.06L8 6.94Z"/></svg>
+                1 rule broken
               </span>
             </div>
 
-            <div class="ghcheck-body">
-              <h3 class="ghcheck-h">Documented rules</h3>
-              <p class="ghcheck-allhold">All 24 documented rules about the code this pull request changes hold.</p>
-
-              <!-- The rules as the check posts them: a numbered three-column table (#, Status, Rule),
-                   each row the number, the state badge alone in the Status cell, then the rule
-                   and its line in the docs and the sentence it came from. -->
-              <div class="ghcheck-table-wrap">
-                <table class="ghcheck-table is-rules">
-                  <thead><tr><th class="ghcheck-n">#</th><th class="ghcheck-status">Status</th><th>Rule</th></tr></thead>
-                  <tbody>
-                    {realCheckRules.map((r, i) => (
-                      <tr>
-                        <td class="ghcheck-n"><b>{i + 1}</b></td>
-                        <td class="ghcheck-status"><span class="ghbadge is-holds">Holds</span></td>
-                        <td class="ghcheck-cell">
-                          <span class="ghcheck-rule-line"><b class="ghcheck-rule-text"><InlineCodeText text={r.rule} /></b> &middot; <code class="ghcheck-doc">{r.doc}</code></span>
-                          <span class="ghcheck-quote">&ldquo;{r.quote}&rdquo;</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p class="ghcheck-more">Rows {realCheckRules.length + 1}&ndash;24, all holding, are trimmed here.</p>
-
-              <!-- The diagram is not a second section. The check embeds it here, at the end of the
-                   same comment, and it is wide because a real architecture is wide. -->
-              <figure class="ghcheck-figure">
-                <!-- The whole diagram, opened on the git tools. Cropping the SVG instead meant
-                     panning ran off the edge of the file into white; a window onto the real thing
-                     has more diagram in every direction, which is what a reader expects when a
-                     caption invites them to drag. The whole diagram is a click away and the
-                     frame pans and zooms, which is what the extension does on GitHub itself. -->
-                <div
-                  class="ghcheck-diagram"
-                  data-panzoom
-                  data-focus-x="10120"
-                  data-focus-y="1708"
-                  data-focus-w="1313"
-                  data-focus-h="465"
-                >
-                  <img src="/examples/agentbridge-1102-diagram.svg" width="12796" height="3793" alt="Striff's diagram of catatafishen/agentbridge pull request 1102: the fifty classes the change touched and how they connect, opened on the git tools, with added members in green, removed in red and changed in blue" loading="lazy" draggable="false" data-panzoom-img />
-                  <!-- What the colours mean, at the moment of looking at them. As prose under
-                       the frame this was a sentence nobody read on the way past; as three chips
-                       on the diagram it answers the question the diagram raises. -->
-                  <p class="ghcheck-legend">
-                    <span class="is-add">added</span>
-                    <span class="is-del">removed</span>
-                    <span class="is-mod">changed</span>
-                    <em>one box, one class</em>
-                  </p>
-                  <div class="ghcheck-zoom" role="group" aria-label="Zoom the diagram">
-                    <button type="button" data-panzoom-out aria-label="Zoom out">&minus;</button>
-                    <button type="button" data-panzoom-reset>Reset</button>
-                    <button type="button" data-panzoom-in aria-label="Zoom in">+</button>
-                    <button type="button" data-panzoom-max aria-label="Maximize the diagram" title="Maximize">
-                      <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M6 2.5H2.5V6" /><path d="M10 2.5h3.5V6" /><path d="M6 13.5H2.5V10" /><path d="M10 13.5h3.5V10" />
-                      </svg>
-                    </button>
-                  </div>
+            <div class="ghcheck-body sc-body">
+              <div class="sc-rules">
+                <h3 class="ghcheck-h">Documented rules</h3>
+                <p class="ghcheck-allhold"><b>This pull request breaks 1 of the {sampleRules.length} documented rules about the code it changes.</b></p>
+                <div class="ghcheck-table-wrap">
+                  <table class="ghcheck-table is-rules">
+                    <thead><tr><th class="ghcheck-n">#</th><th class="ghcheck-status">Status</th><th>Rule</th></tr></thead>
+                    <tbody>
+                      {sampleRules.map((r) => (
+                        <tr class={`sc-row is-${r.status}`} data-rule={r.n} tabindex="0">
+                          <td class="ghcheck-n"><b>{r.n}</b></td>
+                          <td class="ghcheck-status"><span class={`ghbadge is-${r.status}`}>{r.badge}</span></td>
+                          <td class="ghcheck-cell">
+                            <span class="ghcheck-rule-line"><b class="ghcheck-rule-text"><InlineCodeText text={r.rule} /></b> &middot; <span class="ghcheck-doc">{r.doc}</span></span>
+                            <span class="ghcheck-quote">&ldquo;{r.quote}&rdquo;</span>
+                            {r.breaks && <span class="ghcheck-breaks"><b>What breaks it:</b> <span class="ghcheck-mono">{r.breaks}</span></span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+              </div>
+
+              <!-- The diagram: the classes the change touched, by package. Edges carry the number of
+                   the rule they bear on. The red edge is the one that breaks rule 1; it is drawn
+                   last and keeps flowing. -->
+              <!-- The diagram the check embeds, as striff-lib drew it for this example (base and head
+                   of the invented change, run through the real engine), annotated: the composition
+                   that breaks rule 1 is drawn in red, and legacy.pricing is marked off limits. -->
+              <figure class="sc-diagram">
+                <Fragment set:html={exampleDiagram} />
+                <figcaption class="sc-legend">
+                  <span class="is-added">added</span>
+                  <span class="is-removed">removed</span>
+                  <span class="is-broken">breaks a rule</span>
+                </figcaption>
               </figure>
-
-              <p class="ghcheck-caption">
-                Every check carries a <b>diagram</b>. It draws the part of your
-                architecture that the pull request touched, in UML class notation: a box for each
-                class, its members inside it, and a line for each dependency between them. Color
-                marks what the change added, removed and altered. Drag it to pan, or open it full
-                size.
-              </p>
-
-              <p class="ghcheck-foot">
-                <img src="/icon.svg" alt="" width="14" height="14" />
-                <span><b>Striff</b> maps how this pull request changes the architecture and checks it against the rules written in the repository&rsquo;s own docs.</span>
-              </p>
             </div>
           </div>
         </div>
 
         <script is:inline>
-        // Pan and zoom for the diagram inside the check. The extension does this on GitHub; here
-        // it is the difference between a picture of a diagram and a diagram.
+        // A rule row lights its part of the diagram: hover or focus picks the row, and leaving the
+        // table goes back to the broken rule, which is the one a reader needs first. Each diagram
+        // element lists the rules it bears on in data-rules.
         (function () {
-          var frame = document.querySelector("[data-panzoom]");
-          if (!frame) return;
-          var img = frame.querySelector("[data-panzoom-img]");
-          // The image is laid out at the diagram's own size, so one unit of scale is one SVG
-          // unit. Home is whatever scale and offset puts the focus region in the frame; from
-          // there every direction has more diagram in it rather than more nothing.
-          var FX = +frame.dataset.focusX, FY = +frame.dataset.focusY;
-          var FW = +frame.dataset.focusW, FH = +frame.dataset.focusH;
-          var k = 1, tx = 0, ty = 0, dragging = false, lastX = 0, lastY = 0;
-
-          function apply() {
-            img.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + k + ")";
-          }
-          function zoom(next, ox, oy) {
-            next = Math.min(2.5, Math.max(0.06, next));
-            var box = frame.getBoundingClientRect();
-            var cx = (ox === undefined ? box.width / 2 : ox) - tx;
-            var cy = (oy === undefined ? box.height / 2 : oy) - ty;
-            tx -= cx * (next / k - 1);
-            ty -= cy * (next / k - 1);
-            k = next;
-            apply();
-          }
-          function fit() {
-            var box = frame.getBoundingClientRect();
-            if (!box.width || !box.height) return;
-            k = Math.min(box.width / FW, box.height / FH);
-            tx = -FX * k + (box.width - FW * k) / 2;
-            ty = -FY * k + (box.height - FH * k) / 2;
-            apply();
-          }
-
-          frame.addEventListener("pointerdown", function (e) {
-            if (e.target.closest(".ghcheck-zoom")) return;
-            dragging = true; lastX = e.clientX; lastY = e.clientY;
-            frame.setPointerCapture(e.pointerId);
-            frame.classList.add("is-grabbing");
-          });
-          frame.addEventListener("pointermove", function (e) {
-            if (!dragging) return;
-            tx += e.clientX - lastX; ty += e.clientY - lastY;
-            lastX = e.clientX; lastY = e.clientY;
-            apply();
-          });
-          function release(e) {
-            if (!dragging) return;
-            dragging = false;
-            frame.classList.remove("is-grabbing");
-            try { frame.releasePointerCapture(e.pointerId); } catch (err) {}
-          }
-          frame.addEventListener("pointerup", release);
-          frame.addEventListener("pointercancel", release);
-          // Ctrl/meta-free wheel still scrolls the page unless the pointer is over the frame and
-          // the reader means to zoom, which is what the deliberate preventDefault is for.
-          frame.addEventListener("wheel", function (e) {
-            e.preventDefault();
-            var box = frame.getBoundingClientRect();
-            zoom(k * (e.deltaY < 0 ? 1.12 : 1 / 1.12), e.clientX - box.left, e.clientY - box.top);
-          }, { passive: false });
-
-          var inBtn = frame.querySelector("[data-panzoom-in]");
-          var outBtn = frame.querySelector("[data-panzoom-out]");
-          var resetBtn = frame.querySelector("[data-panzoom-reset]");
-          if (inBtn) inBtn.addEventListener("click", function () { zoom(k * 1.25); });
-          if (outBtn) outBtn.addEventListener("click", function () { zoom(k / 1.25); });
-          if (resetBtn) resetBtn.addEventListener("click", fit);
-          var maxBtn = frame.querySelector("[data-panzoom-max]");
-          if (maxBtn) {
-            maxBtn.addEventListener("click", function () {
-              if (document.fullscreenElement) { document.exitFullscreen(); return; }
-              if (frame.requestFullscreen) {
-                frame.requestFullscreen().then(fit).catch(function () {
-                  window.open("/examples/agentbridge-1102-diagram.svg", "_blank", "noopener");
-                });
-              } else {
-                window.open("/examples/agentbridge-1102-diagram.svg", "_blank", "noopener");
-              }
+          var box = document.querySelector("[data-sc]");
+          if (!box) return;
+          var home = box.getAttribute("data-active");
+          var rows = Array.prototype.slice.call(box.querySelectorAll("[data-rule]"));
+          var marks = Array.prototype.slice.call(box.querySelectorAll(".sd [data-rules]"));
+          var pick = function (n) {
+            box.setAttribute("data-active", n);
+            rows.forEach(function (row) { row.classList.toggle("is-lit", row.getAttribute("data-rule") === n); });
+            marks.forEach(function (el) {
+              el.classList.toggle("is-lit", (" " + el.getAttribute("data-rules") + " ").indexOf(" " + n + " ") !== -1);
             });
-            document.addEventListener("fullscreenchange", function () { window.setTimeout(fit, 60); });
+          };
+          rows.forEach(function (row) {
+            var n = row.getAttribute("data-rule");
+            row.addEventListener("mouseenter", function () { pick(n); });
+            row.addEventListener("focus", function () { pick(n); });
+            row.addEventListener("click", function () { pick(n); });
+          });
+          var table = box.querySelector("tbody");
+          if (table) {
+            table.addEventListener("mouseleave", function () { pick(home); });
+            table.addEventListener("focusout", function (e) { if (!table.contains(e.relatedTarget)) pick(home); });
           }
-          // The image is lazy, so its box may be zero until it loads; fit again when it is there.
-          fit();
-          if (!img.complete) img.addEventListener("load", fit, { once: true });
-          window.addEventListener("resize", fit);
+          pick(home);
         })();
         </script>
 
@@ -762,7 +707,7 @@ const structuredData = JSON.stringify([
          where a number came from, the check answers what you actually get. -->
     <section id="pipeline" class="pipeline-section scroll-mt-24 pb-20 pt-20">
       <div class="mx-auto max-w-[90rem] px-6">
-        <!-- The five steps run across, because they are a sequence and a reader follows a
+        <!-- The steps run across, because they are a sequence and a reader follows a
              sequence left to right. Underneath, the two things the sequence produces sit side by
              side: what a reviewer is handed, and what one rule of it actually compiled to. -->
         <div class="compute-stack">
@@ -770,7 +715,7 @@ const structuredData = JSON.stringify([
             <div class="compute-intro compute-intro-wide">
               <h2 class="text-balance">Every verdict is computed, not generated.</h2>
               <p class="section-subcopy mt-4">
-                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> <strong>The language model is asked exactly one question, at the start, and it is asked in English</strong> &mdash; the grounding, the verdict and the sentence you read are all computed, and nothing is needed beyond the documents your repository already has.
+                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> <strong>A language model proposes the rules; it never decides whether one holds.</strong> The grounding, the verdict and the sentence you read are all computed, and nothing is needed beyond the documents your repository already has.
               </p>
             </div>
             <p class="compute-label"><span>01</span> How a documented rule becomes a verdict</p>
@@ -802,7 +747,7 @@ const structuredData = JSON.stringify([
       </div>
 
       <script is:inline>
-        // Walks the five steps, revealing what each one produced. Plain DOM: the page is
+        // Walks the steps, revealing what each one produced. Plain DOM: the page is
         // static and this is the only thing on it that needs a clock.
         (function () {
           var flow = document.querySelector(".pipeline-flow.is-across");
@@ -857,129 +802,92 @@ const structuredData = JSON.stringify([
     </section>
 
     <!-- ==================== FOR TEAMS ==================== -->
-    <!-- The one section on the page for the lead rather than the reviewer. It sells the
-         dashboard and nothing else: the two views, each a door into the demo, which is the
-         real dashboard on an invented repository. The check itself is sold above. -->
+    <!-- The one section on the page for the engineering lead rather than the reviewer: what
+         changes for the organisation, the lead's own view of it (metrics, live on the demo
+         workspace), the four questions asked before bringing a tool in, and who runs it. -->
     <section id="teams" class="scroll-mt-24 bg-slate-100/60 pb-20 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
-        <div class="teams-head" data-reveal>
-          <div class="teams-head-copy">
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For teams</p>
-            <h2 class="mt-3 text-balance">Every rule your docs state, and which repositories still keep them.</h2>
-            <p class="section-subcopy mt-4">
-              The check reads one pull request at a time. The dashboard is the same reading of your documents, added up across the organization: each sentence that makes a claim about the code, the rule it became, whether the default branch keeps it, and which repositories and pull requests broke one this month.
-            </p>
-          </div>
-          <div class="teams-head-actions">
-            <a class="btn-primary" href="/demo/">Open the dashboard demo</a>
-            <a class="btn-secondary" href="/pricing/">Team pricing</a>
-          </div>
-        </div>
-
-        <div class="teams-panels mt-10">
-          {teamsPanels.map((panel) => (
-            <article class="teams-panel" data-reveal>
-              <div class="teams-panel-art">
-                {panel.view === "docs" && (
-                  <figure class="teams-panel-shot">
-                    <Image src={dashDocsRules} alt="The docs and rules page: the repository's documents in a tree with the repository itself selected, and every rule beneath it beside them — the sentence each came from, the rule it became, and whether the code keeps it." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 30vw" loading="lazy" />
-                  </figure>
-                )}
-                {panel.view === "checks" && (
-                  <figure class="teams-panel-shot">
-                    <Image src={dashChecks} alt="The checks page: each pull request Striff checked, newest first, with how many documented rules it was held to, how many it kept and broke, and a link to the pull request." widths={[700, 1400]} sizes="(max-width: 1024px) 90vw, 30vw" loading="lazy" />
-                  </figure>
-                )}
-                {panel.view === "metrics" && (
-                  <div class="teams-panel-live" data-metrics-preview inert>
-                    <div class="teams-panel-live-scale" data-metrics-preview-scale>
-                      <div class="dashboard-shell">
-                        <div class="dashboard-installation-card">
-                          <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div class="teams-panel-fade" aria-hidden="true"></div>
-              </div>
-              <div class="teams-panel-body">
-                <p class="teams-panel-eyebrow">{panel.eyebrow}</p>
-                <h3 class="teams-panel-title">{panel.title}</h3>
-                <p class="teams-panel-text">{panel.body}</p>
-                <a class="teams-panel-cta" href={`/demo/#${panel.view}`}>{panel.cta} &rarr;</a>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== BROWSER EXTENSION ==================== -->
-    <!-- The App checks every pull request a team opens; the extension is one person looking at
-         one pull request on demand, including in a repository they do not own. The walkthrough
-         loads lazily from the no-cookie player and never autoplays, so it adds no cookie
-         surface and nothing to the homepage's first paint. -->
-    <section id="extension" class="section-dark scroll-mt-24 pb-16 pt-16">
-      <div class="mx-auto max-w-[90rem] px-6">
-        <div class="chrome-ext-grid" data-reveal>
-          <div class="chrome-ext-copy">
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Free Chrome extension</p>
-            <h2 class="mt-3 text-balance">See what any GitHub pull request really touches.</h2>
-            <p class="section-subcopy mt-4">
-              Reviewing an unfamiliar change means holding somebody else&rsquo;s dependency graph in your head. The extension draws it in a tab beside Files changed, so <strong>you see what a change touches before you approve it</strong>. The same load checks the rules that repository states in its own documents, and a Findings button opens them beside the diagram.
-            </p>
-
-            <ul class="chrome-ext-list">
-              {extensionHighlights.map((item) => (
-                <li class="chrome-ext-point">
-                  <span class={`icon-badge icon-badge-${item.color}`} aria-hidden="true">
-                    {item.icon === "diagram" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M8.5 7.5 11 16M15.5 7.5 13 16M9 6h6"/></svg>
-                    )}
-                    {item.icon === "sparkle" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="m6 6 2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg>
-                    )}
-                    {item.icon === "comment" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 1 1-3.2-6.4"/><path d="M21 3v6h-6"/><path d="M8 12h6M8 9h3"/></svg>
-                    )}
-                    {item.icon === "bolt" && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>
-                    )}
+        <div class="teams-lead" data-reveal>
+          <div class="teams-lead-copy">
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">For engineering leaders</p>
+            <h2 class="mt-3 text-balance">The architecture your team agreed on keeps holding, however fast you ship.</h2>
+            <ul class="teams-points">
+              {teamsPoints.map((point) => (
+                <li>
+                  <span class="teams-point-mark" aria-hidden="true">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
                   </span>
-                  <span class="chrome-ext-point-text">{item.point}</span>
+                  <span><b>{point.title}.</b> {point.body}</span>
                 </li>
               ))}
             </ul>
-
-            <p class="section-subcopy mt-6">
-              <strong>Use the extension</strong> for one pull request, on demand, in any public repository, including ones you do not own. <strong>Use the GitHub App</strong> to check every pull request your team opens, post the result where the whole team reviews, and keep the history that becomes your dashboard.
-            </p>
-
-            <a class="btn-chrome chrome-ext-cta" href={extensionUrl} target="_blank" rel="noopener noreferrer">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="4" />
-                <line x1="21.17" y1="8" x2="12" y2="8" />
-                <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
-                <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
-              </svg>
-              Add to Chrome
-            </a>
-          </div>
-
-          <div class="chrome-ext-video rounded-3xl border border-white/10 bg-slate-950 shadow-xl">
-            <div class="aspect-video overflow-hidden rounded-3xl">
-              <iframe
-                class="h-full w-full"
-                src={`https://www.youtube-nocookie.com/embed/${extensionVideoId}?rel=0&modestbranding=1&playsinline=1`}
-                title="Striff Chrome extension walkthrough"
-                loading="lazy"
-                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
+            <div class="teams-head-actions mt-7">
+              <a class="btn-primary" href="/demo/#metrics">Open the dashboard demo</a>
+              <a class="btn-secondary" href="/pricing/">Team pricing</a>
             </div>
           </div>
+
+          <!-- A div with a covering link, not a link around the preview: the live component renders
+               its own controls, and an <a> around them is invalid nesting that breaks hydration. -->
+          <div class="teams-lead-art">
+            <span class="teams-lead-label">Metrics &middot; example workspace</span>
+            <div class="teams-panel-live" data-metrics-preview inert>
+              <div class="teams-panel-live-scale" data-metrics-preview-scale>
+                <div class="dashboard-shell">
+                  <div class="dashboard-installation-card">
+                    <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="teams-panel-fade" aria-hidden="true"></div>
+            <a class="teams-lead-link" href="/demo/#metrics"><span class="sr-only">Open the metrics view in the dashboard demo</span></a>
+          </div>
+        </div>
+
+        <ul class="teams-trust" data-reveal>
+          {teamsTrust.map((item) => (
+            <li>
+              <span class="teams-trust-icon" aria-hidden="true">
+                {item.icon === "quiet" && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>}
+                {item.icon === "lock" && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>}
+                {item.icon === "price" && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>}
+                {item.icon === "bolt" && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>}
+              </span>
+              <b>{item.title}</b>
+              <span>{item.body}</span>
+            </li>
+          ))}
+        </ul>
+
+        {teamsQuotes.length > 0 && (
+          <div class="teams-quotes" data-reveal>
+            {teamsQuotes.map((q) => (
+              <figure class="teams-quote">
+                <blockquote>{q.quote}</blockquote>
+                <figcaption>
+                  {q.avatar && <img src={q.avatar} alt="" width="36" height="36" loading="lazy" />}
+                  <span>
+                    <b>{q.name}</b> &middot; {q.role}
+                    {q.url && q.where && <><br /><a href={q.url} target="_blank" rel="noopener noreferrer">{q.where}</a></>}
+                  </span>
+                  {q.repo && (
+                    <a class="teams-quote-repo" href={q.repo.url} target="_blank" rel="noopener noreferrer">
+                      <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"/></svg>
+                      {q.repo.name}
+                      <span class="teams-quote-stars">{q.repo.stars}<span aria-hidden="true"> &#9733;</span><span class="sr-only"> stars</span></span>
+                    </a>
+                  )}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        )}
+
+        <div class="teams-foot" data-reveal>
+          <p class="teams-more">
+            Also in the dashboard: <a href="/demo/#docs">every rule by document</a> &middot; <a href="/demo/#checks">every pull request checked</a>
+          </p>
         </div>
       </div>
     </section>
@@ -1033,16 +941,6 @@ const structuredData = JSON.stringify([
               Get started
             </a>
             <a class="btn-secondary" href="/pricing/">Team pricing</a>
-            <a class="btn-chrome" href="#extension">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="4" />
-                <line x1="21.17" y1="8" x2="12" y2="8" />
-                <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
-                <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
-              </svg>
-              Browser extension
-            </a>
           </div>
         </div>
       </div>

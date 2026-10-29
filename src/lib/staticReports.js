@@ -32,6 +32,14 @@ const VIEWS = { page: "page", catalog: "catalog", rules: "rules", staleNames: "t
 
 const REQUEST_TIMEOUT_MS = 30000;
 
+/**
+ * A report's address on the site. Netlify serves every built page at its lower-cased path and
+ * redirects other spellings there, so every link to a report, like its canonical, names this form.
+ */
+export function reportUrlPath(owner, name) {
+  return `/${owner.toLowerCase()}/${name.toLowerCase()}/`;
+}
+
 /** Whether an address segment pair could be a repository's page rather than one of the site's. */
 export function isReportAddress(owner, name) {
   return typeof owner === "string" && typeof name === "string"
@@ -252,30 +260,30 @@ export function reportHead(report, site = SITE) {
   const name = report.page.repoName;
   const full = `${owner}/${name}`;
   const facts = reportFacts(report);
-  // Netlify serves every built page at its lower-cased path and redirects other spellings there,
-  // so the canonical address, the sitemap and og:url name the address a crawler ends up on.
-  const canonical = `${site}/${owner.toLowerCase()}/${name.toLowerCase()}/`;
-  const namesPart = facts.names > 0
-    ? `${facts.names}${facts.namesTruncated ? "+" : ""} stale ${facts.names === 1 && !facts.namesTruncated ? "name" : "names"} in the docs.`
-    : "";
+  // The canonical address, the sitemap and og:url name the address a crawler ends up on.
+  const canonical = `${site}${reportUrlPath(owner, name)}`;
   const day = facts.refreshedAtMs ? headDay(facts.refreshedAtMs) : null;
 
+  // The title leads with what a search for the repository's architecture types: its name and
+  // "architecture docs". The description stays under what a results page shows, about 160 characters.
+  const namesCount = `${facts.names}${facts.namesTruncated ? "+" : ""}`;
+  const namesWord = facts.names === 1 && !facts.namesTruncated ? "stale name" : "stale names";
   let headline;
   let description;
   if (facts.rules > 0) {
-    headline = `${full}: ${plural(facts.rules, "documented rule")} checked against the code`;
-    const standings = [`${facts.holds} ${facts.holds === 1 ? "holds" : "hold"}`, `${facts.broken} broken`];
-    if (facts.unchecked > 0) standings.push(`${facts.unchecked} not checked yet`);
-    description = `Striff read ${plural(facts.read, "doc")} in ${full} and checked the ${plural(facts.rules, "rule")} ${facts.read === 1 ? "it states" : "they state"} against the code: ${standings.join(", ")}.`;
+    headline = `${full} architecture docs: ${plural(facts.rules, "rule")} checked${facts.broken > 0 ? `, ${facts.broken} broken` : ""}`;
+    const parts = [`${facts.holds} ${facts.holds === 1 ? "holds" : "hold"}`, `${facts.broken} broken`];
+    if (facts.unchecked > 0) parts.push(`${facts.unchecked} not checked yet`);
+    if (facts.names > 0) parts.push(`${namesCount} ${namesWord}`);
+    description = `The architecture docs in ${full}, checked against its code: ${plural(facts.rules, "rule")} from ${plural(facts.read, "doc")}, ${parts.join(", ")}.`;
   } else if (facts.names > 0) {
-    headline = `${full}: ${facts.names}${facts.namesTruncated ? "+" : ""} stale ${facts.names === 1 && !facts.namesTruncated ? "name" : "names"} in its docs`;
-    description = `Striff read ${plural(facts.read, "doc")} in ${full} and checked the names ${facts.read === 1 ? "it writes" : "they write"} against the code.`;
+    headline = `${full} architecture docs: ${namesCount} ${namesWord}`;
+    description = `The architecture docs in ${full}, checked against its code: ${plural(facts.read, "doc")} read, ${namesCount} ${namesWord} the code no longer has.`;
   } else {
-    headline = `${full}: documented architecture report`;
+    headline = `${full} architecture docs report`;
     description = `Striff reads the docs in ${full}, turns the sentences that make claims about the code into rules, and checks them against the code.`;
   }
-  description = [description, namesPart, `Public, read-only report${day ? `, last read ${day}` : ""}.`]
-    .filter(Boolean).join(" ");
+  description = [description, day ? `Last read ${day}.` : ""].filter(Boolean).join(" ");
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -300,4 +308,31 @@ export function reportHead(report, site = SITE) {
     jsonLd: scriptJson(jsonLd),
     facts,
   };
+}
+
+/**
+ * Other reports to link from one report: the same owner's first, then the reports that follow it
+ * alphabetically, wrapping round. Stable from build to build, never the report itself, and only
+ * reports a search can land on.
+ *
+ * @param {{ page: { repoOwner: string, repoName: string } }} report
+ * @param {any[]} reports this build's reports
+ * @param {number} [count]
+ * @returns {{ full: string, path: string, facts: ReturnType<typeof reportFacts> }[]}
+ */
+export function relatedReports(report, reports, count = 6) {
+  const keyOf = (each) => `${each.page.repoOwner}/${each.page.repoName}`.toLowerCase();
+  const self = keyOf(report);
+  const owner = report.page.repoOwner.toLowerCase();
+  const others = reports
+    .filter((each) => keyOf(each) !== self && reportHead(each).indexable)
+    .sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
+  const sameOwner = others.filter((each) => each.page.repoOwner.toLowerCase() === owner);
+  const after = others.filter((each) => keyOf(each) > self && each.page.repoOwner.toLowerCase() !== owner);
+  const before = others.filter((each) => keyOf(each) < self && each.page.repoOwner.toLowerCase() !== owner);
+  return [...sameOwner, ...after, ...before].slice(0, count).map((each) => ({
+    full: `${each.page.repoOwner}/${each.page.repoName}`,
+    path: reportUrlPath(each.page.repoOwner, each.page.repoName),
+    facts: reportFacts(each),
+  }));
 }

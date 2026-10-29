@@ -48,7 +48,10 @@ export const ossRepos: OssRepo[] = [
     snapshot: { held: 60, broken: 0, staleNames: 2 } },
 ];
 
-/** The repository's public report on striff.io. */
+/**
+ * The repository's public report on striff.io, at the lower-cased address its canonical names:
+ * any other spelling is a redirect to it.
+ */
 export function reportPath(r: OssRepo): string {
-  return `/${r.owner}/${r.repo}/`;
+  return `/${r.owner.toLowerCase()}/${r.repo.toLowerCase()}/`;
 }

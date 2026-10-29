@@ -8,9 +8,11 @@ import { reportHead, staticReports } from "../lib/staticReports.js";
 // form without it is a 301, and a sitemap should list no redirects.
 const staticRoutes: { path: string; changefreq: string; priority: string }[] = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
+  { path: "/spec-drift/", changefreq: "monthly", priority: "0.9" },
   { path: "/demo/", changefreq: "monthly", priority: "0.8" },
   { path: "/pricing/", changefreq: "monthly", priority: "0.8" },
   { path: "/blog/", changefreq: "weekly", priority: "0.7" },
+  { path: "/reports/", changefreq: "weekly", priority: "0.7" },
   { path: "/contact/", changefreq: "yearly", priority: "0.5" },
   { path: "/privacy/", changefreq: "yearly", priority: "0.3" },
   { path: "/terms/", changefreq: "yearly", priority: "0.3" },
@@ -24,12 +26,16 @@ export const GET: APIRoute = async () => {
   // The public reports this build made pages of, where a search has something to land on: the
   // same pages, read once per build, so the sitemap never lists a page that was not built.
   const reports = (await staticReports()).map((report) => reportHead(report)).filter((head) => head.indexable);
+  // The reports hub changes when a report does.
+  const newestReport = Math.max(0, ...reports.map((head) => head.facts.refreshedAtMs || 0));
+  const reportsLastmod = newestReport > 0 ? day(new Date(newestReport)) : null;
   // The blog index changes when a post does.
   const blogLastmod = posts.length ? day(new Date(Math.max(...posts.map((p) => lastModified(p).getTime())))) : null;
 
   const urls = [
     ...staticRoutes.map((r) => {
-      const lastmod = r.path === "/blog/" && blogLastmod ? `\n    <lastmod>${blogLastmod}</lastmod>` : "";
+      const stamp = r.path === "/blog/" ? blogLastmod : r.path === "/reports/" ? reportsLastmod : null;
+      const lastmod = stamp ? `\n    <lastmod>${stamp}</lastmod>` : "";
       return `  <url>\n    <loc>${SITE}${r.path}</loc>${lastmod}\n    <changefreq>${r.changefreq}</changefreq>\n    <priority>${r.priority}</priority>\n  </url>`;
     }),
     ...posts.map(

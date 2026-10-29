@@ -1,9 +1,10 @@
 ---
 title: "63% of repositories hand their agents docs to build from. 8% of those check the code still matches."
 description: "Design doc, then plan, then the agent builds it task by task: spec-driven development is how the companies that make coding agents now tell you to work. We surveyed 335 open-source repositories whose docs describe their architecture. 63% already give their agents docs to work from, and only 8% of those run anything that checks the code against them."
+seoTitle: "Spec-driven development: 335 repositories surveyed"
+seoDescription: "We surveyed 335 open-source repositories that document their architecture: 63% give coding agents docs to build from, and only 8% of those check the code."
 date: 2026-09-15
 updated: 2026-10-11
-seoTitle: "Spec-driven development and spec drift: 335 repositories surveyed"
 category: "Data & research"
 cover: "survey"
 ---

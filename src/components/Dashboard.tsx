@@ -4,7 +4,6 @@ import DocsTab, { GitHubMark } from "./DocsTab";
 import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import NotificationsPanel from "./NotificationsPanel";
-import { EXTENSION_URL } from "./docRules";
 import { PENDING_DOC_KEY, PENDING_REPO_KEY, docFromSearch, findRepo, repoFromSearch, validDocPath, validRepo, withLink } from "../lib/dashboardDeepLink.js";
 import { signInUrl } from "../lib/githubSignIn.js";
 
@@ -551,11 +550,6 @@ function DashBar({
                   <p className="bar-menu-who">{user.login}</p>
                   <a className="bar-menu-item" href={INSTALL_URL} target="_blank" rel="noopener noreferrer" role="menuitem">
                     Add an account
-                  </a>
-                  {/* Findable without being sold: someone who wants the findings on the pull
-                      request itself looks here, and nobody else has to get past it. */}
-                  <a className="bar-menu-item" href={EXTENSION_URL} target="_blank" rel="noopener noreferrer" role="menuitem">
-                    Browser extension
                   </a>
                   <button type="button" className="bar-menu-item" onClick={onSignOut} role="menuitem">
                     Sign out
@@ -1594,15 +1588,11 @@ function FaqSection() {
     },
     {
       q: "Which languages does Striff support?",
-      a: "Diagrams run on <b>Java, TypeScript, Python and C#</b>, with Go coming. Every language is parsed into a full structural model, not regex or text matching.",
+      a: "Striff reads <b>Java, Kotlin, TypeScript, Python and C#</b>, with Go coming. Every language is parsed into a full structural model, not regex or text matching.",
     },
     {
       q: "What does Striff actually do on my pull requests?",
-      a: "For each PR, Striff reads the architecture your repository already documents \u2014 ARCHITECTURE.md, ADRs, READMEs and design notes \u2014 turns each sentence about the code into a rule, and checks it against both revisions of the change, quoting the sentence and the line it came from. Alongside the rules it posts a <b>diagram of what changed</b> and <b>AI notes</b> on the components the PR touched. Results appear as a single <b>GitHub check-run</b>. Install the <a href=\"/#extension\" class=\"font-semibold text-blue-600 hover:underline\">browser extension</a> to see the same review beside the dependency diagram.",
-    },
-    {
-      q: "What is the browser extension?",
-      a: `The <a href="${EXTENSION_URL}" target=\"_blank\" rel=\"noopener noreferrer\" class=\"font-semibold text-blue-600 hover:underline\">Striff browser extension</a> shows <b>interactive architectural diagrams</b> directly on GitHub, with the repository\u2019s own <b>documented rules checked</b> and listed beside it, one click away. You can switch between code and architecture views, focus on specific components, and <b>post subdiagrams as PR comments</b> for your team. There\u2019s a walkthrough video <a href=\"/#extension\" class=\"font-semibold text-blue-600 hover:underline\">on the homepage</a>.`,
+      a: "For each PR, Striff reads the architecture your repository already documents \u2014 ARCHITECTURE.md, ADRs, READMEs and design notes \u2014 turns each sentence about the code into a rule, and checks it against both revisions of the change, quoting the sentence and the line it came from. Alongside the rules it posts a <b>diagram of what changed</b> and <b>AI notes</b> on the components the PR touched. Results appear as a single <b>GitHub check-run</b>.",
     },
   ];
 

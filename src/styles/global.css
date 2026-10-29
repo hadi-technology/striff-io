@@ -3312,6 +3312,9 @@
 }
 .pipeline-flow.is-across .pipe-step {
   grid-template-columns: minmax(0, 1fr);
+  /* Every step is stretched to the tallest one; without this the spare height went to the rail's
+     row, so each step's text started at a different height. */
+  align-content: start;
   gap: 0.7rem;
   padding-bottom: 0;
 }
@@ -3767,35 +3770,22 @@
 .faq-a em { font-style: italic; color: var(--ink-soft); }
 
 /* ============================================================================
-   PROBLEM PANEL — REAL AGENTS, EACH ALIVE IN ITS OWN WAY
-   Every agent carries its own mark and a small motion that suits it: the Claude
-   spark and the OpenAI knot turn, the Gemini star twinkles, Copilot blinks, and
-   Ollama bobs. Staggered, so the feed never pulses in unison.
+   PROBLEM PANEL — AGENTS BY THE WORK THEY DO
+   Each agent is a monogram in its own colour, the way the language chips under the hero are:
+   named for its job, never for a vendor. The graph's two lanes take the colours of the agents
+   that opened them.
    ========================================================================== */
-.gs-item-icon svg { width: 1rem; height: 1rem; transform-origin: 50% 50%; }
-
-.ag-claude .gs-item-icon { background: rgba(217, 119, 87, 0.16); }
-.ag-claude .gs-item-icon svg { fill: #d97757; animation: ag-spin 10s linear infinite; }
-.ag-claude .gs-item-text b { color: #f4a78a; }
-
-.ag-codex .gs-item-icon { background: rgba(255, 255, 255, 0.08); }
-.ag-codex .gs-item-icon svg { fill: #e5e7eb; animation: ag-spin 14s linear infinite reverse; }
-.ag-codex .gs-item-text b { color: #e5e7eb; }
-
-.ag-gemini .gs-item-icon { background: rgba(138, 180, 248, 0.14); }
-.ag-gemini .gs-item-icon svg { fill: url(#gs-gemini); animation: ag-twinkle 2.6s ease-in-out infinite; }
-.ag-gemini .gs-item-text b { color: #a8c7fa; }
-
-.ag-copilot .gs-item-icon { background: rgba(139, 92, 246, 0.18); }
-.ag-copilot .gs-item-icon svg { fill: #e9e5ff; animation: ag-blink 4.2s ease-in-out infinite; }
-.ag-copilot .gs-item-text b { color: #c4b5fd; }
-
-.ag-ollama .gs-item-icon { background: rgba(148, 163, 184, 0.16); }
-.ag-ollama .gs-item-icon svg { fill: #e2e8f0; animation: ag-bob 2.4s ease-in-out infinite; }
-.ag-ollama .gs-item-text b { color: #cbd5e1; }
-
-.gs-item:nth-child(2n) .gs-item-icon svg { animation-delay: -1.3s; }
-.gs-item:nth-child(3n) .gs-item-icon svg { animation-delay: -2.1s; }
+.gs-item-icon { color: #e2e8f0; font-family: Inter, system-ui, sans-serif; font-size: 0.72rem; font-weight: 800; line-height: 1; }
+.ag-feature .gs-item-icon { background: rgba(138, 180, 248, 0.18); color: #a8c7fa; }
+.ag-feature .gs-item-text b { color: #a8c7fa; }
+.ag-refactor .gs-item-icon { background: rgba(217, 119, 87, 0.18); color: #f4a78a; }
+.ag-refactor .gs-item-text b { color: #f4a78a; }
+.ag-test .gs-item-icon { background: rgba(52, 211, 153, 0.16); color: #6ee7b7; }
+.ag-test .gs-item-text b { color: #6ee7b7; }
+.ag-deps .gs-item-icon { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+.ag-deps .gs-item-text b { color: #c4b5fd; }
+.ag-docs .gs-item-icon { background: rgba(148, 163, 184, 0.18); color: #cbd5e1; }
+.ag-docs .gs-item-text b { color: #cbd5e1; }
 
 /* graph lanes take the colour of the agent that opened them */
 .gs-line-a { stroke: #8ab4f8; }
@@ -3807,31 +3797,14 @@
 .gs-agent-bg { fill: #0f172a; stroke-width: 1.6; }
 .gs-agent-a .gs-agent-bg { stroke: #8ab4f8; filter: drop-shadow(0 0 5px rgba(138, 180, 248, 0.7)); }
 .gs-agent-b .gs-agent-bg { stroke: #d97757; filter: drop-shadow(0 0 5px rgba(217, 119, 87, 0.7)); }
-.gs-agent-a .gs-agent-mark { fill: url(#gs-gemini); }
-.gs-agent-b .gs-agent-mark { fill: #d97757; }
-.gs-agent-mark { transform-box: fill-box; transform-origin: center; }
-.gs-agent-a .gs-agent-mark { animation: ag-twinkle 2.6s ease-in-out infinite; }
-.gs-agent-b .gs-agent-mark { animation: ag-spin 10s linear infinite; }
+.gs-agent-mark { font-family: Inter, system-ui, sans-serif; font-size: 10px; font-weight: 800; text-anchor: middle; }
+.gs-agent-a .gs-agent-mark { fill: #a8c7fa; }
+.gs-agent-b .gs-agent-mark { fill: #f4a78a; }
 
 .gs-caption strong { color: #f8fafc; font-weight: 700; }
 
-@keyframes ag-spin { to { transform: rotate(360deg); } }
-@keyframes ag-twinkle {
-  0%, 100% { transform: scale(0.84) rotate(0deg); opacity: 0.85; }
-  50% { transform: scale(1.08) rotate(45deg); opacity: 1; }
-}
-@keyframes ag-blink {
-  0%, 88%, 100% { transform: scaleY(1); }
-  92% { transform: scaleY(0.15); }
-}
-@keyframes ag-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-1.5px); }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .gs-item-icon svg, .gs-agent-mark { animation: none !important; }
-}@media (min-width: 1181px) {}
+@media (min-width: 1181px) {}
 
 /* Pre-existing: already broken before this PR. Amber, so it reads as inherited debt
    rather than as either a pass or something this change did. */
@@ -5920,22 +5893,6 @@ tr:hover .finding-flag-button,
 }
 .docs-rule-count b { color: #16202b; font-weight: 700; }
 
-/* The extension, at the foot of a list of rules: a note, not a banner. It sits below the table
-   so it is read after the thing someone came for, and never in front of it. */
-.extension-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  margin: 0.9rem 0 0;
-  border-top: 1px solid #f0f3f7;
-  padding-top: 0.85rem;
-  color: #6b7684;
-  font-size: 0.8rem;
-  line-height: 1.55;
-}
-.extension-note svg { flex: 0 0 auto; margin-top: 0.15rem; color: #97a2ae; }
-.extension-note a { color: #1d4ed8; font-weight: 600; }
-@media print { .extension-note { display: none; } }
 
 /* ─── The public demo ───────────────────────────────────────────────────────
    The dashboard's own views, dropped into a marketing page. They were built to
@@ -6041,6 +5998,182 @@ tr:hover .finding-flag-button,
 @media (max-width: 1024px) {
   .teams-head { grid-template-columns: minmax(0, 1fr); align-items: start; }
 }
+
+/* The lead's section: the case on the left, their own view (metrics, live) on the right. */
+.teams-lead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 2.5rem 3rem;
+  align-items: center;
+}
+@media (max-width: 1024px) {
+  .teams-lead { grid-template-columns: minmax(0, 1fr); }
+}
+.teams-points { margin: 1.5rem 0 0; padding: 0; list-style: none; display: grid; gap: 1rem; }
+.teams-points li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  color: var(--ink-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+.teams-points b { color: var(--ink); font-weight: 700; }
+.teams-point-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: 0.1rem;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+}
+.teams-lead-art {
+  position: relative;
+  display: block;
+  height: 26rem;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: var(--lift-shadow);
+  background:
+    radial-gradient(circle at 1px 1px, rgba(30, 58, 138, 0.06) 1px, transparent 0) 0 0 / 16px 16px,
+    linear-gradient(180deg, #f8fafd, #f2f6fb);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.teams-lead-art:hover { border-color: rgba(37, 99, 235, 0.32); transform: translateY(-2px); }
+.teams-lead-art .teams-panel-live { inset: 2.6rem 0 0 1.1rem; }
+.teams-lead-link { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.teams-lead-link:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.teams-lead-label {
+  position: absolute;
+  top: 0.85rem;
+  left: 1.1rem;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+@media (max-width: 640px) {
+  .teams-lead-art { height: 17rem; }
+}
+
+/* The four things a lead checks before bringing a tool in: a quiet row of facts, not cards. */
+.teams-trust {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem 2.5rem;
+  margin: 3.5rem 0 0;
+  padding: 2rem 0 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  list-style: none;
+}
+@media (max-width: 1024px) { .teams-trust { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .teams-trust { grid-template-columns: minmax(0, 1fr); } }
+.teams-trust li { display: flex; flex-direction: column; gap: 0.35rem; }
+.teams-trust-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-bottom: 0.4rem;
+  border-radius: 0.65rem;
+  background: #e8f0fe;
+  color: #1d4ed8;
+}
+.teams-trust-icon svg { width: 1.15rem; height: 1.15rem; }
+.teams-trust b { color: var(--ink); font-size: 0.98rem; font-weight: 700; }
+.teams-trust li > span:last-child { color: var(--ink-muted); font-size: 0.9rem; line-height: 1.6; }
+
+.teams-quotes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1.25rem;
+  margin-top: 3rem;
+}
+/* A card per quote: white on the section's grey, with depth, so it reads as someone speaking. */
+.teams-quote {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 18px 40px -24px rgba(15, 23, 42, 0.28);
+  padding: 2.1rem 1.75rem 1.5rem 4.1rem;
+}
+/* The opening mark, set large in the quote's own face, hanging in the card's margin. */
+.teams-quote::before {
+  content: "\201C";
+  position: absolute;
+  top: 1.1rem;
+  left: 1.35rem;
+  color: #2563eb;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 4.2rem;
+  line-height: 1;
+}
+.teams-quote blockquote {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--ink);
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  text-wrap: pretty;
+}
+.teams-quote figcaption { display: flex; align-items: center; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1.1rem; border-top: 1px solid #eef2f6; color: var(--ink-muted); font-size: 0.85rem; line-height: 1.45; }
+.teams-quote figcaption img { width: 36px; height: 36px; border-radius: 999px; }
+.teams-quote figcaption b { color: var(--ink); }
+.teams-quote figcaption a { color: #1d4ed8; }
+.teams-quote figcaption a:hover { text-decoration: underline; }
+/* GitHub chips: dark, the way GitHub's own buttons read, with the star in GitHub's gold. */
+.teams-quote figcaption > a.teams-quote-repo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #24292f;
+  border-radius: 999px;
+  background: #24292f;
+  padding: 0.3rem 0.8rem;
+  color: #fff;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.teams-quote figcaption > a.teams-quote-repo { margin-left: auto; }
+.teams-quote figcaption > a.teams-quote-repo:hover { background: #32383f; text-decoration: none; transform: translateY(-1px); }
+.teams-quote-repo svg { color: #9198a1; }
+.teams-quote-stars { display: inline-flex; align-items: center; gap: 0.2rem; margin-left: 0.15rem; border-left: 1px solid #3d444d; padding-left: 0.55rem; color: #f0f6fc; font-family: Inter, system-ui, sans-serif; font-weight: 600; }
+.teams-quote-stars [aria-hidden] { color: #e3b341; }
+@media (max-width: 640px) {
+  .teams-quote { padding: 1.4rem 1.25rem 1.25rem; }
+  .teams-quote::before { position: static; display: block; height: 2rem; font-size: 3.4rem; }
+  .teams-quote blockquote { font-size: 1.12rem; }
+  .teams-quote figcaption { flex-wrap: wrap; }
+  .teams-quote figcaption > a.teams-quote-repo { margin-left: 0; }
+}
+
+.teams-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem 2rem;
+  margin-top: 2rem;
+  color: var(--ink-muted);
+  font-size: 0.88rem;
+}
+.teams-more a:hover { text-decoration: underline; }
+.teams-more { margin: 0; }
+.teams-more a { color: #1d4ed8; font-weight: 600; }
 
 .teams-panels {
   display: grid;
@@ -6469,6 +6602,122 @@ tr:hover .finding-flag-button,
   font-style: italic;
   line-height: 1.5;
 }
+/* A rule read from a diagram or a table row has no sentence to quote; the check says where it
+   came from instead, in plain text. */
+.ghcheck-from { color: #57606a; font-size: 0.84rem; line-height: 1.5; }
+a.ghcheck-doc { text-decoration: none; }
+a.ghcheck-doc:hover { text-decoration: underline; }
+.ghcheck-breaks { color: #24292f; font-size: 0.84rem; line-height: 1.5; }
+
+/* The table the check folds under a summary line, as GitHub draws a <details>. */
+.ghcheck-details { margin: 1.1rem 0 0; }
+.ghcheck-details > summary {
+  cursor: pointer;
+  color: #24292f;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.55;
+}
+.ghcheck-details > summary + .ghcheck-table-wrap { margin-top: 0.6rem; }
+
+/* Why the already-broken row matters: the page's one-line note under the check's own table. */
+.ghcheck-why {
+  margin: 0.8rem 0 0;
+  border-left: 3px solid #9a6700;
+  padding: 0.15rem 0 0.15rem 0.75rem;
+  color: #3d3320;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.ghcheck-why a { color: #1d4ed8; font-weight: 600; }
+.ghcheck-mono { font-family: "IBM Plex Mono", monospace; font-size: 0.85em; overflow-wrap: anywhere; }
+
+/* ---- The check section's example: rules beside the diagram, a row lighting its part of it. ---- */
+.sc-body { display: grid; gap: 1.5rem 2rem; align-items: start; }
+@media (max-width: 1100px) { .sc-body { grid-template-columns: minmax(0, 1fr); } }
+.sc-row { cursor: pointer; transition: background-color 0.2s ease; }
+.sc-row:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }
+.sc .sc-row.is-holds.is-lit { background: #effaf2; }
+.sc .sc-row.is-broken { background: #fff5f4; }
+.sc[data-active="1"] .sc-row.is-broken { background: #ffebe9; box-shadow: inset 3px 0 0 #cf222e; }
+
+.sc-body { grid-template-columns: minmax(0, 1fr) minmax(0, 25rem); }
+@media (max-width: 1100px) { .sc-body { grid-template-columns: minmax(0, 1fr); } }
+.sc-diagram {
+  position: sticky;
+  top: 6rem;
+  margin: 0;
+  border: 1px solid #d0d7de;
+  border-radius: 12px;
+  background: #f8f8f8;
+  padding: 0.75rem;
+}
+@media (max-width: 1100px) { .sc-diagram { position: static; max-width: 27rem; margin: 0 auto; } }
+.sc-diagram .sd { display: block; width: 100%; height: auto; }
+
+/* The rule in view at full strength, the rest set back. The script marks what the rule bears on
+   with is-lit, rows and diagram elements alike. */
+.sd g[data-rules] { transition: opacity 0.25s ease; }
+.sc[data-active] .sd :where(g.entity, g.link)[data-rules]:not(.is-lit) { opacity: 0.35; }
+.sc:not([data-active="1"]) .sd g.entity.is-lit > rect:first-child { stroke: #1a7f37; stroke-width: 2.5; }
+.sc:not([data-active="1"]) .sd g.link.is-lit path { stroke: #1a7f37; stroke-width: 2.5; }
+.sc:not([data-active="1"]) .sd g.link.is-lit polygon { fill: #1a7f37; stroke: #1a7f37; }
+.sd .sd-overlay { pointer-events: none; transition: opacity 0.25s ease; }
+.sc:not([data-active="1"]) .sd .sd-overlay { opacity: 0; }
+
+/* Rule 1, on the diagram: the composition into legacy in red, legacy off limits. */
+.sd g.sd-broken path { stroke: #d1242f; stroke-width: 2.5; }
+.sd g.sd-broken polygon { fill: #d1242f; stroke: #d1242f; }
+.sd g[data-forbidden] > path { fill: #fff1f0; stroke: #d1242f; stroke-dasharray: 5 4; }
+.sd g[data-forbidden] > line { stroke: #d1242f; }
+.sd g[data-forbidden] > text { fill: #a40e26; }
+.sd .sd-draw { fill: none; stroke: #d1242f; stroke-width: 2.5; }
+.sd .sd-glow { fill: none; stroke: #d1242f; stroke-width: 10; stroke-linecap: round; opacity: 0.14; }
+.sd .sd-target { fill: none; stroke: #d1242f; stroke-width: 2; }
+.sd .sd-note { fill: #d1242f; font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 600; text-anchor: end; }
+.sd .sd-badge circle { fill: #d1242f; stroke: #fff; stroke-width: 3; }
+.sd .sd-badge text { fill: #fff; font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 700; text-anchor: middle; }
+.sd .sd-callout rect { fill: #fff; stroke: #ffcecb; }
+.sd .sd-callout text { fill: #a40e26; font-family: Inter, system-ui, sans-serif; font-size: 12.5px; font-weight: 600; text-anchor: middle; }
+
+/* Once, when the check comes into view: the composition draws down into legacy in red, then the
+   class it reaches, the badge and the note appear. The glow breathes slowly; nothing else moves. */
+@media (prefers-reduced-motion: no-preference) {
+  html.js .check-report .sd g.sd-broken { opacity: 0; }
+  html.js .check-report .sd .sd-draw { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  html.js .check-report .sd .sd-glow,
+  html.js .check-report .sd .sd-target,
+  html.js .check-report .sd .sd-badge,
+  html.js .check-report .sd .sd-callout,
+  html.js .check-report .sd .sd-note { opacity: 0; }
+  html.js .check-report.is-visible .sd .sd-draw { animation: sd-draw 1.1s cubic-bezier(.4,0,.2,1) 0.5s forwards; }
+  html.js .check-report.is-visible .sd g.sd-broken { animation: sd-in 0.3s ease 1.5s forwards; }
+  html.js .check-report.is-visible .sd .sd-target,
+  html.js .check-report.is-visible .sd .sd-note { animation: sd-in 0.4s ease 1.5s forwards; }
+  html.js .check-report.is-visible .sd .sd-badge,
+  html.js .check-report.is-visible .sd .sd-callout { animation: sd-in 0.4s ease 1.8s forwards; }
+  html.js .check-report.is-visible .sd .sd-glow { animation: sd-breathe 3.2s ease-in-out 1.8s infinite; }
+}
+@keyframes sd-draw { to { stroke-dashoffset: 0; } }
+@keyframes sd-in { to { opacity: 1; } }
+@keyframes sd-breathe { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.22; } }
+
+/* A phone: the diagram first, then each rule as a stacked card, so nothing scrolls sideways. */
+@media (max-width: 640px) {
+  .sc-diagram { order: -1; padding: 0.5rem; }
+  .sc .ghcheck-table thead { display: none; }
+  .sc .ghcheck-table, .sc .ghcheck-table tbody { display: block; }
+  .sc .sc-row { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 0.6rem; padding: 0.75rem 0.85rem; }
+  .sc .sc-row td { display: block; padding: 0; border: 0; width: auto !important; }
+  .sc .sc-row td.ghcheck-n { text-align: left; }
+  .sc .sc-row td.ghcheck-cell { display: flex; grid-column: 1 / -1; min-width: 0; }
+  .sc .ghcheck-table-wrap { overflow: visible; }
+}
+.sc-legend { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; margin-top: 0.6rem; color: #59636e; font-size: 0.78rem; }
+.sc-legend span::before { content: ""; display: inline-block; width: 0.75rem; height: 0.75rem; margin-right: 0.4rem; border-radius: 3px; vertical-align: -1px; }
+.sc-legend .is-added::before { background: #bef5cb; }
+.sc-legend .is-removed::before { background: #fdaeb7; }
+.sc-legend .is-broken::before { background: #d1242f; height: 3px; vertical-align: 3px; }
 
 .ghcheck-caption {
   margin: 0.7rem 0 0;
@@ -6543,8 +6792,8 @@ tr:hover .finding-flag-button,
    rather than the edge of a cropped file. */
 .ghcheck-diagram img {
   display: block;
-  width: 12796px;
-  height: 3793px;
+  width: 3568px;
+  height: 2260px;
   max-width: none;
   transform-origin: 0 0;
   will-change: transform;
@@ -7157,6 +7406,16 @@ tr:hover .finding-flag-button,
   gap: 1.5rem;
   padding: 0.85rem 0.5rem;
 }
+
+/* Where the strip's repositories come from: every published report, on a page of its own. */
+.proof-strip-all {
+  flex: none;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.proof-strip-all:hover { text-decoration: underline; }
 
 .proof-strip-label {
   flex: none;

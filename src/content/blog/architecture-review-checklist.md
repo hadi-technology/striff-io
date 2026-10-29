@@ -1,6 +1,8 @@
 ---
 title: "An architecture review checklist for pull requests, done by hand"
 description: "Seven steps for reviewing a pull request for structural risk: what your own docs already say, new dependency directions, reaches into module internals, blast radius and cycles. Plus the arithmetic on how long it takes, and which steps a machine can do for you."
+seoTitle: "Architecture review checklist for pull requests"
+seoDescription: "Seven steps for reviewing a pull request for structural risk: your docs' rules, new dependency directions, module internals, blast radius and cycles."
 date: 2026-08-12
 category: "Architecture"
 cover: "checklist"
