@@ -588,7 +588,7 @@ const structuredData = JSON.stringify([
             <div class="ghcheck-body sc-body">
               <div class="sc-rules">
                 <h3 class="ghcheck-h">Documented rules</h3>
-                <p class="ghcheck-allhold"><b>This pull request breaks 1 documented rule.</b> It is listed first.</p>
+                <p class="ghcheck-allhold"><b>This pull request breaks 1 of {heroExampleTally.broken + heroExampleTally.held} documented rules.</b> It is listed first.</p>
                 <div class="ghcheck-table-wrap">
                   <table class="ghcheck-table is-rules">
                     <thead><tr><th class="ghcheck-n">#</th><th class="ghcheck-status">Status</th><th>Rule</th></tr></thead>
@@ -607,6 +607,7 @@ const structuredData = JSON.stringify([
                     </tbody>
                   </table>
                 </div>
+                <p class="ghcheck-more">Rows {sampleRules.length + 1}&ndash;{heroExampleTally.broken + heroExampleTally.held}, all holding, are trimmed here.</p>
               </div>
 
               <!-- The diagram: the classes the change touched, by package. Edges carry the number of
