@@ -1,0 +1,139 @@
+---
+import "../styles/global.css";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Security - Striff" description="What Striff reads from your repositories, what it keeps, who else processes it, and how it is protected." canonical="https://striff.io/security">
+  <main class="mx-auto max-w-3xl px-6 py-20">
+    <h1 class="mb-8 text-4xl font-bold tracking-tight">Security</h1>
+
+    <div class="prose prose-slate max-w-none">
+      <p class="text-slate-600">Last updated: October 30, 2026</p>
+
+      <p class="mt-4">Striff reads your pull requests to show what changed in your architecture and to check the change against your documentation. This page says what Striff reads, what it keeps, who else processes it, and how it is protected. If your security team needs more, email <a href="mailto:hi@haditechnology.com" class="text-blue-600 hover:text-blue-700">hi@haditechnology.com</a>. We will fill in your security questionnaire, sign our Data Processing Agreement, and walk your team through how Striff works.</p>
+
+      <section class="mt-8">
+        <h2 id="what-striff-reads" class="text-2xl font-semibold">What Striff reads</h2>
+        <p>Striff only reads repositories you chose when you installed the Striff GitHub App. When a pull request is opened or updated, Striff downloads the repository at the pull request's base revision and the files the pull request changed. It parses the changed files and the files they reference, and reads the repository's documentation: READMEs, architecture documents, decision records, and instruction files written for coding agents.</p>
+      </section>
+
+      <section class="mt-8">
+        <h2 id="what-we-keep-and-what-we-dont" class="text-2xl font-semibold">What we keep, and what we don't</h2>
+        <p><strong>Source code is not kept.</strong> Repository files are held in temporary storage on the analysis server while an analysis runs, and deleted when it ends. A scheduled sweep removes anything an interrupted analysis left behind. Source code is never written to our database.</p>
+        <p class="mt-2"><strong>What we keep:</strong></p>
+        <ul class="mt-2 ml-6 list-disc">
+          <li><strong>Analysis results.</strong> Diagrams of the change, the names of the types and members involved and how they relate, and review findings.</li>
+          <li><strong>Rules from your documentation</strong>, with the sentences they were read from.</li>
+          <li><strong>Pull request details.</strong> Repository name, pull request number, commit identifiers, and the GitHub usernames of pull request authors.</li>
+          <li><strong>Account and billing details.</strong> GitHub username, account ID, email address, organization membership, plan, and subscription status. Card details are held by Stripe and never reach us.</li>
+        </ul>
+      </section>
+
+      <section class="mt-8">
+        <h2 id="ai-processing" class="text-2xl font-semibold">AI processing</h2>
+        <p>Striff uses a large language model to turn documentation into rules, and to double-check a possible violation before reporting it. The model receives:</p>
+        <ul class="mt-2 ml-6 list-disc">
+          <li>documentation text,</li>
+          <li>structural facts about the change: type and member names and how they relate,</li>
+          <li>when it checks a possible violation, short excerpts of the source files involved.</li>
+        </ul>
+        <p class="mt-2">The model is DeepSeek V4 Flash, an open-weights model. Requests go through OpenRouter to an allow-list of three inference hosts, all operated by US companies: Parasail, Crusoe, and DeepInfra. Every host on the list is on OpenRouter's zero-data-retention list, so it does not store prompts or responses. Striff never sends anything to DeepSeek's own servers.</p>
+        <p class="mt-2">Your code and documentation are never used to train AI models.</p>
+      </section>
+
+      <section class="mt-8">
+        <h2 id="github-app-permissions" class="text-2xl font-semibold">GitHub App permissions</h2>
+        <div class="mt-4 overflow-x-auto">
+          <table class="w-full border-collapse text-left text-sm max-sm:block">
+            <thead class="bg-slate-50 max-sm:sr-only">
+              <tr>
+                <th scope="col" class="border border-slate-200 px-3 py-2 font-semibold">Permission</th>
+                <th scope="col" class="border border-slate-200 px-3 py-2 font-semibold">Access</th>
+                <th scope="col" class="border border-slate-200 px-3 py-2 font-semibold">Why</th>
+              </tr>
+            </thead>
+            <tbody class="max-sm:block">
+              <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+                <td data-label="Permission" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Contents</td>
+                <td data-label="Access" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Read</td>
+                <td data-label="Why" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Download the revisions of a pull request and read your documentation.</td>
+              </tr>
+              <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+                <td data-label="Permission" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Pull requests</td>
+                <td data-label="Access" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Read and write</td>
+                <td data-label="Why" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Read a pull request's changed files, and post Striff's summary comment.</td>
+              </tr>
+              <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+                <td data-label="Permission" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Checks</td>
+                <td data-label="Access" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Read and write</td>
+                <td data-label="Why" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Post Striff's result as a check run on the pull request.</td>
+              </tr>
+              <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+                <td data-label="Permission" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Issues</td>
+                <td data-label="Access" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Read</td>
+                <td data-label="Why" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Show whether an issue opened from a Striff finding is open or closed.</td>
+              </tr>
+              <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+                <td data-label="Permission" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Members</td>
+                <td data-label="Access" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Read</td>
+                <td data-label="Why" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Show your organization's dashboard only to its members.</td>
+              </tr>
+              <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+                <td data-label="Permission" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Email addresses</td>
+                <td data-label="Access" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Read</td>
+                <td data-label="Why" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Contact you about your account and billing.</td>
+              </tr>
+              <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+                <td data-label="Permission" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Metadata</td>
+                <td data-label="Access" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Read</td>
+                <td data-label="Why" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Required by GitHub for every App.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-2">Striff has no write access to your code. Uninstalling the App ends its access to your repositories immediately.</p>
+      </section>
+
+      <section class="mt-8">
+        <h2 id="infrastructure-and-encryption" class="text-2xl font-semibold">Infrastructure and encryption</h2>
+        <ul class="ml-6 list-disc">
+          <li>Striff runs on DigitalOcean in Toronto, Canada. Its database and cache run inside a private cluster and are not reachable from the internet.</li>
+          <li>All traffic to striff.io and api.striff.io is encrypted with TLS. Webhooks from GitHub are verified by their signature before Striff acts on them.</li>
+          <li>Stored data sits on DigitalOcean block storage, which is encrypted at rest.</li>
+          <li>Striff reaches GitHub with short-lived installation tokens, limited to the repositories you chose.</li>
+          <li>The dashboard signs you in with GitHub and follows your GitHub permissions: you see an organization's or a repository's results only if GitHub says you can.</li>
+          <li>Credentials are kept in the cluster's secret store, never in source code.</li>
+          <li>Error reports sent to our error-monitoring provider exclude personal data.</li>
+        </ul>
+      </section>
+
+      <section class="mt-8">
+        <h2 id="retention-and-deletion" class="text-2xl font-semibold">Retention and deletion</h2>
+        <p>We keep analysis results while you use Striff, because your dashboard and its history are built from them. To have your data deleted, email <a href="mailto:hi@haditechnology.com" class="text-blue-600 hover:text-blue-700">hi@haditechnology.com</a>. We delete it within 30 days of your written request, or of the end of your subscription. Billing records are kept as long as the law requires.</p>
+      </section>
+
+      <section class="mt-8">
+        <h2 id="if-something-goes-wrong" class="text-2xl font-semibold">If something goes wrong</h2>
+        <p>If we confirm a security breach affecting your data, we will tell you without undue delay, and within 72 hours, with what we know and what we are doing about it.</p>
+      </section>
+
+      <section class="mt-8">
+        <h2 id="reporting-a-vulnerability" class="text-2xl font-semibold">Reporting a vulnerability</h2>
+        <p>Email <a href="mailto:hi@haditechnology.com" class="text-blue-600 hover:text-blue-700">hi@haditechnology.com</a> with "Security" in the subject. We will acknowledge your report within three business days and keep you updated until it is fixed. We will not take legal action against anyone who reports a vulnerability in good faith and does not access, change, or keep other people's data. Our security.txt is at <a href="/.well-known/security.txt" class="text-blue-600 hover:text-blue-700">/.well-known/security.txt</a>.</p>
+      </section>
+
+      <section class="mt-8">
+        <h2 id="compliance-and-documents" class="text-2xl font-semibold">Compliance and documents</h2>
+        <p>Striff does not have a SOC 2 report yet. In the meantime we offer:</p>
+        <ul class="mt-2 ml-6 list-disc">
+          <li>our <a href="/dpa/" class="text-blue-600 hover:text-blue-700">Data Processing Agreement</a>, which covers GDPR, UK GDPR, Canadian privacy law and the CCPA,</li>
+          <li>our <a href="/subprocessors/" class="text-blue-600 hover:text-blue-700">list of sub-processors</a>,</li>
+          <li>our <a href="/privacy/" class="text-blue-600 hover:text-blue-700">Privacy Policy</a>,</li>
+          <li>answers to your security questionnaire, on request,</li>
+          <li>a call with our engineering team, to go through how Striff works.</li>
+        </ul>
+        <p class="mt-2">HADI Technology is a Canadian company. The European Commission and the UK recognise Canada's private-sector privacy law as adequate, so personal data can be transferred from the EU or the UK to Striff without extra safeguards.</p>
+      </section>
+    </div>
+  </main>
+</BaseLayout>

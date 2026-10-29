@@ -3,4 +3,5 @@
  * address under one of them is the site's, not a public repository's report.
  */
 export const SITE_ROUTES = new Set(["blog", "contact", "billing", "dashboard", "demo", "pricing",
-  "privacy", "terms", "cookies", "installed", "badge", "badge-examples", "reports"]);
+  "privacy", "terms", "cookies", "installed", "badge", "badge-examples", "reports",
+  "security", "subprocessors", "dpa"]);

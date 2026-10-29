@@ -17,6 +17,9 @@ const staticRoutes: { path: string; changefreq: string; priority: string }[] = [
   { path: "/privacy/", changefreq: "yearly", priority: "0.3" },
   { path: "/terms/", changefreq: "yearly", priority: "0.3" },
   { path: "/cookies/", changefreq: "yearly", priority: "0.3" },
+  { path: "/security/", changefreq: "yearly", priority: "0.4" },
+  { path: "/subprocessors/", changefreq: "yearly", priority: "0.3" },
+  { path: "/dpa/", changefreq: "yearly", priority: "0.3" },
 ];
 
 const day = (date: Date) => date.toISOString().slice(0, 10);

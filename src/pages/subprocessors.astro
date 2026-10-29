@@ -1,0 +1,85 @@
+---
+import "../styles/global.css";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Sub-processors - Striff" description="The companies that process customer data on Striff's behalf." canonical="https://striff.io/subprocessors">
+  <main class="mx-auto max-w-3xl px-6 py-20">
+    <h1 class="mb-8 text-4xl font-bold tracking-tight">Sub-processors</h1>
+
+    <div class="prose prose-slate max-w-none">
+      <p class="text-slate-600">Last updated: October 30, 2026</p>
+
+      <p class="mt-4">These are the companies that process customer data on behalf of HADI Technology, the operator of Striff. Each one is bound by a written agreement with data protection obligations at least as protective as those in our <a href="/dpa/" class="text-blue-600 hover:text-blue-700">Data Processing Agreement</a>.</p>
+
+      <div class="mt-4 overflow-x-auto">
+        <table class="w-full border-collapse text-left text-sm max-sm:block">
+          <thead class="bg-slate-50 max-sm:sr-only">
+            <tr>
+              <th scope="col" class="border border-slate-200 px-3 py-2 font-semibold">Company</th>
+              <th scope="col" class="border border-slate-200 px-3 py-2 font-semibold">What they do for Striff</th>
+              <th scope="col" class="border border-slate-200 px-3 py-2 font-semibold">Data they process</th>
+              <th scope="col" class="border border-slate-200 px-3 py-2 font-semibold">Location</th>
+            </tr>
+          </thead>
+          <tbody class="max-sm:block">
+            <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+              <td data-label="Company" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">DigitalOcean, LLC</td>
+              <td data-label="What they do for Striff" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Hosts the Striff service: servers, database and storage</td>
+              <td data-label="Data they process" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">All customer data Striff stores or processes</td>
+              <td data-label="Location" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Canada (Toronto)</td>
+            </tr>
+            <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+              <td data-label="Company" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">OpenRouter, Inc.</td>
+              <td data-label="What they do for Striff" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Routes AI requests to the inference hosts below</td>
+              <td data-label="Data they process" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Documentation text, structural facts about a change, source excerpts</td>
+              <td data-label="Location" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">United States</td>
+            </tr>
+            <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+              <td data-label="Company" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Parasail, Crusoe and DeepInfra, through OpenRouter</td>
+              <td data-label="What they do for Striff" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Run the AI model, with zero data retention</td>
+              <td data-label="Data they process" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Documentation text, structural facts about a change, source excerpts</td>
+              <td data-label="Location" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">United States</td>
+            </tr>
+            <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+              <td data-label="Company" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Stripe, Inc.</td>
+              <td data-label="What they do for Striff" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Payments and billing</td>
+              <td data-label="Data they process" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Billing contact details, subscription status</td>
+              <td data-label="Location" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">United States</td>
+            </tr>
+            <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+              <td data-label="Company" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Resend</td>
+              <td data-label="What they do for Striff" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Sends account and notification email</td>
+              <td data-label="Data they process" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Email addresses, message content</td>
+              <td data-label="Location" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">United States</td>
+            </tr>
+            <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+              <td data-label="Company" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Functional Software, Inc. (Sentry)</td>
+              <td data-label="What they do for Striff" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Error monitoring</td>
+              <td data-label="Data they process" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Error reports, which can include repository and file names</td>
+              <td data-label="Location" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">United States</td>
+            </tr>
+            <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+              <td data-label="Company" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Netlify, Inc.</td>
+              <td data-label="What they do for Striff" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Hosts striff.io and the dashboard</td>
+              <td data-label="Data they process" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Website requests, dashboard sign-in sessions</td>
+              <td data-label="Location" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">United States</td>
+            </tr>
+            <tr class="max-sm:mb-3 max-sm:block max-sm:border max-sm:border-slate-200">
+              <td data-label="Company" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">PostHog, Inc.</td>
+              <td data-label="What they do for Striff" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Product analytics on striff.io and in the browser extension</td>
+              <td data-label="Data they process" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">Usage events, approximate location</td>
+              <td data-label="Location" class="border border-slate-200 px-3 py-2 align-top max-sm:block max-sm:border-0 max-sm:py-1 max-sm:before:block max-sm:before:text-xs max-sm:before:font-semibold max-sm:before:text-slate-500 max-sm:before:content-[attr(data-label)]">United States</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-4">GitHub is where your repositories live, not a sub-processor: Striff reads from GitHub with the permissions you grant when you install the App.</p>
+
+      <section class="mt-8">
+        <h2 id="changes-to-this-list" class="text-2xl font-semibold">Changes to this list</h2>
+        <p>We will update this page at least 30 days before a new sub-processor starts processing customer data. To be told by email, write to <a href="mailto:hi@haditechnology.com" class="text-blue-600 hover:text-blue-700">hi@haditechnology.com</a> with "Sub-processor updates" in the subject. If you object to a new sub-processor on reasonable data protection grounds, tell us within those 30 days. If we cannot address your objection, you can end your subscription and we will refund any prepaid fees for the remaining period.</p>
+      </section>
+    </div>
+  </main>
+</BaseLayout>
