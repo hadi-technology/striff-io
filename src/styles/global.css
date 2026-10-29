@@ -6132,6 +6132,26 @@ tr:hover .finding-flag-button,
 .teams-quote figcaption b { color: var(--ink); }
 .teams-quote figcaption a { color: #1d4ed8; }
 .teams-quote figcaption a:hover { text-decoration: underline; }
+.teams-quote figcaption > a.teams-quote-repo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  color: var(--ink);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.teams-quote figcaption > a.teams-quote-repo:hover { border-color: rgba(37, 99, 235, 0.4); text-decoration: none; }
+.teams-quote-stars { color: #64748b; font-family: Inter, system-ui, sans-serif; font-weight: 600; }
+@media (max-width: 640px) {
+  .teams-quote figcaption { flex-wrap: wrap; }
+  .teams-quote figcaption > a.teams-quote-repo { margin-left: 0; }
+}
 
 .teams-foot {
   display: flex;
