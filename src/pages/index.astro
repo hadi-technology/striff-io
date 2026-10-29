@@ -77,12 +77,11 @@ const heroLanguages = [
 
 /**
  * How a documented rule becomes a verdict: the code parsed, the prose read, the rule grounded and
- * compiled, the formula checked at both revisions, and a break confirmed before it is shown.
+ * compiled, the formula checked at both revisions.
  *
- * Two of the five stages involve a language model. Read proposes rules from English. Verify
- * (striff-api, doc-verify, since 2026-10-28) re-reads the sentence and the code for an accusing
- * verdict and can only withhold it: shown only when every run confirms it on shared evidence,
- * otherwise counted as couldn't check. Neither decides that a rule holds. There used to be a stage, "Narrate", which said a model
+ * One of the four stages involves a language model: Read, which proposes rules from English. (The
+ * verifier that re-reads a break before it is shown, striff-api's doc-verify, is described in the
+ * FAQ and the leaders section rather than here.) There used to be a stage, "Narrate", which said a model
  * ranked and explained the results. It does not: the rules are ordered by CheckRunFormatter and
  * the English reading of a rule is composed from the rule's own body by ArchRuleRenderer, both of
  * them programs. The stage was describing the review notes, which are a different part of the
@@ -113,12 +112,6 @@ const pipeline = [
     name: "Evaluate",
     body: "The formula is model-checked at both revisions. Which of the two satisfy it is the whole verdict: satisfied before and not after is a rule this change broke; unsatisfied at both was already broken and is not blamed on the change. The sentence you read on the check is composed from the formula, so it cannot drift from what was actually checked.",
     tex: String.raw`\mathcal{M}_{\mathrm{before}} \models \varphi \qquad \mathcal{M}_{\mathrm{after}} \nvDash \varphi`
-  },
-  {
-    kind: "neural",
-    name: "Verify",
-    body: "A rule the formula says is broken is not shown yet. An agent re-reads the sentence and the code, twice and independently, and the break reaches you only if both readings confirm it on the same evidence. This step can hold an accusation back; it can never make one, and it never decides that a rule holds.",
-    out: "Broken \u00b7 confirmed 2 of 2 \u2192 shown"
   },
 ];
 
@@ -745,7 +738,7 @@ const structuredData = JSON.stringify([
             <div class="compute-intro compute-intro-wide">
               <h2 class="text-balance">Every verdict is computed, not generated.</h2>
               <p class="section-subcopy mt-4">
-                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> <strong>A language model proposes the rules and double-checks a break before you see it; it never decides that a rule holds.</strong> The grounding, the verdict and the sentence you read are all computed, and nothing is needed beyond the documents your repository already has.
+                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> <strong>A language model proposes the rules; it never decides whether one holds.</strong> The grounding, the verdict and the sentence you read are all computed, and nothing is needed beyond the documents your repository already has.
               </p>
             </div>
             <p class="compute-label"><span>01</span> How a documented rule becomes a verdict</p>
