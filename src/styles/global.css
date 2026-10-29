@@ -6090,44 +6090,62 @@ tr:hover .finding-flag-button,
   .teams-lead-art { height: 17rem; }
 }
 
-/* The four questions a lead asks before bringing a tool in. */
-.teams-answers {
+/* The four things a lead checks before bringing a tool in: a quiet row of facts, not cards. */
+.teams-trust {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1rem;
-  margin: 3rem 0 0;
+  gap: 1.5rem 2.5rem;
+  margin: 3.5rem 0 0;
+  padding: 2rem 0 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  list-style: none;
 }
-@media (max-width: 1024px) {
-  .teams-answers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 1024px) { .teams-trust { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .teams-trust { grid-template-columns: minmax(0, 1fr); } }
+.teams-trust li { display: flex; flex-direction: column; gap: 0.35rem; }
+.teams-trust-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-bottom: 0.4rem;
+  border-radius: 0.65rem;
+  background: #e8f0fe;
+  color: #1d4ed8;
 }
-@media (max-width: 640px) {
-  .teams-answers { grid-template-columns: minmax(0, 1fr); }
-}
-.teams-answer {
-  border-radius: 1rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: #fff;
-  padding: 1.1rem 1.2rem;
-}
-.teams-answer dt { color: var(--ink); font-size: 0.95rem; font-weight: 750; }
-.teams-answer dd { margin: 0.4rem 0 0; color: var(--ink-muted); font-size: 0.9rem; line-height: 1.6; }
+.teams-trust-icon svg { width: 1.15rem; height: 1.15rem; }
+.teams-trust b { color: var(--ink); font-size: 0.98rem; font-weight: 700; }
+.teams-trust li > span:last-child { color: var(--ink-muted); font-size: 0.9rem; line-height: 1.6; }
 
 .teams-quotes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-  gap: 1rem;
-  margin-top: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 2rem 3.5rem;
+  margin-top: 3.5rem;
 }
-.teams-quote {
+.teams-quote { position: relative; margin: 0; padding-left: 2.6rem; }
+/* The opening mark, set large in the quote's own face, hanging in the margin. */
+.teams-quote::before {
+  content: "\201C";
+  position: absolute;
+  top: -0.9rem;
+  left: -0.1rem;
+  color: #93b4f5;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 4.5rem;
+  line-height: 1;
+}
+.teams-quote blockquote {
   margin: 0;
-  max-width: 46rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: #fff;
-  padding: 1.35rem 1.5rem;
+  color: var(--ink);
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  text-wrap: pretty;
 }
-.teams-quote blockquote { margin: 0; color: var(--ink); font-size: 1.08rem; font-weight: 500; line-height: 1.6; }
-.teams-quote figcaption { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.9rem; color: var(--ink-muted); font-size: 0.85rem; line-height: 1.45; }
+.teams-quote figcaption { display: flex; align-items: center; gap: 0.75rem; margin-top: 1.1rem; color: var(--ink-muted); font-size: 0.85rem; line-height: 1.45; }
 .teams-quote figcaption img { width: 36px; height: 36px; border-radius: 999px; }
 .teams-quote figcaption b { color: var(--ink); }
 .teams-quote figcaption a { color: #1d4ed8; }

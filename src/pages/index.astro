@@ -189,11 +189,12 @@ const teamsPoints = [
     body: "One install covers the organisation. No per-developer setup, and the check is advisory until you choose to make it required.",
   },
 ];
-const teamsAnswers = [
-  { q: "Will it be noisy?", a: "Every break is confirmed by a second, independent reading of the doc and the code before anyone sees it. Rules it can't settle are counted, never guessed." },
-  { q: "Is our code safe?", a: "Source is parsed in memory and not stored. Self-hosted deployment is available on Enterprise." },
-  { q: "What does it cost?", a: "A flat monthly price by how many private repos Striff works on: $29, $59 or $149. Public repos are free." },
-  { q: "How long to get value?", a: "The first pull request after install. Striff reads the docs you already have; there is nothing to configure." },
+/** The four things a lead checks before bringing a tool in, said as facts rather than asked. */
+const teamsTrust = [
+  { icon: "quiet", title: "Quiet by design", body: "Every break is confirmed by a second reading of the doc and the code before anyone sees it." },
+  { icon: "lock", title: "Your code stays yours", body: "Parsed in memory, never stored. Self-hosted deployment on Enterprise." },
+  { icon: "price", title: "Flat, predictable pricing", body: "$29, $59 or $149 a month by private repos used. Free for open source." },
+  { icon: "bolt", title: "Value on the first pull request", body: "It reads the docs you already have. Nothing to configure." },
 ];
 /**
  * Public repositories whose pull requests Striff checks today (check runs visible on GitHub), each
@@ -863,20 +864,26 @@ const structuredData = JSON.stringify([
           </div>
         </div>
 
-        <dl class="teams-answers" data-reveal>
-          {teamsAnswers.map((item) => (
-            <div class="teams-answer">
-              <dt>{item.q}</dt>
-              <dd>{item.a}</dd>
-            </div>
+        <ul class="teams-trust" data-reveal>
+          {teamsTrust.map((item) => (
+            <li>
+              <span class="teams-trust-icon" aria-hidden="true">
+                {item.icon === "quiet" && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>}
+                {item.icon === "lock" && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>}
+                {item.icon === "price" && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>}
+                {item.icon === "bolt" && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>}
+              </span>
+              <b>{item.title}</b>
+              <span>{item.body}</span>
+            </li>
           ))}
-        </dl>
+        </ul>
 
         {teamsQuotes.length > 0 && (
           <div class="teams-quotes" data-reveal>
             {teamsQuotes.map((q) => (
               <figure class="teams-quote">
-                <blockquote>&ldquo;{q.quote}&rdquo;</blockquote>
+                <blockquote>{q.quote}</blockquote>
                 <figcaption>
                   {q.avatar && <img src={q.avatar} alt="" width="36" height="36" loading="lazy" />}
                   <span>
