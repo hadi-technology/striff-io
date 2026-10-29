@@ -199,12 +199,14 @@ const teamsAnswers = [
 const teamsInUse = [
   { name: "objectionary/eo", url: "https://github.com/objectionary/eo" },
   { name: "AArnott/Nerdbank.MessagePack", url: "https://github.com/AArnott/Nerdbank.MessagePack" },
+  { name: "catatafishen/agentbridge", url: "https://github.com/catatafishen/agentbridge" },
 ];
 /**
- * What people who run Striff have said in public, quoted as they wrote it (an ellipsis marks a
- * cut), with a link to where they said it. The block is not rendered while the list is empty.
+ * What people who run Striff have said, quoted as they wrote it (an ellipsis marks a
+ * cut), linked to where they said it when that is public; a private email is quoted only with
+ * its author's permission. The block is not rendered while the list is empty.
  */
-const teamsQuotes: { quote: string; name: string; role: string; avatar?: string; url: string; where: string }[] = [
+const teamsQuotes: { quote: string; name: string; role: string; avatar?: string; url?: string; where: string }[] = [
   {
     quote: "\u2026Striff, the tool that finds inconsistencies between documentation and the source code. We installed it already to the EO and it works good. It\u2019s free for open repositories. I recommend.",
     name: "Yegor Bugayenko",
@@ -212,6 +214,13 @@ const teamsQuotes: { quote: string; name: string; role: string; avatar?: string;
     avatar: "/oss-avatars/yegor256.jpg",
     url: "https://t.me/yegor256news/1870",
     where: "on Telegram, October 2026",
+  },
+  {
+    quote: "It is difficult to keep architecture documentation in sync when the codebase and architecture are changing so quickly, especially with AI-driven development. \u2026 I installed Striff on the AgentBridge repo and it has already flagged a few things!",
+    name: "Henrik Westerg\u00e5rd",
+    role: "Maintainer of AgentBridge",
+    avatar: "/oss-avatars/catatafishen.jpg",
+    where: "by email, October 2026",
   },
 ];
 
@@ -866,7 +875,7 @@ const structuredData = JSON.stringify([
                 <blockquote>&ldquo;{q.quote}&rdquo;</blockquote>
                 <figcaption>
                   {q.avatar && <img src={q.avatar} alt="" width="36" height="36" loading="lazy" />}
-                  <span><b>{q.name}</b> &middot; {q.role}<br /><a href={q.url} target="_blank" rel="noopener noreferrer">{q.where}</a></span>
+                  <span><b>{q.name}</b> &middot; {q.role}<br />{q.url ? <a href={q.url} target="_blank" rel="noopener noreferrer">{q.where}</a> : q.where}</span>
                 </figcaption>
               </figure>
             ))}
