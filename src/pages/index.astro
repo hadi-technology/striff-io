@@ -201,10 +201,19 @@ const teamsInUse = [
   { name: "AArnott/Nerdbank.MessagePack", url: "https://github.com/AArnott/Nerdbank.MessagePack" },
 ];
 /**
- * What people who run Striff say. Empty until each quote is approved by the person who wrote it;
- * the block is not rendered while it is empty. { quote, name, role }.
+ * What people who run Striff have said in public, quoted as they wrote it (an ellipsis marks a
+ * cut), with a link to where they said it. The block is not rendered while the list is empty.
  */
-const teamsQuotes: { quote: string; name: string; role: string }[] = [];
+const teamsQuotes: { quote: string; name: string; role: string; avatar?: string; url: string; where: string }[] = [
+  {
+    quote: "\u2026Striff, the tool that finds inconsistencies between documentation and the source code. We installed it already to the EO and it works good. It\u2019s free for open repositories. I recommend.",
+    name: "Yegor Bugayenko",
+    role: "Creator of EO",
+    avatar: "/oss-avatars/yegor256.jpg",
+    url: "https://t.me/yegor256news/1870",
+    where: "on Telegram, October 2026",
+  },
+];
 
 
 const plans = [
@@ -855,7 +864,10 @@ const structuredData = JSON.stringify([
             {teamsQuotes.map((q) => (
               <figure class="teams-quote">
                 <blockquote>&ldquo;{q.quote}&rdquo;</blockquote>
-                <figcaption><b>{q.name}</b> &middot; {q.role}</figcaption>
+                <figcaption>
+                  {q.avatar && <img src={q.avatar} alt="" width="36" height="36" loading="lazy" />}
+                  <span><b>{q.name}</b> &middot; {q.role}<br /><a href={q.url} target="_blank" rel="noopener noreferrer">{q.where}</a></span>
+                </figcaption>
               </figure>
             ))}
           </div>

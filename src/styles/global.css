@@ -6116,15 +6116,22 @@ tr:hover .finding-flag-button,
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
   gap: 1rem;
-  margin-top: 1.25rem;
+  margin-top: 2rem;
 }
 .teams-quote {
   margin: 0;
-  border-left: 3px solid var(--brand);
-  padding: 0.25rem 0 0.25rem 1rem;
+  max-width: 46rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #fff;
+  padding: 1.35rem 1.5rem;
 }
-.teams-quote blockquote { margin: 0; color: var(--ink); font-size: 1rem; line-height: 1.6; }
-.teams-quote figcaption { margin-top: 0.5rem; color: var(--ink-muted); font-size: 0.85rem; }
+.teams-quote blockquote { margin: 0; color: var(--ink); font-size: 1.08rem; font-weight: 500; line-height: 1.6; }
+.teams-quote figcaption { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.9rem; color: var(--ink-muted); font-size: 0.85rem; line-height: 1.45; }
+.teams-quote figcaption img { width: 36px; height: 36px; border-radius: 999px; }
+.teams-quote figcaption b { color: var(--ink); }
+.teams-quote figcaption a { color: #1d4ed8; }
+.teams-quote figcaption a:hover { text-decoration: underline; }
 
 .teams-foot {
   display: flex;
