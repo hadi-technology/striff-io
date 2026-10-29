@@ -622,7 +622,7 @@ const structuredData = JSON.stringify([
                           <td class="ghcheck-status"><span class={`ghbadge is-${r.status}`}>{r.badge}</span></td>
                           <td class="ghcheck-cell">
                             <span class="ghcheck-rule-line"><b class="ghcheck-rule-text"><InlineCodeText text={r.rule} /></b> &middot; <span class="ghcheck-doc">{r.doc}</span></span>
-                            <span class="ghcheck-quote">&ldquo;{r.quote}&rdquo;</span>
+                            {r.breaks && <span class="ghcheck-quote">&ldquo;{r.quote}&rdquo;</span>}
                             {r.breaks && <span class="ghcheck-breaks"><b>What breaks it:</b> <span class="ghcheck-mono">{r.breaks}</span></span>}
                           </td>
                         </tr>
@@ -637,48 +637,76 @@ const structuredData = JSON.stringify([
                    the rule they bear on. The red edge is the one that breaks rule 1; it is drawn
                    last and keeps flowing. -->
               <figure class="sc-diagram">
-                <svg viewBox="0 0 700 430" role="img" aria-labelledby="sc-diagram-title">
-                  <title id="sc-diagram-title">The classes pull request 418 touched. The new CsvExporter in checkout imports PriceCalculator from legacy, which breaks rule 1; the other three rules hold.</title>
+                <svg viewBox="0 0 760 470" role="img" aria-labelledby="sc-diagram-title">
+                  <title id="sc-diagram-title">The classes pull request 418 touched. The new CsvExporter in checkout imports PriceCalculator from legacy, crossing the boundary AGENTS.md line 18 draws, which breaks rule 1. Rules 2 to 4 hold.</title>
                   <defs>
-                    <marker id="sc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sc-arrow" /></marker>
-                    <marker id="sc-arrow-add" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sc-arrow-add" /></marker>
-                    <marker id="sc-arrow-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sc-arrow-bad" /></marker>
+                    <pattern id="sc-hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="10" class="sc-hatch-bg" /><line x1="0" y1="0" x2="0" y2="10" class="sc-hatch-line" /></pattern>
+                    <filter id="sc-shadow" x="-10%" y="-20%" width="120%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.10" /></filter>
                   </defs>
 
                   <!-- packages -->
-                  <g class="sc-pkg" data-rules="1 2 3"><rect x="16" y="16" width="372" height="240" rx="14" /><text x="32" y="38">checkout</text></g>
-                  <g class="sc-pkg" data-rules="3"><rect x="16" y="300" width="214" height="114" rx="14" /><text x="32" y="322">core</text></g>
-                  <g class="sc-pkg is-legacy" data-rules="1"><rect x="476" y="120" width="208" height="124" rx="14" /><text x="492" y="142">legacy</text></g>
-                  <g class="sc-pkg" data-rules="4"><rect x="250" y="300" width="434" height="114" rx="14" /><text x="266" y="322">billing</text></g>
+                  <g class="sc-pkg" data-rules="1 2 3 4"><rect x="16" y="16" width="300" height="438" rx="16" /><text x="36" y="44">checkout</text></g>
+                  <g class="sc-pkg" data-rules="3"><rect x="444" y="16" width="300" height="124" rx="16" /><text x="464" y="44">core</text></g>
+                  <g class="sc-pkg" data-rules="4"><rect x="444" y="166" width="300" height="124" rx="16" /><text x="464" y="194">billing</text></g>
+                  <g class="sc-pkg is-forbidden" data-rules="1">
+                    <rect x="444" y="316" width="300" height="138" rx="16" />
+                    <text x="464" y="344">legacy</text>
+                    <g class="sc-rule-tag"><rect x="560" y="327" width="168" height="24" rx="12" /><text x="644" y="344">AGENTS.md:18 &middot; off limits</text></g>
+                  </g>
 
-                  <!-- edges: drawn under the classes -->
-                  <path class="sc-edge" data-rules="2" pathLength="1" d="M112 102 L112 150" marker-end="url(#sc-arrow)" style="--d:0.2s" />
-                  <path class="sc-edge" data-rules="3" pathLength="1" d="M112 196 C112 260 120 290 122 340" marker-end="url(#sc-arrow)" style="--d:0.45s" />
-                  <path class="sc-edge" data-rules="4" pathLength="1" d="M186 186 C 260 230 300 290 330 340" marker-end="url(#sc-arrow)" style="--d:0.7s" />
-                  <path class="sc-edge is-added" data-rules="1" pathLength="1" d="M188 173 L232 173" marker-end="url(#sc-arrow-add)" style="--d:0.95s" />
-                  <path class="sc-edge is-broken" data-rules="1" pathLength="1" d="M368 173 C 420 173 450 182 502 182" marker-end="url(#sc-arrow-bad)" style="--d:1.25s" />
-                  <path class="sc-flow" d="M368 173 C 420 173 450 182 502 182" />
+                  <!-- dependencies -->
+                  <path class="sc-edge" data-rules="2" pathLength="1" d="M166 126 L166 190" style="--d:0.2s" />
+                  <path class="sc-edge" data-rules="3" pathLength="1" d="M286 212 C 372 212 380 84 466 84" style="--d:0.35s" />
+                  <path class="sc-edge" data-rules="4" pathLength="1" d="M286 236 C 372 236 380 228 466 228" style="--d:0.5s" />
+                  <path class="sc-edge is-added" data-rules="1" pathLength="1" d="M166 254 L166 330" style="--d:1.15s" />
+                  <path class="sc-edge is-broken" data-rules="1" pathLength="1" d="M286 382 C 360 382 390 394 466 394" style="--d:1.7s" />
+                  <path class="sc-flow" d="M286 382 C 360 382 390 394 466 394" />
+                  <!-- arrowheads, each popping in as its line arrives -->
+                  <path class="sc-head" data-rules="2" d="M160 180 L166 191 L172 180z" style="--d:0.85s" />
+                  <path class="sc-head" data-rules="3" d="M456 78 L467 84 L456 90z" style="--d:1s" />
+                  <path class="sc-head" data-rules="4" d="M456 222 L467 228 L456 234z" style="--d:1.15s" />
+                  <path class="sc-head is-added" data-rules="1" d="M160 320 L166 331 L172 320z" style="--d:1.8s" />
+                  <path class="sc-head is-broken" data-rules="1" d="M455 387 L468 394 L455 401z" style="--d:2.35s" />
 
                   <!-- classes -->
-                  <g class="sc-node" data-rules="2"><rect x="36" y="58" width="152" height="44" rx="8" /><text x="112" y="85">CheckoutController</text></g>
-                  <g class="sc-node" data-rules="1 2 3 4"><rect x="36" y="152" width="152" height="44" rx="8" /><text x="112" y="179">CheckoutService</text></g>
-                  <g class="sc-node is-added" data-rules="1"><rect x="234" y="152" width="134" height="44" rx="8" /><text x="301" y="179">CsvExporter</text><text class="sc-tag" x="301" y="214">new in this PR</text></g>
-                  <g class="sc-node is-broken" data-rules="1"><rect class="sc-pulse" x="504" y="160" width="160" height="44" rx="8" /><rect x="504" y="160" width="160" height="44" rx="8" /><text x="584" y="187">PriceCalculator</text></g>
-                  <g class="sc-node" data-rules="3"><rect x="36" y="342" width="172" height="44" rx="8" /><text x="122" y="369">OrderRepository</text></g>
-                  <g class="sc-node" data-rules="4"><rect x="270" y="342" width="150" height="44" rx="8" /><text x="345" y="369">PaymentGateway</text></g>
-                  <g class="sc-node" data-rules="4"><rect x="504" y="342" width="160" height="44" rx="8" /><text x="584" y="369">StripeGateway</text></g>
-                  <path class="sc-edge is-impl" data-rules="4" pathLength="1" d="M504 364 L424 364" marker-end="url(#sc-arrow)" style="--d:0.8s" />
+                  <g class="sc-node" data-rules="2" filter="url(#sc-shadow)">
+                    <rect x="46" y="70" width="240" height="56" rx="10" /><circle class="sc-kind" cx="72" cy="98" r="11" /><text class="sc-kind-c" x="72" y="103">C</text>
+                    <text class="sc-name" x="92" y="95">CheckoutController</text><text class="sc-sub" x="92" y="113">checkout.web</text>
+                  </g>
+                  <g class="sc-node" data-rules="1 2 3 4" filter="url(#sc-shadow)">
+                    <rect x="46" y="196" width="240" height="56" rx="10" /><circle class="sc-kind" cx="72" cy="224" r="11" /><text class="sc-kind-c" x="72" y="229">C</text>
+                    <text class="sc-name" x="92" y="221">CheckoutService</text><text class="sc-sub" x="92" y="239">checkout</text>
+                  </g>
+                  <g class="sc-node is-added" data-rules="1" filter="url(#sc-shadow)">
+                    <rect x="46" y="336" width="240" height="56" rx="10" /><circle class="sc-kind" cx="72" cy="364" r="11" /><text class="sc-kind-c" x="72" y="369">C</text>
+                    <text class="sc-name" x="92" y="361">CsvExporter</text><text class="sc-sub" x="92" y="379">checkout.export</text>
+                    <g class="sc-new"><rect x="232" y="326" width="46" height="20" rx="10" /><text x="255" y="340">NEW</text></g>
+                  </g>
+                  <g class="sc-node" data-rules="3" filter="url(#sc-shadow)">
+                    <rect x="470" y="56" width="248" height="56" rx="10" /><circle class="sc-kind" cx="496" cy="84" r="11" /><text class="sc-kind-c" x="496" y="89">C</text>
+                    <text class="sc-name" x="516" y="81">OrderRepository</text><text class="sc-sub" x="516" y="99">core.orders</text>
+                  </g>
+                  <g class="sc-node" data-rules="4" filter="url(#sc-shadow)">
+                    <rect x="470" y="206" width="248" height="56" rx="10" /><circle class="sc-kind is-i" cx="496" cy="234" r="11" /><text class="sc-kind-c" x="496" y="239">I</text>
+                    <text class="sc-name" x="516" y="231">PaymentGateway</text><text class="sc-sub" x="516" y="249">billing</text>
+                  </g>
+                  <g class="sc-node is-broken" data-rules="1" filter="url(#sc-shadow)">
+                    <rect class="sc-pulse" x="470" y="366" width="248" height="56" rx="10" />
+                    <rect x="470" y="366" width="248" height="56" rx="10" /><circle class="sc-kind" cx="496" cy="394" r="11" /><text class="sc-kind-c" x="496" y="399">C</text>
+                    <text class="sc-name" x="516" y="391">PriceCalculator</text><text class="sc-sub" x="516" y="409">legacy.pricing</text>
+                  </g>
 
-                  <!-- rule numbers on the edges they bear on -->
-                  <g class="sc-badge" data-rules="2"><circle cx="126" cy="126" r="10" /><text x="126" y="130">2</text></g>
-                  <g class="sc-badge" data-rules="3"><circle cx="100" cy="270" r="10" /><text x="100" y="274">3</text></g>
-                  <g class="sc-badge" data-rules="4"><circle cx="262" cy="262" r="10" /><text x="262" y="266">4</text></g>
-                  <g class="sc-badge is-broken" data-rules="1"><circle cx="432" cy="164" r="11" /><text x="432" y="168">1</text></g>
+                  <!-- where the dependency crosses into legacy, and the rule numbers on the edges -->
+                  <g class="sc-cross" data-rules="1"><circle cx="444" cy="391" r="13" /><path d="M438.5 385.5l11 11M449.5 385.5l-11 11" /></g>
+                  <g class="sc-badge" data-rules="2"><circle cx="186" cy="158" r="11" /><text x="186" y="162">2</text></g>
+                  <g class="sc-badge" data-rules="3"><circle cx="376" cy="140" r="11" /><text x="376" y="144">3</text></g>
+                  <g class="sc-badge" data-rules="4"><circle cx="376" cy="232" r="11" /><text x="376" y="236">4</text></g>
+                  <g class="sc-badge is-broken" data-rules="1"><circle cx="356" cy="364" r="12" /><text x="356" y="368">1</text></g>
                 </svg>
                 <figcaption class="sc-legend">
                   <span class="is-added">new in this PR</span>
                   <span class="is-broken">breaks a rule</span>
-                  <span>the numbers are the rules</span>
+                  <span class="is-num">rule number</span>
                 </figcaption>
               </figure>
             </div>
