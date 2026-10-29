@@ -6142,9 +6142,23 @@ tr:hover .finding-flag-button,
   color: var(--ink-muted);
   font-size: 0.88rem;
 }
-.teams-inuse { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 1rem; margin: 0; }
-.teams-inuse span { color: #64748b; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
-.teams-inuse a { color: var(--ink); font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; font-weight: 600; }
+.teams-inuse { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.6rem; margin: 0; }
+.teams-inuse > span { color: #64748b; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.teams-inuse a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.25rem 0.75rem 0.25rem 0.3rem;
+  color: var(--ink);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.teams-inuse a img { width: 20px; height: 20px; border-radius: 999px; }
+.teams-inuse-stars { color: #64748b; font-family: Inter, system-ui, sans-serif; font-size: 0.78rem; font-weight: 600; }
 .teams-inuse a:hover, .teams-more a:hover { text-decoration: underline; }
 .teams-more { margin: 0; }
 .teams-more a { color: #1d4ed8; font-weight: 600; }
