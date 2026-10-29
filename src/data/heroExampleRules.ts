@@ -1,8 +1,8 @@
 // The homepage hero's rule card is an illustrative example, not a real run. The repository
 // (acme/checkout-service), its documents, classes, packages and counts are invented to show the
-// kind of rule a team's docs already state and what Striff reports on a pull request. Every real
-// example on the site (the report, the diagram section and the flagship post) uses the real
-// Ericsson/ecchronos run in ecchronosRules.ts and the homepage's own report data.
+// kind of rule a team's docs already state and what Striff reports on a pull request. The
+// homepage's check section shows the same invented pull request in full (sampleRules in
+// pages/index.astro); the flagship post uses the real Ericsson/ecchronos run in ecchronosRules.ts.
 //
 // Each rule carries its formula, typeset under the plain reading: one line of KaTeX chunks, so
 // a long formula wraps only between chunks.
