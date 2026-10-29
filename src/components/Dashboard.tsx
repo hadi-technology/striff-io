@@ -4,7 +4,7 @@ import DocsTab, { GitHubMark } from "./DocsTab";
 import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import NotificationsPanel from "./NotificationsPanel";
-import { PENDING_DOC_KEY, PENDING_REPO_KEY, docFromSearch, findRepo, repoFromSearch, validDocPath, validRepo, withLink } from "../lib/dashboardDeepLink.js";
+import { PENDING_DOC_KEY, PENDING_REPO_KEY, PENDING_RULE_KEY, docFromSearch, findRepo, repoFromSearch, ruleFromSearch, validDocPath, validRepo, validRuleId, withLink } from "../lib/dashboardDeepLink.js";
 import { signInUrl } from "../lib/githubSignIn.js";
 
 /** Where the GitHub App is installed on an account: the first one, or one more. */
@@ -148,31 +148,35 @@ export default function Dashboard() {
    * it is a working link; the docs view takes them out when it closes and this takes them out when
    * the repository turns out not to be the reader's, so a reload does not ask again.
    */
-  function takeLinkedRepo(): { repo: string | null; doc: string | null } {
+  function takeLinkedRepo(): { repo: string | null; doc: string | null; rule: string | null } {
     if (new URLSearchParams(window.location.search).has("repo")) {
       const named = repoFromSearch(window.location.search);
-      if (named) return { repo: named, doc: docFromSearch(window.location.search) };
-      window.history.replaceState({}, "", withLink(window.location.href, { repo: null, doc: null }));
+      if (named) {
+        return { repo: named, doc: docFromSearch(window.location.search), rule: ruleFromSearch(window.location.search) };
+      }
+      window.history.replaceState({}, "", withLink(window.location.href, { repo: null, doc: null, rule: null }));
     }
     try {
       const kept = validRepo(window.sessionStorage.getItem(PENDING_REPO_KEY));
       const keptDoc = validDocPath(window.sessionStorage.getItem(PENDING_DOC_KEY));
+      const keptRule = validRuleId(window.sessionStorage.getItem(PENDING_RULE_KEY));
       window.sessionStorage.removeItem(PENDING_REPO_KEY);
       window.sessionStorage.removeItem(PENDING_DOC_KEY);
+      window.sessionStorage.removeItem(PENDING_RULE_KEY);
       if (kept) {
         // Back from signing in on a bare address: the docs view reads the document from it.
-        window.history.replaceState({}, "", withLink(window.location.href, { repo: kept, doc: keptDoc }));
+        window.history.replaceState({}, "", withLink(window.location.href, { repo: kept, doc: keptDoc, rule: keptRule }));
       }
-      return { repo: kept, doc: kept ? keptDoc : null };
+      return { repo: kept, doc: kept ? keptDoc : null, rule: kept ? keptRule : null };
     } catch {
-      return { repo: null, doc: null };
+      return { repo: null, doc: null, rule: null };
     }
   }
 
   async function init() {
     setError("");
     setLoading(true);
-    const { repo: linkedRepo, doc: linkedDoc } = takeLinkedRepo();
+    const { repo: linkedRepo, doc: linkedDoc, rule: linkedRule } = takeLinkedRepo();
     try {
       // Who is signed in, every installation and every repository under each, in one request.
       const statusRes = await fetch("/.netlify/functions/dashboard-bootstrap");
@@ -190,6 +194,7 @@ export default function Dashboard() {
           try {
             window.sessionStorage.setItem(PENDING_REPO_KEY, linkedRepo);
             if (linkedDoc) window.sessionStorage.setItem(PENDING_DOC_KEY, linkedDoc);
+            if (linkedRule) window.sessionStorage.setItem(PENDING_RULE_KEY, linkedRule);
           } catch {
             // Without storage the reader lands on the dashboard as it opens by default.
           }
@@ -221,7 +226,7 @@ export default function Dashboard() {
         } else {
           // Said the same way whether the repository exists or not.
           setUnreachableRepo(linkedRepo);
-          window.history.replaceState({}, "", withLink(window.location.href, { repo: null, doc: null }));
+          window.history.replaceState({}, "", withLink(window.location.href, { repo: null, doc: null, rule: null }));
         }
       }
 
@@ -1392,7 +1397,7 @@ function InstallationCard({
             </div>
           ) : installTab === "checks" ? (
             <div className="mt-3 dashboard-metric-fade-in">
-              <ChecksTab installationId={installation.id} repo={openRepo || ""} inShell={section !== undefined} actionsSlot={actionsSlot} badge={repoBadge} />
+              <ChecksTab installationId={installation.id} repo={openRepo || ""} inShell={section !== undefined} actionsSlot={actionsSlot} badge={repoBadge} account={installation.account?.login || ""} isOrg={installation.account?.type === "Organization"} onSignedOut={signInAgain} />
             </div>
           ) : installTab === "notifications" ? (
             <div className="mt-3 dashboard-metric-fade-in">
@@ -1561,6 +1566,10 @@ function FaqSection() {
     {
       q: "Does Striff read all my documents for free?",
       a: "Yes, as your team works. Striff reads your most important documents when you install it, and every pull request and push reads the documents about the code it changes, at no cost. A document about code nobody changes waits until someone does. A paid plan reads the rest at once. Documents Striff can't check anything in, like CLI references, release notes or contributor lists, are excluded on every plan, with the reason shown. Choose Read it anyway on one and Striff reads it the next time a pull request changes code it names.",
+    },
+    {
+      q: "Does Striff comment on my pull requests, and can I turn that off?",
+      a: "Striff can leave one comment on a pull request that breaks, fixes, adds or removes a documented rule, and updates it on each push. Each repository chooses on its Checks tab (repository admins only); a repository that hasn't chosen follows the default an account admin sets on the account's Notifications tab. Commenting needs the Pull requests: write permission on the installation. The same tab can fail the check when a pull request breaks a documented rule; make the check required in GitHub to block merging.",
     },
     {
       q: "I enabled 20 repos but Striff only worked on 3. What do I pay?",

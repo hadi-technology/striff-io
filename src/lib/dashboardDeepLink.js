@@ -13,6 +13,8 @@ const NAME = /^[A-Za-z0-9._-]{1,100}$/;
 export const PENDING_REPO_KEY = "striff.pendingRepo";
 /** The same for the document a deep link named. */
 export const PENDING_DOC_KEY = "striff.pendingDoc";
+/** The same for the rule a deep link named. */
+export const PENDING_RULE_KEY = "striff.pendingRule";
 
 /**
  * The repository a dashboard address names, or null where it names none GitHub could have.
@@ -90,15 +92,46 @@ export function docFromSearch(search) {
 }
 
 /**
- * The address with its repo and doc parameters set (or taken out where null or undefined),
- * everything else kept. Left alone where a parameter's value is undefined.
+ * A rule's id as the address may carry it: the API's factId, "<document path>|<hex>", for example
+ * "architecture/README.md|87b607febdda". Null where it could not be one. Whether the document has
+ * such a rule is for its rules to say.
+ *
+ * @param {unknown} value
+ */
+export function validRuleId(value) {
+  if (typeof value !== "string") return null;
+  const id = value.trim();
+  const bar = id.lastIndexOf("|");
+  if (bar < 1 || id.length > 600) return null;
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(id.slice(bar + 1))) return null;
+  return validDocPath(id.slice(0, bar)) ? id : null;
+}
+
+/**
+ * The rule an address names, or null where it names none.
+ *
+ * @param {string} search the address's query string, with or without its "?"
+ */
+export function ruleFromSearch(search) {
+  return validRuleId(new URLSearchParams(search || "").get("rule"));
+}
+
+/** The document a rule id belongs to: everything before its last "|". */
+export function docOfRule(ruleId) {
+  const id = validRuleId(ruleId);
+  return id ? id.slice(0, id.lastIndexOf("|")) : null;
+}
+
+/**
+ * The address with its repo, doc and rule parameters set (or taken out where null), everything
+ * else kept. Left alone where a parameter's value is undefined.
  *
  * @param {string} href the current address
- * @param {{ repo?: string | null, doc?: string | null }} link
+ * @param {{ repo?: string | null, doc?: string | null, rule?: string | null }} link
  */
 export function withLink(href, link) {
   const url = new URL(href);
-  for (const key of ["repo", "doc"]) {
+  for (const key of ["repo", "doc", "rule"]) {
     const value = link[key];
     if (value === undefined) continue;
     if (value === null) url.searchParams.delete(key);

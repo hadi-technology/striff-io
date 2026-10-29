@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-const { repoFromSearch, findRepo, withoutRepoParam, validDocPath, docFromSearch, withLink, docLink } = await import("../src/lib/dashboardDeepLink.js");
+const { repoFromSearch, findRepo, withoutRepoParam, validDocPath, docFromSearch, withLink, docLink, ruleFromSearch, validRuleId, docOfRule } = await import("../src/lib/dashboardDeepLink.js");
 
 test("a dashboard address names a repository only where GitHub could have named it", () => {
   assert.equal(repoFromSearch("?repo=acme/secret"), "acme/secret");
@@ -58,4 +58,28 @@ test("the shared link carries only the repo and doc, and reads back the same", (
   assert.equal(repoFromSearch(new URL(link).search), "acme/x");
   assert.equal(docFromSearch(new URL(link).search), "docs/My Notes.md");
   assert.equal(docLink("https://striff.io/acme/x", null, "AGENTS.md"), "https://striff.io/acme/x?doc=AGENTS.md");
+});
+
+test("an address names a rule by the id the API emits, and it knows its document", () => {
+  const id = "architecture/README.md|87b607febdda";
+  assert.equal(ruleFromSearch(`?repo=a/b&rule=${encodeURIComponent(id)}`), id);
+  assert.equal(ruleFromSearch(`?rule=${id}`), id);
+  assert.equal(docOfRule(id), "architecture/README.md");
+  assert.equal(docOfRule("AGENTS.md|2"), "AGENTS.md");
+  for (const bad of ["", "?rule=", "?rule=nobar", "?rule=|abc", "?rule=a.md|", "?rule=../x.md|abc", "?rule=a.md|a b",
+    "?rule=a.md|zz%00", `?rule=a.md|${"f".repeat(65)}`]) {
+    assert.equal(ruleFromSearch(bad), null, bad);
+  }
+  assert.equal(validRuleId(undefined), null);
+  assert.equal(docOfRule(null), null);
+});
+
+test("the rule parameter is set and taken out with the repo and doc", () => {
+  const href = "https://striff.io/dashboard?repo=acme/x&doc=a.md&rule=a.md%7Cabc123";
+  assert.equal(withLink(href, { rule: null }), "/dashboard?repo=acme%2Fx&doc=a.md");
+  assert.equal(withLink(href, { repo: null, doc: null, rule: null }), "/dashboard");
+  assert.equal(withLink("https://striff.io/dashboard", { repo: "acme/x", doc: "a.md", rule: "a.md|abc123" }),
+    "/dashboard?repo=acme%2Fx&doc=a.md&rule=a.md%7Cabc123");
+  // The shared link for a document never carries a rule.
+  assert.equal(docLink(href, "acme/x", "a.md"), "https://striff.io/dashboard?repo=acme%2Fx&doc=a.md");
 });

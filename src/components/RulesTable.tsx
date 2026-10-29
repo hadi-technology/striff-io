@@ -216,6 +216,7 @@ export default function RulesTable({
   readOnly = false,
   demo = false,
   ruleStates,
+  focusRule,
 }: {
   /** The rules in scope, already stripped of the ones nothing could judge. */
   rows: Row[];
@@ -247,6 +248,11 @@ export default function RulesTable({
   demo?: boolean;
   /** The Included/Excluded switch on each row; absent where nothing can be changed. */
   ruleStates?: RuleStateHandle;
+  /**
+   * The rule a link pointed at: opened if it sits in a folded line, scrolled to the middle of
+   * the screen and lit, so its switch is in view.
+   */
+  focusRule?: string | null;
 }) {
   /** A switch that failed says so on its own row until it is tried again. */
   const [stateError, setStateError] = useState<Record<string, string>>({});
@@ -334,6 +340,16 @@ export default function RulesTable({
     }
     return members;
   }, [visible]);
+
+  // A rule inside a folded line is opened first, or there is no row to scroll to.
+  useEffect(() => {
+    if (!focusRule) return;
+    const line = (collapse(shown, sentenceKey) as { rows: Row[]; text: string | null }[])
+      .find((each) => each.text && each.rows.some((row) => row.factId === focusRule));
+    if (line) setOpenLines((was) => (was.has(line.rows[0].factId) ? was : new Set(was).add(line.rows[0].factId)));
+  }, [focusRule, shown]);
+  /** The rule last scrolled to, so a redraw does not pull the page back to it. */
+  const scrolledTo = useRef<string | null>(null);
 
   function toggleLine(id: string) {
     setOpenLines((was) => {
@@ -508,6 +524,13 @@ export default function RulesTable({
             return (
             <tr
               key={row.factId}
+              data-rule={row.factId}
+              ref={row.factId === focusRule ? (el) => {
+                if (el && scrolledTo.current !== focusRule) {
+                  scrolledTo.current = focusRule;
+                  el.scrollIntoView({ block: "center", behavior: "smooth" });
+                }
+              } : undefined}
               /* The tone follows the pill. It used to follow the pull request's own status, so a
                  rule the default branch reports as broken -- which the pill says, in red -- got a
                  white row with no mark on it at all. Newly broken and already broken keep their
@@ -525,6 +548,7 @@ export default function RulesTable({
                 grouped ? "in-sentence" : "",
                 grouped && group.index === 0 ? "sentence-first" : "",
                 folded ? "is-collapsed" : "",
+                row.factId === focusRule ? "is-linked" : "",
               ].filter(Boolean).join(" ")}
             >
               {group.index === 0 && (

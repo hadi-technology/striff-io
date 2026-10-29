@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { RefreshMark } from "./DocsTab";
+import CheckSettings from "./CheckSettings";
 
 /**
  * The checks Striff ran on a repository's pull requests lately.
@@ -89,9 +90,17 @@ export default function ChecksTab({
   inShell,
   actionsSlot,
   badge,
+  account,
+  isOrg,
+  onSignedOut,
 }: {
   installationId: number;
   repo: string;
+  /** With `settings`, the GitHub account the app is installed on, for the link to its settings. */
+  account?: string;
+  isOrg?: boolean;
+  /** Where the settings panel is drawn above the list: the dashboard's own checks, not a public page or the demo. */
+  onSignedOut?: (onBlocked: () => void) => void;
   /** Shown under the dashboard's tab row, which names the repository and the view. */
   inShell?: boolean;
   /** With `inShell`, the refresh and the README badge are drawn here, in the shell's tab row. */
@@ -193,6 +202,10 @@ export default function ChecksTab({
           </button>
         )}
       </div>
+
+      {!sample && !source && (
+        <CheckSettings installationId={installationId} repo={repo} account={account} isOrg={isOrg} onSignedOut={onSignedOut} />
+      )}
 
       {error && <p className="dashboard-inline-error">{error}</p>}
       {!answer && loading && <p className="dashboard-metric-caption">Loading checks…</p>}

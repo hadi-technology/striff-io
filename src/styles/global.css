@@ -8096,3 +8096,21 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
 .rules-narrowed-clear { padding: 0; border: 0; background: none; font: inherit; color: #2563eb; cursor: pointer; }
 .rules-narrowed-clear:hover { text-decoration: underline; }
 @media print { .rules-narrowed { display: none; } }
+
+/* The Checks tab's settings for pull-request comments and fail-on-break. */
+.rule-switch.is-blocked { cursor: not-allowed; opacity: 0.6; }
+.check-settings { max-width: 40rem; margin: 0 0 1.25rem; padding: 0.25rem 1rem 1rem; border: 1px solid rgba(31, 35, 40, 0.12); border-radius: 0.75rem; background: #ffffff; box-shadow: var(--shadow-sm); }
+.check-settings .notif-row:first-of-type { margin-top: 0.75rem; }
+.check-settings-note { margin-bottom: 0; }
+.check-settings-note a { color: #0550ae; text-decoration: underline; }
+.check-settings-link { padding: 0; border: 0; background: none; font: inherit; color: #0550ae; cursor: pointer; text-decoration: underline; }
+.check-settings-readonly { margin-top: 1rem; }
+.check-settings-activity { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(31, 35, 40, 0.08); }
+@media (max-width: 640px) {
+  .check-settings { padding: 0.25rem 0.85rem 0.85rem; border-radius: 0.6rem; }
+}
+
+/* A rule a link pointed at: lit, with a bar on its edge, until the reader opens something else. */
+.rules-table tr.is-linked td { background-color: #fff3b0; }
+.rules-table tr.is-linked td:first-child { box-shadow: inset 3px 0 0 #bf8700; }
+.docs-link-note { margin: 0 0 0.75rem; padding: 0.55rem 0.85rem; border: 1px solid #e2e8f0; border-radius: 0.6rem; background: #f8fafc; color: #334155; font-size: 0.85rem; }

@@ -86,7 +86,34 @@ function githubUnavailable() {
 }
 
 /** The writes a PATCH may name, and the API path each goes to. No view is the exclusion list. */
-const PATCH_VIEWS = { "": "exclusions", exclusions: "exclusions", "force-read": "force-read", "rule-states": "rule-states" };
+const PATCH_VIEWS = {
+  "": "exclusions",
+  exclusions: "exclusions",
+  "force-read": "force-read",
+  "rule-states": "rule-states",
+  "check-settings": "check-settings",
+};
+
+/**
+ * The body of a check-settings write, from what the dashboard sent, or an error string. Only the
+ * two settings are passed on, each a boolean (the comment setting may also be null, which makes
+ * the repository follow its account again); nothing else of the request reaches the API.
+ */
+export function checkSettingsBody(input, login) {
+  if (!input || typeof input !== "object") return { error: "Malformed request" };
+  const body = {};
+  if (Object.prototype.hasOwnProperty.call(input, "prComments")) {
+    if (input.prComments !== null && typeof input.prComments !== "boolean") return { error: "Bad prComments" };
+    body.prComments = input.prComments;
+  }
+  if (Object.prototype.hasOwnProperty.call(input, "failOnBreak")) {
+    if (typeof input.failOnBreak !== "boolean") return { error: "Bad failOnBreak" };
+    body.failOnBreak = input.failOnBreak;
+  }
+  if (Object.keys(body).length === 0) return { error: "Nothing to change" };
+  if (login) body.updatedBy = login;
+  return { body };
+}
 
 async function readBody(res) {
   const text = await res.text();
@@ -198,7 +225,8 @@ async function proxy(event, ghToken, params) {
     }
     // Excluding a doc, a folder or the repository switches off every rule in it, so it is gated
     // the same as switching off one rule.
-    const gated = method === "PATCH" && (patchView === "rule-states" || patchView === "exclusions");
+    const gated = method === "PATCH"
+      && (patchView === "rule-states" || patchView === "exclusions" || patchView === "check-settings");
     const standing = gated ? await adminStanding(ghToken, owner, repo) : "yes";
     if (standing === "unknown") return githubUnavailable();
     if (standing !== "yes") {
@@ -207,12 +235,16 @@ async function proxy(event, ghToken, params) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           error: "not_repo_admin",
-          message: "Only the repository's owner and admins can change which docs and rules are checked.",
+          message: patchView === "check-settings"
+            ? "Only repository admins can change this."
+            : "Only the repository's owner and admins can change which docs and rules are checked.",
         }),
       };
     }
 
     const token = generateRepoToken(installationId, owner, repo);
+    const repoBase = `${STRIFF_API_BASE}/api/v1/organizations/${encodeURIComponent(installationId)}`
+      + `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
     const base = `${STRIFF_API_BASE}/api/v1/organizations/${encodeURIComponent(installationId)}`
       + `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/doc-catalog`;
 
@@ -228,6 +260,29 @@ async function proxy(event, ghToken, params) {
       const asked = await callerLogin(cache, ghToken);
       url = `${base}/baseline?token=${token}${asked ? `&actor=${encodeURIComponent(asked)}` : ""}`;
       init = { method: "POST", headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
+    } else if (method === "PATCH" && patchView === "check-settings") {
+      // The check's comment and fail-on-break settings: the API takes a PUT, and the name on the
+      // record is the token's, whoever the body claims.
+      let asked;
+      try {
+        asked = JSON.parse(event.body || "{}");
+      } catch {
+        return { statusCode: 400, body: JSON.stringify({ error: "Malformed request" }) };
+      }
+      const written = checkSettingsBody(asked, await callerLogin(cache, ghToken));
+      if (written.error) {
+        return {
+          statusCode: 400,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ error: written.error }),
+        };
+      }
+      url = `${repoBase}/check-settings?token=${token}`;
+      init = {
+        method: "PUT",
+        headers: { "X-Server-Key": STRIFF_SERVER_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify(written.body),
+      };
     } else if (method === "PATCH") {
       // Two lists say never read this and never skip it; the rule states say which rules a pull
       // request is checked against.
@@ -248,6 +303,11 @@ async function proxy(event, ghToken, params) {
         },
         body: JSON.stringify(asked),
       };
+    } else if (params.view === "check-settings") {
+      // The comment and fail-on-break settings, the permission state and the last 30 days of
+      // comments. Any reader who sees the repository may read them; only an admin may change them.
+      url = `${repoBase}/check-settings?token=${token}`;
+      init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
     } else if (params.view === "badge") {
       // The README badge's key for this repository, and whether a README has shown it yet.
       url = `${base}/badge?token=${token}`;

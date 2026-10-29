@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { createElement, lazy, Suspense, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { copyText } from "../lib/copyText.js";
-import { docFromSearch, docLink, repoFromSearch, withLink } from "../lib/dashboardDeepLink.js";
+import { docFromSearch, docLink, docOfRule, repoFromSearch, ruleFromSearch, withLink } from "../lib/dashboardDeepLink.js";
 import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
 import { issueIndex, withRuleIssues, withStaleNameIssue, type FindingIssue, type IssueIndex } from "./findingIssue.ts";
@@ -990,6 +990,12 @@ export default function DocsTab({
    * repository has it. `repo` is the repository the address named, where it named one.
    */
   const pendingDoc = useRef<{ repo: string | null; doc: string } | null>(null);
+  /** The rule the address named, held until its document's rules are in. */
+  const pendingRule = useRef<string | null>(null);
+  /** The rule a link pointed at, once found in its document: lit and scrolled to. */
+  const [focusRule, setFocusRule] = useState<string | null>(null);
+  /** Said when a link named a document or rule this repository doesn't have. */
+  const [linkNote, setLinkNote] = useState("");
   /** Whether the "Copy link" control last copied, so it can say so for a moment. */
   const [linkCopied, setLinkCopied] = useState<"" | "copied" | "failed">("");
   /** Which document was asked for last; an older answer never paints over a newer one. */
@@ -1056,7 +1062,10 @@ export default function DocsTab({
   // has no address to ask; the address is also taken back out of the page when the view closes.
   useEffect(() => {
     if (!addressLink || sample) return;
-    const doc = docFromSearch(window.location.search);
+    const rule = ruleFromSearch(window.location.search);
+    // A rule's id begins with its document's path, so a link that names only the rule still knows where to go.
+    const doc = docFromSearch(window.location.search) ?? docOfRule(rule);
+    if (rule) pendingRule.current = rule;
     if (doc) {
       pendingDoc.current = {
         repo: addressLink === "dashboard" ? repoFromSearch(window.location.search) : null,
@@ -1067,7 +1076,7 @@ export default function DocsTab({
     return () => {
       try {
         window.history.replaceState(window.history.state, "",
-          withLink(window.location.href, addressLink === "dashboard" ? { repo: null, doc: null } : { doc: null }));
+          withLink(window.location.href, addressLink === "dashboard" ? { repo: null, doc: null, rule: null } : { doc: null, rule: null }));
       } catch {
         // See syncAddress.
       }
@@ -1412,7 +1421,8 @@ export default function DocsTab({
   function syncAddress(doc: string | null) {
     if (!addressLink || sample || pendingDoc.current) return;
     try {
-      const link = addressLink === "dashboard" ? { repo, doc } : { doc };
+      // The rule a link named is taken out once the page has acted on it.
+      const link = addressLink === "dashboard" ? { repo, doc, rule: null } : { doc, rule: null };
       window.history.replaceState(window.history.state, "", withLink(window.location.href, link));
     } catch {
       // An address that cannot be written is only a link that is not kept up to date.
@@ -1444,10 +1454,18 @@ export default function DocsTab({
     // A path the repository has no document at opens the repository as usual, and leaves the
     // address as a link to the repository alone.
     if (docs.some((doc) => doc.path === wanted.doc)) openDoc(wanted.doc);
-    else syncAddress(null);
+    else {
+      pendingRule.current = null;
+      setLinkNote(`${wanted.doc} isn't one of this repository's docs. Showing all of them.`);
+      syncAddress(null);
+    }
   }
 
+
+
   async function openDoc(path: string) {
+    setFocusRule(null);
+    setLinkNote("");
     syncAddress(path);
     setSelected(path);
     setPaneTab("rules");
@@ -1476,6 +1494,8 @@ export default function DocsTab({
 
   /** Selects a node of the tree: the repository, a folder and everything under it, or a document. */
   function select(path: string) {
+    setFocusRule(null);
+    setLinkNote("");
     if ((catalog?.documents || []).some((doc) => doc.path === path)) {
       openDoc(path);
       return;
@@ -1883,6 +1903,21 @@ export default function DocsTab({
   }, [scopeKind, selected, detail, rulesIndex, catalog]);
   // The rows as shown: with the issues each is tracked in, once that answer has come.
   const shownRows = useMemo(() => withRuleIssues(scopeRows, findingIssues), [scopeRows, findingIssues]);
+
+  // Once the linked document's rules are in, finds the rule the link named. A document that has
+  // no such rule is shown as it is, with a note.
+  useEffect(() => {
+    const id = pendingRule.current;
+    if (!id || scopeKind !== "doc" || !detail || detail.document.path !== selected) return;
+    pendingRule.current = null;
+    if (scopeRows.some((row) => row.factId === id)) {
+      setFilter("all");
+      setPaneTab("rules");
+      setFocusRule(id);
+    } else {
+      setLinkNote(`That rule isn't in ${selected} any more. Showing the document.`);
+    }
+  }, [detail, scopeRows, selected]);
 
   /* ─── The Document tab ──────────────────────────────────────────── */
 
@@ -2460,6 +2495,12 @@ export default function DocsTab({
     <div className="docs-tab">
       {ruleStateBlocked && <span id={blockedId} className="sr-only">{ruleStateBlocked}</span>}
       {!rulesIndex && <span id={loadingId} className="sr-only">The rules are still loading.</span>}
+      {linkNote && (
+        <p className="docs-link-note" role="status">
+          {linkNote}{" "}
+          <button type="button" className="check-settings-link" onClick={() => setLinkNote("")}>Dismiss</button>
+        </p>
+      )}
       {paletteOpen && (
         <div className="docs-palette-scrim" onClick={() => setPaletteOpen(false)}>
           <div className="docs-palette" role="dialog" aria-label="Search docs and rules" onClick={(event) => event.stopPropagation()}>
@@ -3191,6 +3232,7 @@ export default function DocsTab({
                     scopeLabel={scopeLabel}
                     fileStem={scopeFileStem}
                     showPath={false}
+                    focusRule={focusRule}
                     filter={ruleFilter}
                     onShowAll={() => setFilter("all")}
                     docCount={1}
