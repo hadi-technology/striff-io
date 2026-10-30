@@ -96,8 +96,8 @@ const PATCH_VIEWS = {
 
 /**
  * The body of a check-settings write, from what the dashboard sent, or an error string. Only the
- * two settings are passed on, each a boolean (the comment setting may also be null, which makes
- * the repository follow its account again); nothing else of the request reaches the API.
+ * two settings are passed on, each true, false or null (null makes the repository follow its
+ * account again); nothing else of the request reaches the API.
  */
 export function checkSettingsBody(input, login) {
   if (!input || typeof input !== "object") return { error: "Malformed request" };
@@ -107,7 +107,7 @@ export function checkSettingsBody(input, login) {
     body.prComments = input.prComments;
   }
   if (Object.prototype.hasOwnProperty.call(input, "failOnBreak")) {
-    if (typeof input.failOnBreak !== "boolean") return { error: "Bad failOnBreak" };
+    if (input.failOnBreak !== null && typeof input.failOnBreak !== "boolean") return { error: "Bad failOnBreak" };
     body.failOnBreak = input.failOnBreak;
   }
   if (Object.keys(body).length === 0) return { error: "Nothing to change" };
@@ -306,8 +306,10 @@ async function proxy(event, ghToken, params) {
     } else if (params.view === "check-settings") {
       // The comment and fail-on-break settings, the permission state and the last 30 days of
       // comments. Any reader who sees the repository may read them; only an admin may change them.
+      // The user's own token goes along so the API can say whether they administer the account:
+      // that decides whether the page links to the account's settings.
       url = `${repoBase}/check-settings?token=${token}`;
-      init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY } };
+      init = { headers: { "X-Server-Key": STRIFF_SERVER_KEY, "X-GitHub-User-Token": ghToken } };
     } else if (params.view === "badge") {
       // The README badge's key for this repository, and whether a README has shown it yet.
       url = `${base}/badge?token=${token}`;

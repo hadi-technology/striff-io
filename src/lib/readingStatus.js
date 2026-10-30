@@ -31,6 +31,17 @@ function count(value) {
 }
 
 /**
+ * Whether Striff does no work on the repository at all: a private repository with no plan. The page
+ * says so and offers the plan, and shows nothing it would know only from work that was never done
+ * (counts, a listing that failed), whatever the catalogue holds.
+ *
+ * @param {object | null | undefined} status the catalogue's `status`
+ */
+export function notCovered(status) {
+  return status?.state === "private_no_plan";
+}
+
+/**
  * The header for a status.
  *
  * @param {object | null | undefined} status the catalogue's `status`

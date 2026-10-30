@@ -38,6 +38,8 @@ function shapeInstallation(inst, repositories) {
       // A fork has issues turned off unless its owner turns them on, and GitHub answers a
       // prefilled new-issue link there with a 404: the page offers an issue only where one opens.
       has_issues: repo.has_issues,
+      // Archived repositories take no pull requests, so the settings table leaves them out.
+      archived: repo.archived === true,
     })),
   };
 }

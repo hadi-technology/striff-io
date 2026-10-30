@@ -19,7 +19,7 @@ import {
   ruleCounts,
 } from "../lib/ruleStates.js";
 import RevisionLine from "./RevisionLine";
-import { readingHeader } from "../lib/readingStatus.js";
+import { notCovered, readingHeader } from "../lib/readingStatus.js";
 import { Clamped, mark, plainText, snippet, useWatch, withCode, when } from "./docRules";
 import RulesTable, {
   pathStem,
@@ -2392,7 +2392,10 @@ export default function DocsTab({
   const readOffered = !readOnly && paidReading && readWaiting > 0 && !readClosed;
 
   /** The repository's counts, beside the heading. */
-  const tally = summary && (
+  // A repository Striff does no work on shows only the plan message: no counts, and no listing that
+  // was never meant to happen, whatever the catalogue holds.
+  const uncovered = notCovered(catalog?.status);
+  const tally = summary && !uncovered && (
     <div className="docs-tally">
       {/* The whole repository, whatever is selected: see repoCounts. */}
       <button
@@ -2689,7 +2692,7 @@ export default function DocsTab({
       {loading && <p className="dashboard-metric-caption">Loading documents...</p>}
       {error && <p className="dashboard-inline-error">{error}</p>}
 
-      {catalog && catalog.documents.length === 0 && !loading && (
+      {catalog && !uncovered && catalog.documents.length === 0 && !loading && (
         <div className="dashboard-empty">
           {catalog.lastAttempt?.outcome === "failed" ? (
             <>
@@ -2730,7 +2733,7 @@ export default function DocsTab({
         </div>
       )}
 
-      {catalog && catalog.documents.length > 0 && (
+      {catalog && !uncovered && catalog.documents.length > 0 && (
         <div
           className={`docs-split${resizing ? " is-resizing" : ""}${namesFirst ? " is-names-first" : ""}`}
           ref={split}

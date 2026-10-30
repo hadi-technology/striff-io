@@ -3,7 +3,8 @@ import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab, { GitHubMark } from "./DocsTab";
 import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
-import NotificationsPanel from "./NotificationsPanel";
+import SettingsTab from "./SettingsTab";
+import { sectionFromAddress } from "../lib/checkSettings.js";
 import { PENDING_DOC_KEY, PENDING_REPO_KEY, PENDING_RULE_KEY, docFromSearch, findRepo, repoFromSearch, ruleFromSearch, validDocPath, validRepo, validRuleId, withLink } from "../lib/dashboardDeepLink.js";
 import { signInUrl } from "../lib/githubSignIn.js";
 
@@ -24,7 +25,7 @@ interface User {
 }
 
 /** The sections of the dashboard: three belong to the account, two to the repository in view. */
-type Section = "repos" | "docs" | "checks" | "metrics" | "billing" | "notifications";
+type Section = "repos" | "docs" | "checks" | "metrics" | "billing" | "settings";
 
 interface Repo {
   full_name: string;
@@ -33,6 +34,8 @@ interface Repo {
   default_branch?: string;
   /** Whether the repository takes issues; a fork does not unless its owner turned them on. */
   has_issues?: boolean;
+  /** Whether the repository is archived, and so takes no pull requests. */
+  archived?: boolean;
 }
 
 interface Installation {
@@ -113,6 +116,8 @@ export default function Dashboard() {
   const [section, setSection] = useState<Section>("repos");
   // Which repository the docs and rules view is showing; set by opening one from Repositories.
   const [openRepo, setOpenRepo] = useState<string | null>(null);
+  /** The part of Settings a link asked to land on. */
+  const [settingsFocus, setSettingsFocus] = useState<"notifications" | "checks" | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
   /** A repository a link asked for that none of this reader's installations covers. */
   const [unreachableRepo, setUnreachableRepo] = useState<string | null>(null);
@@ -135,6 +140,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (window.location.hash === "#badge") setBadgeOpen(true);
+    // The account's old Notifications tab is a section of Settings now; its addresses land there.
+    const asked = sectionFromAddress(window.location.search, window.location.hash);
+    if (asked) {
+      setSection(asked.section);
+      setSettingsFocus(asked.focus);
+    }
   }, []);
 
   useEffect(() => {
@@ -397,6 +408,7 @@ export default function Dashboard() {
               onAutoPlanConsumed={() => setAutoCheckout(null)}
               section={section}
               onSection={setSection}
+              settingsFocus={settingsFocus}
               openRepo={openRepo}
               actionsSlot={actionsSlot}
               repoBadge={(() => {
@@ -731,7 +743,7 @@ function TabRow({
         ["metrics", "Metrics", "overview", ""],
         ["repos", "Repositories", "repos", String((current.repositories || []).length)],
         ["billing", "Billing", "billing", ""],
-        ["notifications", "Notifications", "notifications", ""],
+        ["settings", "Settings", "settings", ""],
       ];
   const selected = (current.repositories || []).find((r) => r.full_name === openRepo);
   return (
@@ -946,7 +958,7 @@ const NavIcon = ({ name }: { name: string }) => {
     docs: ["M3.5 1.75h5.5l3.5 3.5v9h-9Z", "m5.75 9.5 1.5 1.5 3-3"],
     checks: ["M8 1.75a6.25 6.25 0 1 0 0 12.5a6.25 6.25 0 1 0 0-12.5Z", "m5.5 8.25 1.75 1.75 3.25-3.5"],
     billing: ["M1.5 3.5h13v9h-13z", "M1.5 6.5h13"],
-    notifications: ["M3.5 11.5V7a4.5 4.5 0 0 1 9 0v4.5l1 1h-11Z", "M6.5 14h3"],
+    settings: ["M2 4.5h7", "M12 4.5h2", "M10.5 3a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3Z", "M2 11.5h2", "M7 11.5h7", "M5.5 10a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3Z"],
   };
   return createElement(
     "svg",
@@ -964,6 +976,7 @@ function InstallationCard({
   onAutoPlanConsumed,
   section,
   onSection,
+  settingsFocus,
   openRepo,
   actionsSlot,
   repoBadge,
@@ -976,6 +989,7 @@ function InstallationCard({
   onAutoPlanConsumed: () => void;
   section?: Section;
   onSection?: (section: Section) => void;
+  settingsFocus?: "notifications" | "checks" | null;
   openRepo?: string | null;
   /** The tab row's right side, where the open repository's views put their refresh and badge. */
   actionsSlot?: HTMLElement | null;
@@ -1397,15 +1411,17 @@ function InstallationCard({
             </div>
           ) : installTab === "checks" ? (
             <div className="mt-3 dashboard-metric-fade-in">
-              <ChecksTab installationId={installation.id} repo={openRepo || ""} inShell={section !== undefined} actionsSlot={actionsSlot} badge={repoBadge} account={installation.account?.login || ""} isOrg={installation.account?.type === "Organization"} onSignedOut={signInAgain} />
+              <ChecksTab installationId={installation.id} repo={openRepo || ""} inShell={section !== undefined} actionsSlot={actionsSlot} badge={repoBadge} account={installation.account?.login || ""} isOrg={installation.account?.type === "Organization"} onSignedOut={signInAgain} onOpenAccountSettings={() => setInstallTab("settings")} appliesOnSubscribe={!!billingInfo && !billingInfo.hasSubscription && !!repos.find((r) => r.full_name === openRepo)?.private} />
             </div>
-          ) : installTab === "notifications" ? (
+          ) : installTab === "settings" ? (
             <div className="mt-3 dashboard-metric-fade-in">
-              <NotificationsPanel
+              <SettingsTab
                 installationId={installation.id}
                 account={installation.account?.login || ""}
                 isOrg={installation.account?.type === "Organization"}
-                repos={repos.map((r) => r.full_name)}
+                repos={repos}
+                hasPlan={billingInfo ? billingInfo.hasSubscription : null}
+                focus={settingsFocus}
                 onSignedOut={signInAgain}
               />
             </div>

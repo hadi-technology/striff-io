@@ -167,7 +167,7 @@ test("bootstrap gathers every page, returns the dashboard's shape and caches wha
     account: { login: "org0", avatar_url: "https://avatars/org0", type: "Organization" },
     repository_selection: "selected",
     repositories: github[TOKEN_A].repositories[1000].map((r) => ({
-      full_name: r.full_name, private: true, html_url: r.html_url, default_branch: "main",
+      full_name: r.full_name, private: true, html_url: r.html_url, default_branch: "main", archived: false,
     })),
   });
   assert.equal(body.installations[0].repositories.length, 230);

@@ -93,6 +93,8 @@ export default function ChecksTab({
   account,
   isOrg,
   onSignedOut,
+  onOpenAccountSettings,
+  appliesOnSubscribe,
 }: {
   installationId: number;
   repo: string;
@@ -101,6 +103,10 @@ export default function ChecksTab({
   isOrg?: boolean;
   /** Where the settings panel is drawn above the list: the dashboard's own checks, not a public page or the demo. */
   onSignedOut?: (onBlocked: () => void) => void;
+  /** Opens the account's Settings tab. */
+  onOpenAccountSettings?: () => void;
+  /** Whether the repository is private and its account has no plan. */
+  appliesOnSubscribe?: boolean;
   /** Shown under the dashboard's tab row, which names the repository and the view. */
   inShell?: boolean;
   /** With `inShell`, the refresh and the README badge are drawn here, in the shell's tab row. */
@@ -160,7 +166,7 @@ export default function ChecksTab({
   return (
     <div className="checks-tab">
       {!sample && !source && (
-        <CheckSettings installationId={installationId} repo={repo} account={account} isOrg={isOrg} onSignedOut={onSignedOut} />
+        <CheckSettings installationId={installationId} repo={repo} account={account} isOrg={isOrg} onSignedOut={onSignedOut} onOpenAccountSettings={onOpenAccountSettings} appliesOnSubscribe={appliesOnSubscribe} />
       )}
       <div className="checks-head">
         <div>

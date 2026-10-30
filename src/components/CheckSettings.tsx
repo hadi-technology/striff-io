@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
-import { Switch } from "./NotificationsPanel";
+import ChoiceSelect from "./ChoiceSelect";
 import {
+  APPLIES_FROM,
   activityLine,
+  mayOpenAccountSettings,
+  repoLocked,
+  words,
   installationSettingsUrl,
   permissionMissing,
   repoFormDirty,
@@ -15,9 +19,12 @@ const READ_ONLY = "Only repository admins can change this.";
 interface Settings {
   prComments: boolean;
   prCommentsChoice: boolean | null;
-  followingDefault: boolean;
   accountDefault: boolean;
   failOnBreak: boolean;
+  failOnBreakChoice: boolean | null;
+  accountFailOnBreakDefault: boolean;
+  locked: boolean;
+  canManageInstallation: boolean;
   commentsAvailable: boolean;
   pullRequestsPermissionMissing: boolean;
   activity?: { available: boolean; days?: number; commented?: number; deleted?: number };
@@ -34,6 +41,8 @@ export default function CheckSettings({
   account,
   isOrg,
   onSignedOut,
+  onOpenAccountSettings,
+  appliesOnSubscribe,
 }: {
   installationId: number;
   /** The repository, "owner/name". */
@@ -42,6 +51,10 @@ export default function CheckSettings({
   account?: string;
   isOrg?: boolean;
   onSignedOut?: (onBlocked: () => void) => void;
+  /** Opens the account's Settings tab. */
+  onOpenAccountSettings?: () => void;
+  /** Whether the repository is private and its account has no plan, so nothing applies yet. */
+  appliesOnSubscribe?: boolean;
 }) {
   const [owner, name] = repo.split("/");
   const [data, setData] = useState<Settings | null>(null);
@@ -138,14 +151,23 @@ export default function CheckSettings({
     );
   }
 
-  const canEdit = admin === true;
-  const blocked = canEdit ? null : admin === false ? READ_ONLY : "Checking whether you administer this repository.";
+  // The installation's account type, as the API reports it; a personal account has no lock.
+  const org = data.accountType ? data.accountType === "Organization" : !!isOrg;
+  const locked = org && repoLocked(data);
+  const w = words(org);
+  const canEdit = admin === true && !locked;
+  const blocked = canEdit ? null
+    : locked ? w.lockedAsk
+    : admin === false ? READ_ONLY : "Checking whether you administer this repository.";
   const dirty = repoFormDirty(form, saved);
   const change = (patch: Partial<typeof form>) => {
     setForm({ ...form, ...patch });
     setJustSaved(false);
   };
   const activity = activityLine(data.activity);
+  // What the first option resolves to: the account's setting, and for comments also whether the
+  // service has them available at all.
+  const commentsDefault = data.commentsAvailable !== false && data.accountDefault === true;
 
   return (
     <section className="check-settings" aria-label="Pull request settings">
@@ -165,41 +187,58 @@ export default function CheckSettings({
       {data.commentsAvailable === false && (
         <p className="notif-row-hint">Pull request comments aren't available for this repository yet.</p>
       )}
+      {locked && (
+        <p className="notif-row-hint check-settings-readonly" role="status">
+          {w.lockedAsk}
+          {mayOpenAccountSettings(data) && onOpenAccountSettings && (
+            <>
+              {" "}
+              <button type="button" className="check-settings-link" onClick={onOpenAccountSettings}>
+                Change in account settings
+              </button>
+            </>
+          )}
+        </p>
+      )}
 
-      <Switch
-        checked={form.comments}
-        onChange={(comments) => change({ comments, following: false })}
-        label="Comment on pull requests"
-        disabledReason={blocked}
-        hint={
-          <>
+      <div className="notif-row check-settings-choice">
+        <div className="notif-row-text">
+          <p className="notif-row-label">Comment on pull requests</p>
+          <p className="notif-row-hint">
             One comment when a pull request breaks, fixes, adds or removes a documented rule,
             updated on each push.
-            {form.following && " Following your account's default."}
-            {!form.following && canEdit && (
-              <>
-                {" "}
-                <button
-                  type="button"
-                  className="check-settings-link"
-                  onClick={() => change({ comments: data.accountDefault, following: true })}
-                >
-                  Follow your account's default
-                </button>
-              </>
-            )}
-          </>
-        }
-      />
-      <Switch
-        checked={form.failOnBreak}
-        onChange={(failOnBreak) => change({ failOnBreak })}
-        label="Fail the check when a pull request breaks a documented rule"
-        disabledReason={blocked}
-        hint="Only rules this pull request breaks. Rules that were already broken, or that couldn't be checked, never fail it. Make the check required to block merging."
-      />
+          </p>
+        </div>
+        <ChoiceSelect
+          value={form.comments}
+          onChange={(comments) => change({ comments })}
+          label="Comment on pull requests"
+          resolved={commentsDefault}
+          isOrg={org}
+          blockedReason={blocked}
+        />
+      </div>
+      <div className="notif-row check-settings-choice">
+        <div className="notif-row-text">
+          <p className="notif-row-label">Fail the check when a pull request breaks a documented rule</p>
+          <p className="notif-row-hint">
+            Only rules this pull request breaks. Rules that were already broken, or that couldn't be
+            checked, never fail it. Make the check required to block merging.
+          </p>
+        </div>
+        <ChoiceSelect
+          value={form.failOnBreak}
+          onChange={(failOnBreak) => change({ failOnBreak })}
+          label="Fail the check when a pull request breaks a documented rule"
+          resolved={data.accountFailOnBreakDefault === true}
+          isOrg={org}
+          blockedReason={blocked}
+        />
+      </div>
+      <p className="notif-row-hint">{APPLIES_FROM}</p>
+      {appliesOnSubscribe && <p className="notif-row-hint">These apply once you subscribe.</p>}
 
-      {admin === false && <p className="notif-row-hint check-settings-readonly">{READ_ONLY}</p>}
+      {admin === false && !locked && <p className="notif-row-hint check-settings-readonly">{READ_ONLY}</p>}
 
       {canEdit && (
         <div className="notif-actions">
