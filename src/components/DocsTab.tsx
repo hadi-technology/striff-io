@@ -2641,17 +2641,17 @@ export default function DocsTab({
           {/* The second sentence used to be there whatever the repository looked like, so a
               repository with every document read was still told some were waiting. It is now the
               count, or nothing. */}
-          <p className="docs-lede">
+          {!uncovered && (<p className="docs-lede">
             {source?.lede
               ?? "Pick a doc for its rules, a folder for everything beneath it, or the repository for all of them."}
-          </p>
+          </p>)}
           {!!source && repoStale > 0 && (
             <p className="docs-names-line">
               {repoStale}{staleNames?.truncated ? "+" : ""} stale
               name{repoStale === 1 && !staleNames?.truncated ? "" : "s"} in these docs.
             </p>
           )}
-          {catalog && <RevisionLine catalog={catalog} />}
+          {catalog && !uncovered && <RevisionLine catalog={catalog} />}
           {/* How far Striff has read the repository, from the API's own status. A public page is
               a snapshot with no plan to speak of, and an older server sends no status. */}
           {catalog && !source && (
