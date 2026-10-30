@@ -2479,6 +2479,7 @@ export default function DocsTab({
       {catalog && !readOnly && (
         <ReadRepository
           repo={repo}
+          installationId={installationId}
           reading={catalog.reading}
           /* Documents waiting to be read, which is the only work a reading does: see
              waitingToRead. The old sum subtracted the states it knew about and so counted

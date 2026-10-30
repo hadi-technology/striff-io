@@ -5624,6 +5624,9 @@ tr:hover .finding-flag-button,
 .read-repo-button.is-bad:hover:not(:disabled) { background: #fdf4f5; box-shadow: none; }
 @media (prefers-reduced-motion: reduce) { .read-repo-button { transition: none; } }
 .read-repo-note { color: #8a95a1; font-size: 0.76rem; }
+.read-repo-email { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.read-repo-email-label { display: inline-flex; align-items: center; gap: 0.35rem; color: #4b5866; font-size: 0.78rem; cursor: pointer; }
+.read-repo-email-label input { margin: 0; }
 .read-repo-note.is-bad { color: #8a5a1f; }
 @media print { .read-repo { display: none; } }
 .read-repo-note.is-good { color: #1a7f45; }
@@ -5775,8 +5778,10 @@ tr:hover .finding-flag-button,
 
 .repo-card {
   position: relative;
-  display: flex;
-  align-items: stretch;
+  /* The name takes the card's full first row; the badge and the GitHub link share the row below. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   border: 1px solid #e4e9ef;
   border-radius: 0.75rem;
   background: #fff;
@@ -5794,13 +5799,13 @@ tr:hover .finding-flag-button,
 }
 
 .repo-card-face {
-  flex: 1 1 auto;
+  grid-column: 1 / -1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.3rem;
-  padding: 0.85rem 0.4rem 0.85rem 0.95rem;
+  padding: 0.85rem 0.95rem 0.5rem;
   text-align: left;
   background: none;
   border: 0;
@@ -5813,9 +5818,8 @@ tr:hover .finding-flag-button,
 .repo-card-name {
   display: block;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* A long name wraps, at its separators where it has them and anywhere where it has none. */
+  overflow-wrap: anywhere;
   font-size: 0.9rem;
   letter-spacing: -0.008em;
   line-height: 1.3;
@@ -5870,11 +5874,10 @@ tr:hover .finding-flag-button,
 .repo-card-gh {
   display: grid;
   place-items: center;
-  align-self: center;
+  grid-column: 2;
   width: 1.9rem;
   height: 1.9rem;
-  margin-right: 0.6rem;
-  flex: 0 0 auto;
+  margin: 0 0.6rem 0.4rem 0;
   border-radius: 0.5rem;
   color: #c3cbd5;
   transition: color 140ms ease, background 140ms ease;
@@ -7246,13 +7249,8 @@ a.ghcheck-doc:hover { text-decoration: underline; }
 .dash-repo-badge .badge-control { max-width: 100%; }
 .dash-repo-badge .badge-control img { max-width: 100%; height: auto; max-height: 20px; }
 
-/* A repository card's badge: between its face and its link out, or under its name when narrow. */
-.repo-card-badge { flex: none; align-self: center; display: inline-flex; padding: 0 0.35rem; }
-@media (max-width: 520px) {
-  .repo-card { flex-wrap: wrap; }
-  .repo-card-face { flex-basis: calc(100% - 3rem); padding-bottom: 0.35rem; }
-  .repo-card-badge { order: 3; flex-basis: 100%; padding: 0 0.95rem 0.8rem; }
-}
+/* A repository card's badge: on the row under the name, with the link out at the other end. */
+.repo-card-badge { grid-column: 1; justify-self: start; display: inline-flex; padding: 0 0.95rem 0.8rem; }
 
 /* The badge panel over the page, opened from a repository card. */
 .badge-dialog-scrim {

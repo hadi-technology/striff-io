@@ -31,7 +31,7 @@ const SCOPES = new Set(["ALL", "REPOS"]);
 // "v1:<installation id>:<expiry>">. striff-api answers an expired one with 401 token_expired.
 const BILLING_TOKEN_LIFETIME_SEC = 30 * 24 * 60 * 60;
 
-function generateToken(installationId) {
+export function generateToken(installationId) {
   const expiresAt = Math.floor(Date.now() / 1000) + BILLING_TOKEN_LIFETIME_SEC;
   const signature = crypto
     .createHmac("sha256", STRIFF_BILLING_AUTH_SECRET)
@@ -40,7 +40,7 @@ function generateToken(installationId) {
   return `v1.${expiresAt}.${signature}`;
 }
 
-async function readBody(res) {
+export async function readBody(res) {
   const text = await res.text();
   try {
     return JSON.parse(text);
@@ -49,11 +49,11 @@ async function readBody(res) {
   }
 }
 
-function reply(statusCode, body) {
+export function reply(statusCode, body) {
   return { statusCode, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
 }
 
-function githubHeaders(token) {
+export function githubHeaders(token) {
   return {
     Authorization: `Bearer ${token}`,
     Accept: "application/vnd.github+json",
@@ -129,7 +129,7 @@ export const handler = async (event) => {
     proxy(event, token, String(installationId), parsed?.settings || null));
 };
 
-async function whoAmI(token) {
+export async function whoAmI(token) {
   const res = await fetch(`${GITHUB_API}/user`, { headers: githubHeaders(token) });
   if (res.status === 401) return TOKEN_REFUSED;
   if (!res.ok) return null;
@@ -138,7 +138,7 @@ async function whoAmI(token) {
   return { id: user.id, login: user.login };
 }
 
-async function primaryEmail(token) {
+export async function primaryEmail(token) {
   const res = await fetch(`${GITHUB_API}/user/emails`, { headers: githubHeaders(token) });
   if (res.status === 401) return TOKEN_REFUSED;
   if (!res.ok) return null;
@@ -146,7 +146,7 @@ async function primaryEmail(token) {
 }
 
 /** The repositories among `names` that the caller sees under this installation, as GitHub spells them. */
-async function seenRepos(cache, token, installationId, names) {
+export async function seenRepos(cache, token, installationId, names) {
   const cached = await cache.repositoryNames(installationId);
   let known = cached;
   if (!known) {

@@ -161,8 +161,87 @@ function rememberPress(repo: string, at: number) {
   }
 }
 
+type NoticeState = "unknown" | "off" | "on" | "ended" | "no_email" | "error";
+
+/**
+ * "Email me when it's done", beside a reading in progress: one email for this reading, only for
+ * someone who ticks it. It is shown checked when the person is already registered, says so when the
+ * reading has ended before the tick landed, and says why when GitHub has no verified address to
+ * send to, rather than looking registered.
+ */
+function EmailWhenDone({ installationId, repo }: { installationId: number; repo: string }) {
+  const [state, setState] = useState<NoticeState>("unknown");
+  const [busy, setBusy] = useState(false);
+  const url = `/.netlify/functions/reading-notice`;
+
+  useEffect(() => {
+    let live = true;
+    fetch(`${url}?installation_id=${installationId}&repo=${encodeURIComponent(repo)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!live || !data) return;
+        setState(data.reading === "ended" ? "ended" : data.watching ? "on" : "off");
+      })
+      .catch(() => {
+        // Unknown stays unticked; ticking asks the server again.
+      });
+    return () => {
+      live = false;
+    };
+  }, [installationId, repo]);
+
+  async function change(enabled: boolean) {
+    setBusy(true);
+    try {
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ installation_id: installationId, repo, enabled }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 409 && data?.error === "no_verified_email") {
+        setState("no_email");
+      } else if (!res.ok) {
+        setState("error");
+      } else if (data.reading === "ended") {
+        setState("ended");
+      } else {
+        setState(data.watching ? "on" : "off");
+      }
+    } catch {
+      setState("error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (state === "ended") {
+    return <span className="read-repo-note is-good">Already done. Press Refresh to see it.</span>;
+  }
+  return (
+    <span className="read-repo-email">
+      <label className="read-repo-email-label">
+        <input
+          type="checkbox"
+          checked={state === "on"}
+          disabled={busy}
+          onChange={(event) => change(event.target.checked)}
+        />
+        Email me when it's done
+      </label>
+      {state === "no_email" && (
+        <span className="read-repo-note is-bad" role="status">No verified email on your GitHub account</span>
+      )}
+      {state === "error" && (
+        <span className="read-repo-note is-bad" role="status">Could not save that. Try again.</span>
+      )}
+    </span>
+  );
+}
+
 export default function ReadRepository({
   repo,
+  installationId,
   reading: given,
   waiting,
   closed,
@@ -172,6 +251,8 @@ export default function ReadRepository({
 }: {
   /** The repository this is about, so a press is remembered against the right one. */
   repo: string;
+  /** The installation the repository is under, for the email opt-in. */
+  installationId?: number;
   /** Where the last reading got to, null where none was ever asked for. */
   reading: Reading | null;
   /**
@@ -278,6 +359,7 @@ export default function ReadRepository({
           )}
         </span>
         <span className="read-repo-note">Press Refresh to see what has been read since.</span>
+        {installationId != null && <EmailWhenDone installationId={installationId} repo={repo} />}
       </span>
     );
   }
