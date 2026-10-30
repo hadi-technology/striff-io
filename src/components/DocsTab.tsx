@@ -1,6 +1,7 @@
 import { createPortal } from "react-dom";
 import { createElement, lazy, Suspense, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { copyText } from "../lib/copyText.js";
+import { nextExpanded, revealPath } from "../lib/treeOpen.js";
 import { docFromSearch, docLink, docOfRule, repoFromSearch, ruleFromSearch, withLink } from "../lib/dashboardDeepLink.js";
 import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
@@ -624,15 +625,6 @@ function buildTree(documents: Doc[], repoName: string, ruleCount: (doc: Doc) => 
   return total(root);
 }
 
-/** Every folder that holds a document, so the tree opens showing what is in it. */
-function allFolders(node: TreeNode, into: Set<string> = new Set()): Set<string> {
-  if (!node.doc) {
-    into.add(node.path);
-    for (const child of node.children) allFolders(child, into);
-  }
-  return into;
-}
-
 const ChevronDown = () =>
   createElement(
     "svg",
@@ -964,11 +956,12 @@ export default function DocsTab({
   /** Whether this page gave up waiting for a listing that had not arrived. */
   const [listingStale, setListingStale] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [expanded, setExpanded] = useState<Set<string>>(() =>
-    initial
-      ? allFolders(buildTree(initial.catalog?.documents || [], (openRepo || "").split("/")[1] || ""))
-      : new Set([""])
-  );
+  /** The folders open: the repository itself to begin with; see {@link nextExpanded} for the rest. */
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set([""]));
+  /** The folders already given their opening default, so a reload never reopens what a reader closed. */
+  const [seenFolders, setSeenFolders] = useState<Set<string>>(() => new Set());
+  /** Whether the rules could not be loaded, so the folders open without them rather than wait. */
+  const [rulesFailed, setRulesFailed] = useState(false);
   /** Whether the view still shows the answers it was built with, which a first load refreshes. */
   const seeded = useRef(!!initial);
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -1121,6 +1114,9 @@ export default function DocsTab({
     setDocTexts({});
     setDetail(null);
     setFilter(null);
+    setSeenFolders(new Set());
+    setRulesFailed(false);
+    setExpanded(new Set([""]));
     putRules(null);
     setStaleNames(null);
     setFindingIssues(null);
@@ -1324,7 +1320,6 @@ export default function DocsTab({
     if (sample) {
       putCatalog(normalizeCatalog(sample.catalog));
       setStaleNames(sample.staleNames || null);
-      setExpanded(allFolders(buildTree(sample.catalog.documents || [], name)));
       setLoading(false);
       return;
     }
@@ -1350,7 +1345,6 @@ export default function DocsTab({
       putCatalog(normalizeCatalog(data));
       // A quiet look keeps the names on screen until the new answer replaces them.
       loadStaleNames(wanted, quiet);
-      setExpanded(allFolders(buildTree(data.documents || [], name)));
       // The documents a listing was waited for bring their rules with them.
       if (quiet && (data.documents || []).length > 0) loadRules();
     } catch {
@@ -1376,10 +1370,16 @@ export default function DocsTab({
     setRulesLoading(true);
     try {
       const res = await fetch(readUrl("rules"));
-      if (!res.ok || wanted !== rulesAt.current) return;
+      if (wanted !== rulesAt.current) return;
+      if (!res.ok) {
+        setRulesFailed(true);
+        return;
+      }
       putRules(normalizeRules(await res.json()));
+      setRulesFailed(false);
       setRulesRead((n) => n + 1);
     } catch {
+      if (wanted === rulesAt.current) setRulesFailed(true);
       // The tree, the states and one document's rules all still work without this; the rollups
       // say they are still loading rather than claiming a repository has no rules.
     } finally {
@@ -1832,6 +1832,37 @@ export default function DocsTab({
     () => buildTree(documents.filter((doc) => !isUnread(doc)), name, listedRules),
     [documents, name, listedCounts]
   );
+
+  // Gives each folder its opening default once the documents are known and the rules are either in
+  // or given up on, and again for folders a later reload brings. It is done while rendering, not in
+  // an effect, so a page built statically already has its folders open. A folder already seen is
+  // left as the reader has it; without rules only the folders that open are marked seen, so a later
+  // successful load still opens the results folders.
+  if (catalog && (rulesIndex || rulesFailed)) {
+    const next = nextExpanded({
+      docPaths: allDocs.map((doc) => doc.path),
+      resultPaths: rulesIndex ? resultDocs : [],
+      selected,
+      seen: seenFolders,
+      expanded,
+      markClosedSeen: !!rulesIndex,
+    });
+    if (next.seen !== seenFolders) {
+      setSeenFolders(next.seen);
+      if (next.expanded !== expanded) setExpanded(next.expanded);
+    }
+  }
+
+  // Whatever becomes selected, however it was reached, has its folders opened above it.
+  useEffect(() => {
+    setExpanded((open) => revealPath(open, selected));
+  }, [selected]);
+
+  // Choosing a filter opens the folders above the documents it shows, so the reader is led to them.
+  useEffect(() => {
+    if (chosenFilter === null || chosenFilter === "all") return;
+    setExpanded((open) => documents.reduce((acc, doc) => revealPath(acc, doc.path), open));
+  }, [chosenFilter]);
 
   /* ─── What is selected, and what it scopes ──────────────────────── */
 
