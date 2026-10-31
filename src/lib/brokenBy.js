@@ -1,12 +1,12 @@
 /**
  * What a rule reported broken is broken by, as the page says it.
  *
- * The server hands over the witnesses of the verdict as it stored them. A witness is one of two
- * shapes: an edge between two names (`a.B -violates-> c.D`) or one name (`com.app.Service`). A
- * stored list can also hold a sentence that is not a witness, such as the note that a rule was
- * already broken before the change; anything of neither shape is left out here, so the page never
- * prints it, whichever server sent it. The server does not send a file or line for a witness, so
- * none is shown or linked, and no path is made from a name.
+ * The server hands over the witnesses of the verdict as it stored them: an edge between two names
+ * (`a.B -violates-> c.D`), one name (`com.app.Service`), or a sentence, which is shown as written.
+ * Only the two notes a differential run attaches to an already-broken rule are left out, since they
+ * say nothing about the code and a server that has not yet dropped them still sends them. The
+ * server does not send a file or line for a witness, so none is shown or linked, and no path is
+ * made from a name.
  *
  * Edges are grouped by the name they leave, so a name that breaks the rule in four places is one
  * line with four targets. A dotted name is shortened to its last two segments (`module.member`);
@@ -19,6 +19,12 @@ const EDGE = /^(\S+)\s+-[\w-]*>\s+(\S+)$/;
 /** One name with no spaces. */
 const NAME = /^\S+$/;
 
+/** The differential notes, which are not witnesses. */
+const NOTES = new Set([
+  "already broken before this change; this change did not add to it",
+  "the code at this revision does not uphold this",
+]);
+
 /** The most lines a rule lists before saying how many more there are. */
 export const MOST_SHOWN = 3;
 
@@ -27,8 +33,8 @@ export const MOST_TARGETS = 3;
 
 /**
  * @param {unknown} evidence a rule's `evidence`, absent from an older server
- * @returns {{ from: string, to: string | null }[]} the witnesses: edges and lone names, each once,
- *     in order
+ * @returns {{ from: string, to: string | null, text?: boolean }[]} the witnesses, each once, in
+ *     order: an edge, a lone name, or a sentence (`text`, its words in `from`)
  */
 export function witnesses(evidence) {
   if (!Array.isArray(evidence)) return [];
@@ -37,11 +43,11 @@ export function witnesses(evidence) {
   for (const raw of evidence) {
     if (typeof raw !== "string") continue;
     const text = raw.replace(/\s+/g, " ").trim();
-    if (seen.has(text)) continue;
+    if (text === "" || NOTES.has(text) || seen.has(text)) continue;
     const edge = EDGE.exec(text);
     if (edge) out.push({ from: edge[1], to: edge[2] });
     else if (NAME.test(text)) out.push({ from: text, to: null });
-    else continue;
+    else out.push({ from: text, to: null, text: true });
     seen.add(text);
   }
   return out;
@@ -58,18 +64,21 @@ export function shortName(name) {
 
 /**
  * @param {unknown} evidence a rule's `evidence`
- * @returns {{ lines: { from: string, to: string[], moreTo: number }[], more: number }} the lines to
+ * @returns {{ lines: { from: string, text: boolean, to: string[], moreTo: number }[], more: number }} the lines to
  *     show, at most {@link MOST_SHOWN}, each a name and the names it breaks the rule towards, and
  *     how many further lines were left off
  */
 export function brokenBy(evidence) {
   const groups = new Map();
-  for (const { from, to } of witnesses(evidence)) {
+  const sentences = new Set();
+  for (const { from, to, text } of witnesses(evidence)) {
     if (!groups.has(from)) groups.set(from, []);
+    if (text) sentences.add(from);
     if (to !== null && !groups.get(from).includes(to)) groups.get(from).push(to);
   }
   const all = [...groups].map(([from, to]) => ({
     from,
+    text: sentences.has(from),
     to: to.slice(0, MOST_TARGETS),
     moreTo: Math.max(0, to.length - MOST_TARGETS),
   }));

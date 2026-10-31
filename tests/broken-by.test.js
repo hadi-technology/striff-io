@@ -15,8 +15,8 @@ const GAIA = [
 ];
 const AGENTBRIDGE = [NOTE, "com.github.catatafishen.agentbridge.ui.ChatDataModelKt"];
 
-test("the already-broken note is not a witness", () => {
-  assert.deepEqual(witnesses([NOTE]), []);
+test("the already-broken notes are not witnesses", () => {
+  assert.deepEqual(witnesses([NOTE, "the code at this revision does not uphold this"]), []);
   assert.deepEqual(brokenBy([NOTE]), { lines: [], more: 0 });
   assert.equal(witnesses(GAIA).length, 4);
 });
@@ -34,7 +34,7 @@ test("gaia reads as two sources, each with what it reaches", () => {
 
 test("a lone name is a witness with nothing it reaches", () => {
   const { lines } = brokenBy(AGENTBRIDGE);
-  assert.deepEqual(lines, [{ from: "com.github.catatafishen.agentbridge.ui.ChatDataModelKt", to: [], moreTo: 0 }]);
+  assert.deepEqual(lines, [{ from: "com.github.catatafishen.agentbridge.ui.ChatDataModelKt", text: false, to: [], moreTo: 0 }]);
 });
 
 test("a file and line is a name like any other: nothing is linked or rewritten", () => {
@@ -66,4 +66,10 @@ test("one source with many targets lists three and counts the rest", () => {
   const out = brokenBy(["a.A -> t.1", "a.A -> t.2", "a.A -> t.3", "a.A -> t.4", "a.A -> t.5"]);
   assert.equal(out.lines[0].to.length, 3);
   assert.equal(out.lines[0].moreTo, 2);
+});
+
+test("any other line is a witness, shown as written", () => {
+  const sentence = "web/Cart.java imports billing";
+  assert.deepEqual(brokenBy([NOTE, sentence]).lines, [{ from: sentence, text: true, to: [], moreTo: 0 }]);
+  assert.deepEqual(witnesses(["In the code: Order has total"]).map((w) => w.text), [true]);
 });

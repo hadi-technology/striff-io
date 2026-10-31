@@ -30,7 +30,7 @@ export default function BrokenBy({ evidence }: { evidence?: string[] | null }) {
       <span className="broken-by-label">Broken by</span>
       {lines.map((line) => (
         <span key={line.from} className="broken-by-line">
-          <Name name={line.from} />
+          {line.text ? line.from : <Name name={line.from} />}
           {line.to.length === 1 && line.moreTo === 0 && (
             <>
               {" → "}
