@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { brokenRulePrompt, issueUrl } from "./docIssue";
 import FindingActions from "./FindingActions";
 import type { FindingIssue } from "./findingIssue.ts";
+import BrokenBy from "./BrokenBy";
 import FlagFinding from "./FlagFinding";
 import FloatingPanel from "./FloatingPanel";
 import { RuleSwitch } from "./RuleStateControls";
@@ -68,6 +69,11 @@ export interface Rule {
    * where every name the rule uses is written in the sentence.
    */
   readingNote?: string | null;
+  /**
+   * What a rule reported broken is broken by, as the verdict cited it (an edge between two names,
+   * or one name); absent from an older server and empty where the verdict cited nothing.
+   */
+  evidence?: string[] | null;
 }
 
 /** The pair of units a rule crosses, or null where the server named none. */
@@ -624,6 +630,9 @@ export default function RulesTable({
                   <span className="rules-reading-note" title="The sentence does not write these names; they are Striff's reading of its words.">
                     {withCode(row.readingNote, term)}
                   </span>
+                )}
+                {!folded && !row.excluded && standing(row) === "broken" && (
+                  <BrokenBy evidence={row.evidence} />
                 )}
                 {grouped && !sameWords && checkedWords(row) && (
                   <span className="rules-checks" title="The words of the sentence this rule checks.">

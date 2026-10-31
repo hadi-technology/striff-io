@@ -1,5 +1,6 @@
 import { Component, Fragment, memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { parseDoc } from "../lib/docParse.js";
+import BrokenBy from "./BrokenBy";
 import { Clamped, when, withCode } from "./docRules";
 import { STANDING_HELP, STANDING_LABEL, standing, type Row } from "./RulesTable";
 import {
@@ -660,6 +661,9 @@ function RuleItem({ rule, owner, name, docPath, commit, onInclude, error, setErr
       <p className="dv-card-body">
         {outcomeLine(rule, owner, name)}
         {rule.pullNo && rule.judgedAtMs ? <span className="dv-card-when"> Last checked on PR #{rule.pullNo}, {when(rule.judgedAtMs)}.</span> : null}
+        {!rule.excluded && standing(rule) === "broken" && (
+          <BrokenBy evidence={rule.evidence} />
+        )}
       </p>
       <div className="dv-card-actions">
         {rule.excluded && onInclude && (

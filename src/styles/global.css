@@ -7869,6 +7869,29 @@ button.check-verdict { cursor: pointer; }
   .rules-table tr.in-sentence:not(.sentence-first) { padding-left: 0.75rem; border-left: 2px solid #e2e8f0; }
 }
 
+.broken-by {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: #9f1239;
+  overflow-wrap: break-word;
+}
+.broken-by code {
+  font-size: 0.72rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.3rem;
+  background: #fff1f2;
+  color: #9f1239;
+}
+.broken-by-label { font-weight: 600; }
+.broken-by-line { display: block; margin-top: 0.15rem; }
+.broken-by-to { display: flex; gap: 0.35rem; padding-left: 0.6rem; margin-top: 0.1rem; }
+.broken-by-to code { min-width: 0; }
+.check-broken { margin: 0.5rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.3rem; font-size: 0.8rem; color: #334155; }
+.check-broken li { display: block; }
+.check-broken-statement { font-weight: 600; }
+
 /* A finding tracked in an open GitHub issue: the issue in place of the button, GitHub's green mark. */
 /* Pink, not GitHub's green (an issue's state) or purple (a closed issue): this says "tracked". */
 .finding-action.is-tracked { border-color: #f5c2dd; background: #fff0f7; color: #1f2328; }

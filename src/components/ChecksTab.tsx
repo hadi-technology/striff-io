@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { RefreshMark } from "./DocsTab";
+import BrokenBy from "./BrokenBy";
 import CheckSettings from "./CheckSettings";
 
 /**
@@ -11,6 +12,16 @@ import CheckSettings from "./CheckSettings";
  * about the documented rules, with the pull request one click away. The last fifty at most, ten
  * at a time, and each page is asked for on its own so the first one arrives quickly.
  */
+
+/** A rule a check reports broken, with what it is broken by. */
+export interface BrokenRule {
+  docPath: string;
+  statement: string;
+  /** VIOLATED where the change broke it, PRE_EXISTING where it was already broken. */
+  status: string;
+  /** The edge or name the verdict cited; empty where it cited none. */
+  evidence?: string[] | null;
+}
 
 export interface Check {
   pullNo: string;
@@ -30,6 +41,8 @@ export interface Check {
    * yet. Counted in neither broken figure. Only a public page withholds any.
    */
   withheld?: number;
+  /** The rules counted in the two broken figures, each with what it is broken by; absent from an older server. */
+  broken?: BrokenRule[];
 }
 
 export interface ChecksPage {
@@ -267,6 +280,17 @@ export default function ChecksTab({
                     </p>
                   )}
                   {facts.length > 0 && <p className="check-facts">{facts.join(" · ")}</p>}
+                  {(check.broken || []).length > 0 && (
+                    <ul className="check-broken">
+                      {(check.broken || []).map((rule, at) => (
+                          <li key={`${rule.docPath}-${at}-${rule.statement}`}>
+                            <span className="check-broken-statement">{rule.statement}</span>
+                            <span className="check-broken-doc"> · {rule.docPath}</span>
+                            <BrokenBy evidence={rule.evidence} />
+                          </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
                 {/* The rules a check held the change to, and how each came out: the number a
                     reader came to this page for, so it is the largest thing on the row. */}
