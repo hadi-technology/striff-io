@@ -122,14 +122,14 @@ function prHtmlUrl(pullUrl: string): string {
 function chartMonthLabel(yearMonth: string, includeYear: boolean): string {
   const [year, month] = yearMonth.split("-");
   const date = new Date(Number(year), Number(month) - 1, 1);
-  const label = date.toLocaleDateString(undefined, { month: "short" });
+  const label = date.toLocaleDateString("en-US", { month: "short" });
   return includeYear ? `${label} '${year.slice(2)}` : label;
 }
 
 function fullMonthLabel(yearMonth: string): string {
   const [year, month] = yearMonth.split("-");
   const date = new Date(Number(year), Number(month) - 1, 1);
-  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 // Used to caption the two list cards (recently flagged PRs), which are scoped to the latest
@@ -137,7 +137,7 @@ function fullMonthLabel(yearMonth: string): string {
 function shortMonthYear(yearMonth: string): string {
   const [year, month] = yearMonth.split("-");
   const date = new Date(Number(year), Number(month) - 1, 1);
-  return date.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
 // Builds the tooltip renderer for one chart. Closes over the prepared series so it can look up
