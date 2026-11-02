@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { progressTitle, selectedLeft } from "../lib/readingProgress.js";
+import { progressTitle, selectedLeft, showsProgress } from "../lib/readingProgress.js";
 
 /**
  * Asking Striff to read a whole repository now.
@@ -315,9 +315,10 @@ export default function ReadRepository({
   // A run going far longer than a run takes is not a run any more.
   const abandoned = isRunning(reading) && Date.now() - (reading!.askedAtMs || 0) > ABANDONED_MS;
   const held = asked > 0 && Date.now() - asked < PRESS_HOLDS_MS;
-  const inProgress = held || (isRunning(reading) && !abandoned);
+  const quiet = !showsProgress(reading, waiting);
+  const inProgress = held || (isRunning(reading) && !abandoned && !quiet);
 
-  const stopped = reading?.state === "failed" || (abandoned && !held);
+  const stopped = reading?.state === "failed" || (abandoned && !held && !quiet);
   const justFinished = reading?.state === "done"
     && reading.finishedAtMs > 0
     && Date.now() - reading.finishedAtMs < JUST_FINISHED_MS;

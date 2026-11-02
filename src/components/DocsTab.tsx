@@ -495,6 +495,7 @@ const TREE_WIDTH_KEY = "striff.docsTreeWidth";
  */
 type DocFilter =
   | "results"
+  | "noRules"
   | "all"
   | "notRead"
   | "unreadable"
@@ -512,13 +513,27 @@ type RuleChip = "holds" | "broken" | "unchecked" | "stale" | "excludedRules";
 /** The one thing the tree is filtered by: a document state, or a kind of rule. */
 type Filter = DocFilter | RuleChip;
 
-const DOC_FILTER_TEST: Record<Exclude<DocFilter, "results" | "excluded">, (doc: Doc) => boolean> = {
+const DOC_FILTER_TEST: Record<Exclude<DocFilter, "results" | "noRules" | "excluded">, (doc: Doc) => boolean> = {
   forced: (doc) => doc.forced,
   all: () => true,
   notRead: (doc) => isUnread(doc),
   unreadable: (doc) => doc.state === "UNREADABLE",
   retired: (doc) => doc.state === "RETIRED",
 };
+
+/**
+ * The document chips other than "All" partition the documents: each document is in exactly one,
+ * so their counts add up to the repository's document total. A document excluded (by Striff or
+ * the owner) is only Excluded, whatever its state; of the rest, a state wins over rules; and a
+ * read document is With rules or No rules by the rules the table lists for it.
+ */
+function docBucket(doc: Doc, excluded: boolean, withRules: boolean): DocFilter {
+  if (excluded) return "excluded";
+  if (isUnread(doc)) return "notRead";
+  if (doc.state === "UNREADABLE") return "unreadable";
+  if (doc.state === "RETIRED") return "retired";
+  return withRules ? "results" : "noRules";
+}
 
 /**
  * One chip. `hidden` is a filter with no chip of its own, reached from a folder's summary line,
@@ -529,8 +544,9 @@ interface Chip<K> { key: K; label: string; dot: string; always: boolean; help: s
 
 /** The chips above the tree that count documents, in the order a reader looks for them. */
 const DOC_CHIPS: Chip<DocFilter>[] = [
-  { key: "results", label: "With results", dot: "", always: false, help: "Documents with a rule that holds or is broken, or a stale name." },
   { key: "all", label: "All", dot: "", always: true, help: "Every document in this repository, whatever state it is in." },
+  { key: "results", label: "With rules", dot: "", always: false, help: "Documents Striff read and found rules in." },
+  { key: "noRules", label: "No rules", dot: "", always: false, help: "Documents Striff read that state no rule it can check, such as a guide or a changelog." },
   { key: "notRead", label: "Not read yet", dot: "unread", always: true, help: "Documents Striff means to read and hasn't yet, so any rule in them is not counted here." },
   { key: "unreadable", label: "Couldn't read", dot: "broken", always: false, help: "Documents Striff couldn't finish reading. That isn't counted as “no rules”." },
   { key: "retired", label: "Retired", dot: "other", always: false, help: "Documents that say they are no longer current, so their rules aren't checked." },
@@ -542,7 +558,7 @@ const DOC_CHIPS: Chip<DocFilter>[] = [
 const RULE_CHIPS: Chip<RuleChip>[] = [
   { key: "holds", label: "Holding", dot: "held", always: true, help: "Included rules the code keeps." },
   { key: "broken", label: "Broken", dot: "broken", always: true, help: "Included rules the code does not keep." },
-  { key: "unchecked", label: "Not checked yet", dot: "unread", always: false, help: "Included rules nothing has checked against the code yet." },
+  { key: "unchecked", label: "Not checked yet", dot: "unread", always: false, help: "Included rules with no verdict on the default branch yet. They are judged at the next check of that branch." },
   { key: "stale", label: "Stale names", dot: "stale", always: false, help: "Names the docs write that the default branch no longer declares, or declares somewhere else. Counted in names." },
   { key: "excludedRules", label: "Excluded", dot: "other", always: true, help: "Rules pull requests aren't checked against: excluded on their own, or with their doc or folder." },
 ];
@@ -567,7 +583,7 @@ const TABLE_FILTER: Partial<Record<Filter, RuleFilter>> = {
 const SUMMARY_PARTS: { key: Filter; label: string; help: string }[] = [
   { key: "stale", label: "with stale names", help: "Documents with a stale name: one the default branch no longer declares, or declares somewhere else." },
   ...DOC_CHIPS
-    .filter((chip) => chip.key !== "results" && chip.key !== "all")
+    .filter((chip) => chip.key !== "results" && chip.key !== "noRules" && chip.key !== "all")
     .map((chip) => ({ key: chip.key as Filter, label: chip.label.toLowerCase(), help: chip.help })),
 ];
 
@@ -1786,10 +1802,22 @@ export default function DocsTab({
     [allDocs, staleByDoc]
   );
 
+  /** The one document chip each document is counted under: see docBucket. */
+  const bucketOf = useMemo(() => {
+    const byPath = new Map<string, DocFilter>();
+    for (const doc of allDocs) {
+      byPath.set(
+        doc.path,
+        docBucket(doc, excludedDocs.has(doc.path), listedRules(doc) > 0 || resultDocs.has(doc.path))
+      );
+    }
+    return byPath;
+  }, [catalog, rulesIndex, excludedDocs, resultDocs]);
+
   /** Whether a document is one a filter shows. */
   const matches = (key: Filter) => (doc: Doc): boolean => {
-    if (key === "results") return resultDocs.has(doc.path);
-    if (key === "excluded") return excludedDocs.has(doc.path);
+    if (key === "results" || key === "noRules" || key === "excluded") return bucketOf.get(doc.path) === key;
+    if ((key === "notRead" || key === "unreadable" || key === "retired") && bucketOf.get(doc.path) !== key) return false;
     if (key in ruleDocs) return ruleDocs[key as RuleChip].has(doc.path);
     return DOC_FILTER_TEST[key as keyof typeof DOC_FILTER_TEST](doc);
   };
@@ -1807,7 +1835,7 @@ export default function DocsTab({
     counted.excludedRules = repoCounts.excluded;
     counted.stale = repoStale;
     return counted;
-  }, [catalog, staleByDoc, resultDocs, excludedDocs, repoCounts, repoStale]);
+  }, [catalog, staleByDoc, resultDocs, excludedDocs, repoCounts, repoStale, bucketOf]);
 
   const filter: Filter = chosenFilter ?? (filterCounts.results > 0 ? "results" : "all");
   /** Which rules the table lists: those a rule chip names, or every rule in what is selected. */
@@ -1817,7 +1845,7 @@ export default function DocsTab({
 
   const documents = useMemo(
     () => allDocs.filter(matches(filter)),
-    [catalog, filter, staleByDoc, resultDocs, excludedDocs, ruleDocs]
+    [catalog, filter, staleByDoc, resultDocs, excludedDocs, ruleDocs, bucketOf]
   );
 
   /**
@@ -2042,7 +2070,7 @@ export default function DocsTab({
         ...part,
         count: scopeDocs.filter(matches(part.key)).length,
       })).filter((part) => part.count > 0),
-    [scopeDocs, staleByDoc, excludedDocs, ruleDocs, resultDocs]
+    [scopeDocs, staleByDoc, excludedDocs, ruleDocs, resultDocs, bucketOf]
   );
 
   /* ─── The search palette ────────────────────────────────────────── */
@@ -2689,10 +2717,8 @@ export default function DocsTab({
           {catalog && !source && (
             <ReadingStatusHeader
               status={catalog.status}
-              // The documents no count in the status includes: excluded, retired, unreadable.
-              excluded={typeof catalog.status?.documentsTotal === "number"
-                ? Math.max(0, catalog.documents.length - catalog.status.documentsTotal)
-                : 0}
+              // The documents excluded, by Striff or the owner: the Excluded chip's own count.
+              excluded={excludedDocs.size}
               onBilling={onOpenBilling}
             />
           )}
@@ -2849,7 +2875,7 @@ export default function DocsTab({
               })()}
             </div>
             <div className="docs-tree-foot">
-              {catalog.summary.documents} doc{catalog.summary.documents === 1 ? "" : "s"}
+              {allDocs.length} doc{allDocs.length === 1 ? "" : "s"}
               {/* Folder rules live above the tree they affect, so an excluded directory is
                   visible without hunting for the folder it was set on. */}
               {(catalog.exclusions || []).some((rule) => rule.folder) && (

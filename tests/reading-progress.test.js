@@ -24,3 +24,20 @@ test("none left shows no number", () => {
 test("a queued reading says it is queued", () => {
   assert.match(progressTitle({ state: "queued", docsSelected: 3, docsSelectedLeft: 3 }), /queued/);
 });
+
+import { showsProgress } from "../src/lib/readingProgress.js";
+
+test("the nightly sweep never shows progress", () => {
+  assert.equal(showsProgress({ askedBy: "sweep", state: "running" }, 5), false);
+  assert.equal(showsProgress({ askedBy: "sweep", state: "queued" }, 0), false);
+});
+
+test("an automatic run with nothing waiting shows nothing; a first reading keeps its progress", () => {
+  assert.equal(showsProgress({ askedBy: "install", state: "running" }, 0), false);
+  assert.equal(showsProgress({ askedBy: "install", state: "running" }, 12), true);
+});
+
+test("a person's reading keeps its progress", () => {
+  assert.equal(showsProgress({ askedBy: "someone", state: "running" }, 0), true);
+  assert.equal(showsProgress({ askedBy: "someone", state: "running" }, 4), true);
+});

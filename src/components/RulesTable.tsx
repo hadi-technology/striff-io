@@ -155,7 +155,7 @@ export const STANDING_LABEL: Record<Standing, string> = {
 export const STANDING_HELP: Record<Standing, string> = {
   broken: "The code does not keep this rule.",
   holds: "The code keeps this rule.",
-  unchecked: "This rule hasn't been checked against the code yet.",
+  unchecked: "This rule has no verdict on the default branch yet. It is judged at the next check of that branch.",
   unclear: "Striff couldn't check this rule.",
 };
 
@@ -746,7 +746,7 @@ export default function RulesTable({
                 {row.pullNo && !row.onDefaultBranch && (
                   <span
                     className="docs-outcome-branch"
-                    title="A pull request checked this rule. It hasn't been checked against the default branch yet."
+                    title="A pull request checked this rule. It has no verdict on the default branch yet and is judged at the next check of that branch."
                   >
                     not checked on {branch || "the branch"} yet
                   </span>

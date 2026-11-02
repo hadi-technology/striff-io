@@ -22,3 +22,15 @@ export function progressTitle(reading) {
   }
   return "Striff is reading this repository's documents.";
 }
+
+/**
+ * Whether a run shows progress at all. A person's reading does, and so does a repository's first
+ * reading. The nightly sweep over owed documents never does; nor does a run Striff started itself
+ * when nothing is waiting to be read, since there is nothing for it to report.
+ */
+export function showsProgress(reading, waiting) {
+  const askedBy = reading?.askedBy;
+  if (askedBy === "sweep") return false;
+  if (askedBy === "install" && !(waiting > 0)) return false;
+  return true;
+}

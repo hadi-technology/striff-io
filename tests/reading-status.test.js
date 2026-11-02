@@ -51,7 +51,7 @@ test("paid states have no button and no offer", () => {
   assert.equal(words(reading), "Striff is reading the other 96 documents: 40 read so far.");
   const all = readingHeader({ state: "paid_all_read", documentsRead: 131, documentsTotal: 131 });
   assert.equal(words(all), "Striff has read all 131 documents.");
-  assert.deepEqual(all.growth, { read: 131, total: 131, bar: false, text: "131 read" });
+  assert.equal(all.growth, null);
   for (const h of [waiting, reading, all]) {
     assert.equal(h.offer, false);
     assert.equal(h.subscribe, false);
@@ -75,7 +75,7 @@ test("the offer names what a paid plan would read, and says all of them where th
 
 test("paid, all read: documents Striff excluded are not counted, and the header says what was checked", () => {
   const status = { state: "paid_all_read", documentsRead: 15, documentsTotal: 15 };
-  assert.equal(words(readingHeader(status, NOW, 4)), "Striff has read all 15 documents it can check.");
+  assert.equal(words(readingHeader(status, NOW, 4)), "Striff has read all 15 documents. The other 4 are excluded.");
   assert.equal(words(readingHeader(status, NOW, 0)), "Striff has read all 15 documents.");
   assert.equal(words(readingHeader(status, NOW)), "Striff has read all 15 documents.");
   // A field an earlier API sent changes nothing: no clause about reading free when a change touches code.
@@ -103,7 +103,7 @@ test("the gap counts any document the status leaves out, so a person's exclusion
 test("unpaid with nothing left reads like paid, with no offer and no bar", () => {
   const status = { state: "unpaid", offerPaidPlan: true, documentsRead: 3, documentsTotal: 3, documentsNotRead: 0, readAtInstallation: 3, readSince: 0 };
   const h = readingHeader(status, NOW, 2);
-  assert.equal(words(h), "Striff has read all 3 documents it can check.");
+  assert.equal(words(h), "Striff has read all 3 documents. The other 2 are excluded.");
   assert.equal(h.offer, false);
   assert.deepEqual(h.growth, { read: 3, total: 3, bar: false, text: "3 read at installation." });
   assert.equal(words(readingHeader(status, NOW, 0)), "Striff has read all 3 documents.");
@@ -123,7 +123,7 @@ test("nothing to check says why, and says nothing at all where nothing is exclud
 test("one document is never '1 documents'", () => {
   assert.equal(words(readingHeader({ state: "paid_reading", documentsRead: 4, documentsTotal: 5, documentsNotRead: 1 })), "Striff is reading the other 1 document: 4 read so far.");
   assert.equal(words(readingHeader({ state: "paid_all_read", documentsRead: 1, documentsTotal: 1 })), "Striff has read all 1 document.");
-  assert.equal(words(readingHeader({ state: "paid_all_read", documentsRead: 1, documentsTotal: 1 }, NOW, 2)), "Striff has read all 1 document it can check.");
+  assert.equal(words(readingHeader({ state: "paid_all_read", documentsRead: 1, documentsTotal: 1 }, NOW, 2)), "Striff has read all 1 document. The other 2 are excluded.");
   assert.match(words(readingHeader({ state: "unpaid", documentsRead: 1, documentsTotal: 2, documentsNotRead: 1 }, NOW, 1)), /^Striff has read 1 of the 2 documents it can check,/);
   assert.match(words(readingHeader({ state: "unpaid", documentsRead: 1, documentsTotal: 1 + 1, documentsNotRead: 1 })), /^Striff has read 1 of your 2 documents,/);
   assert.equal(readingHeader({ state: "unpaid", offerPaidPlan: true, documentsRead: 1, documentsTotal: 2, documentsNotRead: 1, documentsPaidWouldRead: 1 }).offerText, "Don't want to wait? A paid plan reads the other 1 now.");
