@@ -6,14 +6,14 @@
  * API's placements both count in.
  *
  * A highlight is a range `{ from, to, kind, id }` with `to` exclusive. Kinds, strongest first, are
- * `broken`, `stale`, `holds`, `unchecked`, `excluded`; a range of kind `tail` marks text past what
+ * `broken`, `stale`, `holds`, `unchecked`, `unclear`, `excluded`; a range of kind `tail` marks text past what
  * Striff read and is never a rule. Where ranges overlap the strongest kind is what is drawn and
  * every range at that spot is listed in the card.
  */
 import { standing } from "./standing.js";
 
 /** Strongest first: what is drawn where several highlights overlap. */
-export const PRECEDENCE = ["broken", "stale", "holds", "unchecked", "excluded", "tail"];
+export const PRECEDENCE = ["broken", "stale", "holds", "unchecked", "unclear", "excluded", "tail"];
 
 const RANK = Object.fromEntries(PRECEDENCE.map((kind, index) => [kind, index]));
 
@@ -23,19 +23,18 @@ export function byStrength(a, b) {
 }
 
 /**
- * How a rule is drawn, or null where it is not drawn at all.
+ * How a rule is drawn.
  *
  * An excluded rule is drawn as excluded whatever its standing, since it is not checked. A rule
- * Striff could not judge says nothing about the code and is neither drawn nor listed.
+ * Striff could not judge is drawn as `unclear`: it says nothing about the code, and it is shown so
+ * that a rule near the text is never mistaken for one that was checked and found clean.
  *
  * @param {{ excluded?: boolean, status: string | null, onDefaultBranch: string | null }} rule
- * @returns {"broken" | "holds" | "unchecked" | "excluded" | null}
+ * @returns {"broken" | "holds" | "unchecked" | "unclear" | "excluded"}
  */
 export function ruleKind(rule) {
-  const s = standing(rule);
-  if (s === "unclear") return null;
   if (rule.excluded) return "excluded";
-  return s;
+  return standing(rule);
 }
 
 /** Whether a UTF-16 unit is the second half of a surrogate pair that starts before it. */
@@ -262,7 +261,7 @@ export function hiddenRanges(tree) {
  *
  * Every rule given appears in exactly one of the two results: a rule the API left unplaced, one it
  * did not mention, and one whose every place is in text this view does not draw (an import line, a
- * comment) is unplaced. A rule that is not drawn at all (one Striff could not judge) is in neither.
+ * comment) is unplaced.
  *
  * @param {{ text: string, tree: object | null, placements: object[], unplaced?: string[],
  *     rules: object[], readChars?: number | null }} input
@@ -364,7 +363,7 @@ export function staleRanges(text, findings, readChars = null) {
  * whether they are marked in the text or listed under it; a stale name only where it is marked.
  */
 export function kindCounts(rules, stale) {
-  const counts = { holds: 0, broken: 0, unchecked: 0, excluded: 0, stale: stale.length };
+  const counts = { holds: 0, broken: 0, unchecked: 0, unclear: 0, excluded: 0, stale: stale.length };
   for (const rule of rules) {
     const kind = ruleKind(rule);
     if (kind) counts[kind] += 1;

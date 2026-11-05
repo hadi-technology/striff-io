@@ -120,7 +120,7 @@ function doc(path: string, state: string, extra: Record<string, unknown> = {}) {
 
 const documents = [
   doc("AGENTS.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 4, brokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 2 * DAY }),
-  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 12, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: ARCH_READ, totalChars: ARCH_TEXT.length }),
+  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 15, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: ARCH_READ, totalChars: ARCH_TEXT.length }),
   // Outside the first reading: nothing has changed the code these describe yet, so they are read
   // free when something does. They are listed, never shown as having no rules.
   doc("CONTRIBUTING.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
@@ -168,10 +168,10 @@ const summary = {
  * that says nobody wrote it. They are the kinds of sentence a real checkout service's docs hold:
  * a module boundary, a layering rule, an interface every implementation must carry.
  *
- * The counts are arranged, not random. Twenty-one rules: sixteen the code keeps, two a pull
- * request broke, one that was already broken before the change that found it, and two Striff could
- * not answer from the code, which are stored and not listed because a rule nothing has judged says
- * nothing. One quote runs to a paragraph on purpose -- real architecture docs are written in
+ * The counts are arranged, not random: rules the code keeps, rules a pull request broke, one that
+ * was already broken before the change that found it, a few Striff could not decide from the code
+ * (listed as "Couldn't check", never as holding), and one rule nothing has judged yet. One quote
+ * runs to a paragraph on purpose -- real architecture docs are written in
  * paragraphs, and the cell that has to fold one into a table is the one worth showing.
  */
 function rule(
@@ -250,6 +250,11 @@ const rulesByDoc: Record<string, ReturnType<typeof rule>[]> = {
     HOLDS(39, "`api` depends on `service`", "`api` depends on `service`", "398", 21),
     // The sentence it was read from has since been reworded, so it cannot be placed in the text.
     HOLDS(29, "Only `config` depends on `AppSettings`", "Configuration is read only in `config`, through `AppSettings`.", "398", 21),
+    // Striff could not decide these from the code: drawn grey, and listed as "Couldn't check". The
+    // first overlaps the sentence a held rule marks.
+    rule(14, "Domain events are published only through `EventBus`", "Services publish domain events through `EventBus`; handlers in `events` never call controllers.", "UNCLEAR", "UNCLEAR", "427", 12),
+    rule(20, "Provider calls are retried at most twice", "Provider calls time out after 5 seconds and are retried twice.", "UNCLEAR", "UNCLEAR", "427", 12),
+    rule(29, "Scheduled jobs are registered through `CronScheduler`", "Scheduled jobs are registered with `CronScheduler` at startup.", "UNCLEAR", "UNCLEAR", "427", 12),
   ],
   "docs/adr/0007-payments.md": [
     HOLDS(14, "Nothing in `billing` depends on `checkout`", "Billing knows nothing about checkout. The dependency runs one way."),
@@ -431,6 +436,9 @@ const ARCH_WORDS: [number, string][] = [
   [6, "Only the billing module talks to the Stripe SDK"],
   [7, "Each payment provider implements `PaymentGateway`"],
   [8, "Refunds go through `RefundService`, which depends on `PaymentGateway` and never on a provider."],
+  [12, "Services publish domain events through `EventBus`; handlers in `events` never call controllers"],
+  [13, "Provider calls time out after 5 seconds and are retried twice."],
+  [14, "Scheduled jobs are registered with `CronScheduler` at startup."],
 ];
 
 /** Where `words` stand in `text`, or null: UTF-16 offsets, as the text endpoint sends them. */

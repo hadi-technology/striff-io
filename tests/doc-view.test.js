@@ -95,16 +95,48 @@ test("the read-up-to cut clips ranges and leaves an unreachable rule unplaced", 
   assert.deepEqual(result.unplaced.map((r) => r.factId), ["b"]);
 });
 
-test("every drawn rule is placed or unplaced once; unclear ones are neither", () => {
+test("every rule is placed or unplaced once, an unclear one too", () => {
   const text = "One. Two. Three.";
   const result = V.ruleRanges({
     text, tree: null, readChars: null,
-    rules: [rule("a"), rule("b"), rule("c"), rule("u", { onDefaultBranch: "UNCLEAR" })],
+    rules: [rule("a"), rule("b"), rule("c"), rule("u", { onDefaultBranch: "UNCLEAR" }), rule("v", { onDefaultBranch: "UNCLEAR" })],
     placements: [{ factId: "a", spans: [{ from: 0, to: 4 }] }, { factId: "u", spans: [{ from: 5, to: 9 }] }],
     unplaced: ["b"],
   });
-  assert.deepEqual(result.placed.map((r) => r.factId), ["a"]);
-  assert.deepEqual(result.unplaced.map((r) => r.factId), ["b", "c"]);
+  assert.deepEqual(result.placed.map((r) => r.factId), ["a", "u"]);
+  assert.deepEqual(result.unplaced.map((r) => r.factId), ["b", "c", "v"]);
+  assert.deepEqual(result.ranges.map((r) => [r.id, r.kind]), [["a", "holds"], ["u", "unclear"]]);
+});
+
+test("a rule Striff could not judge is drawn as unclear; excluded still wins", () => {
+  assert.equal(V.ruleKind(rule("u", { onDefaultBranch: "UNCLEAR" })), "unclear");
+  assert.equal(V.ruleKind(rule("u", { onDefaultBranch: null, status: "UNCLEAR" })), "unclear");
+  assert.equal(V.ruleKind(rule("u", { onDefaultBranch: "UNCLEAR", excluded: true })), "excluded");
+  assert.equal(V.ruleKind(rule("n", { onDefaultBranch: null, status: null })), "unchecked");
+  assert.equal(V.ruleKind(rule("h")), "holds");
+});
+
+test("unclear sits between unchecked and excluded in the order of strength", () => {
+  assert.deepEqual(V.PRECEDENCE, ["broken", "stale", "holds", "unchecked", "unclear", "excluded", "tail"]);
+  const ranges = ["excluded", "unclear", "holds", "unchecked"].map((kind, i) => ({ from: i, to: 9, kind, id: kind }));
+  assert.deepEqual(ranges.sort(V.byStrength).map((r) => r.kind), ["holds", "unchecked", "unclear", "excluded"]);
+});
+
+test("where an unclear rule overlaps a held one the held one is drawn and both are listed", () => {
+  const segs = V.segments(0, 10, [
+    { from: 0, to: 10, kind: "unclear", id: "u" },
+    { from: 4, to: 10, kind: "holds", id: "h" },
+  ]);
+  assert.deepEqual(segs.map((s) => [s.from, s.to, s.kind]), [[0, 4, "unclear"], [4, 10, "holds"]]);
+  assert.deepEqual(segs[1].hits.map((h) => h.id), ["h", "u"]);
+});
+
+test("kindCounts counts unclear rules, placed or not", () => {
+  const counts = V.kindCounts(
+    [rule("a"), rule("u", { onDefaultBranch: "UNCLEAR" }), rule("v", { onDefaultBranch: "UNCLEAR", excluded: true })],
+    ["s"]
+  );
+  assert.deepEqual(counts, { holds: 1, broken: 0, unchecked: 0, unclear: 1, excluded: 1, stale: 1 });
 });
 
 test("a rule in text the view does not draw goes to the unplaced list", () => {

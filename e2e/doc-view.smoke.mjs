@@ -24,15 +24,15 @@ assert.equal(await page.getByRole("tab", { name: /^Rules/ }).getAttribute("aria-
 
 await page.getByRole("tab", { name: "Document" }).click();
 await page.waitForSelector(".dv-doc");
-for (const kind of ["holds", "broken", "unchecked", "excluded", "stale"]) {
+for (const kind of ["holds", "broken", "unchecked", "unclear", "excluded", "stale"]) {
   assert.ok(await page.locator(`.dv-doc .dv-mark.is-${kind}`).count() > 0, `${kind} is drawn`);
 }
 assert.ok(await page.locator(".dv-doc .dv-block.is-holds").count() > 0, "a table row or diagram line is a block");
 assert.ok(await page.locator(".dv-divider").count() === 1, "partly read divider");
 assert.ok((await page.locator(".dv-unplaced li").count()) === 1, "one rule is not marked in the text");
 
-// A click opens the card, a second click and Escape close it.
-const mark = page.locator(".dv-doc .dv-mark.is-broken").first();
+// A click on a stale name opens the card, a second click and Escape close it.
+const mark = page.locator(".dv-doc .dv-mark.is-stale").first();
 await mark.click();
 assert.equal(await page.locator(".dv-card").count(), 1);
 await mark.click();
@@ -41,7 +41,45 @@ await mark.click();
 await page.keyboard.press("Escape");
 assert.equal(await page.locator(".dv-card").count(), 0);
 
+// A click on a rule's words goes to that rule in the Rules tab, whatever its kind.
+for (const kind of ["holds", "broken", "unchecked", "unclear", "excluded"]) {
+  await page.getByRole("tab", { name: "Document" }).click();
+  const target = page.locator(`.dv-doc .dv-mark.is-${kind}`).first();
+  await target.scrollIntoViewIfNeeded();
+  const ids = (await target.getAttribute("data-ids")).split(" ");
+  const before = await page.evaluate(() => window.scrollY);
+  await target.click();
+  assert.equal(await page.getByRole("tab", { name: /^Rules/ }).getAttribute("aria-selected"), "true", `${kind}: Rules tab`);
+  assert.equal(await page.locator(".dv-card").count(), 0, `${kind}: no card`);
+  const row = page.locator(`tr.is-target[data-rule="${ids[0]}"]`);
+  await row.waitFor();
+  assert.equal(await page.locator("tr.is-target").count(), ids.length, `${kind}: every rule at the mark is the target`);
+  assert.ok(await row.evaluate((el) => el === document.activeElement), `${kind}: row focused`);
+  await page.waitForTimeout(700);
+  const box = await row.boundingBox();
+  const height = await page.evaluate(() => window.innerHeight);
+  assert.ok(box && box.y >= 0 && box.y + box.height <= height, `${kind}: row on screen`);
+  // Back in the document, the reader is where they clicked.
+  await page.getByRole("tab", { name: "Document" }).click();
+  assert.equal(await page.locator("tr.is-target").count(), 0);
+  await page.waitForFunction((y) => Math.abs(window.scrollY - y) < 4, before, { timeout: 3000 }).catch(() => {});
+  assert.ok(Math.abs((await page.evaluate(() => window.scrollY)) - before) < 4, `${kind}: place kept`);
+}
+
+// A search that hides the rule is cleared by the jump.
+await page.getByRole("tab", { name: /^Rules/ }).click();
+await page.getByPlaceholder(/Search/).fill("zzzz-no-such-rule");
+await page.getByRole("tab", { name: "Document" }).click();
+await page.locator(".dv-doc .dv-mark.is-unclear").first().click();
+await page.locator("tr.is-target").first().waitFor();
+assert.equal(await page.getByPlaceholder(/Search/).inputValue(), "");
+
+// The outline stays until the next click.
+await page.locator("h1, .docs-rule-count").first().click();
+assert.equal(await page.locator("tr.is-target").count(), 0);
+
 // Source view and back.
+await page.getByRole("tab", { name: "Document" }).click();
 await page.getByRole("button", { name: "Source" }).click();
 assert.ok(await page.locator(".dv-source .dv-mark").count() > 0, "source view keeps the marks");
 await page.getByRole("button", { name: "Formatted" }).click();

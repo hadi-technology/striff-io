@@ -952,6 +952,10 @@ export default function DocsTab({
   const [selected, setSelected] = useState<string>("");
   /** Which of a doc's two views is open; a doc always opens on its rules. */
   const [paneTab, setPaneTab] = useState<"rules" | "document">("rules");
+  /** The rules a click in the document led to; the Rules tab lights them. `n` tells one jump from the next. */
+  const [jump, setJump] = useState<{ ids: string[]; n: number } | null>(null);
+  /** Where the page was scrolled when the reader left the document for the rules. */
+  const documentScroll = useRef<number | null>(null);
   /** The text of each doc version the Document tab has been opened on, asked for once each. */
   const [docTexts, setDocTexts] = useState<Record<string, TextEntry>>({});
   /**
@@ -1764,8 +1768,8 @@ export default function DocsTab({
   );
 
   /**
-   * How many rules each document lists: the rules the table shows for it, which leave out any
-   * Striff could not judge. Every count of a document's rules is this one, so the tree, the pane
+   * How many rules each document lists: the rules the table shows for it, those Striff could not
+   * judge among them. Every count of a document's rules is this one, so the tree, the pane
    * and the table agree. Until the rules have come, or where the list is cut short, the
    * catalogue's own count stands in.
    */
@@ -1774,7 +1778,7 @@ export default function DocsTab({
     return new Map<string, number>(
       rulesIndex.documents.map((group) => [
         group.document.path,
-        group.rules.filter((rule) => standing(rule) !== "unclear").length,
+        group.rules.length,
       ])
     );
   }, [rulesIndex]);
@@ -1934,23 +1938,19 @@ export default function DocsTab({
         (rulesIndex?.documents.find((group) => group.document.path === detail.document.path)?.rules || [])
           .map((rule) => [rule.factId, rule])
       );
-      return detail.rules
-        .filter((rule) => standing(rule) !== "unclear")
-        .map((rule) => {
-          const state = states.get(rule.factId);
-          const own = { ...rule, excluded: state?.excluded ?? rule.excluded, excludedBy: state?.excludedBy ?? rule.excludedBy };
-          return { ...own, excludedWith: excludedWith(own, doc), doc };
-        });
+      // One document lists every rule it holds, a rule Striff could not judge among them, so the
+      // document view and the rows it leads to are the same set.
+      return detail.rules.map((rule) => {
+        const state = states.get(rule.factId);
+        const own = { ...rule, excluded: state?.excluded ?? rule.excluded, excludedBy: state?.excludedBy ?? rule.excludedBy };
+        return { ...own, excludedWith: excludedWith(own, doc), doc };
+      });
     }
     const under = scopeKind === "root" ? null : `${selected}/`;
     const rows: Row[] = [];
     for (const group of rulesIndex?.documents || []) {
       if (under && !group.document.path.startsWith(under)) continue;
       for (const rule of group.rules) {
-        // A rule Striff could not judge says nothing about the code, and a list of things that
-        // said nothing is not worth a reader's attention or a place in the counts. It is still
-        // stored, and the next pull request that touches the code it names judges it again.
-        if (standing(rule) === "unclear") continue;
         rows.push({ ...rule, excludedWith: excludedWith(rule, group.document), doc: group.document });
       }
     }
@@ -1982,6 +1982,29 @@ export default function DocsTab({
 
   /** Whether the selected doc has a Document tab: one doc, with at least one rule to mark in it. */
   const hasDocumentTab = scopeKind === "doc" && !!detail && scopeRows.length > 0;
+
+  /**
+   * Takes the reader from rules marked in the document to those rules in the Rules tab. False where
+   * none of them is a row there, and the document then opens its own card instead.
+   */
+  const jumpToRules = (ids: string[]): boolean => {
+    const found = ids.filter((id) => scopeRows.some((row) => row.factId === id));
+    if (!found.length) return false;
+    documentScroll.current = window.scrollY;
+    setJump((was) => ({ ids: found, n: (was?.n ?? 0) + 1 }));
+    setPaneTab("rules");
+    return true;
+  };
+  // Back in the document, the reader is where they clicked; a jump belongs to the doc it was made in.
+  useEffect(() => {
+    if (paneTab !== "document" || documentScroll.current == null) return;
+    window.scrollTo(0, documentScroll.current);
+    documentScroll.current = null;
+  }, [paneTab]);
+  useEffect(() => {
+    setJump(null);
+    documentScroll.current = null;
+  }, [selected]);
   /** The version the doc's rules were read from, as the doc's own answer names it; else the doc's. */
   const shownVersion: string | undefined = (() => {
     const showing = (detail as any)?.showing;
@@ -3200,24 +3223,26 @@ export default function DocsTab({
                 {hasDocumentTab && (
                   <div className="dv-tabs" role="tablist" aria-label="This doc">
                     <button type="button" role="tab" id="doc-tab-rules" aria-selected={paneTab === "rules"}
-                      className={paneTab === "rules" ? "is-on" : ""} onClick={() => setPaneTab("rules")}>
+                      className={paneTab === "rules" ? "is-on" : ""} onClick={() => { setJump(null); setPaneTab("rules"); }}>
                       <PaneTabIcon paths={["m2.5 4 1.25 1.25L6 3", "m2.5 10 1.25 1.25L6 9", "M8.5 4.25h5", "M8.5 10.25h5"]} />
                       Rules <span>{scopeRows.length}</span>
                     </button>
                     <button type="button" role="tab" id="doc-tab-document" aria-selected={paneTab === "document"}
-                      className={paneTab === "document" ? "is-on" : ""} onClick={() => setPaneTab("document")}>
+                      className={paneTab === "document" ? "is-on" : ""} onClick={() => { setJump(null); setPaneTab("document"); }}>
                       <PaneTabIcon paths={["M3.5 1.75h6l3 3v9.5h-9Z", "M9.5 1.75v3h3", "M5.75 8h4.5", "M5.75 10.5h4.5"]} />
                       Document
                     </button>
                   </div>
                 )}
 
-                {hasDocumentTab && paneTab === "document" && (
-                  <div role="tabpanel" aria-labelledby="doc-tab-document">
-                    {(!textEntry || textEntry.status === "loading") && (
+                {/* Once read, the document stays mounted behind the Rules tab, so a jump to a rule and
+                    the way back lose neither the open card nor the place in the text. */}
+                {hasDocumentTab && (paneTab === "document" || textEntry?.status === "ready") && (
+                  <div role="tabpanel" aria-labelledby="doc-tab-document" hidden={paneTab !== "document"}>
+                    {paneTab === "document" && (!textEntry || textEntry.status === "loading") && (
                       <p className="dashboard-metric-caption">Loading the doc…</p>
                     )}
-                    {textEntry?.status === "failed" && (() => {
+                    {paneTab === "document" && textEntry?.status === "failed" && (() => {
                       const failure = failureMessage(textEntry.reason);
                       return (
                         <div className="dv-fail" role="alert">
@@ -3231,6 +3256,8 @@ export default function DocsTab({
                     {textEntry?.status === "ready" && (
                       <Suspense fallback={<p className="dashboard-metric-caption">Loading the doc…</p>}>
                         <DocumentView
+                          key={selected}
+                          onJump={jumpToRules}
                           data={textEntry.data}
                           rules={shownRows}
                           stale={staleByDoc.get(selected) || []}
@@ -3270,9 +3297,7 @@ export default function DocsTab({
                 )}
 
                 {(paneTab === "rules" || !hasDocumentTab) && (<>
-                {/* The count is of the rules listed below, never of more: a rule Striff could not
-                    judge is not listed, so it is not counted. A doc whose rules were all set aside
-                    that way says nothing here, since "found no rule" would be untrue. */}
+                {/* The count is of the rules listed below, never of more. */}
                 {scopeRows.length > 0 ? (
                   <p className="docs-rule-count">
                     <b>{scopeRows.length} rule{scopeRows.length === 1 ? "" : "s"}</b> read from this doc.
@@ -3294,6 +3319,7 @@ export default function DocsTab({
                     fileStem={scopeFileStem}
                     showPath={false}
                     focusRule={focusRule}
+                    jump={jump}
                     filter={ruleFilter}
                     onShowAll={() => setFilter("all")}
                     docCount={1}

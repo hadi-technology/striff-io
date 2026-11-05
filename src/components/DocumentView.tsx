@@ -1,4 +1,4 @@
-import { Component, Fragment, memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Component, Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { parseDoc } from "../lib/docParse.js";
 import BrokenBy from "./BrokenBy";
 import { Clamped, when, withCode } from "./docRules";
@@ -55,6 +55,7 @@ const KIND_LABEL: Record<string, string> = {
   holds: "Holds",
   broken: "Broken",
   unchecked: "Not checked yet",
+  unclear: "Couldn't check",
   excluded: "Excluded",
   stale: "Stale name",
 };
@@ -110,7 +111,10 @@ function idsOf(hits: any[]): string[] {
   return out;
 }
 
-/** One marked piece of text, which opens the card of the rules at it when clicked. */
+/**
+ * One marked piece of text. A click on rules takes the reader to those rules in the Rules tab, or,
+ * where that cannot be done and for a stale name, opens a card under the block.
+ */
 function Mark({ hits, ctx, children }: { hits: any[]; ctx: Ctx; children: ReactNode }) {
   const ids = idsOf(hits);
   const kind = hits[0]?.kind;
@@ -118,6 +122,7 @@ function Mark({ hits, ctx, children }: { hits: any[]; ctx: Ctx; children: ReactN
     return <span className={kind === "tail" ? "dv-unread" : undefined}>{children}</span>;
   }
   const open = !!ctx.selected && ids.some((id) => ctx.selected!.has(id));
+  const stale = ids.some((id) => id.startsWith("stale:"));
   const activate = (event: { target: EventTarget; stopPropagation: () => void }) => {
     if ((event.target as HTMLElement).closest?.("a")) return;
     event.stopPropagation();
@@ -130,7 +135,8 @@ function Mark({ hits, ctx, children }: { hits: any[]; ctx: Ctx; children: ReactN
       data-ids={ids.join(" ")}
       role={ctx.inLink ? undefined : "button"}
       tabIndex={ctx.inLink ? undefined : 0}
-      aria-expanded={ctx.inLink ? undefined : open}
+      aria-expanded={ctx.inLink || !stale ? undefined : open}
+      title={stale ? undefined : ids.length > 1 ? "Show these rules in the Rules tab" : "Show this rule in the Rules tab"}
       onClick={activate}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -386,7 +392,7 @@ function DocCard({ items, onClose }: { items: ReactNode[]; onClose: () => void }
 }
 
 export default function DocumentView({
-  data, rules, stale, owner, name, docPath, branch, onInclude, renderStale,
+  data, rules, stale, owner, name, docPath, branch, onInclude, renderStale, onJump,
 }: {
   data: DocText;
   /** The doc's rules as the Rules tab lists them, with their current exclusion. */
@@ -400,6 +406,11 @@ export default function DocumentView({
   onInclude?: (rule: Row) => Promise<string | null>;
   /** The body of a stale name's card: the existing wording and its issue link. */
   renderStale: (finding: any) => ReactNode;
+  /**
+   * Takes the reader to these rules in the Rules tab. Answers false where it cannot (no such rows
+   * there), and the card opens instead.
+   */
+  onJump?: (ids: string[]) => boolean;
 }) {
   const formatted = FORMATTED.has(data.format);
   const [wanted, setWanted] = useState<"formatted" | "source">(
@@ -441,8 +452,15 @@ export default function DocumentView({
   }, [selected]);
 
   // Stable, so a block or a run of source lines that holds no open card is not drawn again on a click.
-  const pick = useCallback((block: number, ids: string[]) =>
-    setSelected((now) => (now && now.block === block && sameIds(now.ids, ids) ? null : { block, ids })), []);
+  const jump = useRef(onJump);
+  jump.current = onJump;
+  const pick = useCallback((block: number, ids: string[]) => {
+    if (ids.every((id) => !id.startsWith("stale:")) && jump.current?.(ids)) {
+      setSelected(null);
+      return;
+    }
+    setSelected((now) => (now && now.block === block && sameIds(now.ids, ids) ? null : { block, ids }));
+  }, []);
 
   const byId = useMemo(() => new Map(rules.map((rule) => [rule.factId, rule])), [rules]);
   const staleById = useMemo(
@@ -597,6 +615,7 @@ export default function DocumentView({
         {swatch("holds", counts.holds, "hold")}
         {swatch("broken", counts.broken, "broken")}
         {swatch("unchecked", counts.unchecked, "not checked yet")}
+        {swatch("unclear", counts.unclear, "couldn't check")}
         {swatch("excluded", counts.excluded, "excluded by you")}
         {swatch("stale", counts.stale, counts.stale === 1 ? "stale name" : "stale names")}
       </div>

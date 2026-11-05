@@ -7948,6 +7948,7 @@ button.check-verdict { cursor: pointer; }
 .dv-sw.is-holds { background: #dcfce7; border-bottom: 2px solid #16a34a; }
 .dv-sw.is-broken { background: #fee2e2; border-bottom: 2px solid #dc2626; }
 .dv-sw.is-unchecked { background: #eff6ff; border-bottom: 2px dashed #60a5fa; }
+.dv-sw.is-unclear { background: #e2e8f0; border-bottom: 2px solid #64748b; }
 .dv-sw.is-excluded { border-bottom: 2px dotted #94a3b8; }
 .dv-sw.is-stale { background: #fef3c7; border-bottom: 2px solid #d97706; }
 
@@ -7994,17 +7995,20 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
 .dv-mark.is-holds { background: #dcfce7; border-bottom: 2px solid #16a34a; }
 .dv-mark.is-broken { background: #fee2e2; border-bottom: 2px solid #dc2626; }
 .dv-mark.is-unchecked { background: #eff6ff; border-bottom: 2px dashed #60a5fa; }
+.dv-mark.is-unclear { background: #e2e8f0; border-bottom: 2px solid #64748b; }
 .dv-mark.is-excluded { color: #64748b; border-bottom: 2px dotted #94a3b8; }
 .dv-mark.is-stale { background: #fef3c7; border-bottom: 2px solid #d97706; }
 /* An open mark deepens its own colour: an outline would box every piece of a sentence split by code. */
 .dv-mark.is-open.is-holds { background: #bbf7d0; }
 .dv-mark.is-open.is-broken { background: #fecaca; }
 .dv-mark.is-open.is-unchecked { background: #dbeafe; }
+.dv-mark.is-open.is-unclear { background: #cbd5e1; }
 .dv-mark.is-open.is-excluded { background: #f1f5f9; }
 .dv-mark.is-open.is-stale { background: #fde68a; }
 .dv-block.is-holds { background: #f0fdf4; }
 .dv-block.is-broken { background: #fef2f2; }
 .dv-block.is-unchecked { background: #eff6ff; }
+.dv-block.is-unclear { background: #e8edf3; }
 .dv-block.is-excluded { background: #f8fafc; }
 .dv-block.is-stale { background: #fffbeb; }
 .dv-unread { color: #8a95a1; }
@@ -8040,6 +8044,7 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
 .dv-badge.is-holds { background: #dcfce7; color: #166534; }
 .dv-badge.is-broken { background: #fee2e2; color: #991b1b; }
 .dv-badge.is-unchecked { background: #fff; color: #1d4ed8; border: 1.5px solid #60a5fa; }
+.dv-badge.is-unclear { background: #e2e8f0; color: #1e293b; border: 1px solid #64748b; }
 .dv-badge.is-excluded { background: #fff; color: #475569; border: 1px dashed #94a3b8; }
 .dv-badge.is-stale { background: #fef3c7; color: #92400e; }
 
@@ -8136,6 +8141,13 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
 /* A rule a link pointed at: lit, with a bar on its edge, until the reader opens something else. */
 .rules-table tr.is-linked td { background-color: #fff3b0; }
 .rules-table tr.is-linked td:first-child { box-shadow: inset 3px 0 0 #bf8700; }
+/* The rules a click in the document's text led to: stay lit until the next click. */
+.rules-table tr.is-target td { background-color: #e6f0ff; }
+.rules-table tr.is-target td:first-child { box-shadow: inset 4px 0 0 #2563eb; }
+@media (min-width: 641px) {
+  .rules-table tr.is-target td { border-top: 1px solid #2563eb; border-bottom: 1px solid #2563eb; }
+}
+.rules-table tr:focus { outline: none; }
 .docs-link-note { margin: 0 0 0.75rem; padding: 0.55rem 0.85rem; border: 1px solid #e2e8f0; border-radius: 0.6rem; background: #f8fafc; color: #334155; font-size: 0.85rem; }
 
 /* The account Settings tab: its sections stack, and the repository table carries a select per setting. */

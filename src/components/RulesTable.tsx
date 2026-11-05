@@ -223,6 +223,7 @@ export default function RulesTable({
   demo = false,
   ruleStates,
   focusRule,
+  jump = null,
 }: {
   /** The rules in scope, already stripped of the ones nothing could judge. */
   rows: Row[];
@@ -259,6 +260,12 @@ export default function RulesTable({
    * the screen and lit, so its switch is in view.
    */
   focusRule?: string | null;
+  /**
+   * The rules a click in the document's text led here for: made visible wherever they are hidden,
+   * the first scrolled to and focused, all of them outlined until the reader's next click. `n`
+   * tells one jump from the next.
+   */
+  jump?: { ids: string[]; n: number } | null;
 }) {
   /** A switch that failed says so on its own row until it is tried again. */
   const [stateError, setStateError] = useState<Record<string, string>>({});
@@ -354,6 +361,51 @@ export default function RulesTable({
       .find((each) => each.text && each.rows.some((row) => row.factId === focusRule));
     if (line) setOpenLines((was) => (was.has(line.rows[0].factId) ? was : new Set(was).add(line.rows[0].factId)));
   }, [focusRule, shown]);
+
+  /** The jump whose outlines a click has since put out. */
+  const [putOut, setPutOut] = useState<number | null>(null);
+  const targets = useMemo(
+    () => (jump && putOut !== jump.n ? new Set(jump.ids) : new Set<string>()),
+    [jump, putOut]
+  );
+  // The outlines stay until the reader's next click anywhere.
+  useEffect(() => {
+    if (!jump || !targets.size) return;
+    const n = jump.n;
+    const out = () => setPutOut(n);
+    document.addEventListener("pointerdown", out, true);
+    return () => document.removeEventListener("pointerdown", out, true);
+  }, [jump, targets]);
+  const panel = useRef<HTMLDivElement | null>(null);
+  /** The jump already scrolled to, so a redraw does not pull the page back. */
+  const landed = useRef<number | null>(null);
+
+  // What hides a target is lifted: a search, a count that narrows the list, a folded line. Once
+  // every target that has a row is on screen the first is scrolled to and focused.
+  useEffect(() => {
+    if (!jump || landed.current === jump.n) return;
+    const wanted = rows.filter((row) => targets.has(row.factId));
+    if (!wanted.length) return;
+    const showing = new Set(shown.map((row) => row.factId));
+    if (wanted.some((row) => !showing.has(row.factId))) {
+      if (query !== "") setQuery("");
+      if (filter !== "all") onShowAll?.();
+      return;
+    }
+    const folded = (collapse(shown, sentenceKey) as { rows: Row[]; text: string | null }[])
+      .filter((line) => line.text && !openLines.has(line.rows[0].factId) && line.rows.some((row) => targets.has(row.factId)));
+    if (folded.length) {
+      setOpenLines((was) => new Set([...was, ...folded.map((line) => line.rows[0].factId)]));
+      return;
+    }
+    const first = visible.find((entry) => targets.has(entry.row.factId));
+    const el = first && panel.current?.querySelector<HTMLElement>(`tr[data-rule="${CSS.escape(first.row.factId)}"]`);
+    if (!el) return;
+    landed.current = jump.n;
+    el.focus({ preventScroll: true });
+    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "center", behavior: still ? "auto" : "smooth" });
+  }, [jump, targets, rows, shown, visible, query, filter, openLines]);
   /** The rule last scrolled to, so a redraw does not pull the page back to it. */
   const scrolledTo = useRef<string | null>(null);
 
@@ -423,7 +475,7 @@ export default function RulesTable({
   }
 
   return (
-    <div className="rules-panel">
+    <div className="rules-panel" ref={panel}>
       <div className="rules-toolbar">
         <label className="rules-search">
           <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
@@ -531,6 +583,7 @@ export default function RulesTable({
             <tr
               key={row.factId}
               data-rule={row.factId}
+              tabIndex={-1}
               ref={row.factId === focusRule ? (el) => {
                 if (el && scrolledTo.current !== focusRule) {
                   scrolledTo.current = focusRule;
@@ -555,6 +608,7 @@ export default function RulesTable({
                 grouped && group.index === 0 ? "sentence-first" : "",
                 folded ? "is-collapsed" : "",
                 row.factId === focusRule ? "is-linked" : "",
+                targets.has(row.factId) ? "is-target" : "",
               ].filter(Boolean).join(" ")}
             >
               {group.index === 0 && (
