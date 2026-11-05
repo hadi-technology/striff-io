@@ -121,7 +121,6 @@ interface Summary {
   /** The part of notRead that lies outside the first reading: read free when a change touches the code it describes. */
   outsideFirstReading?: number;
   screenedOut: number;
-  retired: number;
   unreadable: number;
   rules: number;
   brokenRules: number;
@@ -240,7 +239,7 @@ function refusalOf(code: string | undefined, fallback: string | undefined): { me
       };
     case "nothing_readable":
       return {
-        message: "None of these docs can be read for rules: each was excluded, says it is no longer current, or couldn't be read, as the list shows.",
+        message: "None of these docs can be read for rules: each was excluded or couldn't be read, as the list shows.",
         final: true,
       };
     case "code_not_read":
@@ -403,8 +402,9 @@ function isUnread(doc: Doc): boolean {
 
 /** The suffix the stylesheet knows a state by; a document outside the first reading is drawn as an unread one. */
 function stateClass(state: DocState): string {
-  // A document Striff excluded is drawn as one a person excluded: same badge, same dim.
-  return (state === "OUTSIDE_FIRST_READING" ? "NOT_READ" : state === "SCREENED_OUT" ? "EXCLUDED" : state).toLowerCase();
+  // A document Striff excluded, one that says it is no longer current included, is drawn as one a
+  // person excluded: same badge, same dim.
+  return (state === "OUTSIDE_FIRST_READING" ? "NOT_READ" : state === "SCREENED_OUT" || state === "RETIRED" ? "EXCLUDED" : state).toLowerCase();
 }
 
 const STATE_LABEL: Record<DocState, string> = {
@@ -412,7 +412,7 @@ const STATE_LABEL: Record<DocState, string> = {
   NOT_READ: "Not read yet",
   OUTSIDE_FIRST_READING: "Not read yet",
   SCREENED_OUT: "Excluded",
-  RETIRED: "Retired",
+  RETIRED: "Excluded",
   UNREADABLE: "Couldn't read",
   EXCLUDED: "Excluded",
 };
@@ -461,9 +461,7 @@ function stateLineOf(doc: Doc, covering?: Exclusion | null): string {
       return said;
     }
     case "RETIRED":
-      return doc.retiredReason
-        ? `This doc says it is no longer current: ${doc.retiredReason}`
-        : "This doc says it is no longer current, so its rules aren't checked.";
+      return `Striff excluded this doc: it says it is no longer current${doc.retiredReason ? ` — ${doc.retiredReason.replace(/\.$/, "")}` : ""}.`;
     case "UNREADABLE":
       return "Striff couldn't finish reading this doc. That isn't counted as “no rules”; it tries again on the next pull request that touches the code it names.";
     case "EXCLUDED":
@@ -501,7 +499,6 @@ type DocFilter =
   | "all"
   | "notRead"
   | "unreadable"
-  | "retired"
   | "excluded"
   | "forced";
 
@@ -520,7 +517,6 @@ const DOC_FILTER_TEST: Record<Exclude<DocFilter, "results" | "noRules" | "exclud
   all: () => true,
   notRead: (doc) => isUnread(doc),
   unreadable: (doc) => doc.state === "UNREADABLE",
-  retired: (doc) => doc.state === "RETIRED",
 };
 
 /**
@@ -530,10 +526,9 @@ const DOC_FILTER_TEST: Record<Exclude<DocFilter, "results" | "noRules" | "exclud
  * read document is With rules or No rules by the rules the table lists for it.
  */
 function docBucket(doc: Doc, excluded: boolean, withRules: boolean): DocFilter {
-  if (excluded) return "excluded";
+  if (excluded || doc.state === "RETIRED") return "excluded";
   if (isUnread(doc)) return "notRead";
   if (doc.state === "UNREADABLE") return "unreadable";
-  if (doc.state === "RETIRED") return "retired";
   return withRules ? "results" : "noRules";
 }
 
@@ -551,8 +546,7 @@ const DOC_CHIPS: Chip<DocFilter>[] = [
   { key: "noRules", label: "No rules", dot: "", always: false, help: "Documents Striff read that state no rule it can check, such as a guide or a changelog." },
   { key: "notRead", label: "Not read yet", dot: "unread", always: true, help: "Documents Striff means to read and hasn't yet, so any rule in them is not counted here." },
   { key: "unreadable", label: "Couldn't read", dot: "broken", always: false, help: "Documents Striff couldn't finish reading. That isn't counted as “no rules”." },
-  { key: "retired", label: "Retired", dot: "other", always: false, help: "Documents that say they are no longer current, so their rules aren't checked." },
-  { key: "excluded", label: "Excluded", dot: "other", always: true, help: "Documents Striff doesn't read, so none of their rules are checked: ones Striff excluded, with its reason, and ones excluded here." },
+  { key: "excluded", label: "Excluded", dot: "other", always: true, help: "Documents Striff doesn't read, so none of their rules are checked: ones Striff excluded, with its reason (a doc that says it is no longer current is one), and ones excluded here." },
   { key: "forced", label: "Read anyway", dot: "other", always: false, hidden: true, help: "Documents Striff excluded that this repository asked it to read regardless." },
 ];
 
@@ -1824,7 +1818,7 @@ export default function DocsTab({
   /** Whether a document is one a filter shows. */
   const matches = (key: Filter) => (doc: Doc): boolean => {
     if (key === "results" || key === "noRules" || key === "excluded") return bucketOf.get(doc.path) === key;
-    if ((key === "notRead" || key === "unreadable" || key === "retired") && bucketOf.get(doc.path) !== key) return false;
+    if ((key === "notRead" || key === "unreadable") && bucketOf.get(doc.path) !== key) return false;
     if (key in ruleDocs) return ruleDocs[key as RuleChip].has(doc.path);
     return DOC_FILTER_TEST[key as keyof typeof DOC_FILTER_TEST](doc);
   };
@@ -2311,7 +2305,7 @@ export default function DocsTab({
         {doc.state !== "READ" && !beingRead && (
           <span
             className={`docs-badge is-${stateClass(doc.state)}`}
-            title={doc.state === "EXCLUDED" || doc.state === "SCREENED_OUT"
+            title={doc.state === "EXCLUDED" || doc.state === "SCREENED_OUT" || doc.state === "RETIRED"
               ? stateLineOf(doc, coveringFolder(doc.path, catalog?.exclusions)).replace(/`/g, "").split(/(?<=\.)\s/)[0]
               : undefined}
           >

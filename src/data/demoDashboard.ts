@@ -150,7 +150,6 @@ const summary = {
   notRead: count("NOT_READ") + count("OUTSIDE_FIRST_READING"),
   outsideFirstReading: count("OUTSIDE_FIRST_READING"),
   screenedOut: count("SCREENED_OUT"),
-  retired: count("RETIRED"),
   unreadable: count("UNREADABLE"),
   rules: 25,
   brokenRules: 1,

@@ -13,6 +13,14 @@ page.on("request", (r) => { if (r.url().includes("doc-text")) textRequests++; })
 
 await page.goto(`${base}/demo/`, { waitUntil: "networkidle" });
 
+// The document chips partition the documents: with no Retired chip, their counts add up to All.
+const chips = await page.locator(".docs-filter").evaluateAll((els) =>
+  els.map((el) => [el.textContent.replace(/\s*\d+$/, "").trim(), Number(el.textContent.match(/(\d+)\s*$/)?.[1])]));
+const countOf = (label) => chips.find(([name]) => name === label)?.[1];
+assert.ok(!chips.some(([name]) => name === "Retired"), "no Retired chip");
+const parts = ["With rules", "No rules", "Not read yet", "Couldn't read", "Excluded"];
+assert.equal(parts.reduce((sum, name) => sum + (countOf(name) || 0), 0), countOf("All"), `document chips add up to All (${JSON.stringify(chips)})`);
+
 // A folder has no tab bar.
 await page.getByRole("button", { name: /^docs\b/ }).first().click().catch(() => {});
 assert.equal(await page.getByRole("tab", { name: "Document" }).count(), 0, "folder or repository shows no tabs");
