@@ -19,7 +19,7 @@ export interface Flagged {
   line: number | null;
   /** The rule as Striff states it, or the stale name. */
   finding: string;
-  /** How it stands: holds, broken, already broken, gone, moved and so on. */
+  /** How it stands: holds, broken, already broken, unclear, gone, moved and so on. */
   standing: string;
   /** The rule's id, where it has one. */
   id?: string | null;
@@ -41,6 +41,9 @@ export default function FlagFinding({ flagged, demo = false }: { flagged: Flagge
   const field = useRef<HTMLTextAreaElement | null>(null);
   const titleId = useId();
   const label = flagged.kind === "rule" ? "Flag this rule" : "Flag this stale name";
+  // A rule Striff could not decide has no verdict to be wrong about, so the flag asks for the
+  // reader's answer as well as for a misreading.
+  const undecided = flagged.kind === "rule" && flagged.standing === "unclear";
 
   useEffect(() => {
     if (!open) return;
@@ -109,7 +112,11 @@ export default function FlagFinding({ flagged, demo = false }: { flagged: Flagge
         aria-label={state === "sent" ? `${label}: sent` : label}
         aria-expanded={open}
         aria-haspopup="dialog"
-        title={state === "sent" ? "Flagged. Thanks." : `${label} if Striff got it wrong`}
+        title={state === "sent"
+          ? "Flagged. Thanks."
+          : undecided
+          ? "Flag this rule if it doesn't say what your doc says, or tell us how it stands"
+          : `${label} if Striff got it wrong`}
         onClick={() => (open ? close() : setOpen(true))}
       >
         <svg viewBox="0 0 16 16" width="14" height="14" fill={state === "sent" ? "currentColor" : "none"}
@@ -129,14 +136,18 @@ export default function FlagFinding({ flagged, demo = false }: { flagged: Flagge
           ) : (
             <form onSubmit={send}>
               <p id={titleId} className="finding-flag-title">{label}</p>
-              <p className="finding-flag-hint">Tell us what's wrong with it. Our team reads every flag.</p>
+              <p className="finding-flag-hint">
+                {undecided
+                  ? "Tell us if the rule misreads your doc, or how it stands in your code. Our team reads every flag."
+                  : "Tell us what's wrong with it. Our team reads every flag."}
+              </p>
               <textarea
                 ref={field}
                 value={message}
                 maxLength={MAX_MESSAGE}
                 rows={3}
-                placeholder="What's wrong? (optional)"
-                aria-label="What's wrong with it (optional)"
+                placeholder={undecided ? "What's wrong, or how does it stand? (optional)" : "What's wrong? (optional)"}
+                aria-label={undecided ? "What's wrong, or how it stands (optional)" : "What's wrong with it (optional)"}
                 onChange={(event) => setMessage(event.target.value)}
               />
               <div className="finding-flag-foot">

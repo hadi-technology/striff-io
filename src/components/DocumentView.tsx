@@ -505,7 +505,7 @@ export default function DocumentView({
 
   const swatch = (kind: string, n: number, label: string) =>
     n > 0 && (
-      <span key={kind} className="dv-count">
+      <span key={kind} className="dv-count" title={kind === "unclear" ? STANDING_HELP.unclear : undefined}>
         <i className={`dv-sw is-${kind}`} aria-hidden="true" />
         {n} {label}
       </span>

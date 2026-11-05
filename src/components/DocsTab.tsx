@@ -555,7 +555,7 @@ const RULE_CHIPS: Chip<RuleChip>[] = [
   { key: "holds", label: "Holding", dot: "held", always: true, help: "Included rules the code keeps." },
   { key: "broken", label: "Broken", dot: "broken", always: true, help: "Included rules the code does not keep." },
   { key: "unchecked", label: "Not checked yet", dot: "unread", always: false, help: "Included rules with no verdict on the default branch yet. They are judged at the next check of that branch." },
-  { key: "unclear", label: "Couldn't check", dot: "unclear", always: false, help: "Included rules Striff found near the code but couldn't decide. Check these by hand." },
+  { key: "unclear", label: "Couldn't check", dot: "unclear", always: false, help: "Included rules Striff found but can't decide from the code it reads. Check them by hand; Striff tries again on later pull requests." },
   { key: "stale", label: "Stale names", dot: "stale", always: false, help: "Names the docs write that the default branch no longer declares, or declares somewhere else. Counted in names." },
   { key: "excludedRules", label: "Excluded", dot: "other", always: true, help: "Rules pull requests aren't checked against: excluded on their own, or with their doc or folder." },
 ];

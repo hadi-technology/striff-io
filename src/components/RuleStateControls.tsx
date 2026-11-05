@@ -16,7 +16,10 @@ export function RuleSwitch({
   disabledReason,
   onToggle,
   compact = false,
+  unclear = false,
 }: {
+  /** Whether Striff could not decide this rule: the title then says what the switch does for it. */
+  unclear?: boolean;
   /** Whether it is the small switch beside a rule's pill, with no visible label; its state is in its title. */
   compact?: boolean;
   excluded: boolean;
@@ -29,7 +32,11 @@ export function RuleSwitch({
 }) {
   const reason = withDoc ? "Excluded with its doc. Include the doc to change this rule." : disabledReason;
   const title = reason
-    ?? (excluded
+    ?? (unclear
+      ? excluded
+        ? "Excluded: Striff doesn't try this rule on pull requests or show it. Click to include it."
+        : "Included: Striff tries this rule on every pull request and shows it as Couldn't check when it can't decide. Click to exclude it."
+      : excluded
       ? "Excluded: pull requests aren't checked against this rule. Click to include it."
       : "Included: pull requests are checked against this rule. Click to exclude it.");
   return (

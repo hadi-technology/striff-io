@@ -156,7 +156,7 @@ export const STANDING_HELP: Record<Standing, string> = {
   broken: "The code does not keep this rule.",
   holds: "The code keeps this rule.",
   unchecked: "This rule has no verdict on the default branch yet. It is judged at the next check of that branch.",
-  unclear: "Striff couldn't check this rule.",
+  unclear: "Striff found this rule but can't decide it from the code it reads. Check it by hand; Striff tries again on later pull requests.",
 };
 
 /** What an empty table says when a count, not a search, emptied it. */
@@ -750,6 +750,7 @@ export default function RulesTable({
                   {ruleStates && !folded && (
                     <RuleSwitch
                       compact
+                      unclear={standing(row) === "unclear"}
                       excluded={!!row.excluded}
                       withDoc={row.excludedBy === "excluded" || row.doc.state === "EXCLUDED"}
                       disabledReason={ruleStates.disabledReason}
