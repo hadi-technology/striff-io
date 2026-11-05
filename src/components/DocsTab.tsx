@@ -2482,8 +2482,8 @@ export default function DocsTab({
           beside the tree, and stale names are names, so neither is in this group. */}
       {/* Not lit when nothing is filtered: a light on every count says nothing. */}
       {showRuleCounts && (
-      <div className="docs-tally-group" role="group" aria-label="Rules">
-      <span className="docs-tally-caption">Rules</span>
+      <div className="docs-tally-group" role="group" aria-label="Rules summary">
+      <span className="docs-tally-caption">Rules summary</span>
       <div className="docs-tally-row">
       <button
         type="button"
@@ -2521,7 +2521,7 @@ export default function DocsTab({
         onClick={() => toggleFilter("unchecked")}
       >
         <b>{repoCounts.unchecked}</b>
-        <i>not checked yet</i>
+        <i>not checked<br />yet</i>
       </button>
       {(repoCounts.unclear > 0 || filter === "unclear") && (
         <button
@@ -2531,7 +2531,7 @@ export default function DocsTab({
           onClick={() => toggleFilter("unclear")}
         >
           <b>{repoCounts.unclear}</b>
-          <i>couldn't check</i>
+          <i>couldn't<br />check</i>
         </button>
       )}
       {(repoCounts.excluded > 0 || filter === "excludedRules") && (
@@ -2547,24 +2547,6 @@ export default function DocsTab({
       )}
       </div>
       </div>
-      )}
-      {/* Shown only once a reading of the whole repository has looked. Until then there is
-          no number to give: a zero would say every doc is current, and nothing has checked.
-          Counted apart from the rules, because a doc naming something that is gone is a
-          stale doc and not a broken rule. Of the whole repository, like every other count here. */}
-      {staleNames && staleNames.lastSeenMs != null && !(publicNoRules && repoStale === 0) && (
-        <>
-        {showRuleCounts && <span className="docs-tally-divider" aria-hidden="true" />}
-        <button
-          type="button"
-          className={`docs-tally-item is-stale${repoStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
-          title={`Stale names in your docs: gone, moved or renamed in the code. Found by reading the whole repository, last on ${when(staleNames.lastSeenMs)}.${staleNames.truncated ? " There are more than are listed here." : ""} Shows the docs that write them.`}
-          onClick={() => toggleFilter("stale")}
-        >
-          <b>{repoStale}{staleNames.truncated ? "+" : ""}</b>
-          <i>stale names</i>
-        </button>
-        </>
       )}
       {catalog && !readOnly && (
         <ReadRepository
