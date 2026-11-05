@@ -8031,20 +8031,6 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
 .dv-ln:hover { color: #1d4ed8; }
 .dv-lt { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 
-.dv-card { position: relative; margin: 0 0 1rem; padding: 0.8rem 2.2rem 0.8rem 0.9rem; border: 1px solid #93c5fd; border-radius: 0.6rem; background: #f8fbff; display: flex; flex-direction: column; gap: 0.7rem; font-size: 0.86rem; overflow-wrap: anywhere; }
-.dv-card-close { position: absolute; top: 0.3rem; right: 0.4rem; width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: #64748b; font-size: 1.2rem; line-height: 1; cursor: pointer; }
-.dv-card-close:hover { background: #e2e8f0; }
-.dv-card-item { display: flex; flex-direction: column; gap: 0.35rem; }
-.dv-card-item + .dv-card-item { padding-top: 0.7rem; border-top: 1px solid #dbeafe; }
-.dv-card-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-.dv-card-title { font-weight: 600; font-size: 0.9rem; }
-.dv-card-name { font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; }
-.dv-card-body { margin: 0; color: #334155; line-height: 1.55; }
-.dv-card-when { color: #64748b; }
-.dv-card-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-.dv-card-actions a { font-size: 0.8rem; font-weight: 600; }
-.dv-card-button { min-height: 34px; padding: 0 0.9rem; border: 1px solid #2563eb; border-radius: 0.5rem; background: #fff; color: #1d4ed8; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
-.dv-card-error { color: #b4233c; font-size: 0.8rem; }
 .dv-badge { display: inline-flex; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.74rem; font-weight: 700; white-space: nowrap; }
 .dv-badge.is-holds { background: #dcfce7; color: #166534; }
 .dv-badge.is-broken { background: #fee2e2; color: #991b1b; }
@@ -8147,12 +8133,12 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
 .rules-table tr.is-linked td { background-color: #fff3b0; }
 .rules-table tr.is-linked td:first-child { box-shadow: inset 3px 0 0 #bf8700; }
 /* The rules a click in the document's text led to: stay lit until the next click. */
-.rules-table tr.is-target td { background-color: #e6f0ff; }
-.rules-table tr.is-target td:first-child { box-shadow: inset 4px 0 0 #2563eb; }
+.docs-rules tr.is-target td { background-color: #e6f0ff; }
+.docs-rules tr.is-target td:first-child { box-shadow: inset 4px 0 0 #2563eb; }
 @media (min-width: 641px) {
-  .rules-table tr.is-target td { border-top: 1px solid #2563eb; border-bottom: 1px solid #2563eb; }
+  .docs-rules tr.is-target td { border-top: 1px solid #2563eb; border-bottom: 1px solid #2563eb; }
 }
-.rules-table tr:focus { outline: none; }
+.docs-rules tr:focus { outline: none; }
 .docs-link-note { margin: 0 0 0.75rem; padding: 0.55rem 0.85rem; border: 1px solid #e2e8f0; border-radius: 0.6rem; background: #f8fafc; color: #334155; font-size: 0.85rem; }
 
 /* The account Settings tab: its sections stack, and the repository table carries a select per setting. */
@@ -8186,3 +8172,20 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
   .check-settings-choice .choice-select { width: 100%; }
   .settings-search { max-width: none; }
 }
+
+/* The text of a doc leads into the Rules tab and back: a note where it cannot, a way back, a pulse. */
+.dv-note { margin: 0 0 0.9rem; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; background: #f8fafc; color: #334155; font-size: 0.85rem; }
+.dv-back { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); z-index: 40; display: flex; }
+.dv-back button { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 34px; padding: 0 0.9rem; border: 1px solid #2563eb; border-radius: 999px; background: #fff; color: #1d4ed8; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.25); }
+.dv-back button:hover { background: #eff6ff; }
+.dv-back button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.rules-source-doc { appearance: none; border: 0; background: none; padding: 0; margin-left: 0.3rem; font: inherit; font-size: 0.72rem; font-weight: 600; color: #57606a; text-decoration: underline; text-decoration-color: #cbd5e1; text-underline-offset: 2px; cursor: pointer; }
+.rules-source-doc:hover { color: #1d4ed8; text-decoration-color: currentColor; }
+.docs-stale-table .docs-rule-line a { color: inherit; }
+.dv-mark.is-pulse { animation: dv-pulse 1.4s ease-out 1; }
+@keyframes dv-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.55); }
+  60% { box-shadow: 0 0 0 7px rgba(37, 99, 235, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .dv-mark.is-pulse { animation: none; } }

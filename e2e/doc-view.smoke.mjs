@@ -39,22 +39,53 @@ assert.ok(await page.locator(".dv-doc .dv-block.is-holds").count() > 0, "a table
 assert.ok(await page.locator(".dv-divider").count() === 1, "partly read divider");
 assert.ok((await page.locator(".dv-unplaced li").count()) === 1, "one rule is not marked in the text");
 
-// A click on a stale name opens the card, a second click and Escape close it.
-const mark = page.locator(".dv-doc .dv-mark.is-stale").first();
-await mark.click();
-assert.equal(await page.locator(".dv-card").count(), 1);
-await mark.click();
-assert.equal(await page.locator(".dv-card").count(), 0);
-await mark.click();
-await page.keyboard.press("Escape");
-assert.equal(await page.locator(".dv-card").count(), 0);
+// A click on a stale name goes to its row in the stale names table; no card opens.
+await page.getByRole("tab", { name: "Document" }).click();
+const gone = page.locator('.dv-doc .dv-mark.is-stale[data-ids*="billing.LedgerEntry"]').first();
+await gone.scrollIntoViewIfNeeded();
+assert.match(await gone.getAttribute("aria-label"), /Stale name · click to see it in the table/);
+await gone.click();
+assert.equal(await page.getByRole("tab", { name: /^Rules/ }).getAttribute("aria-selected"), "true");
+assert.equal(await page.locator(".dv-card").count(), 0, "no card");
+await page.locator('.docs-stale-table tr.is-target[data-stale^="billing.LedgerEntry@"]').waitFor();
+assert.equal(await page.locator("tr.is-target").count(), 1, "only the stale row is the target");
+await page.waitForTimeout(700);
+assert.ok(await page.locator("tr.is-target").evaluate((el) => el === document.activeElement), "stale row focused");
+
+// A mark over a rule and a stale name targets both, and Back to the document returns to the spot.
+await page.getByRole("tab", { name: "Document" }).click();
+const mixed = page.locator('.dv-doc .dv-mark[data-ids*="stale:"][data-ids*="ARCHITECTURE.md|"]').first();
+await mixed.scrollIntoViewIfNeeded();
+assert.match(await mixed.getAttribute("aria-label"), /a rule and a stale name · click to see them/);
+const spot = await page.evaluate(() => window.scrollY);
+await mixed.click();
+await page.locator(".docs-stale-table tr.is-target").waitFor();
+await page.locator(".rules-table tr.is-target").waitFor();
+await page.waitForTimeout(700);
+const back = page.getByRole("button", { name: /Back to the document/ });
+assert.equal(await back.count(), 1, "a way back while targets are outlined");
+await back.click();
+assert.equal(await page.getByRole("tab", { name: "Document" }).getAttribute("aria-selected"), "true");
+await page.waitForFunction((y) => Math.abs(window.scrollY - y) < 4, spot, { timeout: 3000 }).catch(() => {});
+assert.ok(Math.abs((await page.evaluate(() => window.scrollY)) - spot) < 4, "back at the spot");
+assert.equal(await page.getByRole("button", { name: /Back to the document/ }).count(), 0, "the way back goes with the outline");
+
+// A row with a mark in the text can show it there.
+await page.getByRole("tab", { name: /^Rules/ }).click();
+const shown = page.locator("tr", { hasText: "Domain events are published only through" }).first();
+await shown.getByRole("button", { name: "Show in document" }).click();
+await page.waitForSelector(".dv-doc");
+await page.waitForTimeout(800);
+assert.ok(await page.evaluate(() => document.activeElement?.classList.contains("dv-mark")), "the mark is focused");
+const markBox = await page.evaluate(() => { const r = document.activeElement.getBoundingClientRect(); return [r.top, r.bottom, window.innerHeight]; });
+assert.ok(markBox[0] >= 0 && markBox[1] <= markBox[2], "the mark is on screen");
 
 // A click on a rule's words goes to that rule in the Rules tab, whatever its kind.
 for (const kind of ["holds", "broken", "unchecked", "unclear", "excluded"]) {
   await page.getByRole("tab", { name: "Document" }).click();
   const target = page.locator(`.dv-doc .dv-mark.is-${kind}`).first();
   await target.scrollIntoViewIfNeeded();
-  const ids = (await target.getAttribute("data-ids")).split(" ");
+  const ids = (await target.getAttribute("data-ids")).split("\n");
   const before = await page.evaluate(() => window.scrollY);
   await target.click();
   assert.equal(await page.getByRole("tab", { name: /^Rules/ }).getAttribute("aria-selected"), "true", `${kind}: Rules tab`);

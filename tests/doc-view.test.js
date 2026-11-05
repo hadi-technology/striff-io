@@ -185,3 +185,14 @@ test("the sample document places every rule once, and its cited lines say what t
   }
   assert.ok(placed.readChars < ARCH_TEXT.length);
 });
+
+test("a mark says what it is and what a click does", () => {
+  const rule = (kind) => ({ kind, stale: false });
+  assert.equal(V.markDescription([rule("holds")]), "Holds \u00b7 click to see the rule");
+  assert.equal(V.markDescription([rule("unclear")]), "Couldn't check \u00b7 click to see the rule");
+  assert.equal(V.markDescription([rule("unchecked")]), "Not checked yet \u00b7 click to see the rule");
+  assert.equal(V.markDescription([{ kind: "stale", stale: true }]), "Stale name \u00b7 click to see it in the table");
+  assert.equal(V.markDescription([rule("holds"), rule("broken"), { kind: "stale", stale: true }]), "2 rules and a stale name \u00b7 click to see them");
+  assert.equal(V.markDescription([rule("holds"), rule("holds")]), "2 rules \u00b7 click to see them");
+  assert.equal(V.markDescription([rule("holds"), { kind: "stale", stale: true }]), "a rule and a stale name \u00b7 click to see them");
+});

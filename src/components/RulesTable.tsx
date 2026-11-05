@@ -224,7 +224,13 @@ export default function RulesTable({
   ruleStates,
   focusRule,
   jump = null,
+  inDocument,
+  onShowInDocument,
 }: {
+  /** The rules that have a mark in the document, for the row action that shows it. */
+  inDocument?: Set<string>;
+  /** Opens the document at a rule's mark. */
+  onShowInDocument?: (factId: string) => void;
   /** The rules in scope, already stripped of the ones nothing could judge. */
   rows: Row[];
   owner: string;
@@ -265,7 +271,7 @@ export default function RulesTable({
    * the first scrolled to and focused, all of them outlined until the reader's next click. `n`
    * tells one jump from the next.
    */
-  jump?: { ids: string[]; n: number } | null;
+  jump?: { ids: string[]; stale?: string[]; n: number } | null;
 }) {
   /** A switch that failed says so on its own row until it is tried again. */
   const [stateError, setStateError] = useState<Record<string, string>>({});
@@ -362,20 +368,8 @@ export default function RulesTable({
     if (line) setOpenLines((was) => (was.has(line.rows[0].factId) ? was : new Set(was).add(line.rows[0].factId)));
   }, [focusRule, shown]);
 
-  /** The jump whose outlines a click has since put out. */
-  const [putOut, setPutOut] = useState<number | null>(null);
-  const targets = useMemo(
-    () => (jump && putOut !== jump.n ? new Set(jump.ids) : new Set<string>()),
-    [jump, putOut]
-  );
-  // The outlines stay until the reader's next click anywhere.
-  useEffect(() => {
-    if (!jump || !targets.size) return;
-    const n = jump.n;
-    const out = () => setPutOut(n);
-    document.addEventListener("pointerdown", out, true);
-    return () => document.removeEventListener("pointerdown", out, true);
-  }, [jump, targets]);
+  // The outlines last as long as the jump does: the page that holds it drops it on the next click.
+  const targets = useMemo(() => (jump ? new Set(jump.ids) : new Set<string>()), [jump]);
   const panel = useRef<HTMLDivElement | null>(null);
   /** The jump already scrolled to, so a redraw does not pull the page back. */
   const landed = useRef<number | null>(null);
@@ -637,6 +631,11 @@ export default function RulesTable({
                       <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
                     </svg>
                   </a>
+                  {inDocument?.has(row.factId) && onShowInDocument && (
+                    <button type="button" className="rules-source-doc" onClick={() => onShowInDocument(row.factId)}>
+                      Show in document
+                    </button>
+                  )}
                 </span>
               </td>
               )}

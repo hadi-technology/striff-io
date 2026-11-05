@@ -37,6 +37,37 @@ export function ruleKind(rule) {
   return standing(rule);
 }
 
+/** What each kind of mark is called, in the legend and in what a mark says about itself. */
+export const KIND_LABEL = {
+  holds: "Holds",
+  broken: "Broken",
+  unchecked: "Not checked yet",
+  unclear: "Couldn't check",
+  excluded: "Excluded",
+  stale: "Stale name",
+};
+
+/**
+ * What a mark is and what a click on it does, for its tooltip and its accessible name.
+ *
+ * @param {{ kind: string, stale: boolean }[]} things everything behind the mark, one per rule or name
+ * @returns {string}
+ */
+export function markDescription(things) {
+  const stale = things.filter((thing) => thing.stale).length;
+  const rules = things.length - stale;
+  if (things.length === 1) {
+    return stale
+      ? `${KIND_LABEL.stale} \u00b7 click to see it in the table`
+      : `${KIND_LABEL[things[0].kind] ?? "Rule"} \u00b7 click to see the rule`;
+  }
+  const part = (n, one, many) => (n === 1 ? `a ${one}` : `${n} ${many}`);
+  const named = [rules ? part(rules, "rule", "rules") : null, stale ? part(stale, "stale name", "stale names") : null]
+    .filter(Boolean)
+    .join(" and ");
+  return `${named} \u00b7 click to see them`;
+}
+
 /** Whether a UTF-16 unit is the second half of a surrogate pair that starts before it. */
 function splitsPair(text, at) {
   if (at <= 0 || at >= text.length) return false;

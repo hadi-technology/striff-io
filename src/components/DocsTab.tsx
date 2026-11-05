@@ -32,7 +32,6 @@ import RulesTable, {
   type RuleFilter,
 } from "./RulesTable";
 import Listing from "./Listing";
-import { blobUrl } from "../lib/docMarkup.js";
 import { failureMessage, textKey } from "../lib/docView.js";
 import ReadRepository, { askedReading, isRunning, type Reading } from "./ReadRepository";
 
@@ -950,8 +949,15 @@ export default function DocsTab({
   const [selected, setSelected] = useState<string>("");
   /** Which of a doc's two views is open; a doc always opens on its rules. */
   const [paneTab, setPaneTab] = useState<"rules" | "document">("rules");
-  /** The rules a click in the document led to; the Rules tab lights them. `n` tells one jump from the next. */
-  const [jump, setJump] = useState<{ ids: string[]; n: number } | null>(null);
+  /**
+   * What a click in the document led to, lit in the Rules tab: the rules by id, the stale names by
+   * `name@line`. `n` tells one jump from the next.
+   */
+  const [jump, setJump] = useState<{ ids: string[]; stale: string[]; n: number } | null>(null);
+  /** What the document marks, so a row only offers to show what is there to be shown. */
+  const [placedIds, setPlacedIds] = useState<Set<string>>(new Set());
+  /** A mark the reader asked to see in the text, from a row of either table. */
+  const [reveal, setReveal] = useState<{ id: string; n: number } | null>(null);
   /** Where the page was scrolled when the reader left the document for the rules. */
   const documentScroll = useRef<number | null>(null);
   /** The text of each doc version the Document tab has been opened on, asked for once each. */
@@ -1981,18 +1987,54 @@ export default function DocsTab({
   /** Whether the selected doc has a Document tab: one doc, with at least one rule to mark in it. */
   const hasDocumentTab = scopeKind === "doc" && !!detail && scopeRows.length > 0;
 
+  /** One stale finding as the table's rows and a jump name it. */
+  const staleKey = (finding: StaleName) => `${finding.name}@${finding.sourceLine ?? ""}`;
   /**
-   * Takes the reader from rules marked in the document to those rules in the Rules tab. False where
-   * none of them is a row there, and the document then opens its own card instead.
+   * Takes the reader from marks in the document to what stands for them in the Rules tab: the
+   * rules, and the stale names in the table under them. False where no row stands for any of
+   * them, and the document then says so beside the text instead of going anywhere.
    */
   const jumpToRules = (ids: string[]): boolean => {
-    const found = ids.filter((id) => scopeRows.some((row) => row.factId === id));
-    if (!found.length) return false;
+    const rules = ids.filter((id) => scopeRows.some((row) => row.factId === id));
+    const staleFound = (staleByDoc.get(selected) || [])
+      .filter((finding) => ids.includes(`stale:${finding.docPath}:${finding.name}`))
+      .map(staleKey);
+    if (!rules.length && !staleFound.length) return false;
     documentScroll.current = window.scrollY;
-    setJump((was) => ({ ids: found, n: (was?.n ?? 0) + 1 }));
+    setJump((was) => ({ ids: rules, stale: staleFound, n: (was?.n ?? 0) + 1 }));
     setPaneTab("rules");
     return true;
   };
+  /** Opens the document at the mark of a rule or a stale name. */
+  const showInDocument = (id: string) => {
+    documentScroll.current = null;
+    setJump(null);
+    setPaneTab("document");
+    setReveal((was) => ({ id, n: (was?.n ?? 0) + 1 }));
+  };
+  // The outlines last until the next click anywhere but the way back.
+  useEffect(() => {
+    if (!jump) return;
+    const out = (event: Event) => {
+      if ((event.target as HTMLElement).closest?.(".dv-back")) return;
+      setJump(null);
+    };
+    document.addEventListener("pointerdown", out, true);
+    return () => document.removeEventListener("pointerdown", out, true);
+  }, [jump]);
+  // A jump that is only to stale names has no rule row to land on: the first of them is.
+  const staleLanded = useRef<number | null>(null);
+  useEffect(() => {
+    if (!jump || paneTab !== "rules" || staleLanded.current === jump.n) return;
+    staleLanded.current = jump.n;
+    if (jump.ids.length || !jump.stale.length) return;
+    const row = [...document.querySelectorAll<HTMLElement>(".docs-stale-table tr[data-stale]")]
+      .find((el) => jump.stale.includes(el.dataset.stale || ""));
+    if (!row) return;
+    row.focus({ preventScroll: true });
+    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    row.scrollIntoView({ block: "center", behavior: still ? "auto" : "smooth" });
+  }, [jump, paneTab]);
   // Back in the document, the reader is where they clicked; a jump belongs to the doc it was made in.
   useEffect(() => {
     if (paneTab !== "document" || documentScroll.current == null) return;
@@ -2037,11 +2079,12 @@ export default function DocsTab({
     }
   }
 
-  // The first time the tab is open on a version, and never again for it: a failure waits for Retry.
+  // The first time a doc with rules is open on a version, and never again for it, so the rules know
+  // which of them the text marks: a failure waits for Retry.
   useEffect(() => {
-    if (paneTab !== "document" || !hasDocumentTab || textEntry) return;
+    if (!hasDocumentTab || textEntry) return;
     loadDocText(selected, shownVersion, textId);
-  }, [paneTab, hasDocumentTab, textId]);
+  }, [hasDocumentTab, textId]);
 
   /** Names gone under whatever is selected, so the count agrees with the rest of the tally. */
   const scopeStale = useMemo(
@@ -3255,31 +3298,8 @@ export default function DocsTab({
                           name={name}
                           docPath={selected}
                           branch={branch}
-                          onInclude={readOnly ? undefined : async (row) => ruleStateBlocked ?? setRuleStates({ excluded: false, factIds: [row.factId] })}
-                          renderStale={(finding: StaleName) => (
-                            <>
-                              <p className="dv-card-body">{withCode(staleLine(finding))}</p>
-                              <div className="dv-card-actions">
-                                {(!source || withStaleNameIssue(finding, selected, findingIssues).issue) && (
-                                  <FindingActions
-                                    issueUrl={takesIssues && !source
-                                      ? staleNameIssueUrl(owner, name, selected, finding, branch || "main")
-                                      : null}
-                                    prompt={source ? undefined : staleNamePrompt(owner, name, selected, finding, branch || "main")}
-                                    demo={!!sample}
-                                    issue={withStaleNameIssue(finding, selected, findingIssues).issue}
-                                    readOnly={!!source}
-                                  />
-                                )}
-                                {finding.sourceLine && textEntry.data.commit && (
-                                  <a href={blobUrl(owner, name, textEntry.data.commit, selected, finding.sourceLine)}
-                                     target="_blank" rel="noopener noreferrer">
-                                    Line {finding.sourceLine} on GitHub
-                                  </a>
-                                )}
-                              </div>
-                            </>
-                          )}
+                          onPlaced={(ids) => setPlacedIds(new Set(ids))}
+                          reveal={reveal}
                         />
                       </Suspense>
                     )}
@@ -3287,6 +3307,13 @@ export default function DocsTab({
                 )}
 
                 {(paneTab === "rules" || !hasDocumentTab) && (<>
+                {jump && hasDocumentTab && (
+                  <div className="dv-back">
+                    <button type="button" onClick={() => { setJump(null); setPaneTab("document"); }}>
+                      <span aria-hidden="true">←</span> Back to the document
+                    </button>
+                  </div>
+                )}
                 {/* The count is of the rules listed below, never of more. */}
                 {scopeRows.length > 0 ? (
                   <p className="docs-rule-count">
@@ -3310,6 +3337,8 @@ export default function DocsTab({
                     showPath={false}
                     focusRule={focusRule}
                     jump={jump}
+                    inDocument={hasDocumentTab ? placedIds : undefined}
+                    onShowInDocument={showInDocument}
                     filter={ruleFilter}
                     onShowAll={() => setFilter("all")}
                     docCount={1}
@@ -3346,9 +3375,28 @@ export default function DocsTab({
                       </thead>
                       <tbody>
                         {staleByDoc.get(selected)!.map((finding) => (
-                          <tr key={finding.name}>
+                          <tr
+                            key={finding.name}
+                            data-stale={staleKey(finding)}
+                            tabIndex={-1}
+                            className={jump?.stale.includes(staleKey(finding)) ? "is-target" : undefined}
+                          >
                             <td className="docs-rule-line">
-                              {finding.sourceLine ? `:${finding.sourceLine}` : ""}
+                              {finding.sourceLine ? (
+                                <a
+                                  href={`https://github.com/${owner}/${name}/blob/${branch || "HEAD"}/${selected}#L${finding.sourceLine}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={`Open ${selected} at line ${finding.sourceLine} on GitHub`}
+                                >
+                                  :{finding.sourceLine}
+                                </a>
+                              ) : ""}
+                              {hasDocumentTab && placedIds.has(`stale:${finding.docPath}:${finding.name}`) && (
+                                <button type="button" className="rules-source-doc" onClick={() => showInDocument(`stale:${finding.docPath}:${finding.name}`)}>
+                                  Show in document
+                                </button>
+                              )}
                             </td>
                             <td className="docs-stale-name">
                               <code>{finding.name}</code>

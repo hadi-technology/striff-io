@@ -120,7 +120,7 @@ function doc(path: string, state: string, extra: Record<string, unknown> = {}) {
 
 const documents = [
   doc("AGENTS.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 4, brokenRules: 1, lastExtractedMs: NOW - 15 * DAY, lastExtractedPullNo: "412", lastUsedMs: NOW - 2 * DAY }),
-  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 15, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: ARCH_READ, totalChars: ARCH_TEXT.length }),
+  doc("ARCHITECTURE.md", "READ", { extractedContentHash: "b3d91f02", ruleCount: 16, lastExtractedMs: NOW - 21 * DAY, lastExtractedPullNo: "398", readChars: ARCH_READ, totalChars: ARCH_TEXT.length }),
   // Outside the first reading: nothing has changed the code these describe yet, so they are read
   // free when something does. They are listed, never shown as having no rules.
   doc("CONTRIBUTING.md", "OUTSIDE_FIRST_READING", { screenReason: "Read free when a change touches the code it describes." }),
@@ -152,13 +152,13 @@ const summary = {
   outsideFirstReading: count("OUTSIDE_FIRST_READING"),
   screenedOut: screenedOut,
   unreadable: count("UNREADABLE"),
-  rules: 25,
+  rules: 26,
   brokenRules: 1,
   alreadyBrokenRules: 1,
   neverChecked: 1,
   couldntCheck: 3,
   excluded: count("EXCLUDED"),
-  holdsOnDefaultBranch: 14,
+  holdsOnDefaultBranch: 15,
   brokenOnDefaultBranch: 3,
 };
 
@@ -256,6 +256,8 @@ const rulesByDoc: Record<string, ReturnType<typeof rule>[]> = {
     rule(14, "Domain events are published only through `EventBus`", "Services publish domain events through `EventBus`; handlers in `events` never call controllers.", "UNCLEAR", "UNCLEAR", "427", 12),
     rule(20, "Provider calls are retried at most twice", "Provider calls time out after 5 seconds and are retried twice.", "UNCLEAR", "UNCLEAR", "427", 12),
     rule(29, "Scheduled jobs are registered through `CronScheduler`", "Scheduled jobs are registered with `CronScheduler` at startup.", "UNCLEAR", "UNCLEAR", "427", 12),
+    // Written over a name that has since gone: the mark at `CartSessionStore` leads to this rule and to the stale name.
+    HOLDS(31, "Only `checkout.cart` depends on `CartSessionStore`", "`CartSessionStore` keeps an open cart for thirty minutes after the last change.", "398", 21),
   ],
   "docs/adr/0007-payments.md": [
     HOLDS(14, "Nothing in `billing` depends on `checkout`", "Billing knows nothing about checkout. The dependency runs one way."),
@@ -440,6 +442,7 @@ const ARCH_WORDS: [number, string][] = [
   [12, "Services publish domain events through `EventBus`; handlers in `events` never call controllers"],
   [13, "Provider calls time out after 5 seconds and are retried twice."],
   [14, "Scheduled jobs are registered with `CronScheduler` at startup."],
+  [15, "`CartSessionStore` keeps an open cart for thirty minutes"],
 ];
 
 /** Where `words` stand in `text`, or null: UTF-16 offsets, as the text endpoint sends them. */

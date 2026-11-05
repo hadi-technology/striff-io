@@ -1,12 +1,13 @@
 import { Component, Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { parseDoc } from "../lib/docParse.js";
-import BrokenBy from "./BrokenBy";
-import { Clamped, when, withCode } from "./docRules";
-import { STANDING_HELP, STANDING_LABEL, standing, type Row } from "./RulesTable";
+import { Clamped, withCode } from "./docRules";
+import { STANDING_HELP, type Row } from "./RulesTable";
 import {
   alignText,
   byStrength,
   kindCounts,
+  KIND_LABEL,
+  markDescription,
   normalizeRanges,
   ruleKind,
   ruleRanges,
@@ -28,6 +29,10 @@ import { blobUrl, nestHtml, resolveLink, sourceLines } from "../lib/docMarkup.js
  * source view. Nothing here sets HTML: raw HTML is shown as text unless it is one of a short list
  * of tags, images are not loaded, MDX components are placeholders, and links are resolved to GitHub
  * at the commit the doc was read at.
+ *
+ * Every mark is a way into the Rules tab: a click on one takes the reader to the rows behind it,
+ * rules and stale names alike, and a row there can bring the reader back to its mark. The text
+ * never opens a card of its own.
  */
 
 /** The answer of the text endpoint when it could show the text. */
@@ -51,14 +56,6 @@ export interface DocStale {
   state: string;
 }
 
-const KIND_LABEL: Record<string, string> = {
-  holds: "Holds",
-  broken: "Broken",
-  unchecked: "Not checked yet",
-  unclear: "Couldn't check",
-  excluded: "Excluded",
-  stale: "Stale name",
-};
 
 const FORMATTED = new Set(["markdown", "mdx"]);
 
@@ -112,8 +109,9 @@ function idsOf(hits: any[]): string[] {
 }
 
 /**
- * One marked piece of text. A click on rules takes the reader to those rules in the Rules tab, or,
- * where that cannot be done and for a stale name, opens a card under the block.
+ * One marked piece of text. A click, or Enter or Space, takes the reader to everything behind it in
+ * the Rules tab: the rules and the stale names alike. Where there is nothing there to take them to,
+ * a short note opens under the block instead.
  */
 function Mark({ hits, ctx, children }: { hits: any[]; ctx: Ctx; children: ReactNode }) {
   const ids = idsOf(hits);
@@ -122,7 +120,11 @@ function Mark({ hits, ctx, children }: { hits: any[]; ctx: Ctx; children: ReactN
     return <span className={kind === "tail" ? "dv-unread" : undefined}>{children}</span>;
   }
   const open = !!ctx.selected && ids.some((id) => ctx.selected!.has(id));
-  const stale = ids.some((id) => id.startsWith("stale:"));
+  const things = ids.map((id) => {
+    const hit = hits.find((each) => each.id === id);
+    return { kind: hit?.kind as string, stale: id.startsWith("stale:") };
+  });
+  const describe = markDescription(things);
   const activate = (event: { target: EventTarget; stopPropagation: () => void }) => {
     if ((event.target as HTMLElement).closest?.("a")) return;
     event.stopPropagation();
@@ -132,11 +134,11 @@ function Mark({ hits, ctx, children }: { hits: any[]; ctx: Ctx; children: ReactN
     <span
       className={`dv-mark is-${kind}${open ? " is-open" : ""}`}
       data-kind={kind}
-      data-ids={ids.join(" ")}
+      data-ids={ids.join("\n")}
       role={ctx.inLink ? undefined : "button"}
       tabIndex={ctx.inLink ? undefined : 0}
-      aria-expanded={ctx.inLink || !stale ? undefined : open}
-      title={stale ? undefined : ids.length > 1 ? "Show these rules in the Rules tab" : "Show this rule in the Rules tab"}
+      title={describe}
+      aria-label={ctx.inLink ? undefined : describe}
       onClick={activate}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -373,7 +375,7 @@ function collectDefinitions(tree: any): Map<string, string> {
   return out;
 }
 
-/** A top-level block, redrawn only when its own highlights or open card change. */
+/** A top-level block, redrawn only when its own highlights or open note change. */
 const BlockView = memo(function BlockView({ node, index, shared, ranges, selected, muted }: {
   node: any; index: number; shared: Shared; ranges: any[]; selected: Set<string> | null; muted: boolean;
 }) {
@@ -382,17 +384,13 @@ const BlockView = memo(function BlockView({ node, index, shared, ranges, selecte
   return muted ? <div className="dv-unread">{out}</div> : out;
 });
 
-function DocCard({ items, onClose }: { items: ReactNode[]; onClose: () => void }) {
-  return (
-    <div className="dv-card" role="region" aria-label="Rules at this spot">
-      <button type="button" className="dv-card-close" onClick={onClose} aria-label="Close">×</button>
-      {items}
-    </div>
-  );
+/** What a click says when nothing in the Rules tab stands for the text; gone with the next click. */
+function MarkNote() {
+  return <p className="dv-note" role="status">Nothing in the table for this text.</p>;
 }
 
 export default function DocumentView({
-  data, rules, stale, owner, name, docPath, branch, onInclude, renderStale, onJump,
+  data, rules, stale, owner, name, docPath, branch, onJump, onPlaced, reveal,
 }: {
   data: DocText;
   /** The doc's rules as the Rules tab lists them, with their current exclusion. */
@@ -402,15 +400,16 @@ export default function DocumentView({
   name: string;
   docPath: string;
   branch: string | null;
-  /** Puts an excluded rule back; absent where nothing may be changed. */
-  onInclude?: (rule: Row) => Promise<string | null>;
-  /** The body of a stale name's card: the existing wording and its issue link. */
-  renderStale: (finding: any) => ReactNode;
   /**
-   * Takes the reader to these rules in the Rules tab. Answers false where it cannot (no such rows
-   * there), and the card opens instead.
+   * Takes the reader to what these marks stand for in the Rules tab: rule ids, and stale names as
+   * `stale:<doc>:<name>`. Answers false where no row stands for any of them, and a note opens
+   * under the text instead.
    */
   onJump?: (ids: string[]) => boolean;
+  /** Told which rules and stale names are marked in the text, so the Rules tab offers a way back to them. */
+  onPlaced?: (ids: string[]) => void;
+  /** A mark to scroll to, focus and pulse: the rule or stale name the reader asked to see in the text. */
+  reveal?: { id: string; n: number } | null;
 }) {
   const formatted = FORMATTED.has(data.format);
   const [wanted, setWanted] = useState<"formatted" | "source">(
@@ -418,7 +417,7 @@ export default function DocumentView({
   );
   const [broke, setBroke] = useState(false);
   const [selected, setSelected] = useState<{ block: number; ids: string[] } | null>(null);
-  const [includeError, setIncludeError] = useState<Record<string, string>>({});
+  const root = useRef<HTMLDivElement | null>(null);
   const mode = formatted && wanted === "formatted" && !broke ? "formatted" : "source";
 
   const parsed = useMemo(() => {
@@ -438,70 +437,57 @@ export default function DocumentView({
     [data, tree, rules, cut]
   );
   const staleMarks = useMemo(() => staleRanges(data.text, stale, cut), [data.text, stale, cut]);
+  useEffect(() => {
+    onPlaced?.([...placed.placed.map((rule: Row) => rule.factId), ...new Set(staleMarks.map((mark: any) => mark.id as string))]);
+  }, [placed, staleMarks]);
   const ranges = useMemo(() => [...placed.ranges, ...staleMarks], [placed, staleMarks]);
   const counts = kindCounts(rules, [...new Set(staleMarks.map((r: any) => r.id))]);
 
   useEffect(() => setSelected(null), [shown, data]);
+
+  // Asked to show one mark: it is scrolled to the middle, focused and pulsed once.
+  useEffect(() => {
+    if (!reveal) return;
+    const mark = [...(root.current?.querySelectorAll<HTMLElement>("[data-ids]") || [])]
+      .find((el) => (el.dataset.ids || "").split("\n").includes(reveal.id));
+    if (!mark) return;
+    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    mark.scrollIntoView({ block: "center", behavior: still ? "auto" : "smooth" });
+    mark.focus({ preventScroll: true });
+    if (still) return;
+    mark.classList.remove("is-pulse");
+    void mark.offsetWidth;
+    mark.classList.add("is-pulse");
+    const done = setTimeout(() => mark.classList.remove("is-pulse"), 1400);
+    return () => clearTimeout(done);
+  }, [reveal]);
   useEffect(() => {
     if (!selected) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setSelected(null);
     };
+    // The note goes with the next click anywhere; a click on a mark replaces it with its own.
+    const onDown = () => setSelected(null);
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown);
+    };
   }, [selected]);
 
-  // Stable, so a block or a run of source lines that holds no open card is not drawn again on a click.
+  // Stable, so a block or a run of source lines that holds no open note is not drawn again on a click.
   const jump = useRef(onJump);
   jump.current = onJump;
   const pick = useCallback((block: number, ids: string[]) => {
-    if (ids.every((id) => !id.startsWith("stale:")) && jump.current?.(ids)) {
+    if (jump.current?.(ids)) {
       setSelected(null);
       return;
     }
     setSelected((now) => (now && now.block === block && sameIds(now.ids, ids) ? null : { block, ids }));
   }, []);
 
-  const byId = useMemo(() => new Map(rules.map((rule) => [rule.factId, rule])), [rules]);
-  const staleById = useMemo(
-    () => new Map(staleMarks.map((r: any) => [r.id, r.finding])),
-    [staleMarks]
-  );
-
-  const card = selected && (
-    <DocCard
-      onClose={() => setSelected(null)}
-      items={selected.ids.map((id) => {
-        const finding = staleById.get(id);
-        if (finding) {
-          return (
-            <div key={id} className="dv-card-item">
-              <div className="dv-card-head">
-                <span className="dv-badge is-stale">Stale name</span>
-                <code className="dv-card-name">{finding.name}</code>
-              </div>
-              {renderStale(finding)}
-            </div>
-          );
-        }
-        const rule = byId.get(id);
-        if (!rule) return null;
-        return (
-          <RuleItem
-            key={id}
-            rule={rule}
-            owner={owner}
-            name={name}
-            docPath={docPath}
-            commit={data.commit}
-            onInclude={onInclude}
-            error={includeError[id]}
-            setError={(message) => setIncludeError((was) => ({ ...was, [id]: message }))}
-          />
-        );
-      })}
-    />
-  );
+  const card = selected && <MarkNote />;
 
   const swatch = (kind: string, n: number, label: string) =>
     n > 0 && (
@@ -582,7 +568,7 @@ export default function DocumentView({
 
   const sha = data.commit ? data.commit.slice(0, 7) : null;
   return (
-    <div className="dv">
+    <div className="dv" ref={root}>
       <div className="dv-bar">
         {sha && (
           <p className="dv-readat">
@@ -640,75 +626,6 @@ export default function DocumentView({
   );
 }
 
-/** What the code does about one rule, in the words the Rules tab uses. */
-function outcomeLine(rule: Row, owner: string, name: string): ReactNode {
-  const s = standing(rule);
-  if (rule.excluded) {
-    return "Excluded: pull requests aren't checked against this rule.";
-  }
-  if (s === "broken" && rule.status === "VIOLATED" && rule.pullNo) {
-    return (
-      <>
-        Broken on the default branch.{" "}
-        <a href={`https://github.com/${owner}/${name}/pull/${rule.pullNo}`} target="_blank" rel="noopener noreferrer">
-          PR #{rule.pullNo}
-        </a>{" "}broke it.
-      </>
-    );
-  }
-  if (s === "broken" && rule.status === "PRE_EXISTING") {
-    return "Already broken: the code was not keeping this rule before it was first checked.";
-  }
-  if (s === "holds" && rule.status === "RESTORED" && rule.pullNo) {
-    return `Restored by PR #${rule.pullNo}: the code was not keeping this rule until then, and does now.`;
-  }
-  return STANDING_HELP[s];
-}
-
-function RuleItem({ rule, owner, name, docPath, commit, onInclude, error, setError }: {
-  rule: Row; owner: string; name: string; docPath: string; commit: string;
-  onInclude?: (rule: Row) => Promise<string | null>; error?: string; setError: (message: string) => void;
-}) {
-  const kind = ruleKind(rule) as string;
-  const label = rule.excluded ? "Excluded" : STANDING_LABEL[standing(rule)];
-  return (
-    <div className="dv-card-item" data-rule={rule.factId}>
-      <div className="dv-card-head">
-        <span className={`dv-badge is-${kind}`}>{label}</span>
-        <span className="dv-card-title">{withCode(rule.statement)}</span>
-      </div>
-      <p className="dv-card-body">
-        {outcomeLine(rule, owner, name)}
-        {rule.pullNo && rule.judgedAtMs ? <span className="dv-card-when"> Last checked on PR #{rule.pullNo}, {when(rule.judgedAtMs)}.</span> : null}
-        {!rule.excluded && standing(rule) === "broken" && (
-          <BrokenBy evidence={rule.evidence} />
-        )}
-      </p>
-      <div className="dv-card-actions">
-        {rule.excluded && onInclude && (
-          <button
-            type="button"
-            className="dv-card-button"
-            onClick={async () => {
-              setError("");
-              const failed = await onInclude(rule);
-              if (failed) setError(failed);
-            }}
-          >
-            Include again
-          </button>
-        )}
-        {rule.sourceLine && commit && (
-          <a href={blobUrl(owner, name, commit, docPath, rule.sourceLine)} target="_blank" rel="noopener noreferrer">
-            Line {rule.sourceLine} on GitHub
-          </a>
-        )}
-        {error && <span className="dv-card-error" role="alert">{error}</span>}
-      </div>
-    </div>
-  );
-}
-
 /** The doc as text: wrapped lines, each numbered with a link to GitHub, headings bold, code monospace. */
 /** How many source lines are drawn, and redrawn, together. */
 const CHUNK_LINES = 200;
@@ -754,8 +671,8 @@ function SourceView({ data, ranges, cut, selected, pick, card, divider, owner, n
 }
 
 /**
- * A run of source lines, redrawn only when a card opens or closes in it: a long doc has thousands of
- * lines, and drawing them all again on every click made a card slow to open.
+ * A run of source lines, redrawn only when a note opens or closes in it: a long doc has thousands of
+ * lines, and drawing them all again on every click made a note slow to open.
  */
 const SourceChunk = memo(function SourceChunk({
   lines, start, end, text, commit, norm, cut, selected, pick, card, dividerAt, divider, owner, name, docPath,
