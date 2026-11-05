@@ -390,7 +390,7 @@ function MarkNote() {
 }
 
 export default function DocumentView({
-  data, rules, stale, owner, name, docPath, branch, onJump, onPlaced, reveal,
+  data, rules, stale, owner, name, docPath, branch, onJump, reveal, onRevealed,
 }: {
   data: DocText;
   /** The doc's rules as the Rules tab lists them, with their current exclusion. */
@@ -406,10 +406,10 @@ export default function DocumentView({
    * under the text instead.
    */
   onJump?: (ids: string[]) => boolean;
-  /** Told which rules and stale names are marked in the text, so the Rules tab offers a way back to them. */
-  onPlaced?: (ids: string[]) => void;
   /** A mark to scroll to, focus and pulse: the rule or stale name the reader asked to see in the text. */
   reveal?: { id: string; n: number } | null;
+  /** Told once the reveal has run, so a later visit to the doc does not run it again. */
+  onRevealed?: () => void;
 }) {
   const formatted = FORMATTED.has(data.format);
   const [wanted, setWanted] = useState<"formatted" | "source">(
@@ -437,9 +437,6 @@ export default function DocumentView({
     [data, tree, rules, cut]
   );
   const staleMarks = useMemo(() => staleRanges(data.text, stale, cut), [data.text, stale, cut]);
-  useEffect(() => {
-    onPlaced?.([...placed.placed.map((rule: Row) => rule.factId), ...new Set(staleMarks.map((mark: any) => mark.id as string))]);
-  }, [placed, staleMarks]);
   const ranges = useMemo(() => [...placed.ranges, ...staleMarks], [placed, staleMarks]);
   const counts = kindCounts(rules, [...new Set(staleMarks.map((r: any) => r.id))]);
 
@@ -450,6 +447,7 @@ export default function DocumentView({
     if (!reveal) return;
     const mark = [...(root.current?.querySelectorAll<HTMLElement>("[data-ids]") || [])]
       .find((el) => (el.dataset.ids || "").split("\n").includes(reveal.id));
+    onRevealed?.();
     if (!mark) return;
     const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     mark.scrollIntoView({ block: "center", behavior: still ? "auto" : "smooth" });
@@ -458,8 +456,7 @@ export default function DocumentView({
     mark.classList.remove("is-pulse");
     void mark.offsetWidth;
     mark.classList.add("is-pulse");
-    const done = setTimeout(() => mark.classList.remove("is-pulse"), 1400);
-    return () => clearTimeout(done);
+    setTimeout(() => mark.classList.remove("is-pulse"), 1400);
   }, [reveal]);
   useEffect(() => {
     if (!selected) return;

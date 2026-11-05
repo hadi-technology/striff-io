@@ -207,13 +207,13 @@ export function refreshedAtMs(report) {
 }
 
 /**
- * The counts the page's head shows, worked out the way the page works them out: rules nothing
- * could decide are not counted, and names out of date count only once a reading has looked, and
- * only in documents the page lists.
+ * The counts the page's head shows, worked out the way the page works them out: every rule is
+ * counted, those Striff could not decide among them and apart (`unclear`), and names out of date
+ * count only once a reading has looked, and only in documents the page lists.
  */
 export function reportFacts(report) {
   const { catalog, rules, staleNames } = report;
-  const rows = rules.documents.flatMap((group) => group.rules || []).filter((rule) => standing(rule) !== "unclear");
+  const rows = rules.documents.flatMap((group) => group.rules || []);
   const listed = new Set(catalog.documents.map((doc) => doc.path));
   const names = staleNames.lastSeenMs != null
     ? staleNames.findings.filter((finding) => listed.has(finding.docPath)).length
@@ -225,6 +225,7 @@ export function reportFacts(report) {
     holds: rows.filter((row) => standing(row) === "holds").length,
     broken: rows.filter((row) => standing(row) === "broken").length,
     unchecked: rows.filter((row) => standing(row) === "unchecked").length,
+    unclear: rows.filter((row) => standing(row) === "unclear").length,
     names,
     namesTruncated: !!staleNames.truncated && names > 0,
     refreshedAtMs: refreshedAtMs(report),
@@ -270,10 +271,14 @@ export function reportHead(report, site = SITE) {
   const namesWord = facts.names === 1 && !facts.namesTruncated ? "stale name" : "stale names";
   let headline;
   let description;
+  const decided = facts.rules - facts.unclear;
   if (facts.rules > 0) {
-    headline = `${full} architecture docs: ${plural(facts.rules, "rule")} checked${facts.broken > 0 ? `, ${facts.broken} broken` : ""}`;
+    headline = decided > 0
+      ? `${full} architecture docs: ${plural(decided, "rule")} checked${facts.broken > 0 ? `, ${facts.broken} broken` : ""}`
+      : `${full} architecture docs: ${plural(facts.rules, "rule")} found`;
     const parts = [`${facts.holds} ${facts.holds === 1 ? "holds" : "hold"}`, `${facts.broken} broken`];
     if (facts.unchecked > 0) parts.push(`${facts.unchecked} not checked yet`);
+    if (facts.unclear > 0) parts.push(`${facts.unclear} couldn't check`);
     if (facts.names > 0) parts.push(`${namesCount} ${namesWord}`);
     description = `The architecture docs in ${full}, checked against its code: ${plural(facts.rules, "rule")} from ${plural(facts.read, "doc")}, ${parts.join(", ")}.`;
   } else if (facts.names > 0) {

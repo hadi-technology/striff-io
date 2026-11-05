@@ -196,3 +196,23 @@ test("a mark says what it is and what a click does", () => {
   assert.equal(V.markDescription([rule("holds"), rule("holds")]), "2 rules \u00b7 click to see them");
   assert.equal(V.markDescription([rule("holds"), { kind: "stale", stale: true }]), "a rule and a stale name \u00b7 click to see them");
 });
+
+test("which rules and names a doc marks is told from its answer, without drawing it", () => {
+  const text = "One sentence. Another one.\n\nThe Gone type is here.\n";
+  const data = {
+    text, readChars: null,
+    placements: [
+      { factId: "a", spans: [{ from: 0, to: 12 }] },
+      { factId: "b", spans: [], block: { line: 3, kind: "item" } },
+      { factId: "c", spans: [{ from: 14, to: 25 }] },
+      { factId: "d", spans: [{ from: 0, to: 3 }] },
+      { factId: "x", spans: [{ from: 0, to: 3 }] },
+    ],
+    unplaced: ["c"],
+  };
+  const ids = V.placedMarkIds(data, [{ factId: "a" }, { factId: "b" }, { factId: "c" }, { factId: "d" }],
+    [{ name: "Gone", docPath: "a.md", sourceLine: 3 }]);
+  assert.deepEqual([...ids].sort(), ["a", "b", "d", "stale:a.md:Gone"]);
+  const cut = V.placedMarkIds({ ...data, readChars: 10 }, [{ factId: "a" }, { factId: "b" }], [{ name: "Gone", docPath: "a.md", sourceLine: 3 }]);
+  assert.deepEqual([...cut], ["a"]);
+});

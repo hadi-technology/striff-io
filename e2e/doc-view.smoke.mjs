@@ -105,6 +105,25 @@ for (const kind of ["holds", "broken", "unchecked", "unclear", "excluded"]) {
   assert.ok(Math.abs((await page.evaluate(() => window.scrollY)) - before) < 4, `${kind}: place kept`);
 }
 
+// Escape puts the outline and the way back out.
+await page.getByRole("tab", { name: "Document" }).click();
+await page.locator(".dv-doc .dv-mark.is-holds").first().click();
+await page.locator("tr.is-target").first().waitFor();
+assert.equal(await page.getByRole("button", { name: /Back to the document/ }).count(), 1);
+await page.keyboard.press("Escape");
+assert.equal(await page.locator("tr.is-target").count(), 0, "Escape puts the outline out");
+assert.equal(await page.getByRole("button", { name: /Back to the document/ }).count(), 0, "and the way back");
+
+// Show in document on one doc, then another doc and back: nothing is scrolled to or focused on return.
+await page.getByRole("tab", { name: /^Rules/ }).click();
+await page.locator("tr", { hasText: "Domain events are published only through" }).first().getByRole("button", { name: "Show in document" }).click();
+await page.waitForSelector(".dv-doc");
+await page.waitForTimeout(900);
+await page.getByRole("button", { name: /^AGENTS\.md/ }).first().click();
+await page.getByRole("button", { name: /ARCHITECTURE\.md/ }).first().click();
+await page.waitForTimeout(600);
+assert.ok(!(await page.evaluate(() => document.activeElement?.classList.contains("dv-mark"))), "no mark is focused on return");
+
 // A search that hides the rule is cleared by the jump.
 await page.getByRole("tab", { name: /^Rules/ }).click();
 await page.getByPlaceholder(/Search/).fill("zzzz-no-such-rule");

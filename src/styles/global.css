@@ -8250,3 +8250,4 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
   .sk-table-row { grid-template-columns: 1fr; gap: 0.6rem; }
   .sk-pane-head .sk-grow { display: none; }
 }
+.docs-menu-note { display: block; padding: 0.45rem 0.75rem; max-width: 16rem; color: #57606a; font-size: 0.8rem; line-height: 1.4; }

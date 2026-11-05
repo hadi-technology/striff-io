@@ -7,6 +7,7 @@ import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
 import { issueIndex, withRuleIssues, withStaleNameIssue, type FindingIssue, type IssueIndex } from "./findingIssue.ts";
 import FlagFinding from "./FlagFinding";
+import { docBucket, excludedDocPaths } from "../lib/docBuckets.js";
 import { DocTextSkeleton, HeadCopySkeleton, RulesSkeleton, SplitSkeleton, TallySkeleton } from "./Skeleton";
 import FloatingPanel from "./FloatingPanel";
 import { NOT_ADMIN, ScopeExclude } from "./RuleStateControls";
@@ -33,7 +34,7 @@ import RulesTable, {
   type RuleFilter,
 } from "./RulesTable";
 import Listing from "./Listing";
-import { failureMessage, textKey } from "../lib/docView.js";
+import { failureMessage, placedMarkIds, textKey } from "../lib/docView.js";
 import ReadRepository, { askedReading, isRunning, type Reading } from "./ReadRepository";
 
 /** Drawn only when a doc's Document tab is first opened, so the Docs page carries no Markdown parser. */
@@ -519,18 +520,6 @@ const DOC_FILTER_TEST: Record<Exclude<DocFilter, "results" | "noRules" | "exclud
   unreadable: (doc) => doc.state === "UNREADABLE",
 };
 
-/**
- * The document chips other than "All" partition the documents: each document is in exactly one,
- * so their counts add up to the repository's document total. A document excluded (by Striff or
- * the owner) is only Excluded, whatever its state; of the rest, a state wins over rules; and a
- * read document is With rules or No rules by the rules the table lists for it.
- */
-function docBucket(doc: Doc, excluded: boolean, withRules: boolean): DocFilter {
-  if (excluded || doc.state === "RETIRED") return "excluded";
-  if (isUnread(doc)) return "notRead";
-  if (doc.state === "UNREADABLE") return "unreadable";
-  return withRules ? "results" : "noRules";
-}
 
 /**
  * One chip. `hidden` is a filter with no chip of its own, reached from a folder's summary line,
@@ -957,8 +946,8 @@ export default function DocsTab({
    * `name@line`. `n` tells one jump from the next.
    */
   const [jump, setJump] = useState<{ ids: string[]; stale: string[]; n: number } | null>(null);
-  /** What the document marks, so a row only offers to show what is there to be shown. */
-  const [placedIds, setPlacedIds] = useState<Set<string>>(new Set());
+  /** The text the Document tab has been opened on, which is the only one drawn and kept mounted. */
+  const [docOpened, setDocOpened] = useState<string | null>(null);
   /** A mark the reader asked to see in the text, from a row of either table. */
   const [reveal, setReveal] = useState<{ id: string; n: number } | null>(null);
   /** Where the page was scrolled when the reader left the document for the rules. */
@@ -1509,15 +1498,16 @@ export default function DocsTab({
     setPaneTab("rules");
     setDetail(null);
     setActionError("");
-    if (sample) {
-      const wait = sample.delay?.("doc") ?? 0;
-      if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
-      setDetail(normalizeCatalog(sample.doc(path)));
-      return;
-    }
     // Two clicks in a row answer in whatever order the network likes. Only the document asked for
     // last may paint, or the pane shows one document's rules under another's name.
     const wanted = ++openedAt.current;
+    if (sample) {
+      const wait = sample.delay?.("doc") ?? 0;
+      if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+      if (wanted !== openedAt.current) return;
+      setDetail(normalizeCatalog(sample.doc(path)));
+      return;
+    }
     try {
       const res = await fetch(readUrl("", path));
       if (wanted !== openedAt.current) return;
@@ -1768,13 +1758,10 @@ export default function DocsTab({
    * The documents excluded: from reading, or (from before exclusion covered it) set aside as a
    * whole in the rule states. One word for both, since either way none of their rules is checked.
    */
-  const excludedDocs = useMemo(() => {
-    const paths = new Set<string>();
-    for (const doc of allDocs) {
-      if (doc.state === "EXCLUDED" || doc.state === "SCREENED_OUT" || coveringPath(doc.path, rulesIndex?.legacyPaths)) paths.add(doc.path);
-    }
-    return paths;
-  }, [catalog, rulesIndex]);
+  const excludedDocs = useMemo(
+    () => excludedDocPaths(allDocs, rulesIndex?.legacyPaths),
+    [catalog, rulesIndex]
+  );
 
   /**
    * How the repository's rules stand, every count in rules. They are of the whole repository
@@ -1938,7 +1925,7 @@ export default function DocsTab({
     /** What a reader is told excluded a rule, beside the word; nothing for the rule's own switch. */
     const excludedWith = (rule: Rule, doc: Doc): string | null => {
       if (!rule.excluded) return null;
-      if (rule.excludedBy === "excluded" || doc.state === "EXCLUDED") {
+      if (rule.excludedBy === "excluded" || doc.state === "EXCLUDED" || doc.state === "RETIRED") {
         const above = coveringFolder(doc.path, catalog?.exclusions);
         return !above ? "doc" : above.path === "" ? "repository" : "folder";
       }
@@ -2035,8 +2022,16 @@ export default function DocsTab({
       if ((event.target as HTMLElement).closest?.(".dv-back")) return;
       setJump(null);
     };
+    // Escape puts them out too, for whoever is not using a pointer.
+    const key = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setJump(null);
+    };
     document.addEventListener("pointerdown", out, true);
-    return () => document.removeEventListener("pointerdown", out, true);
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("pointerdown", out, true);
+      document.removeEventListener("keydown", key);
+    };
   }, [jump]);
   // A jump that is only to stale names has no rule row to land on: the first of them is.
   const staleLanded = useRef<number | null>(null);
@@ -2059,6 +2054,7 @@ export default function DocsTab({
   }, [paneTab]);
   useEffect(() => {
     setJump(null);
+    setReveal(null);
     documentScroll.current = null;
   }, [selected]);
   /** The version the doc's rules were read from, as the doc's own answer names it; else the doc's. */
@@ -2070,6 +2066,17 @@ export default function DocsTab({
   const textId = textKey(selected, shownVersion ?? detail?.document.extractedContentHash ?? null);
   const textEntry = docTexts[textId];
 
+  /** What the document marks, worked out from its text without drawing it: rules and stale names with a place. */
+  const placedIds = useMemo(
+    () => (hasDocumentTab && textEntry?.status === "ready"
+      ? placedMarkIds(textEntry.data, shownRows, staleByDoc.get(selected) || [])
+      : new Set<string>()),
+    [hasDocumentTab, textEntry, shownRows, staleByDoc, selected]
+  );
+  // Which text the Document tab was opened on, so that one is kept drawn behind the Rules tab.
+  useEffect(() => {
+    if (paneTab === "document") setDocOpened(textId);
+  }, [paneTab, textId]);
   /** Asks for the text of the selected doc's version; only ever called when the tab is opened or retried. */
   async function loadDocText(path: string, version: string | undefined, id: string) {
     const set = (entry: TextEntry) => setDocTexts((was) => ({ ...was, [id]: entry }));
@@ -2263,6 +2270,11 @@ export default function DocsTab({
                   Exclude this folder
                 </button>
               )
+            ) : doc?.state === "RETIRED" ? (
+              // Striff's own call, which nothing here can set or take back.
+              <span className="docs-menu-note" role="menuitem" aria-disabled="true">
+                This doc says it is no longer current.
+              </span>
             ) : doc?.state === "EXCLUDED" ? (
               // A document excluded by a folder rule cannot be included on its own: deleting a
               // rule for its path would delete nothing, and the doc would stay excluded.
@@ -2344,7 +2356,7 @@ export default function DocsTab({
         )}
         {/* A doc whose rules were set aside as a whole before exclusion covered it: excluded,
             in the same word, though its state is still what reading it found. */}
-        {doc.state !== "EXCLUDED" && doc.state !== "SCREENED_OUT" && excludedDocs.has(doc.path) && (
+        {doc.state !== "EXCLUDED" && doc.state !== "SCREENED_OUT" && doc.state !== "RETIRED" && excludedDocs.has(doc.path) && (
           <span className="docs-badge is-excluded" title="Excluded: pull requests aren't checked against this doc's rules.">
             Excluded
           </span>
@@ -3246,7 +3258,7 @@ export default function DocsTab({
                   )}
                   <span className="docs-pane-actions">
                     {/* The badge and the state line already say Striff excluded it. */}
-                    {(selectedDoc ?? detail.document).state !== "SCREENED_OUT" && scopeExclude(selected, "doc")}
+                    {(selectedDoc ?? detail.document).state !== "SCREENED_OUT" && (selectedDoc ?? detail.document).state !== "RETIRED" && scopeExclude(selected, "doc")}
                     {rowMenu(selected, selectedDoc ?? detail.document, false, "pane")}
                   </span>
                 </div>
@@ -3289,7 +3301,7 @@ export default function DocsTab({
 
                 {/* Once read, the document stays mounted behind the Rules tab, so a jump to a rule and
                     the way back lose neither the open card nor the place in the text. */}
-                {hasDocumentTab && (paneTab === "document" || textEntry?.status === "ready") && (
+                {hasDocumentTab && (paneTab === "document" || (textEntry?.status === "ready" && docOpened === textId)) && (
                   <div role="tabpanel" aria-labelledby="doc-tab-document" hidden={paneTab !== "document"}>
                     {paneTab === "document" && (!textEntry || textEntry.status === "loading") && (
                       <DocTextSkeleton />
@@ -3317,8 +3329,8 @@ export default function DocsTab({
                           name={name}
                           docPath={selected}
                           branch={branch}
-                          onPlaced={(ids) => setPlacedIds(new Set(ids))}
                           reveal={reveal}
+                          onRevealed={() => setReveal(null)}
                         />
                       </Suspense>
                     )}

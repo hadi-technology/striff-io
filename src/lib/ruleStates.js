@@ -100,7 +100,10 @@ export function normalizeRules(answer) {
     documents: answer.documents.map((group) => ({
       ...group,
       document: normalizeDoc(group.document),
-      rules: (group.rules || []).map(normalizeRule),
+      // A doc that says it is no longer current is not checked, as one excluded is not: its rules
+      // are counted and listed as excluded with it.
+      rules: (group.rules || []).map(normalizeRule).map((rule) =>
+        group.document.state === "RETIRED" && !rule.excluded ? { ...rule, excluded: true, excludedBy: "excluded" } : rule),
     })),
   };
 }

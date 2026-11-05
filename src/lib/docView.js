@@ -440,3 +440,32 @@ export function failureMessage(reason) {
 export function textKey(path, version) {
   return `${path}\u0000${version ?? ""}`;
 }
+
+/**
+ * The rules and stale names the text of a doc marks, worked out from the answer alone, without
+ * drawing the doc: a rule with a place the text has (a span or a line inside what Striff read) that
+ * the API did not leave unplaced, and a stale name found on its line.
+ *
+ * @param {{ text: string, readChars?: number | null, placements: object[], unplaced?: string[] }} data
+ * @param {{ factId: string }[]} rules
+ * @param {{ name: string, docPath: string, sourceLine: number | null }[]} stale
+ * @returns {Set<string>} rule ids, and `stale:<doc>:<name>` for each stale name
+ */
+export function placedMarkIds(data, rules, stale) {
+  const { text, readChars = null } = data;
+  const limit = readChars != null && readChars < text.length ? readChars : text.length;
+  const known = new Set(rules.map((rule) => rule.factId));
+  const never = new Set(data.unplaced || []);
+  const starts = lineStarts(text);
+  const out = new Set();
+  for (const placement of data.placements || []) {
+    if (!known.has(placement.factId) || never.has(placement.factId)) continue;
+    const spans = (placement.spans || []).filter((span) => Number.isInteger(span.from) && Number.isInteger(span.to));
+    const inside = spans.some((span) => span.to > span.from && span.from < limit);
+    const line = !spans.length && placement.block && Number.isInteger(placement.block.line)
+      ? lineRange(text, placement.block.line, starts) : null;
+    if (inside || (line && line.to > line.from && line.from < limit)) out.add(placement.factId);
+  }
+  for (const mark of staleRanges(text, stale, readChars)) out.add(mark.id);
+  return out;
+}
