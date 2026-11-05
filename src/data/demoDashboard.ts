@@ -57,7 +57,7 @@ export const ARCH_TEXT = [
   "",
   "Scheduled jobs are registered with `CronScheduler` at startup. Jobs must be safe to run twice.",
   "",
-  "`CartSessionStore` keeps an open cart for thirty minutes after the last change.",
+  "`CartSessionStore` keeps an open cart for thirty minutes, and `CartService` is the only thing that reads it.",
   "",
   "Every charge is written as a `billing.LedgerEntry` before the provider is called.",
   "",
@@ -256,8 +256,9 @@ const rulesByDoc: Record<string, ReturnType<typeof rule>[]> = {
     rule(14, "Domain events are published only through `EventBus`", "Services publish domain events through `EventBus`; handlers in `events` never call controllers.", "UNCLEAR", "UNCLEAR", "427", 12),
     rule(20, "Provider calls are retried at most twice", "Provider calls time out after 5 seconds and are retried twice.", "UNCLEAR", "UNCLEAR", "427", 12),
     rule(29, "Scheduled jobs are registered through `CronScheduler`", "Scheduled jobs are registered with `CronScheduler` at startup.", "UNCLEAR", "UNCLEAR", "427", 12),
-    // Written over a name that has since gone: the mark at `CartSessionStore` leads to this rule and to the stale name.
-    HOLDS(31, "Only `checkout.cart` depends on `CartSessionStore`", "`CartSessionStore` keeps an open cart for thirty minutes after the last change.", "398", 21),
+    // The sentence also writes a name that has since gone: the mark there leads to this rule, which is
+    // about a type that exists, and to the stale name.
+    HOLDS(31, "Only `CartService` depends on `checkout.cart`", "`CartSessionStore` keeps an open cart for thirty minutes, and `CartService` is the only thing that reads it.", "398", 21),
   ],
   "docs/adr/0007-payments.md": [
     HOLDS(14, "Nothing in `billing` depends on `checkout`", "Billing knows nothing about checkout. The dependency runs one way."),
@@ -334,7 +335,7 @@ export const demoStaleNames: any = {
       name: "CartSessionStore",
       state: "ABSENT",
       issue: issueAt(433, "open"),
-      sentence: "`CartSessionStore` keeps an open cart for thirty minutes after the last change.",
+      sentence: "`CartSessionStore` keeps an open cart for thirty minutes, and `CartService` is the only thing that reads it.",
       sourceLine: 31,
       namespace: "checkout.cart",
       historicalPath: "src/main/java/com/acme/checkout/cart/CartSessionStore.java",
@@ -442,7 +443,7 @@ const ARCH_WORDS: [number, string][] = [
   [12, "Services publish domain events through `EventBus`; handlers in `events` never call controllers"],
   [13, "Provider calls time out after 5 seconds and are retried twice."],
   [14, "Scheduled jobs are registered with `CronScheduler` at startup."],
-  [15, "`CartSessionStore` keeps an open cart for thirty minutes"],
+  [15, "`CartSessionStore` keeps an open cart for thirty minutes, and `CartService` is the only thing that reads it."],
 ];
 
 /** Where `words` stand in `text`, or null: UTF-16 offsets, as the text endpoint sends them. */

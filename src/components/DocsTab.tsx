@@ -3400,22 +3400,26 @@ export default function DocsTab({
                             tabIndex={-1}
                             className={jump?.stale.includes(staleKey(finding)) ? "is-target" : undefined}
                           >
-                            <td className="docs-rule-line">
-                              {finding.sourceLine ? (
+                            <td className="rules-source">
+                              <span className="rules-source-where">
+                                <span className="rules-source-line">
+                                  {finding.sourceLine ? `line ${finding.sourceLine}` : "no line recorded"}
+                                </span>
                                 <a
-                                  href={`https://github.com/${owner}/${name}/blob/${branch || "HEAD"}/${selected}#L${finding.sourceLine}`}
+                                  className="rules-source-github"
+                                  href={`https://github.com/${owner}/${name}/blob/${branch || "HEAD"}/${selected}${finding.sourceLine ? `#L${finding.sourceLine}` : ""}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  title={`Open ${selected} at line ${finding.sourceLine} on GitHub`}
+                                  title={`Open ${selected}${finding.sourceLine ? ` at line ${finding.sourceLine}` : ""} on GitHub`}
                                 >
-                                  :{finding.sourceLine}
+                                  <GitHubMark />
                                 </a>
-                              ) : ""}
-                              {hasDocumentTab && placedIds.has(`stale:${finding.docPath}:${finding.name}`) && (
-                                <button type="button" className="rules-source-doc" onClick={() => showInDocument(`stale:${finding.docPath}:${finding.name}`)}>
-                                  Show in document
-                                </button>
-                              )}
+                                {hasDocumentTab && placedIds.has(`stale:${finding.docPath}:${finding.name}`) && (
+                                  <button type="button" className="rules-source-doc" onClick={() => showInDocument(`stale:${finding.docPath}:${finding.name}`)}>
+                                    Show in document
+                                  </button>
+                                )}
+                              </span>
                             </td>
                             <td className="docs-stale-name">
                               <code>{finding.name}</code>
