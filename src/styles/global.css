@@ -4473,7 +4473,12 @@
 }
 .docs-lede { max-width: 44rem; color: #57606a; font-size: 0.85rem; line-height: 1.55; }
 
-.docs-tally { display: flex; gap: 1.35rem; padding-left: 1.35rem; border-left: 1px solid #e2e8f0; }
+.docs-tally { display: flex; align-items: flex-end; gap: 1.35rem; padding-left: 1.35rem; border-left: 1px solid #e2e8f0; }
+/* The rules, as one group under its caption; the stale names stand apart after a divider. */
+.docs-tally-group { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+.docs-tally-caption { color: #64748b; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.docs-tally-row { display: flex; flex-wrap: wrap; gap: 0.9rem 1.35rem; }
+.docs-tally-divider { align-self: stretch; width: 1px; background: #e2e8f0; }
 .docs-tally-item { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
 .docs-tally-item b { font-size: 1.4rem; font-weight: 700; line-height: 1; color: #16202b; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 .docs-tally-item i { font-style: normal; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: #64748b; white-space: nowrap; }
@@ -4495,6 +4500,8 @@
 
   .docs-head { gap: 0.75rem; }
   .docs-tally { padding-left: 0; border-left: 0; gap: 1rem; flex-wrap: wrap; }
+  .docs-tally-row { gap: 0.9rem 1.1rem; }
+  .docs-tally-divider { flex: 0 0 100%; align-self: auto; width: auto; height: 1px; }
   .docs-title-name { font-size: 1.15rem; max-width: 100%; }
   .docs-summary { gap: 0.25rem 0.75rem; font-size: 0.78rem; }
 

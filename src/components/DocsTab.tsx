@@ -2477,19 +2477,14 @@ export default function DocsTab({
   const uncovered = notCovered(catalog?.status);
   const tally = summary && !uncovered && (
     <div className="docs-tally">
-      {/* The whole repository, whatever is selected: see repoCounts. */}
-      <button
-        type="button"
-        className="docs-tally-item"
-        title="Every document in this repository, whatever state it is in."
-        onClick={() => setFilter("all")}
-      >
-        <b>{allDocs.length}</b>
-        <i>doc{allDocs.length === 1 ? "" : "s"}</i>
-      </button>
+      {/* Rules, in rules: the total, then how they stand, which add up to it. Of the whole
+          repository, whatever is selected: see repoCounts. The documents are counted by the chips
+          beside the tree, and stale names are names, so neither is in this group. */}
       {/* Not lit when nothing is filtered: a light on every count says nothing. */}
       {showRuleCounts && (
-      <>
+      <div className="docs-tally-group" role="group" aria-label="Rules">
+      <span className="docs-tally-caption">Rules</span>
+      <div className="docs-tally-row">
       <button
         type="button"
         className="docs-tally-item"
@@ -2497,7 +2492,7 @@ export default function DocsTab({
         onClick={() => setFilter("all")}
       >
         <b>{repoCounts.all}</b>
-        <i>rule{repoCounts.all === 1 ? "" : "s"}</i>
+        <i>total</i>
       </button>
       {/* Totals first, then how the rules stand: what holds, what is broken, what nothing
           has checked. */}
@@ -2550,13 +2545,16 @@ export default function DocsTab({
           <i>excluded</i>
         </button>
       )}
-      </>
+      </div>
+      </div>
       )}
       {/* Shown only once a reading of the whole repository has looked. Until then there is
           no number to give: a zero would say every doc is current, and nothing has checked.
           Counted apart from the rules, because a doc naming something that is gone is a
           stale doc and not a broken rule. Of the whole repository, like every other count here. */}
       {staleNames && staleNames.lastSeenMs != null && !(publicNoRules && repoStale === 0) && (
+        <>
+        {showRuleCounts && <span className="docs-tally-divider" aria-hidden="true" />}
         <button
           type="button"
           className={`docs-tally-item is-stale${repoStale === 0 ? " is-none" : ""}${filter === "stale" ? " is-on" : ""}`}
@@ -2566,6 +2564,7 @@ export default function DocsTab({
           <b>{repoStale}{staleNames.truncated ? "+" : ""}</b>
           <i>stale names</i>
         </button>
+        </>
       )}
       {catalog && !readOnly && (
         <ReadRepository

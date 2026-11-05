@@ -142,14 +142,15 @@ const documents = [
 
 const isUnread = (d: { state: string }) => d.state === "NOT_READ" || d.state === "OUTSIDE_FIRST_READING";
 const count = (state: string) => documents.filter((d) => d.state === state).length;
-const screenedOut = documents.filter((d) => d.state === "SCREENED_OUT").length;
+// Neither a screened-out doc nor one that says it is no longer current is one Striff can check.
+const screenedOut = documents.filter((d) => d.state === "SCREENED_OUT" || d.state === "RETIRED").length;
 const summary = {
   documents: documents.length,
   read: count("READ"),
   outdated: documents.filter((d) => d.outdated).length,
   notRead: count("NOT_READ") + count("OUTSIDE_FIRST_READING"),
   outsideFirstReading: count("OUTSIDE_FIRST_READING"),
-  screenedOut: count("SCREENED_OUT"),
+  screenedOut: screenedOut,
   unreadable: count("UNREADABLE"),
   rules: 25,
   brokenRules: 1,
@@ -293,8 +294,8 @@ export const demoCatalog: any = {
   reading: null,
   // An unpaid repository: the first reading is done and the rest is read free as pull requests and
   // pushes touch the code the documents describe. The documents Striff excluded (README.md, the
-  // glossary, the on-call runbook) are in no count: 9 of the other 12 are read, 7 at installation
-  // and 2 since, and a paid plan would read the 3 left.
+  // glossary, the on-call runbook, and the ADR that says it is no longer current) are in no count:
+  // 8 of the other 11 are read, 7 at installation and 1 since, and a paid plan would read the 3 left.
   status: {
     state: "unpaid",
     offerPaidPlan: true,
@@ -304,9 +305,9 @@ export const demoCatalog: any = {
     documentsTotal: documents.length - screenedOut,
     documentsNotRead: documents.filter(isUnread).length,
     readAtInstallation: 7,
-    readSince: 2,
+    readSince: 1,
     readSinceThroughPullRequests: 1,
-    readSinceThroughPushes: 1,
+    readSinceThroughPushes: 0,
     readByPlan: 0,
     documentsPaidWouldRead: 3,
   },
