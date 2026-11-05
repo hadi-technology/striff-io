@@ -81,8 +81,8 @@ test("one rule is excluded and included again on its own, and the counts follow"
   assert.equal(state(next).a1, "included");
   assert.equal(next.documents[0].document.excludedRules, 1);
   assert.equal(next.documents[0].document.excluded, false);
-  assert.deepEqual(ruleCounts(allRules(answer())), { all: 6, holds: 4, broken: 1, unchecked: 0, excluded: 1 });
-  assert.deepEqual(ruleCounts(allRules(next)), { all: 6, holds: 4, broken: 0, unchecked: 0, excluded: 2 });
+  assert.deepEqual(ruleCounts(allRules(answer())), { all: 6, holds: 4, broken: 1, unchecked: 0, unclear: 0, excluded: 1 });
+  assert.deepEqual(ruleCounts(allRules(next)), { all: 6, holds: 4, broken: 0, unchecked: 0, unclear: 0, excluded: 2 });
 
   next = applyRuleStates(next, { excluded: false, factIds: ["a2"] });
   assert.equal(state(next).a2, "included");
@@ -164,7 +164,7 @@ test("a whole-repository path in the old rule states leaves a doc excluded from 
   const next = applyRuleStates(answer(), { excluded: true, path: "", prefix: true });
   assert.equal(state(next).a1, "folder");
   assert.equal(state(next).x1, "excluded");
-  assert.deepEqual(ruleCounts(allRules(next)), { all: 6, holds: 0, broken: 0, unchecked: 0, excluded: 6 });
+  assert.deepEqual(ruleCounts(allRules(next)), { all: 6, holds: 0, broken: 0, unchecked: 0, unclear: 0, excluded: 6 });
   const back = applyRuleStates(next, { excluded: false, path: "", prefix: true });
   assert.equal(state(back).a1, "included");
   assert.equal(state(back).x1, "excluded");
@@ -231,4 +231,13 @@ test("on the old API, a path held in the rule states is taken back there, and on
 test("the repository is excluded as the empty folder", () => {
   assert.deepEqual(exclusionWrites(catalog(), newApi(), { path: "", folder: true, excluded: true }),
     [{ view: "exclusions", body: { paths: [], folders: [""], excluded: true } }]);
+});
+
+test("rule counts include a rule Striff could not decide, and the standings add up to the total", () => {
+  const unclear = { status: "UNCLEAR", onDefaultBranch: "UNCLEAR" };
+  const rules = [rule("a"), rule("b", BROKEN), rule("c", unclear), rule("d", unclear), rule("e", { ...unclear, excluded: true }),
+    rule("f", { status: null, onDefaultBranch: null })];
+  const counts = ruleCounts(rules);
+  assert.deepEqual(counts, { all: 6, holds: 1, broken: 1, unchecked: 1, unclear: 2, excluded: 1 });
+  assert.equal(counts.holds + counts.broken + counts.unchecked + counts.unclear + counts.excluded, counts.all);
 });

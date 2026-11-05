@@ -127,6 +127,8 @@ interface Summary {
   brokenRules: number;
   alreadyBrokenRules: number;
   neverChecked: number;
+  /** Rules Striff found near the code and could not decide. */
+  couldntCheck?: number;
   excluded: number;
   holdsOnDefaultBranch: number;
   brokenOnDefaultBranch: number;
@@ -508,7 +510,7 @@ type DocFilter =
  * count rules (stale names count names), and choosing one narrows the tree to the documents
  * holding such rules and the table to those rules.
  */
-type RuleChip = "holds" | "broken" | "unchecked" | "stale" | "excludedRules";
+type RuleChip = "holds" | "broken" | "unchecked" | "unclear" | "stale" | "excludedRules";
 
 /** The one thing the tree is filtered by: a document state, or a kind of rule. */
 type Filter = DocFilter | RuleChip;
@@ -559,6 +561,7 @@ const RULE_CHIPS: Chip<RuleChip>[] = [
   { key: "holds", label: "Holding", dot: "held", always: true, help: "Included rules the code keeps." },
   { key: "broken", label: "Broken", dot: "broken", always: true, help: "Included rules the code does not keep." },
   { key: "unchecked", label: "Not checked yet", dot: "unread", always: false, help: "Included rules with no verdict on the default branch yet. They are judged at the next check of that branch." },
+  { key: "unclear", label: "Couldn't check", dot: "unclear", always: false, help: "Included rules Striff found near the code but couldn't decide. Check these by hand." },
   { key: "stale", label: "Stale names", dot: "stale", always: false, help: "Names the docs write that the default branch no longer declares, or declares somewhere else. Counted in names." },
   { key: "excludedRules", label: "Excluded", dot: "other", always: true, help: "Rules pull requests aren't checked against: excluded on their own, or with their doc or folder." },
 ];
@@ -568,6 +571,7 @@ const TABLE_FILTER: Partial<Record<Filter, RuleFilter>> = {
   holds: "holds",
   broken: "broken",
   unchecked: "unchecked",
+  unclear: "unclear",
   excludedRules: "excluded",
 };
 
@@ -1787,13 +1791,12 @@ export default function DocsTab({
   /** The documents holding each kind of rule a chip counts, by the doc's path. */
   const ruleDocs = useMemo(() => {
     const byChip: Record<RuleChip, Set<string>> = {
-      holds: new Set(), broken: new Set(), unchecked: new Set(), excludedRules: new Set(),
+      holds: new Set(), broken: new Set(), unchecked: new Set(), unclear: new Set(), excludedRules: new Set(),
       stale: new Set(staleByDoc.keys()),
     };
     for (const group of rulesIndex?.documents || []) {
       for (const rule of group.rules) {
         const stands = standing(rule);
-        if (stands === "unclear") continue;
         const chip: RuleChip = rule.excluded ? "excludedRules" : stands;
         byChip[chip].add(group.document.path);
       }
@@ -1836,6 +1839,7 @@ export default function DocsTab({
     counted.holds = repoCounts.holds;
     counted.broken = repoCounts.broken;
     counted.unchecked = repoCounts.unchecked;
+    counted.unclear = repoCounts.unclear;
     counted.excludedRules = repoCounts.excluded;
     counted.stale = repoStale;
     return counted;
@@ -2495,7 +2499,7 @@ export default function DocsTab({
       <button
         type="button"
         className="docs-tally-item"
-        title="Every rule read from this repository's documents that Striff could check. A rule it couldn't check isn't counted here."
+        title="Every rule read from this repository's documents."
         onClick={() => setFilter("all")}
       >
         <b>{repoCounts.all}</b>
@@ -2530,6 +2534,17 @@ export default function DocsTab({
         <b>{repoCounts.unchecked}</b>
         <i>not checked yet</i>
       </button>
+      {(repoCounts.unclear > 0 || filter === "unclear") && (
+        <button
+          type="button"
+          className={`docs-tally-item is-unclear${filter === "unclear" ? " is-on" : ""}`}
+          title={`${STANDING_HELP.unclear} Click to show these.`}
+          onClick={() => toggleFilter("unclear")}
+        >
+          <b>{repoCounts.unclear}</b>
+          <i>couldn't check</i>
+        </button>
+      )}
       {(repoCounts.excluded > 0 || filter === "excludedRules") && (
         <button
           type="button"

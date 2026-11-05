@@ -258,18 +258,17 @@ export function exclusionWrites(catalog, repoRules, change) {
 
 /**
  * How a list of rules stands, every count in rules: how many are included and hold, are broken
- * or have not been checked, and how many are excluded, whatever excluded them. An excluded rule is
- * counted as excluded and in none of the standings. A rule Striff could not judge is not listed
- * anywhere, so it is counted nowhere.
+ * or have not been checked, how many Striff could not decide, and how many are excluded, whatever
+ * excluded them. An excluded rule is counted as excluded and in none of the standings, so the
+ * standings and `excluded` add up to `all`.
  *
  * @param {{ excluded?: boolean, status: string | null, onDefaultBranch: string | null }[]} rules
- * @returns {{ all: number, holds: number, broken: number, unchecked: number, excluded: number }}
+ * @returns {{ all: number, holds: number, broken: number, unchecked: number, unclear: number, excluded: number }}
  */
 export function ruleCounts(rules) {
-  const counts = { all: 0, holds: 0, broken: 0, unchecked: 0, excluded: 0 };
+  const counts = { all: 0, holds: 0, broken: 0, unchecked: 0, unclear: 0, excluded: 0 };
   for (const rule of rules) {
     const stands = standing(rule);
-    if (stands === "unclear") continue;
     counts.all += 1;
     if (rule.excluded) counts.excluded += 1;
     else counts[stands] += 1;

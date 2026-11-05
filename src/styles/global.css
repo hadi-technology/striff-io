@@ -4563,6 +4563,7 @@
 .docs-fdot.is-unread { background: #fff; box-shadow: inset 0 0 0 1.5px #94a3b8; }
 .docs-fdot.is-other { background: #cbd5e1; }
 .docs-fdot.is-held { background: #17794a; }
+.docs-fdot.is-unclear { background: #e2e8f0; box-shadow: inset 0 0 0 1.5px #64748b; }
 
 /* Two labelled groups of chips above the tree: the documents, then the rules. Each label sits on
    its own line, so the chips under it wrap the same way at any width of the tree. */
@@ -4675,6 +4676,7 @@
 .scope-exclude-button.is-excluded { color: #57606a; background: #f3f4f6; }
 .scope-exclude-panel { width: 20rem; }
 .docs-tally-item.is-excluded b { color: #6b7280; }
+.docs-tally-item.is-unclear b { color: #475569; }
 
 /* The section tabs: one white band under the dark bar, as wide as the bar and aligned with it. The
    tabs are the level's own: a repository's views, or the account's sections. The right side
