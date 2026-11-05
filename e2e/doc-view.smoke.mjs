@@ -133,6 +133,17 @@ await page.setViewportSize({ width: 375, height: 900 });
 const widths = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
 assert.ok(widths[0] <= widths[1], `no horizontal scroll at 375px (${widths})`);
 
+// With ?slow=1 the example waits, and the page shows placeholders in the shape of what is coming.
+const slow = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+await slow.goto(`${base}/demo/?slow=1`, { waitUntil: "domcontentloaded" });
+await slow.waitForSelector(".sk");
+assert.ok(await slow.locator('[aria-busy="true"]').count() > 0, "the waiting area is marked busy");
+assert.ok(await slow.locator(".sk-area .sr-only").first().textContent(), "and says what it waits for");
+assert.equal(await slow.locator(".docs-tree").count(), 0, "no tree yet");
+await slow.waitForSelector(".docs-tree", { timeout: 8000 });
+assert.equal(await slow.locator(".sk").count(), 0, "the placeholders are replaced, not left beside the content");
+await slow.close();
+
 await browser.close();
 assert.deepEqual(errors, []);
 console.log("document view smoke test passed");

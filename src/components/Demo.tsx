@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import DocsTab from "./DocsTab";
 import ChecksTab from "./ChecksTab";
 import MetricsTab from "./MetricsTab";
-import { demoCatalog, demoChecks, demoDoc, demoDocText, demoRules, DEMO_REPO, demoStaleNames } from "../data/demoDashboard";
+import { demoCatalog, demoChecks, demoDelay, demoDoc, demoDocText, demoRules, DEMO_REPO, demoStaleNames } from "../data/demoDashboard";
 import { orgMetricsPreviewData } from "../data/orgMetricsPreview";
 
 /**
@@ -42,6 +42,15 @@ function viewFromHash(): View | null {
 export default function Demo() {
   const [view, setView] = useState<View>("docs");
   const repos = [{ full_name: DEMO_REPO }];
+  // With `?slow=1` the metrics wait too, long enough to see the slow-load line.
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  useEffect(() => {
+    const wait = view === "metrics" ? demoDelay("metrics") : 0;
+    if (wait <= 0) return;
+    setMetricsLoading(true);
+    const timer = setTimeout(() => setMetricsLoading(false), wait);
+    return () => clearTimeout(timer);
+  }, [view]);
 
   useEffect(() => {
     const apply = () => {
@@ -90,15 +99,15 @@ export default function Demo() {
             installationId={0}
             repos={repos}
             openRepo={DEMO_REPO}
-            sample={{ catalog: demoCatalog, rules: demoRules, doc: demoDoc, docText: demoDocText, staleNames: demoStaleNames }}
+            sample={{ catalog: demoCatalog, rules: demoRules, doc: demoDoc, docText: demoDocText, staleNames: demoStaleNames, delay: demoDelay }}
           />
         )}
         {view === "checks" && (
-          <ChecksTab installationId={0} repo={DEMO_REPO} sample={demoChecks} />
+          <ChecksTab installationId={0} repo={DEMO_REPO} sample={demoChecks} sampleDelay={() => demoDelay("checks")} />
         )}
         {view === "metrics" && (
           <div className="demo-metrics">
-            <MetricsTab data={orgMetricsPreviewData} loading={false} error="" />
+            <MetricsTab data={orgMetricsPreviewData} loading={metricsLoading} error="" />
           </div>
         )}
       </div>

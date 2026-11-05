@@ -1,6 +1,7 @@
 import { createElement, useState, useEffect, useRef, type ReactNode } from "react";
 import MetricsTab, { type OrgMetricsData } from "./MetricsTab";
 import DocsTab, { GitHubMark } from "./DocsTab";
+import { BillingSkeleton, DashboardSkeleton } from "./Skeleton";
 import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import SettingsTab from "./SettingsTab";
@@ -341,12 +342,7 @@ export default function Dashboard() {
   );
 
   if (loading) {
-    return framed(
-      <div className="dashboard-loading">
-        <div className="dashboard-spinner" aria-hidden="true" />
-        <div className="text-slate-500">Loading dashboard...</div>
-      </div>
-    );
+    return framed(<DashboardSkeleton />);
   }
 
   if (error && !user) {
@@ -1440,7 +1436,7 @@ function InstallationCard({
                     </button>
                   </p>
                 ) : (
-                  <p className="mt-3 px-3 py-6 text-center text-sm text-slate-500">Loading billing…</p>
+                  <BillingSkeleton />
                 )
               ) : billingInfo.hasSubscription ? (
                 <>

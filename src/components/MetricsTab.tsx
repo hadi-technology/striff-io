@@ -3,6 +3,7 @@
 // installation. Purely presentational -- the parent (Dashboard.tsx) owns fetching from
 // metrics-proxy and passes the result down.
 import { createElement } from "react";
+import { MetricsSkeleton } from "./Skeleton";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -299,12 +300,7 @@ export default function MetricsTab({
   error: string;
 }) {
   if (loading) {
-    return (
-      <div className="dashboard-loading">
-        <div className="dashboard-spinner" aria-hidden="true" />
-        <div className="text-slate-500">Loading metrics...</div>
-      </div>
-    );
+    return <MetricsSkeleton />;
   }
 
   if (error) {

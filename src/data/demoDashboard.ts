@@ -556,3 +556,12 @@ export function demoChecks(page: number) {
     total: demoCheckList.length,
   };
 }
+
+/**
+ * How long the example waits before answering each area, in milliseconds, so the loading screens
+ * can be looked at. Nothing waits unless the address says `?slow=1`; the real dashboard never asks.
+ */
+export function demoDelay(area: "catalog" | "rules" | "doc" | "docText" | "checks" | "metrics"): number {
+  if (typeof window === "undefined" || new URLSearchParams(window.location.search).get("slow") !== "1") return 0;
+  return { catalog: 2500, rules: 1500, doc: 1200, docText: 2000, checks: 2000, metrics: 7000 }[area];
+}

@@ -7,6 +7,7 @@ import { staleNameIssueUrl, staleNamePrompt } from "./docIssue";
 import FindingActions from "./FindingActions";
 import { issueIndex, withRuleIssues, withStaleNameIssue, type FindingIssue, type IssueIndex } from "./findingIssue.ts";
 import FlagFinding from "./FlagFinding";
+import { DocTextSkeleton, HeadCopySkeleton, RulesSkeleton, SplitSkeleton, TallySkeleton } from "./Skeleton";
 import FloatingPanel from "./FloatingPanel";
 import { NOT_ADMIN, ScopeExclude } from "./RuleStateControls";
 import {
@@ -871,6 +872,8 @@ export default function DocsTab({
     staleNames?: any;
     /** One document's text and where its rules are in it, as the text endpoint sends them. */
     docText?: (path: string) => any;
+    /** How long the example waits before answering, per area, in milliseconds; for the preview only. */
+    delay?: (area: "catalog" | "rules" | "doc" | "docText") => number;
   };
   /**
    * Read a public page instead of the signed-in dashboard. Nothing can be changed, and nothing
@@ -1342,6 +1345,11 @@ export default function DocsTab({
    */
   async function loadCatalog(quiet = false) {
     if (sample) {
+      const wait = sample.delay?.("catalog") ?? 0;
+      if (wait > 0) {
+        setLoading(true);
+        await new Promise((resolve) => setTimeout(resolve, wait));
+      }
       putCatalog(normalizeCatalog(sample.catalog));
       setStaleNames(sample.staleNames || null);
       setLoading(false);
@@ -1387,6 +1395,12 @@ export default function DocsTab({
    */
   async function loadRules() {
     if (sample) {
+      const wait = sample.delay?.("rules") ?? 0;
+      if (wait > 0) {
+        setRulesLoading(true);
+        await new Promise((resolve) => setTimeout(resolve, wait));
+        setRulesLoading(false);
+      }
       putRules(normalizeRules(sample.rules));
       return;
     }
@@ -1496,6 +1510,8 @@ export default function DocsTab({
     setDetail(null);
     setActionError("");
     if (sample) {
+      const wait = sample.delay?.("doc") ?? 0;
+      if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
       setDetail(normalizeCatalog(sample.doc(path)));
       return;
     }
@@ -2062,6 +2078,8 @@ export default function DocsTab({
     let reason = "ERROR";
     try {
       if (sample) {
+        const wait = sample.delay?.("docText") ?? 0;
+        if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
         answer = sample.docText ? sample.docText(path) : null;
         if (!answer) reason = "NOT_FOUND";
       } else {
@@ -2611,7 +2629,7 @@ export default function DocsTab({
   );
 
   return (
-    <div className="docs-tab">
+    <div className={`docs-tab${loading && catalog ? " is-refreshing" : ""}`}>
       {ruleStateBlocked && <span id={blockedId} className="sr-only">{ruleStateBlocked}</span>}
       {!rulesIndex && <span id={loadingId} className="sr-only">The rules are still loading.</span>}
       {linkNote && (
@@ -2767,6 +2785,7 @@ export default function DocsTab({
               name{repoStale === 1 && !staleNames?.truncated ? "" : "s"} in these docs.
             </p>
           )}
+          {!catalog && loading && <HeadCopySkeleton />}
           {catalog && !uncovered && <RevisionLine catalog={catalog} />}
           {/* How far Striff has read the repository, from the API's own status. A public page is
               a snapshot with no plan to speak of, and an older server sends no status. */}
@@ -2800,10 +2819,10 @@ export default function DocsTab({
             {source.action}
             {tally}
           </div>
-        ) : tally}
+        ) : (tally || (!catalog && loading ? <TallySkeleton /> : null))}
       </div>
 
-      {loading && <p className="dashboard-metric-caption">Loading documents...</p>}
+      {loading && !catalog && <SplitSkeleton />}
       {error && <p className="dashboard-inline-error">{error}</p>}
 
       {catalog && !uncovered && catalog.documents.length === 0 && !loading && (
@@ -3070,7 +3089,7 @@ export default function DocsTab({
                 )}
 
                 {rulesLoading && !rulesIndex && (
-                  <p className="dashboard-metric-caption">Reading this repository's rules…</p>
+                  <RulesSkeleton label="this repository's rules" />
                 )}
                 {(namesFirst || namesOnly) && (
                   <div className="docs-gone">
@@ -3189,7 +3208,7 @@ export default function DocsTab({
               </div>
             )}
             {scopeKind === "doc" && !detail && !actionError && (
-              <p className="dashboard-metric-caption">Loading…</p>
+              <RulesSkeleton label="this doc" />
             )}
             {scopeKind === "doc" && detail && (
               <>
@@ -3273,7 +3292,7 @@ export default function DocsTab({
                 {hasDocumentTab && (paneTab === "document" || textEntry?.status === "ready") && (
                   <div role="tabpanel" aria-labelledby="doc-tab-document" hidden={paneTab !== "document"}>
                     {paneTab === "document" && (!textEntry || textEntry.status === "loading") && (
-                      <p className="dashboard-metric-caption">Loading the doc…</p>
+                      <DocTextSkeleton />
                     )}
                     {paneTab === "document" && textEntry?.status === "failed" && (() => {
                       const failure = failureMessage(textEntry.reason);
@@ -3287,7 +3306,7 @@ export default function DocsTab({
                       );
                     })()}
                     {textEntry?.status === "ready" && (
-                      <Suspense fallback={<p className="dashboard-metric-caption">Loading the doc…</p>}>
+                      <Suspense fallback={<DocTextSkeleton />}>
                         <DocumentView
                           key={selected}
                           onJump={jumpToRules}

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { RefreshMark } from "./DocsTab";
 import BrokenBy from "./BrokenBy";
+import { ChecksSkeleton } from "./Skeleton";
 import CheckSettings from "./CheckSettings";
 
 /**
@@ -99,6 +100,7 @@ export default function ChecksTab({
   installationId,
   repo,
   sample,
+  sampleDelay,
   source,
   inShell,
   actionsSlot,
@@ -127,6 +129,8 @@ export default function ChecksTab({
   badge?: ReactNode;
   /** Fixed pages to show instead of asking the API, for the demo. */
   sample?: (page: number) => ChecksPage;
+  /** How long the example waits before answering, in milliseconds; for the preview only. */
+  sampleDelay?: () => number;
   /** The URL of one page of checks on a public repository's page, in place of the dashboard's. */
   source?: (page: number) => string;
 }) {
@@ -142,8 +146,17 @@ export default function ChecksTab({
   useEffect(() => {
     if (!repo) return;
     if (sample) {
-      setAnswer(sample(page));
-      return;
+      const wait = sampleDelay?.() ?? 0;
+      if (wait <= 0) {
+        setAnswer(sample(page));
+        return;
+      }
+      setLoading(true);
+      const timer = setTimeout(() => {
+        setAnswer(sample(page));
+        setLoading(false);
+      }, wait);
+      return () => clearTimeout(timer);
     }
     let current = true;
     setLoading(true);
@@ -226,7 +239,7 @@ export default function ChecksTab({
       </div>
 
       {error && <p className="dashboard-inline-error">{error}</p>}
-      {!answer && loading && <p className="dashboard-metric-caption">Loading checks…</p>}
+      {!answer && loading && <ChecksSkeleton />}
       {answer && checks.length === 0 && !loading && (
         <div className="dashboard-empty">
           <p className="text-slate-600">
