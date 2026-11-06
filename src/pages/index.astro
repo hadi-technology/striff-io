@@ -355,8 +355,8 @@ const structuredData = JSON.stringify([
 ---
 
 <BaseLayout
-  title="Striff: your specs and architecture docs, checked on every PR"
-  description="Striff turns the sentences in your specs, AGENTS.md, ADRs and architecture docs into rules and checks every GitHub pull request against them."
+  title="Striff: architectural compliance for every pull request"
+  description="Striff reads the architecture rules your docs and agent files already state (AGENTS.md, CLAUDE.md, ADRs, design docs) and checks every pull request against them, whether a person or a coding agent wrote it. Nothing to configure."
   canonical="https://striff.io/"
   ogImage="https://striff.io/og-image.png"
 >
@@ -371,6 +371,7 @@ const structuredData = JSON.stringify([
     <section class="hero-section relative overflow-hidden">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="hero-copy relative z-10 mx-auto max-w-4xl space-y-5 text-center" data-reveal>
+          <p class="examples-kicker">Architectural compliance</p>
           <h1 class="mx-auto">
             <span class="sr-only">Your specs and architecture docs, enforced on every pull request.</span>
             <span aria-hidden="true">Your <span class="h1-rot" data-h1-rot><span class="h1-rot-word is-on">specs</span><span class="h1-rot-word">architecture docs</span><span class="h1-rot-word">design docs</span><span class="h1-rot-word">AGENTS.md</span></span>,<br /> <span class="hero-h1-accent">enforced on every pull request</span>.</span>
@@ -440,6 +441,9 @@ const structuredData = JSON.stringify([
             <Formula tex={String.raw`\mathcal{M}`} /> your code parsed at each revision; the
             verdict is whether one satisfies the other. Three of the {heroExampleTally.broken + heroExampleTally.held} rules
             this repository&rsquo;s docs state. <a href="/demo/">The dashboard lists all of them &rarr;</a>
+          </p>
+          <p class="hero-check-more">
+            No architecture model to write: Striff reads the docs you already have. A model reads each document once, and you can see the rule it became. Every check after that is deterministic, so the same code gets the same verdict every time.
           </p>
           <div class="hero-langs" aria-label="Supported languages">
             <span class="hero-langs-label">Works with</span>
