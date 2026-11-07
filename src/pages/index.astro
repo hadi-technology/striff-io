@@ -190,11 +190,11 @@ const sampleRules = [
  */
 const teamsPoints = [
   {
-    title: "The docs your team wrote become the guardrails",
-    body: "ADRs, design docs and AGENTS.md are checked on every pull request, by people and agents alike. No rules to write, no new process to teach.",
+    title: "The docs your team wrote become fitness functions",
+    body: "The layering, module boundaries and dependency rules in your ADRs, design docs and AGENTS.md are checked on every pull request, by people and agents alike. No rules to write, no new process to teach.",
   },
   {
-    title: "See drift before it turns into a rewrite",
+    title: "See architectural drift before it turns into a rewrite",
     body: "Which repositories broke a documented rule this month, which pull requests did it, and which docs have gone stale. The places your clean-up time should go.",
   },
   {
@@ -295,8 +295,8 @@ const faqs: { id?: string; q: string; a: string }[] = [
     a: `<strong>Just install the GitHub App.</strong> It works on public and private repos alike and posts checks automatically on every PR, with <em>no per-developer setup</em>. Plans start at <strong>$29/month</strong>, based on how many private repos Striff <em>works on</em> each month (it checks one of their pull requests or reads their documents after a push), not how many you connect. A quiet month costs $29, the Starter price. <strong>Public repositories are free.</strong>`
   },
   {
-    q: `Is this the same as writing architecture tests?`,
-    a: `<strong>It is architecture tests you don&rsquo;t have to write.</strong> Each sentence in your docs that makes a checkable claim about the code (a dependency direction, where a class lives, what a module must not import, which methods a type has) becomes a check that runs on every pull request. The docs stay the source of truth: when someone edits a sentence, the rule changes with it on the next pull request, and nothing has to be kept in sync by hand.`
+    q: `Is this the same as architecture tests or fitness functions?`,
+    a: `<strong>It is the fitness functions you never had to write.</strong> Tools like ArchUnit make you encode each rule a second time, in code. With Striff, each sentence in your docs that makes a checkable claim about the code (a dependency direction, where a class lives, what a module must not import, which methods a type has) becomes a check that runs on every pull request. The docs stay the source of truth: when someone edits a sentence, the rule changes with it on the next pull request, and nothing has to be kept in sync by hand.`
   },
   {
     q: `Does Striff tell me what it couldn&rsquo;t check?`,
@@ -713,7 +713,7 @@ const structuredData = JSON.stringify([
             <div class="compute-intro compute-intro-wide">
               <h2 class="text-balance">Every verdict is computed, not generated.</h2>
               <p class="section-subcopy mt-4">
-                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> <strong>A language model proposes the rules; it never decides whether one holds.</strong> The grounding, the verdict and the sentence you read are all computed, and nothing is needed beyond the documents your repository already has.
+                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic: an architectural fitness function, run on every pull request. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> <strong>A language model proposes the rules; it never decides whether one holds.</strong> The grounding, the verdict and the sentence you read are all computed, and nothing is needed beyond the documents your repository already has.
               </p>
             </div>
             <p class="compute-label"><span>01</span> How a documented rule becomes a verdict</p>
