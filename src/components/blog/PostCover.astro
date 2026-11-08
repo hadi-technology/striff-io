@@ -20,6 +20,7 @@ import Receipt from "./covers/Receipt.astro";
 import Coupling from "./covers/Coupling.astro";
 import Checklist from "./covers/Checklist.astro";
 import StaleLine from "./covers/StaleLine.astro";
+import Interest from "./covers/Interest.astro";
 import Generated from "./covers/Generated.astro";
 
 interface Props {
@@ -42,6 +43,7 @@ const GLOW: Record<string, [number, number]> = {
   coupling: [320, 190],
   checklist: [320, 180],
   "stale-line": [320, 200],
+  interest: [480, 160],
 };
 const [gx, gy] = GLOW[cover ?? ""] ?? [420, 140];
 ---
@@ -72,5 +74,6 @@ const [gx, gy] = GLOW[cover ?? ""] ?? [420, 140];
   {cover === "coupling" && <Coupling />}
   {cover === "checklist" && <Checklist />}
   {cover === "stale-line" && <StaleLine />}
+  {cover === "interest" && <Interest />}
   {!(cover && cover in GLOW) && <Generated slug={slug} />}
 </svg>

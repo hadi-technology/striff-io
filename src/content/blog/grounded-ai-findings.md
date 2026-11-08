@@ -4,6 +4,7 @@ description: "AI review comments are easy to write and hard to trust. What a Str
 seoTitle: "Grounded AI code review: every finding has a receipt"
 seoDescription: "What a Striff check on your pull request says, where each line of it comes from, and how to verify any of it yourself in under a minute."
 date: 2026-08-24
+updated: 2026-11-08
 category: "Product"
 cover: "receipt"
 ---
@@ -13,6 +14,8 @@ Most developers have the same experience with AI code review. The comments sound
 A better prompt does not fix that. The model's opinion is the finding, and there is nothing underneath it to check. Striff works the other way round, with one rule we hold everything to:
 
 <div class="bp-callout">The AI is never the source of a claim. Every statement in a Striff check is either a sentence quoted from your own docs, with its file and line, or a fact computed from your code at the two revisions of the pull request. A language model reads the docs and writes the sentences. Whether a claim is true is decided elsewhere.</div>
+
+That rule fits architectural compliance, checking that the code still keeps the architecture your team wrote down, better than anything else a review does. A ban such as "the core never imports from plugins" is either kept or broken at a given revision, and a program can tell which without asking a model.
 
 Here is what that looks like from your side of the pull request.
 
@@ -92,7 +95,7 @@ Striff can therefore miss a rule a compiler would have answered. What it will no
 
 Fewer comments, and every one of them checkable. In [the largest public window we've measured so far](/blog/design-docs-are-enforceable-now/), that quietness held up at scale. When a check that quiet says something, it is worth reading.
 
-It also changes what your docs are for. A sentence in your README becomes a rule, checked on every pull request, whether a person or a coding agent wrote the code. [Here is how to write docs Striff can check](/blog/design-docs-are-enforceable-now/#writing-docs-that-can-be-checked), though it reads the docs you already have without any changes.
+It also changes what your docs are for. A sentence in your README becomes a rule, checked on every pull request, whether a person or a coding agent wrote the code. [Here is how to write docs Striff can check](/blog/design-docs-are-enforceable-now/#writing-docs-that-get-checked), though it reads the docs you already have without any changes.
 
 ## Try it on a pull request you know
 

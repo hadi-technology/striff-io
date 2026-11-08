@@ -4,7 +4,7 @@ description: "Design docs have a second reader now: coding agents build from the
 seoTitle: "Check code against ADRs and design docs on every PR"
 seoDescription: "Striff turns the sentences in your ADRs and architecture docs into rules and checks every pull request against them. One real change, and 609 public ones."
 date: 2026-09-10
-updated: 2026-10-02
+updated: 2026-11-08
 category: "Product"
 cover: "docs-to-checks"
 ---
@@ -12,13 +12,15 @@ cover: "docs-to-checks"
 import RuleRows from "../../components/RuleRows.astro";
 import { ecchronosRules, baseSha, headSha } from "../../data/ecchronosRules";
 
+Apache Pinot's design doc for its `pinot-sql-ddl` module draws a hard line. The module, [it says](https://github.com/apache/pinot/blob/6d97d3226a73d9d43ba3b313da8dc11427861e3c/pinot-sql-ddl/DESIGN.md#L97-L99), "depends only on `pinot-spi` (for `Schema`, `TableConfig`, `FieldSpec`), `pinot-common` (for the AST nodes), and `calcite-babel` (for the parser builder)." The module's [build file](https://github.com/apache/pinot/blob/6d97d3226a73d9d43ba3b313da8dc11427861e3c/pinot-sql-ddl/pom.xml#L48-L63) also lists `pinot-query-planner`, under a comment explaining why it was needed, and `MaterializedViewSchemaInferer` imports `QueryEnvironment` from it. Someone weighed the boundary and crossed it on purpose. The design doc still says the boundary holds.
+
 Your architecture docs have a second reader now. For twenty years a README or a design note was read by a person, who noticed when a sentence had stopped being true and asked. Today coding agents read `AGENTS.md`, `CLAUDE.md` and the architecture notes before they write anything, take every sentence as fact, and build from it. A decision written down once steers thousands of generated lines. A sentence that has quietly gone stale steers them too.
 
 Nothing in a pull request checks for that. The diff shows the code. The sentence lives in a different file, so the reviewer never sees the two side by side, and the merge goes through with the prose and the code disagreeing.
 
-Striff closes that gap. It reads the documents already in your repository, turns the sentences that make a checkable claim about the code into rules, and checks each rule against the parsed code at the base and the head of every pull request. A language model does the translation from prose to rule. A program does the checking, and it can only report what it computed. There is no rule file to write and nothing to configure, because the rules are the ones your team already wrote down.
+Holding the code to the architecture its own team wrote down is what we mean by architectural compliance, and it is what Striff does. It reads the documents already in your repository, turns the sentences that make a checkable claim about the code into rules, and checks each rule against the parsed code at the base and the head of every pull request. A language model does the translation from prose to rule. A program does the checking, and it can only report what it computed. There is no rule file to write and nothing to configure, because the rules are the ones your team already wrote down.
 
-The result is a GitHub check run beside your tests with a table of the rules the change touched, each one quoting the sentence it came from and the line in the code that decided it. Here is what that looks like on one real pull request.
+The result is a GitHub check run beside your tests with a table of the rules the change touched, each one quoting the sentence it came from and the line in the code that decided it. Pinot's sentence is already broken on the default branch. Here is what the check looks like when the break happens in the pull request under review, on a smaller repository where every step can be followed.
 
 ## One change, one sentence, one verdict
 
@@ -63,10 +65,10 @@ The mechanism is the reason the verdicts can be trusted. The model only proposes
 
 ## How often it fires
 
-Rarely, and that is the design. A check that fired on every pull request would be muted within a week. Across 609 public pull requests in 542 repositories, Striff read 7,161 rules out of those repositories' own documentation. 5,674 of them could be answered from the parsed code; the rest named things a source parse cannot see and were left out. Of the answered rules:
+Rarely, and that is the design. A check that fired on every pull request would be muted within a week. In a September 2026 sweep of 609 public pull requests in 542 repositories, Striff read 7,161 rules out of those repositories' own documentation. 5,674 of them could be answered from the parsed code; the rest named things a source parse cannot see and were left out. Of the answered rules:
 
 <div class="bp-figure" data-reveal>
-<p class="bp-figure-title">7,161 rules read, 5,674 answered · 609 pull requests</p>
+<p class="bp-figure-title">7,161 rules read, 5,674 answered · 609 pull requests · September 2026</p>
 <div class="bp-bars">
 <div class="bp-bar-row"><span class="bp-bar-label">Held</span><div class="bp-bar-track"><div class="bp-bar bp-bar--mint" style="width:100%"></div></div><span class="bp-bar-value">5,519</span></div>
 <div class="bp-bar-row"><span class="bp-bar-label">Violated by the change</span><div class="bp-bar-track"><div class="bp-bar bp-bar--danger" style="width:1.8%"></div></div><span class="bp-bar-value">97</span></div>
@@ -108,7 +110,7 @@ The sweep was not small repositories. Nearly every one had over a thousand stars
 <li class="bp-repo">
 <a class="bp-repo-head" href="https://github.com/modelcontextprotocol/csharp-sdk/blob/c40ee044fd415c70da5176c749cb5ef02f2b59f6/.github/copilot-instructions.md#L258"><span class="bp-repo-name">MCP C# SDK</span><span class="bp-repo-stars"><i style="width:85%"></i><b>&#9733; 4.5k</b></span></a>
 <p class="bp-repo-doc"><span>docs</span>Line 258 of the Copilot instructions says to use <code>McpServerFactory</code>.</p>
-<p class="bp-repo-code"><span>code</span>Deleted in December 2025 by the same agent that wrote the line. The line is still on <code>main</code>; a fix is open.</p>
+<p class="bp-repo-code"><span>code</span>Deleted in December 2025 by the same agent that wrote the line. The maintainers corrected the line on October 5, 2026, in <a href="https://github.com/modelcontextprotocol/csharp-sdk/pull/1892">#1892</a>.</p>
 </li>
 <li class="bp-repo">
 <a class="bp-repo-head" href="https://github.com/Ericsson/ecchronos/pull/1786"><span class="bp-repo-name">Ericsson ecChronos</span><span class="bp-repo-stars"><i style="width:36%"></i><b>&#9733; 37</b></span></a>

@@ -1,0 +1,50 @@
+---
+/**
+ * Cover for the post on what a broken architecture rule costs: one break, then the merges built on
+ * it. The first bar is the fix in the pull request that broke the rule, one line; each merge after
+ * it adds to what the fix would take, until the last bar is a refactor. The figures along the
+ * bottom are the post's own.
+ */
+const BASE = 300;
+const X0 = 64;
+const STEP = 44;
+const N = 12;
+const bars = Array.from({ length: N }, (_, i) => {
+  const h = Math.min(200, 6 * Math.pow(1.36, i));
+  return { x: X0 + i * STEP, h, y: BASE - h };
+});
+const curve = bars.map((b, i) => `${i ? "L" : "M"}${b.x + 14} ${b.y.toFixed(1)}`).join(" ");
+const last = bars[N - 1];
+---
+
+<g class="cv-fade">
+  <text class="cv-mono cv-caps cv-faint" x="40" y="50" font-size="11">What one broken rule costs to fix</text>
+  <text class="cv-mono cv-caps cv-faint" x="600" y="50" font-size="11" text-anchor="end">by merge</text>
+</g>
+
+<path class="cv-hair" d={`M40 ${BASE} H600`} />
+
+{bars.map((b, i) => (
+  <rect
+    class={`${i === 0 ? "cv-fill-add" : "cv-fill-del"} cv-grow-y`}
+    style={`--d:${0.2 + i * 0.07}s`}
+    x={b.x}
+    y={b.y.toFixed(1)}
+    width="28"
+    height={b.h.toFixed(1)}
+    rx="4"
+  />
+))}
+
+<path class="cv-e cv-e--del cv-draw" style="--d:0.4s" pathLength="1" d={curve} />
+
+<g class="cv-fade" style="--d:0.3s">
+  <text class="cv-mono cv-c-add" x={X0} y={BASE + 24} font-size="11">the PR</text>
+  <text class="cv-mute" x={X0} y={BASE - 22} font-size="13">1 line</text>
+</g>
+<g class="cv-fade" style="--d:1.2s">
+  <text class="cv-mono cv-c-del" x={last.x + 28} y={BASE + 24} font-size="11" text-anchor="end">many merges later</text>
+  <text class="cv-num" x={last.x - 16} y={last.y + 40} font-size="26" text-anchor="end">a refactor</text>
+</g>
+
+<text class="cv-mono cv-caps cv-faint cv-fade" style="--d:0.9s" x="40" y="356" font-size="10.5">top 5 architectural debts: 20–61% of maintenance effort</text>

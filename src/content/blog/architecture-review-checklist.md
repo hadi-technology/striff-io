@@ -99,7 +99,7 @@ Any tool that claims to automate all seven of these is either overstating what i
 </tbody>
 </table>
 </div>
-<p class="bp-figure-caption">Steps 1 and 3 to 6 have a right answer a program can compute. Step 2 has one for every sentence that is about structure, and that is most of them: in a scan of 609 public pull requests, 5,674 of the 7,161 rules read out of their docs could be answered from the parsed code. Step 7 does not have a right answer.</p>
+<p class="bp-figure-caption">Steps 1 and 3 to 6 have a right answer a program can compute. Step 2 has one for every sentence that is about structure, and that is most of them: in a September 2026 scan of 609 public pull requests, 5,674 of the 7,161 rules read out of their docs could be answered from the parsed code. Step 7 does not have a right answer.</p>
 </div>
 
 <div class="bp-callout bp-callout--mint">Use the checklist either way. If it gets your team to do even steps 1 to 3 on risky changes, this post did its job. Building the graph, counting dependents, tracing paths and re-reading the doc nobody re-reads are mechanical, and a program can do them. Whether the answer is acceptable is still your call.</div>

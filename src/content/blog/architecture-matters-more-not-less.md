@@ -4,7 +4,7 @@ description: "Design doc, then plan, then the agent builds it task by task: spec
 seoTitle: "Spec-driven development: 335 repositories surveyed"
 seoDescription: "We surveyed 335 open-source repositories that document their architecture: 63% give coding agents docs to build from, and only 8% of those check the code."
 date: 2026-09-15
-updated: 2026-10-11
+updated: 2026-11-08
 category: "Data & research"
 cover: "survey"
 ---
@@ -61,7 +61,7 @@ Böckeler's [survey of Spec Kit, Kiro and Tessl](https://martinfowler.com/articl
 
 The first level asks nothing of the spec once the task is done. The other two ask it to stay true indefinitely, because every later change is made from it. That is the level most teams in our survey are already at without naming it: 22% keep spec or plan files for agents to build from, and the 63% that hand their agents `AGENTS.md`, `CLAUDE.md` or architecture docs are spec-anchored in practice, whatever toolkit they use. The document outlives the task and the next task starts from it.
 
-So the question a spec-anchored team has to answer is who notices when the spec stops being true. That gap between what the spec says and what the code does is spec drift. The toolkits answer how to write the spec and how to build from it. None of them answers that. In our survey, 8% of the repositories that hand their agents docs run anything that checks the code against an architecture rule, and no tool in the table above checks a spec against the code it produced. The rest of this post is about that gap.
+So the question a spec-anchored team has to answer is who notices when the spec stops being true. That gap between what the spec says and what the code does is spec drift, and checking the code against the documented architecture on every change is architectural compliance. The toolkits answer how to write the spec and how to build from it. None of them answers that. In our survey, 8% of the repositories that hand their agents docs run anything that checks the code against an architecture rule, and no tool in the table above checks a spec against the code it produced. The rest of this post is about that gap.
 
 ## Every practice got more load-bearing
 
@@ -216,8 +216,10 @@ Nothing crashes. The docs drift one clean-looking PR at a time, the agents keep 
 
 <div class="bp-callout bp-callout--amber">A team that ships faster while its structural oversight stays flat is borrowing. The loan comes due as a system that passes every check while becoming harder to change every week, and by the time it's obvious, the cheap moment to fix it is hundreds of merges in the past.</div>
 
+We put numbers on that loan, from four studies of architectural debt and a 2026 benchmark of coding agents, in [what a broken architecture rule costs, and when you pay for it](/blog/what-a-broken-architecture-rule-costs/).
+
 ## What to do
 
 Keep every practice you already have, and keep writing the design docs, specs and plans. That is the right way to work with agents. But if the docs are what your agents build from, the docs have to stay true, and in 92% of the repositories that hand their agents docs, nothing checks that they do.
 
-Give that one unguarded practice what every other practice already has: an automatic check on every pull request. If your team has an ArchUnit or import-linter setup, run it in CI. If the rules live in prose, that is what we built [Striff](https://github.com/apps/striffs/installations/new) for: it reads the sentences already in your docs, turns the checkable ones into rules, and evaluates each at both revisions of every pull request, quoting the sentence a change broke.
+Give that one unguarded practice what every other practice already has: an automatic architectural compliance check on every pull request. If your team has an ArchUnit or import-linter setup, run it in CI. If the rules live in prose, that is what we built [Striff](https://github.com/apps/striffs/installations/new) for: it reads the sentences already in your docs, turns the checkable ones into rules, and evaluates each at both revisions of every pull request, quoting the sentence a change broke.
