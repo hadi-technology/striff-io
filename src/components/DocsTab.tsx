@@ -838,6 +838,7 @@ export default function DocsTab({
   sample,
   source,
   initial,
+  withUnclear = true,
   inShell,
   actionsSlot,
   badge,
@@ -874,6 +875,8 @@ export default function DocsTab({
    * The answers this view opens on, read when the page was built: it renders them at once, the
    * same as the built markup, and reads them again quietly once it is on screen.
    */
+  /** False on a public page, which lists only rules that were checked: rules Striff could not decide never reach the view. */
+  withUnclear?: boolean;
   initial?: {
     catalog: any;
     rules: any;
@@ -908,7 +911,7 @@ export default function DocsTab({
   const [catalog, setCatalog] = useState<Catalog | null>(normalizeCatalog(initial?.catalog) ?? null);
   const [detail, setDetail] = useState<Detail | null>(null);
   /** Every rule of the repository, for the scopes a single document's answer cannot serve. */
-  const [rulesIndex, setRulesIndex] = useState<RepoRules | null>(normalizeRules(initial?.rules) ?? null);
+  const [rulesIndex, setRulesIndex] = useState<RepoRules | null>(normalizeRules(initial?.rules, { withUnclear }) ?? null);
   /**
    * The issues the findings are tracked in. Asked for after the rules are on screen and merged into
    * them where they are shown, so a slow or failed answer never holds the page up or changes it.
@@ -1228,7 +1231,7 @@ export default function DocsTab({
         if (answer?.error === "not_repo_admin") setCanManageRules(false);
         return answer?.message || failed;
       }
-      if (answer && Array.isArray(answer.documents)) putRules(normalizeRules(answer) as RepoRules);
+      if (answer && Array.isArray(answer.documents)) putRules(normalizeRules(answer, { withUnclear }) as RepoRules);
       return null;
     } catch {
       undo();
@@ -1390,7 +1393,7 @@ export default function DocsTab({
         await new Promise((resolve) => setTimeout(resolve, wait));
         setRulesLoading(false);
       }
-      putRules(normalizeRules(sample.rules));
+      putRules(normalizeRules(sample.rules, { withUnclear }));
       return;
     }
     const wanted = ++rulesAt.current;
@@ -1402,7 +1405,7 @@ export default function DocsTab({
         setRulesFailed(true);
         return;
       }
-      putRules(normalizeRules(await res.json()));
+      putRules(normalizeRules(await res.json(), { withUnclear }));
       setRulesFailed(false);
       setRulesRead((n) => n + 1);
     } catch {
@@ -1516,7 +1519,11 @@ export default function DocsTab({
         setActionError(answer.message || answer.error || `Couldn't open ${path}.`);
         return;
       }
-      setDetail(normalizeCatalog(await res.json()));
+      const read = normalizeCatalog(await res.json());
+      // The document's own answer lists its rules too; a public page drops the undecided ones here as it does from the repository's.
+      setDetail(!withUnclear && read && Array.isArray(read.rules)
+        ? { ...read, rules: read.rules.filter((rule: any) => standing(rule) !== "unclear") }
+        : read);
     } catch {
       if (wanted === openedAt.current) setActionError(`Couldn't open ${path}.`);
     }

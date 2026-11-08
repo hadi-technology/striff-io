@@ -87,8 +87,10 @@ export function normalizeDoc(doc) {
  * Every rule of a repository with the new field names.
  *
  * @param {object | null | undefined} answer the API's answer to a read of every rule
+ * @param {{ withUnclear?: boolean }} [options] `withUnclear: false` leaves out the rules Striff
+ *   could not decide, as a page that shows only what it has checked does
  */
-export function normalizeRules(answer) {
+export function normalizeRules(answer, { withUnclear = true } = {}) {
   if (!answer || !Array.isArray(answer.documents)) return answer;
   const { ignoredPaths, ...rest } = answer;
   const current = Array.isArray(answer.excludedPaths);
@@ -102,7 +104,7 @@ export function normalizeRules(answer) {
       document: normalizeDoc(group.document),
       // A doc that says it is no longer current is not checked, as one excluded is not: its rules
       // are counted and listed as excluded with it.
-      rules: (group.rules || []).map(normalizeRule).map((rule) =>
+      rules: (group.rules || []).filter((rule) => withUnclear || standing(rule) !== "unclear").map(normalizeRule).map((rule) =>
         group.document.state === "RETIRED" && !rule.excluded ? { ...rule, excluded: true, excludedBy: "excluded" } : rule),
     })),
   };

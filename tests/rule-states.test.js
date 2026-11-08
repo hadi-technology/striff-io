@@ -241,3 +241,23 @@ test("rule counts include a rule Striff could not decide, and the standings add 
   assert.deepEqual(counts, { all: 6, holds: 1, broken: 1, unchecked: 1, unclear: 2, excluded: 1 });
   assert.equal(counts.holds + counts.broken + counts.unchecked + counts.unclear + counts.excluded, counts.all);
 });
+
+test("a public page's read leaves out rules Striff could not decide, the dashboard's keeps them", () => {
+  const raw = {
+    documents: [{
+      document: { path: "ARCH.md" },
+      rules: [
+        { factId: "1", status: "MAINTAINED", onDefaultBranch: null },
+        { factId: "2", status: null, onDefaultBranch: "UNCLEAR" },
+        { factId: "3", status: "UNCLEAR", onDefaultBranch: null },
+      ],
+    }],
+  };
+  const dashboard = normalizeRules(raw);
+  assert.equal(dashboard.documents[0].rules.length, 3);
+  assert.equal(ruleCounts(dashboard.documents[0].rules).unclear, 2);
+  const open = normalizeRules(raw, { withUnclear: false });
+  assert.deepEqual(open.documents[0].rules.map((r) => r.factId), ["1"]);
+  assert.equal(ruleCounts(open.documents[0].rules).unclear, 0);
+  assert.equal(ruleCounts(open.documents[0].rules).all, 1);
+});

@@ -96,11 +96,9 @@ test("an address that is one of the site's own pages is never a report", () => {
   assert.equal(isReportAddress("acme", "widgets"), true);
 });
 
-test("the counts are the page's: every rule, those undecided among them, and names only in listed documents", () => {
+test("the counts are the page's: nothing undecided, and names only in listed documents", () => {
   const facts = reportFacts({ ...answers("acme", "widgets"), builtAtMs: 0 });
-  assert.equal(facts.rules, 3);
-  assert.equal(facts.unclear, 1);
-  assert.equal(facts.rules, facts.holds + facts.broken + facts.unchecked + facts.unclear);
+  assert.equal(facts.rules, 2);
   assert.equal(facts.holds, 1);
   assert.equal(facts.broken, 1);
   assert.equal(facts.names, 1);
@@ -113,7 +111,7 @@ test("the head names the repository and its counts, points at itself and never s
   assert.equal(head.title, "acme/widgets architecture docs: 2 rules checked, 1 broken | Striff");
   assert.equal(head.canonical, "https://striff.io/acme/widgets/");
   assert.equal(head.robots, "index,follow");
-  assert.equal(head.description, "The architecture docs in acme/widgets, checked against its code: 3 rules from 2 docs, 1 holds, 1 broken, 1 couldn't check, 1 stale name. Last read Oct 2, 2026.");
+  assert.equal(head.description, "The architecture docs in acme/widgets, checked against its code: 2 rules from 2 docs, 1 holds, 1 broken, 1 stale name. Last read Oct 2, 2026.");
   assert.ok(head.description.length <= 160);
   assert.doesNotMatch(head.description, /install|every pull request/i);
   const ld = JSON.parse(head.jsonLd);

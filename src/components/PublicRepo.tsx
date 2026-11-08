@@ -347,6 +347,7 @@ export default function PublicRepo({ initial }: { initial?: BuiltReport }) {
               openRepo={fullName}
               addressLink="public"
               source={docsSource}
+              withUnclear={false}
               initial={built.current && {
                 catalog: built.current.catalog,
                 rules: built.current.rules,
