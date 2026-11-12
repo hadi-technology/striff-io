@@ -83,6 +83,30 @@ const canonicalUrl = (() => {
       initAnalytics();
     </script>
 
+    <script is:inline src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
+    <script is:inline>
+      // Eased mouse-wheel scrolling. Touch keeps native scrolling, and visitors who ask for
+      // reduced motion get none of it. Without Lenis (blocked, offline) the page scrolls normally.
+      (function () {
+        if (typeof window.Lenis !== "function") return;
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        var lenis = new window.Lenis({ lerp: 0.1, wheelMultiplier: 1, allowNestedScroll: true });
+        window.__lenis = lenis;
+        function raf(t) { lenis.raf(t); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
+        document.addEventListener("click", function (e) {
+          var a = e.target.closest && e.target.closest('a[href^="#"]');
+          if (!a || a.getAttribute("href").length < 2) return;
+          var el = document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));
+          if (!el) return;
+          e.preventDefault();
+          var off = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
+          lenis.scrollTo(el, { offset: -off });
+          history.pushState(null, "", a.getAttribute("href"));
+        });
+      })();
+    </script>
+
     <script is:inline>
       // Scroll to top. Hidden near the top of the page, where it would cover content and
       // do nothing anyway.
@@ -105,6 +129,7 @@ const canonicalUrl = (() => {
         }, { passive: true });
 
         btn.addEventListener("click", function () {
+          if (window.__lenis) { window.__lenis.scrollTo(0); return; }
           window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
         });
 

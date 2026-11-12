@@ -632,8 +632,8 @@ export default function RulesTable({
                     </svg>
                   </a>
                   {inDocument?.has(row.factId) && onShowInDocument && (
-                    <button type="button" className="rules-source-doc" onClick={() => onShowInDocument(row.factId)}>
-                      Show in document
+                    <button type="button" className="rules-source-doc" aria-label="Show in document" title="Show in document" onClick={() => onShowInDocument(row.factId)}>
+                      Show
                     </button>
                   )}
                 </span>

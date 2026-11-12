@@ -5,7 +5,7 @@ import BlogLink from "../components/BlogLink.astro";
 import RuleRows from "../components/RuleRows.astro";
 import Formula from "../components/Formula.astro";
 import { heroExampleRules, heroExampleRepo, heroExampleTally } from "../data/heroExampleRules";
-import MetricsTab from "../components/MetricsTab";
+import TeamsPreview from "../components/TeamsPreview";
 // The example check's diagram: striff-lib's own output for the invented #418, annotated by
 // tools/example-diagram/annotate.py.
 import exampleDiagram from "../assets/examples/acme-418-diagram.svg?raw";
@@ -133,8 +133,8 @@ const sampleRules = [
   },
   {
     n: 3,
-    status: "holds",
-    badge: "Holds",
+    status: "new",
+    badge: "New rule \u00b7 Holds",
     rule: "Every exporter lives in `checkout.export`",
     doc: "docs/adr/0012-exports.md#L9",
     quote: "Exporters live in checkout.export, one class per format.",
@@ -165,19 +165,19 @@ const sampleRules = [
   },
   {
     n: 7,
-    status: "holds",
-    badge: "Holds",
-    rule: "`Order` has `id` and `totalCents`",
-    doc: "specs/orders.md#L7",
-    quote: "An Order carries its id and its total in cents as totalCents, never as a float.",
+    status: "couldnt",
+    badge: "Couldn't check",
+    rule: "`CheckoutService` runs in one database transaction",
+    doc: "ARCHITECTURE.md#L41",
+    quote: "CheckoutService runs inside a single database transaction.",
   },
   {
     n: 8,
-    status: "holds",
-    badge: "Holds",
-    rule: "Only `CheckoutService` depends on `checkout.export`",
-    doc: "CLAUDE.md#L52",
-    quote: "CheckoutService is the only way into checkout.export; nothing else calls an exporter.",
+    status: "couldnt",
+    badge: "Couldn't check",
+    rule: "Every public endpoint requires authentication",
+    doc: "docs/security.md#L12",
+    quote: "Every public endpoint requires an authenticated caller.",
   },
 ];
 
@@ -371,13 +371,12 @@ const structuredData = JSON.stringify([
     <section class="hero-section relative overflow-hidden">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="hero-copy relative z-10 mx-auto max-w-4xl space-y-5 text-center" data-reveal>
-          <p class="examples-kicker">Architectural compliance</p>
           <h1 class="mx-auto">
             <span class="sr-only">Your specs and architecture docs, enforced on every pull request.</span>
             <span aria-hidden="true">Your <span class="h1-rot" data-h1-rot><span class="h1-rot-word is-on">specs</span><span class="h1-rot-word">architecture docs</span><span class="h1-rot-word">design docs</span><span class="h1-rot-word">AGENTS.md</span></span>,<br /> <span class="hero-h1-accent">enforced on every pull request</span>.</span>
           </h1>
           <p class="section-subcopy hero-subcopy mx-auto">
-            Your docs already state the rules. Striff checks every pull request against them, and <strong>when a change contradicts one, it quotes the sentence, before the merge.</strong>
+            Striff turns the rules already written in your docs into checks. <strong>When a pull request breaks one, it comments with the exact sentence it broke.</strong>
           </p>
 
           <div class="flex flex-wrap justify-center gap-3 pt-2">
@@ -385,7 +384,7 @@ const structuredData = JSON.stringify([
               <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
               </svg>
-              Install the GitHub App
+              Check my repo
             </a>
             <a class="btn-secondary btn-secondary-lg" href="#pipeline">How it works</a>
           </div>
@@ -394,14 +393,9 @@ const structuredData = JSON.stringify([
         <div class="hero-check-wrap" data-reveal>
           <div class="hero-check-card">
             <!-- Styled as the check it is, and in the same clothes as the real one further down
-                 the page, so a reader meets one idea twice rather than two designs once. The
-                 branch and the pull request number are the part that was missing: without them
-                 the card was a table of rules with no occasion. -->
+                 the page, so a reader meets one idea twice rather than two designs once. -->
             <header class="hcc-head ghcheck-head">
               <span class="ghcheck-mark"><img src="/icon.svg" alt="" width="18" height="18" /></span>
-              <!-- A check exists on a pull request, and the header is the only thing that says
-                   which one. It used to say it in the same small mono line as the branch, where
-                   the number a reviewer would quote was the least visible thing on the card. -->
               <span class="ghcheck-title">
                 <b>
                   Striff
@@ -419,6 +413,14 @@ const structuredData = JSON.stringify([
               </span>
             </header>
 
+            <div class="hcc-diff" aria-label="The change in this pull request">
+              <span class="hcc-diff-file">
+                <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.5.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914Z"/></svg>
+                checkout/CsvExporter.java <em>new file</em>
+              </span>
+              <code class="hcc-diff-line"><b>+</b> import legacy.pricing.PriceCalculator;</code>
+            </div>
+
             <div class="hcc-banner">
               <span class="hcc-banner-dot" aria-hidden="true"></span>
               <p class="hcc-banner-text">
@@ -431,13 +433,13 @@ const structuredData = JSON.stringify([
               </span>
             </div>
 
-            <RuleRows rows={heroExampleRules} />
+            <RuleRows rows={heroExampleRules} plain />
           </div>
           <!-- The notation named once, where it is being looked at. Without this the formulas
                are a signal that something is being computed; with it they are the thing being
                computed, which is the claim the whole page rests on. -->
           <p class="hero-check-more">
-            <a href="/demo/">See all {heroExampleTally.broken + heroExampleTally.held} rules on the dashboard &rarr;</a>
+            <a href="/demo/">Open the {heroExampleRepo} sample dashboard &rarr;</a>
           </p>
           <div class="hero-langs" aria-label="Supported languages">
             <span class="hero-langs-label">Works with</span>
@@ -506,25 +508,17 @@ const structuredData = JSON.stringify([
     </section>
 
     <!-- ==================== PROBLEM ==================== -->
-    <section id="problem" class="scroll-mt-24 bg-slate-100/60 pb-16 pt-10">
-      <div class="mx-auto max-w-[90rem] px-6" data-reveal>
-        <div class="rounded-3xl bg-white p-6 shadow-xl border border-slate-200 md:p-8">
-          <div class="problem-split">
-            <div class="problem-copy">
-              <p class="text-xs font-bold uppercase tracking-[0.2em] text-rose-500">The problem</p>
-              <h2 class="mt-3 text-balance">Nobody re-reads the docs on every pull request.</h2>
-              <p class="section-subcopy mt-4">
-                Spec-driven development made your docs the instructions: coding agents read your specs and architecture docs as context, then write code that quietly contradicts them, and no reviewer re-reads those documents on every change to catch it. That gap is <a href="/spec-drift/" class="font-semibold text-blue-600 hover:underline">spec drift</a>. Left unchecked, each merge drifts a little further from what your team agreed, until <strong>every change costs more than it should and nobody wants to touch the core</strong>. Striff catches the contradiction on the pull request, while it is still a one-line fix.
-              </p>
-              <p class="problem-stat">
-                In <a href="/blog/architecture-matters-more-not-less/">our survey of 335 open-source repositories</a> that write their architecture down, <strong>63% already hand their coding agents docs to build from</strong>, and <strong>only 8% of those run anything that checks the code still matches.</strong>
-              </p>
-              <BlogLink slug="architecture-matters-more-not-less" kicker="Why coding agents make architecture review matter more" class="mt-6" />
-            </div>
-
-            <!-- The firehose, run by agents: every lane is an agent's branch and every row in the
-                 feed is an agent acting on the repo. -->
-            <figure class="gs" data-reveal aria-hidden="true">
+    <section id="problem" class="prob scroll-mt-24">
+      <div class="prob-inner" data-prob>
+        <div class="prob-top">
+          <div class="prob-copy" data-reveal>
+            <p class="prob-kicker">The problem</p>
+            <h2 class="prob-title">Your team writes down its architecture rules. Nothing checks that new code follows them.</h2>
+            <p class="prob-lede">
+              Architecture rules are the decisions a team records about how its software is built, such as "the billing module never calls the web layer". AI coding agents now write much of the code, and no reviewer re-reads those documents on every pull request. The code drifts from them without anyone noticing. This is <a href="/spec-drift/">spec drift</a>.
+            </p>
+          </div>
+          <figure class="gs" data-reveal aria-hidden="true">
               <div class="gs-head">
                 <span class="gs-live"><span class="gs-live-dot"></span><span class="gs-live-repo">5 agents</span> working on acme-corp</span>
                 <span class="gs-head-tag">last hour</span>
@@ -572,9 +566,96 @@ const structuredData = JSON.stringify([
               </div>
               <figcaption class="gs-caption">They all read your architecture docs. <strong>Nothing checks that they followed them.</strong></figcaption>
             </figure>
+        </div>
+
+        <ol class="prob-chapters prob-flow">
+          <li class="prob-ch is-blue" data-ch>
+            <div class="prob-ch-head"><span class="prob-ch-n">1</span><span class="prob-ch-tag">What teams do now</span></div>
+            <h3>Teams write their architecture rules down, and AI coding agents read them.</h3>
+            <div class="prob-stat"><b data-count="63" data-suffix="%">63%</b><span>of 335 projects with written architecture rules give those documents to their AI coding agents.</span></div>
+            <div class="prob-viz" role="img" aria-label="63 of every 100 repositories give agents docs to build from, and about 5 of those check the code">
+              <div class="prob-dots"><i class="ok" style="--i:0"></i><i class="ok" style="--i:1"></i><i class="ok" style="--i:2"></i><i class="ok" style="--i:3"></i><i class="ok" style="--i:4"></i><i class="on" style="--i:5"></i><i class="on" style="--i:6"></i><i class="on" style="--i:7"></i><i class="on" style="--i:8"></i><i class="on" style="--i:9"></i><i class="on" style="--i:10"></i><i class="on" style="--i:11"></i><i class="on" style="--i:12"></i><i class="on" style="--i:13"></i><i class="on" style="--i:14"></i><i class="on" style="--i:15"></i><i class="on" style="--i:16"></i><i class="on" style="--i:17"></i><i class="on" style="--i:18"></i><i class="on" style="--i:19"></i><i class="on" style="--i:20"></i><i class="on" style="--i:21"></i><i class="on" style="--i:22"></i><i class="on" style="--i:23"></i><i class="on" style="--i:24"></i><i class="on" style="--i:25"></i><i class="on" style="--i:26"></i><i class="on" style="--i:27"></i><i class="on" style="--i:28"></i><i class="on" style="--i:29"></i><i class="on" style="--i:30"></i><i class="on" style="--i:31"></i><i class="on" style="--i:32"></i><i class="on" style="--i:33"></i><i class="on" style="--i:34"></i><i class="on" style="--i:35"></i><i class="on" style="--i:36"></i><i class="on" style="--i:37"></i><i class="on" style="--i:38"></i><i class="on" style="--i:39"></i><i class="on" style="--i:40"></i><i class="on" style="--i:41"></i><i class="on" style="--i:42"></i><i class="on" style="--i:43"></i><i class="on" style="--i:44"></i><i class="on" style="--i:45"></i><i class="on" style="--i:46"></i><i class="on" style="--i:47"></i><i class="on" style="--i:48"></i><i class="on" style="--i:49"></i><i class="on" style="--i:50"></i><i class="on" style="--i:51"></i><i class="on" style="--i:52"></i><i class="on" style="--i:53"></i><i class="on" style="--i:54"></i><i class="on" style="--i:55"></i><i class="on" style="--i:56"></i><i class="on" style="--i:57"></i><i class="on" style="--i:58"></i><i class="on" style="--i:59"></i><i class="on" style="--i:60"></i><i class="on" style="--i:61"></i><i class="on" style="--i:62"></i><i class="" style="--i:63"></i><i class="" style="--i:64"></i><i class="" style="--i:65"></i><i class="" style="--i:66"></i><i class="" style="--i:67"></i><i class="" style="--i:68"></i><i class="" style="--i:69"></i><i class="" style="--i:70"></i><i class="" style="--i:71"></i><i class="" style="--i:72"></i><i class="" style="--i:73"></i><i class="" style="--i:74"></i><i class="" style="--i:75"></i><i class="" style="--i:76"></i><i class="" style="--i:77"></i><i class="" style="--i:78"></i><i class="" style="--i:79"></i><i class="" style="--i:80"></i><i class="" style="--i:81"></i><i class="" style="--i:82"></i><i class="" style="--i:83"></i><i class="" style="--i:84"></i><i class="" style="--i:85"></i><i class="" style="--i:86"></i><i class="" style="--i:87"></i><i class="" style="--i:88"></i><i class="" style="--i:89"></i><i class="" style="--i:90"></i><i class="" style="--i:91"></i><i class="" style="--i:92"></i><i class="" style="--i:93"></i><i class="" style="--i:94"></i><i class="" style="--i:95"></i><i class="" style="--i:96"></i><i class="" style="--i:97"></i><i class="" style="--i:98"></i><i class="" style="--i:99"></i></div>
+              <p class="prob-viz-cap"><span class="k-docs">63 give agents the rules</span> &middot; <span class="k-ok">about 5 check the code afterwards</span></p>
+            </div>
+            <BlogLink variant="pill" tone="dark" slug="architecture-matters-more-not-less" anchor="so-we-measured-it-ourselves" action="See the 335-repository survey" class="prob-src" />
+          </li>
+
+          <li class="prob-ch is-rose" data-ch>
+            <div class="prob-ch-head"><span class="prob-ch-n">2</span><span class="prob-ch-tag">What goes wrong</span></div>
+            <h3>Nothing checks new code against those rules, so it breaks them.</h3>
+            <div class="prob-stat"><b>1 in 38</b><span>of the written rules was found broken in the code, across 609 public pull requests.</span></div>
+            <div class="prob-viz prob-strip" role="img" aria-label="1 in 38 checkable documented rules was found broken">
+              <div class="prob-cells"><i class="" style="--i:0"></i><i class="" style="--i:1"></i><i class="" style="--i:2"></i><i class="" style="--i:3"></i><i class="" style="--i:4"></i><i class="" style="--i:5"></i><i class="" style="--i:6"></i><i class="" style="--i:7"></i><i class="" style="--i:8"></i><i class="" style="--i:9"></i><i class="" style="--i:10"></i><i class="" style="--i:11"></i><i class="" style="--i:12"></i><i class="" style="--i:13"></i><i class="" style="--i:14"></i><i class="" style="--i:15"></i><i class="" style="--i:16"></i><i class="" style="--i:17"></i><i class="" style="--i:18"></i><i class="" style="--i:19"></i><i class="" style="--i:20"></i><i class="" style="--i:21"></i><i class="" style="--i:22"></i><i class="" style="--i:23"></i><i class="" style="--i:24"></i><i class="" style="--i:25"></i><i class="" style="--i:26"></i><i class="" style="--i:27"></i><i class="" style="--i:28"></i><i class="" style="--i:29"></i><i class="" style="--i:30"></i><i class="" style="--i:31"></i><i class="" style="--i:32"></i><i class="" style="--i:33"></i><i class="" style="--i:34"></i><i class="" style="--i:35"></i><i class="" style="--i:36"></i><i class="hit" style="--i:37"></i></div>
+              <p class="prob-viz-cap">150 broken rules in all: 97 broken by the change itself, 53 already broken before it.</p>
+            </div>
+            <BlogLink variant="pill" tone="dark" slug="design-docs-are-enforceable-now" anchor="how-often-it-fires" action="See the 609 pull requests" class="prob-src" />
+          </li>
+
+          <li class="prob-ch is-violet" data-ch>
+            <div class="prob-ch-head"><span class="prob-ch-n">3</span><span class="prob-ch-tag">What it costs</span></div>
+            <h3>A broken rule is a line to fix now and a refactor later.</h3>
+            <div class="prob-stat"><b>20&ndash;61%</b><span>of a project's maintenance effort goes to its five worst architectural problems.</span></div>
+            <div class="prob-viz prob-curve" role="img" aria-label="Cost of the same broken rule, caught in the pull request or months later">
+              <svg viewBox="0 0 360 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="probFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fb7185" stop-opacity="0.42"/><stop offset="1" stop-color="#fb7185" stop-opacity="0"/></linearGradient>
+                  </defs>
+                  <path class="pc-grid" d="M30 170H350M30 120H350M30 70H350M30 20H350"/>
+                  <path class="pc-area" d="M70 168 C 140 164 200 150 250 118 S 320 40 340 22 L340 170 L70 170Z" fill="url(#probFill)"/>
+                  <path class="pc-late" d="M70 168 C 140 164 200 150 250 118 S 320 40 340 22" />
+                  <path class="pc-early" d="M30 168 L350 168" />
+                  <line class="pc-merge" x1="70" y1="14" x2="70" y2="176" />
+                  <circle class="pc-dot-early" cx="70" cy="168" r="6" />
+                  <circle class="pc-dot-late" cx="340" cy="22" r="6.5" />
+                  <text class="pc-t pc-t-merge" x="76" y="30">merge</text>
+                  <text class="pc-t pc-t-early" x="190" y="190">Caught in the pull request: a one-line fix</text>
+                  <text class="pc-t pc-t-late" x="342" y="12" text-anchor="end">Caught months later: a refactor</text>
+                </svg>
+              <p class="prob-viz-cap">Schematic of the effect, not a measurement.</p>
+            </div>
+            <BlogLink variant="pill" tone="dark" slug="what-a-broken-architecture-rule-costs" anchor="after-the-merge-it-starts-charging-interest" action="See the cost studies" class="prob-src" />
+          </li>
+        </ol>
+
+        <div class="prob-close" data-reveal>
+          <p>Striff checks every pull request against your docs and flags the violation <span class="prob-close-em">while it is still a one-line fix.</span></p>
+          <div class="prob-close-actions">
+            <a class="prob-btn" href="#diagram">See what it posts</a>
+            <BlogLink variant="pill" tone="dark" slug="what-a-broken-architecture-rule-costs" anchor="agents-bring-the-expensive-part-sooner" action="How AI agents erode architecture" />
           </div>
         </div>
       </div>
+      <script is:inline>
+      (function () {
+        var root = document.querySelector("[data-prob]");
+        if (!root) return;
+        var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        function fmt(n, el) { return n.toLocaleString("en-US") + (el.getAttribute("data-suffix") || ""); }
+        function count(el) {
+          var to = parseInt(el.getAttribute("data-count"), 10);
+          if (reduced || !to) { el.textContent = fmt(to, el); return; }
+          var t0 = null, dur = 1400;
+          function step(t) {
+            if (t0 === null) t0 = t;
+            var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+            el.textContent = fmt(Math.round(to * e), el);
+            if (k < 1) requestAnimationFrame(step);
+          }
+          requestAnimationFrame(step);
+        }
+        var chs = Array.prototype.slice.call(root.querySelectorAll("[data-ch]"));
+        if (!("IntersectionObserver" in window)) { chs.forEach(function (c) { c.classList.add("is-in"); }); return; }
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) {
+            if (!e.isIntersecting) return;
+            e.target.classList.add("is-in");
+            Array.prototype.forEach.call(e.target.querySelectorAll("[data-count]"), count);
+            io.unobserve(e.target);
+          });
+        }, { threshold: 0.3 });
+        chs.forEach(function (c) { io.observe(c); });
+      })();
+      </script>
     </section>
 
     <!-- ==================== THE DIAGRAM ==================== -->
@@ -584,13 +665,9 @@ const structuredData = JSON.stringify([
     <section id="diagram" class="diagram-section scroll-mt-24 pb-16 pt-16">
       <div class="mx-auto max-w-[90rem] px-6">
         <div class="diagram-intro max-w-3xl" data-reveal>
-          <p class="examples-kicker">The check</p>
           <h2 class="mt-3 text-balance">What Striff posts on a pull request.</h2>
           <p class="section-subcopy mt-4">
-            One check, beside your CI: every rule your docs state about the code the change touched, whether it still holds, and the sentence it came from.
-          </p>
-          <p class="diagram-source">
-            <span class="diagram-source-label">Example &middot; {sampleCheck.repo} #{sampleCheck.pr}. Point at a rule to see it on the diagram.</span>
+            Every rule your docs state about the code the change touched, whether it still holds, and the sentence it came from. It appears as:
           </p>
         </div>
 
@@ -598,6 +675,12 @@ const structuredData = JSON.stringify([
              Each rule row names the diagram elements it is about (data-rule / data-rules); the
              one in focus is lit and the rest dimmed. The broken rule is in focus by default, so
              the red path is the first thing read. -->
+        <div class="check-tabs" role="tablist" aria-label="Where Striff reports">
+          <button type="button" class="check-tab is-comment is-on" role="tab" id="tab-comment" aria-selected="true" aria-controls="panel-comment" data-check-tab="comment"><span class="check-tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9.5L5 20v-4H4z"/><path d="M8 9h8M8 12h5"/></svg></span><span class="check-tab-text"><b>Pull request comment</b><i>Where the author is already looking</i></span></button>
+          <button type="button" class="check-tab is-run" role="tab" id="tab-run" aria-selected="false" aria-controls="panel-run" tabindex="-1" data-check-tab="run"><span class="check-tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></span><span class="check-tab-text"><b>Check run</b><i>The full report, beside your CI</i></span></button>
+        </div>
+
+        <div class="check-panel" id="panel-run" role="tabpanel" aria-labelledby="tab-run" data-check-panel="run" hidden>
         <div class="check-report" data-reveal>
           <div class="ghcheck sc" data-sc data-active="1">
             <div class="ghcheck-head">
@@ -614,14 +697,20 @@ const structuredData = JSON.stringify([
 
             <div class="ghcheck-body sc-body">
               <div class="sc-rules">
+                <ul class="ghcheck-stats" aria-label="Result summary">
+                  <li class="is-broken"><b>1</b><span>Broken</span></li>
+                  <li class="is-holds"><b>4</b><span>Hold</span></li>
+                  <li class="is-new"><b>1</b><span>New rule</span></li>
+                  <li class="is-couldnt"><b>2</b><span>Couldn't check</span></li>
+                </ul>
                 <h3 class="ghcheck-h">Documented rules</h3>
-                <p class="ghcheck-allhold"><b>This pull request breaks 1 of the {sampleRules.length} documented rules about the code it changes.</b></p>
+                <p class="ghcheck-allhold"><b>This pull request breaks 1 of the {sampleRules.length} documented rules about the code it changes.</b> One rule was added by this change, and two could not be decided from the source.</p>
                 <div class="ghcheck-table-wrap">
                   <table class="ghcheck-table is-rules">
                     <thead><tr><th class="ghcheck-n">#</th><th class="ghcheck-status">Status</th><th>Rule</th></tr></thead>
                     <tbody>
                       {sampleRules.map((r) => (
-                        <tr class={`sc-row is-${r.status}`} data-rule={r.n} tabindex="0">
+                        <tr class={`sc-row is-${r.status}`} data-rule={r.status === "couldnt" ? undefined : r.n} tabindex={r.status === "couldnt" ? undefined : 0}>
                           <td class="ghcheck-n"><b>{r.n}</b></td>
                           <td class="ghcheck-status"><span class={`ghbadge is-${r.status}`}>{r.badge}</span></td>
                           <td class="ghcheck-cell">
@@ -653,6 +742,131 @@ const structuredData = JSON.stringify([
             </div>
           </div>
         </div>
+
+        </div>
+
+        <div class="check-panel" id="panel-comment" role="tabpanel" aria-labelledby="tab-comment" data-check-panel="comment">
+          <div class="prc-wrap">
+            <div class="prc">
+              <div class="prc-head">
+                <span class="prc-avatar"><img src="/icon.svg" alt="" width="20" height="20" /></span>
+                <b>striff</b><span class="prc-bot">bot</span>
+                <span class="prc-time">commented 2 minutes ago &middot; edited</span>
+              </div>
+              <div class="prc-body">
+                <p class="prc-headline"><img src="/icon.svg" alt="" width="16" height="16" /> <b>Striff</b> checked <code>a3f9c21</code>: <code>1</code> broken &middot; <code>4</code> hold &middot; <code>2</code> couldn't be checked &middot; <code>1</code> new rule</p>
+                <div class="prc-table-wrap">
+                  <table class="prc-table">
+                    <thead><tr><th>Status</th><th>Rule</th></tr></thead>
+                    <tbody>
+                      {[sampleRules[0], sampleRules[2], sampleRules[6], sampleRules[7]].map((r) => (
+                        <tr class={`is-${r.status}`}>
+                          <td><span class={`ghbadge is-${r.status}`}>{r.badge}</span></td>
+                          <td>
+                            <span class="prc-line"><b><InlineCodeText text={r.rule} /></b> &middot; <span class="ghcheck-doc">{r.doc}</span></span>
+                            <span class="prc-quote">&ldquo;{r.status === "broken" ? "Never import from legacy/ in new code; use the equivalents in core/." : r.quote}&rdquo;</span>
+                            {r.status === "broken" && <span class="prc-breaks"><b>What breaks it:</b> <code>checkout.export.CsvExporter</code> &rarr; <code>legacy.pricing.PriceCalculator</code> (added in this pull request)</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p class="prc-legend"><b>Couldn't check</b>: a rule near your change that Striff can't decide from the code it reads. Check it by hand.</p>
+                <details class="prc-more">
+                  <summary>4 more documented rules about this change hold</summary>
+                  <table class="prc-table">
+                    <thead><tr><th>Status</th><th>Rule</th></tr></thead>
+                    <tbody>
+                      {[sampleRules[1], sampleRules[3], sampleRules[4], sampleRules[5]].map((r) => (
+                        <tr>
+                          <td><span class="ghbadge is-holds">Holds</span></td>
+                          <td><span class="prc-line"><b><InlineCodeText text={r.rule} /></b> &middot; <span class="ghcheck-doc">{r.doc}</span></span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
+                <p class="prc-foot"><span>Full result</span> &middot; <span>Rules</span> &middot; <span>Comment settings</span> &middot; <span>About Striff</span></p>
+              </div>
+            </div>
+
+            <div class="prc-side"><p class="prc-hint">Select a point to see where it appears in the comment.</p>
+            <dl class="prc-notes">
+              <div class="prc-note is-blue" data-hl="doc" role="button" tabindex="0" aria-pressed="false"><span class="prc-note-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span><div><dt>The standard, and its source</dt><dd>Every finding cites the document and line it came from, so the author can see which agreed standard applies.</dd></div></div>
+              <div class="prc-note is-teal" data-hl="quote" role="button" tabindex="0" aria-pressed="false"><span class="prc-note-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 11H6V7h4v4Zm0 0c0 3-1.5 4.5-4 5"/><path d="M18 11h-4V7h4v4Zm0 0c0 3-1.5 4.5-4 5"/></svg></span><div><dt>Your wording, quoted</dt><dd>The sentence is shown as written, and the verdict is computed from the parsed code at both revisions of the pull request.</dd></div></div>
+              <div class="prc-note is-rose" data-hl="evidence" role="button" tabindex="0" aria-pressed="false"><span class="prc-note-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.2-4.2"/></svg></span><div><dt>Specific evidence</dt><dd>The dependency this change introduced is named, so the correction is specific and can be made before the merge.</dd></div></div>
+              <div class="prc-note is-amber" data-hl="limits" role="button" tabindex="0" aria-pressed="false"><span class="prc-note-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><div><dt>Limits stated, not hidden</dt><dd>A rule Striff cannot decide from the source is listed as Couldn't check. It is never reported as passing.</dd></div></div>
+              <div class="prc-note is-violet" data-hl="quiet" role="button" tabindex="0" aria-pressed="false"><span class="prc-note-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></span><div><dt>Quiet by design</dt><dd>One comment per pull request, updated in place. It is posted when a rule breaks, is restored or changes.</dd></div></div>
+            </dl></div>
+          </div>
+        </div>
+
+        <script is:inline>
+        (function () {
+          var wrap = document.querySelector(".prc-wrap");
+          if (!wrap) return;
+          var notes = Array.prototype.slice.call(wrap.querySelectorAll(".prc-note"));
+          var pinned = null;
+          function set(k) {
+            if (k) wrap.setAttribute("data-hl", k); else wrap.removeAttribute("data-hl");
+            notes.forEach(function (n) {
+              var on = n.getAttribute("data-hl") === k;
+              n.classList.toggle("is-active", on);
+              n.setAttribute("aria-pressed", on && pinned === k ? "true" : "false");
+            });
+          }
+          notes.forEach(function (n) {
+            var k = n.getAttribute("data-hl");
+            n.addEventListener("mouseenter", function () { if (!pinned) set(k); });
+            n.addEventListener("mouseleave", function () { if (!pinned) set(null); });
+            n.addEventListener("focus", function () { if (!pinned) set(k); });
+            n.addEventListener("blur", function () { if (!pinned) set(null); });
+            function toggle() {
+              pinned = pinned === k ? null : k;
+              set(pinned);
+              if (pinned && window.matchMedia("(max-width: 900px)").matches) {
+                var t = wrap.querySelector({ doc: ".ghcheck-doc", quote: ".prc-quote", evidence: ".prc-breaks", limits: ".prc-legend", quiet: ".prc-time" }[pinned]);
+                if (t) t.scrollIntoView({ behavior: "smooth", block: "center" });
+              }
+            }
+            n.addEventListener("click", toggle);
+            n.addEventListener("keydown", function (e) {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+              if (e.key === "Escape") { pinned = null; set(null); }
+            });
+          });
+        })();
+        </script>
+
+        <script is:inline>
+        (function () {
+          var tabs = Array.prototype.slice.call(document.querySelectorAll("[data-check-tab]"));
+          var panels = Array.prototype.slice.call(document.querySelectorAll("[data-check-panel]"));
+          if (!tabs.length) return;
+          function show(name, focus) {
+            tabs.forEach(function (t) {
+              var on = t.getAttribute("data-check-tab") === name;
+              t.classList.toggle("is-on", on);
+              t.setAttribute("aria-selected", on ? "true" : "false");
+              t.tabIndex = on ? 0 : -1;
+              if (on && focus) t.focus();
+            });
+            panels.forEach(function (p) { p.hidden = p.getAttribute("data-check-panel") !== name; });
+          }
+          tabs.forEach(function (t, i) {
+            t.addEventListener("click", function () { show(t.getAttribute("data-check-tab")); });
+            t.addEventListener("keydown", function (e) {
+              if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+              var n = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+              show(n.getAttribute("data-check-tab"), true);
+            });
+          });
+          Array.prototype.forEach.call(document.querySelectorAll("[data-check-jump]"), function (a) {
+            a.addEventListener("click", function (e) { e.preventDefault(); show(a.getAttribute("data-check-jump")); });
+          });
+        })();
+        </script>
 
         <script is:inline>
         // A rule row lights its part of the diagram: hover or focus picks the row, and leaving the
@@ -690,12 +904,7 @@ const structuredData = JSON.stringify([
              directly above it; the other is the long-form account of how a sentence becomes a
              checked rule. Side by side under the check, not queued in front of it. -->
         <div class="check-foot" data-reveal>
-          <a class="oss-link" href="https://github.com/hadi-technology/striff-lib" target="_blank" rel="noopener noreferrer">
-            <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-            <span>The diagram engine is open source: <b>striff-lib</b> on GitHub</span>
-            <em>MIT</em>
-          </a>
-          <BlogLink slug="design-docs-are-enforceable-now" kicker="One sentence, one pull request, one verdict" />
+          <BlogLink slug="design-docs-are-enforceable-now" anchor="one-change-one-sentence-one-verdict" kicker="One sentence, one pull request, one verdict" />
         </div>
       </div>
     </section>
@@ -713,7 +922,7 @@ const structuredData = JSON.stringify([
             <div class="compute-intro compute-intro-wide">
               <h2 class="text-balance">Every verdict is computed, not generated.</h2>
               <p class="section-subcopy mt-4">
-                Striff is neurosymbolic: a language model reads your docs and proposes rules, and a program decides what is true. A parser turns your code before and after the pull request into a formal model of its types, members and references, resolved the way a compiler does, and each rule becomes a formula in first-order logic: an architectural fitness function, run on every pull request. <strong>Every verdict is formal model checking: does the model satisfy the formula?</strong> <strong>A language model proposes the rules; it never decides whether one holds.</strong> The grounding, the verdict and the sentence you read are all computed, and nothing is needed beyond the documents your repository already has.
+                A language model reads your docs and proposes the rules. A program, not the model, decides whether the code keeps them.
               </p>
             </div>
             <p class="compute-label"><span>01</span> How a documented rule becomes a verdict</p>
@@ -740,7 +949,7 @@ const structuredData = JSON.stringify([
             </ol>
           </div>
 
-          <BlogLink slug="grounded-ai-findings" kicker="How we keep the model honest" class="compute-invite" />
+          <BlogLink tone="dark" slug="grounded-ai-findings" anchor="it-only-reports-what-it-can-verify" kicker="How we keep the model honest" class="compute-invite" />
         </div>
       </div>
 
@@ -769,7 +978,7 @@ const structuredData = JSON.stringify([
             timer = window.setInterval(function () {
               if (at >= LAST) { stop(); return; }
               show(at + 1);
-            }, 1400);
+            }, 2800);
           }
 
           steps.forEach(function (li, i) {
@@ -825,21 +1034,35 @@ const structuredData = JSON.stringify([
             </div>
           </div>
 
-          <!-- A div with a covering link, not a link around the preview: the live component renders
-               its own controls, and an <a> around them is invalid nesting that breaks hydration. -->
-          <div class="teams-lead-art">
-            <span class="teams-lead-label">Metrics &middot; example workspace</span>
-            <div class="teams-panel-live" data-metrics-preview inert>
-              <div class="teams-panel-live-scale" data-metrics-preview-scale>
-                <div class="dashboard-shell">
-                  <div class="dashboard-installation-card">
-                    <MetricsTab client:load data={orgMetricsPreviewData} loading={false} error="" />
-                  </div>
+          <!-- The leader's three views, each the live component on the example data, scaled into a
+               frame. Hydrated when first shown. A covering link opens the same view in the demo. -->
+          <div class="teams-lead-art teams-car" data-teams-car>
+            <div class="teams-car-tabs" role="tablist" aria-label="Dashboard views">
+              <button type="button" class="teams-car-tab is-on" role="tab" aria-selected="true" data-car-tab="rules"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l2 2 4-4"/><rect x="4" y="4" width="16" height="16" rx="3"/></svg>Rules</button>
+              <button type="button" class="teams-car-tab" role="tab" aria-selected="false" tabindex="-1" data-car-tab="docs"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Documents</button>
+              <button type="button" class="teams-car-tab" role="tab" aria-selected="false" tabindex="-1" data-car-tab="metrics"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Metrics</button>
+              <span class="teams-car-chip">Example workspace</span>
+            </div>
+            <div class="teams-car-stage">
+              <div class="teams-panel-live" data-metrics-preview data-car-slide="rules" inert>
+                <div class="teams-panel-live-scale" data-metrics-preview-scale>
+                  <TeamsPreview client:load view="rules" />
                 </div>
               </div>
+              <div class="teams-panel-live" data-metrics-preview data-car-slide="docs" inert hidden>
+                <div class="teams-panel-live-scale" data-metrics-preview-scale>
+                  <TeamsPreview client:visible view="docs" />
+                </div>
+              </div>
+              <div class="teams-panel-live" data-metrics-preview data-car-slide="metrics" inert hidden>
+                <div class="teams-panel-live-scale" data-metrics-preview-scale>
+                  <TeamsPreview client:visible view="metrics" />
+                </div>
+              </div>
+              <div class="teams-panel-fade" aria-hidden="true"></div>
+              <a class="teams-lead-link" data-car-link href="/demo/#docs"><span class="sr-only">Open this view in the dashboard demo</span></a>
             </div>
-            <div class="teams-panel-fade" aria-hidden="true"></div>
-            <a class="teams-lead-link" href="/demo/#metrics"><span class="sr-only">Open the metrics view in the dashboard demo</span></a>
+            <div class="teams-car-dots" aria-hidden="true"><i class="is-on"></i><i></i><i></i></div>
           </div>
         </div>
 
@@ -884,7 +1107,7 @@ const structuredData = JSON.stringify([
 
         <div class="teams-foot" data-reveal>
           <p class="teams-more">
-            Also in the dashboard: <a href="/demo/#docs">every rule by document</a> &middot; <a href="/demo/#checks">every pull request checked</a>
+            Also in the dashboard: <a href="/demo/#docs">every rule by document</a> &middot; <a href="/demo/#metrics">the metrics your leads review</a>
           </p>
         </div>
       </div>
@@ -1071,6 +1294,50 @@ const structuredData = JSON.stringify([
     }
 
     setupPreviewScale("data-metrics-preview", "data-metrics-preview-scale");
+    (function () {
+      var car = document.querySelector("[data-teams-car]");
+      if (!car) return;
+      var tabs = Array.prototype.slice.call(car.querySelectorAll("[data-car-tab]"));
+      var slides = Array.prototype.slice.call(car.querySelectorAll("[data-car-slide]"));
+      var dots = Array.prototype.slice.call(car.querySelectorAll(".teams-car-dots i"));
+      var link = car.querySelector("[data-car-link]");
+      var names = tabs.map(function (t) { return t.getAttribute("data-car-tab"); });
+      var timer = null;
+      function show(name) {
+        var idx = names.indexOf(name);
+        tabs.forEach(function (t, i) {
+          var on = i === idx;
+          t.classList.toggle("is-on", on);
+          t.setAttribute("aria-selected", on ? "true" : "false");
+          t.tabIndex = on ? 0 : -1;
+        });
+        slides.forEach(function (s) { s.hidden = s.getAttribute("data-car-slide") !== name; });
+        dots.forEach(function (d, i) { d.classList.toggle("is-on", i === idx); });
+        if (link) link.setAttribute("href", "/demo/#" + (name === "rules" ? "docs" : name));
+        window.dispatchEvent(new Event("resize"));
+        window.dispatchEvent(new CustomEvent("teams-car-show", { detail: name }));
+      }
+      function stop() { if (timer) { clearInterval(timer); timer = null; } }
+      tabs.forEach(function (t, i) {
+        t.addEventListener("click", function () { stop(); show(t.getAttribute("data-car-tab")); });
+        t.addEventListener("keydown", function (e) {
+          if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+          stop();
+          var n = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+          show(n.getAttribute("data-car-tab")); n.focus();
+        });
+      });
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      var cur = 0;
+      function start() {
+        if (timer) return;
+        timer = setInterval(function () { if (!document.hidden) { cur = (cur + 1) % names.length; show(names[cur]); } }, 9000);
+      }
+      car.addEventListener("mouseenter", stop);
+      car.addEventListener("focusin", stop);
+      var seen = new IntersectionObserver(function (es) { if (es[0].isIntersecting) start(); else stop(); }, { threshold: 0.5 });
+      seen.observe(car);
+    })();
     setupPreviewScale("data-github-preview", "data-github-preview-scale");
   </script>
 

@@ -28,9 +28,15 @@ interface Props {
    * this stays for anywhere a row has to fit somewhere narrow.
    */
   compact?: boolean;
+  /** Adds one plain sentence under the verdict badge: what held before and what holds after. */
+  plain?: boolean;
 }
 
-const { rows, baseSha, headSha, compact = false } = Astro.props;
+const { rows, baseSha, headSha, compact = false, plain = false } = Astro.props;
+const plainLine = (row: any) =>
+  row.base === false
+    ? (row.head ? "Broken before, holds now." : "Already broken before this PR.")
+    : (row.head ? "Held before and still holds." : "Held before, broken by this PR.");
 const phiLabel = (i: number) => tex(String.raw`\varphi_{${i + 1}} \coloneqq`);
 const satBefore = (i: number, holds = true) =>
   tex(holds
@@ -90,6 +96,7 @@ const satAfter = (i: number, holds: boolean) =>
             <span title={headSha ? `head ${headSha}` : undefined} set:html={satAfter(i, row.head)} />
           </span>
           )}
+          {plain && <span class="hcc-status-plain" aria-hidden="true">{plainLine(row)}</span>}
           <span class="sr-only">{row.base === false
             ? (row.head ? "The rule was broken before this pull request and holds after it." : "The rule was already broken before this pull request and is still broken after it.")
             : (row.head ? "The rule held before this pull request and still holds after it." : "The rule held before this pull request and is broken after it.")}</span>

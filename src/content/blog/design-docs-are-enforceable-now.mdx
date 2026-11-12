@@ -18,6 +18,8 @@ Your architecture docs have a second reader now. For twenty years a README or a 
 
 Nothing in a pull request checks for that. The diff shows the code. The sentence lives in a different file, so the reviewer never sees the two side by side, and the merge goes through with the prose and the code disagreeing.
 
+In our [survey of 335 open-source repositories](/blog/architecture-matters-more-not-less/) that document their architecture, 63% give their coding agents docs to build from, and 8% of those run any tool that checks the code against an architecture rule. Agents also drift when nobody asks them to: in [SlopCodeBench](/blog/what-a-broken-architecture-rule-costs/), 15 coding agents extending their own code ended 77% of runs with more eroded structure than they started with.
+
 Holding the code to the architecture its own team wrote down is what we mean by architectural compliance, and it is what Striff does. It reads the documents already in your repository, turns the sentences that make a checkable claim about the code into rules, and checks each rule against the parsed code at the base and the head of every pull request. A language model does the translation from prose to rule. A program does the checking, and it can only report what it computed. There is no rule file to write and nothing to configure, because the rules are the ones your team already wrote down.
 
 The result is a GitHub check run beside your tests with a table of the rules the change touched, each one quoting the sentence it came from and the line in the code that decided it. Pinot's sentence is already broken on the default branch. Here is what the check looks like when the break happens in the pull request under review, on a smaller repository where every step can be followed.

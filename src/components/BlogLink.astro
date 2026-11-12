@@ -5,6 +5,7 @@
  * link behind.
  */
 import { getEntry } from "astro:content";
+import GithubSlugger from "github-slugger";
 import { readingMinutes } from "../lib/blog";
 
 interface Props {
@@ -13,19 +14,46 @@ interface Props {
   kicker?: string;
   tone?: "light" | "dark";
   class?: string;
+  /** A heading in the post (its slug, no #): the link lands on that section. */
+  anchor?: string;
+  /** "pill" is the compact button for a card; "card" is the larger invitation. */
+  variant?: "card" | "pill";
+  /** The pill's call to action, naming what is behind it. */
+  action?: string;
 }
 
-const { slug, label, kicker = "From the blog", tone = "light", class: extra = "" } = Astro.props;
+const { slug, label, kicker = "From the blog", tone = "light", class: extra = "", anchor, variant = "card", action = "Read the details" } = Astro.props;
 const post = await getEntry("blog", slug);
 if (!post || post.data.draft) {
   throw new Error(`BlogLink: no published blog post "${slug}"`);
 }
 // The same reading time the blog itself shows for this post.
 const minutes = readingMinutes(post);
+// An anchor to a heading that was renamed would silently land at the top of the post, so a
+// missing one fails the build instead.
+if (anchor) {
+  const slugger = new GithubSlugger();
+  const ids = String(post.body ?? "")
+    .split("\n")
+    .filter((l) => /^#{2,4} /.test(l))
+    .map((l) => slugger.slug(l.replace(/^#+ /, "").replace(/[*_`]/g, "").trim()));
+  if (!ids.includes(anchor)) {
+    throw new Error(`BlogLink: post "${slug}" has no heading "#${anchor}" (has: ${ids.join(", ")})`);
+  }
+}
+const href = `/blog/${slug}/${anchor ? `#${anchor}` : ""}`;
 const title = label ?? post.data.title;
 ---
 
-<a class={`blog-invite blog-invite-${tone} ${extra}`.trim()} href={`/blog/${slug}/`}>
+{variant === "pill" ? (
+<a class={`blog-pill blog-pill-${tone} ${extra}`.trim()} href={href} title={`${post.data.title}`}>
+  <svg class="blog-pill-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5.5A1.5 1.5 0 0 1 3.5 4H9a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5H3.5A1.5 1.5 0 0 1 2 16Z"/><path d="M22 5.5A1.5 1.5 0 0 0 20.5 4H15a3 3 0 0 0-3 3v13a2.5 2.5 0 0 1 2.5-2.5h6a1.5 1.5 0 0 0 1.5-1.5Z"/></svg>
+  <span class="blog-pill-text">{action}</span>
+  <small>{minutes} min</small>
+  <svg class="blog-pill-go" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+</a>
+) : (
+<a class={`blog-invite blog-invite-${tone} ${extra}`.trim()} href={href}>
   <span class="blog-invite-icon" aria-hidden="true">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5A1.5 1.5 0 0 1 3.5 4H9a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5H3.5A1.5 1.5 0 0 1 2 16Z"/><path d="M22 5.5A1.5 1.5 0 0 0 20.5 4H15a3 3 0 0 0-3 3v13a2.5 2.5 0 0 1 2.5-2.5h6a1.5 1.5 0 0 0 1.5-1.5Z"/></svg>
   </span>
@@ -37,3 +65,4 @@ const title = label ?? post.data.title;
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
   </span>
 </a>
+)}

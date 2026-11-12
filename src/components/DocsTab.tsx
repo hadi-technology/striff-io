@@ -3434,8 +3434,8 @@ export default function DocsTab({
                                   <GitHubMark />
                                 </a>
                                 {hasDocumentTab && placedIds.has(`stale:${finding.docPath}:${finding.name}`) && (
-                                  <button type="button" className="rules-source-doc" onClick={() => showInDocument(`stale:${finding.docPath}:${finding.name}`)}>
-                                    Show in document
+                                  <button type="button" className="rules-source-doc" aria-label="Show in document" title="Show in document" onClick={() => showInDocument(`stale:${finding.docPath}:${finding.name}`)}>
+                                    Show
                                   </button>
                                 )}
                               </span>
