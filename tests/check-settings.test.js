@@ -243,6 +243,24 @@ test("the old Notifications address lands on Settings, Notifications", () => {
   assert.equal(lib.sectionFromAddress("", ""), null);
 });
 
+test("the PR comment deep link with tab=checks lands on Checks tab", () => {
+  assert.deepEqual(lib.sectionFromAddress("?tab=checks", ""), { section: "checks", focus: "checks" });
+  assert.deepEqual(lib.sectionFromAddress("?repo=acme/widgets&tab=checks", ""), { section: "checks", focus: "checks" });
+  assert.deepEqual(lib.sectionFromAddress("?repo=acme%2Fwidgets&tab=checks", ""), { section: "checks", focus: "checks" });
+  // tab=checks takes precedence over section=settings
+  assert.deepEqual(lib.sectionFromAddress("?section=settings&tab=checks", ""), { section: "checks", focus: "checks" });
+});
+
+test("the tab parameter is preserved with repo and other params", () => {
+  const result = lib.sectionFromAddress("?repo=acme/widgets&tab=checks&plan=team", "#badge");
+  assert.deepEqual(result, { section: "checks", focus: "checks" });
+});
+
+test("unknown tab values are ignored", () => {
+  assert.equal(lib.sectionFromAddress("?tab=unknown", ""), null);
+  assert.equal(lib.sectionFromAddress("?tab=docs", ""), null);
+});
+
 test("the permissions link goes to the organization's page for an organization", () => {
   assert.equal(lib.installationSettingsUrl(7, "acme", true), "https://github.com/organizations/acme/settings/installations/7");
   assert.equal(lib.installationSettingsUrl(7, "alice", false), "https://github.com/settings/installations/7");

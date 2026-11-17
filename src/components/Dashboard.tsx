@@ -141,12 +141,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (window.location.hash === "#badge") setBadgeOpen(true);
-    // The account's old Notifications tab is a section of Settings now; its addresses land there.
-    const asked = sectionFromAddress(window.location.search, window.location.hash);
-    if (asked) {
-      setSection(asked.section);
-      setSettingsFocus(asked.focus);
-    }
   }, []);
 
   useEffect(() => {
@@ -189,6 +183,8 @@ export default function Dashboard() {
     setError("");
     setLoading(true);
     const { repo: linkedRepo, doc: linkedDoc, rule: linkedRule } = takeLinkedRepo();
+    // The section a deep link asks for (from ?section=, ?tab=, or #fragment).
+    const askedSection = sectionFromAddress(window.location.search, window.location.hash);
     try {
       // Who is signed in, every installation and every repository under each, in one request.
       const statusRes = await fetch("/.netlify/functions/dashboard-bootstrap");
@@ -207,6 +203,10 @@ export default function Dashboard() {
             window.sessionStorage.setItem(PENDING_REPO_KEY, linkedRepo);
             if (linkedDoc) window.sessionStorage.setItem(PENDING_DOC_KEY, linkedDoc);
             if (linkedRule) window.sessionStorage.setItem(PENDING_RULE_KEY, linkedRule);
+            if (askedSection) {
+              window.sessionStorage.setItem("striff.pendingSection", askedSection.section);
+              if (askedSection.focus) window.sessionStorage.setItem("striff.pendingFocus", askedSection.focus);
+            }
           } catch {
             // Without storage the reader lands on the dashboard as it opens by default.
           }
@@ -234,12 +234,32 @@ export default function Dashboard() {
         if (found) {
           setAccountId(found.installationId);
           setOpenRepo(found.fullName);
-          setSection("docs");
+          // Use the section the link asked for, or default to "docs" for a repository link.
+          setSection(askedSection?.section ?? "docs");
+          if (askedSection?.focus) setSettingsFocus(askedSection.focus);
         } else {
           // Said the same way whether the repository exists or not.
           setUnreachableRepo(linkedRepo);
           window.history.replaceState({}, "", withLink(window.location.href, { repo: null, doc: null, rule: null }));
         }
+      } else if (askedSection) {
+        // No repo linked, but a section was asked for (e.g., ?section=settings).
+        setSection(askedSection.section);
+        if (askedSection.focus) setSettingsFocus(askedSection.focus);
+      }
+
+      // Restore section/focus from sessionStorage after sign-in round trip.
+      try {
+        const keptSection = window.sessionStorage.getItem("striff.pendingSection");
+        const keptFocus = window.sessionStorage.getItem("striff.pendingFocus");
+        window.sessionStorage.removeItem("striff.pendingSection");
+        window.sessionStorage.removeItem("striff.pendingFocus");
+        if (keptSection && !linkedRepo) {
+          setSection(keptSection);
+          if (keptFocus) setSettingsFocus(keptFocus);
+        }
+      } catch {
+        // Ignore storage errors.
       }
 
       // Fire-and-forget: reports the user's primary email to the backend for each installation.

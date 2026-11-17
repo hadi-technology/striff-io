@@ -247,12 +247,17 @@ export function needsSignIn(data) {
 /**
  * The section a dashboard address asks for. The account's Notifications tab is now the Notifications
  * section of Settings, so its old addresses (?section=notifications, #notifications) land there.
+ * The Checks tab is reached via ?tab=checks (used by PR comment deep links).
  *
- * @return {{ section: "settings", focus: "notifications" | "checks" | null } | null}
+ * @return {{ section: "settings" | "checks", focus: "notifications" | "checks" | null } | null}
  */
 export function sectionFromAddress(search, hash) {
-  const asked = new URLSearchParams(search || "").get("section");
+  const params = new URLSearchParams(search || "");
+  const asked = params.get("section");
+  const tab = params.get("tab");
   const fragment = String(hash || "").replace(/^#/, "");
+  // tab=checks takes precedence (used by PR comment deep links)
+  if (tab === "checks") return { section: "checks", focus: "checks" };
   if (asked === "notifications" || fragment === "notifications") {
     return { section: "settings", focus: "notifications" };
   }
