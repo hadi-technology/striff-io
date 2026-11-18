@@ -90,18 +90,18 @@ test("the pending section key is exported", () => {
 });
 
 test("sectionFromAddress returns checks for tab=checks", () => {
-  assert.equal(sectionFromAddress("?tab=checks", ""), "checks");
-  assert.equal(sectionFromAddress("?repo=acme/widgets&tab=checks", ""), "checks");
-  assert.equal(sectionFromAddress("?repo=acme%2Fwidgets&tab=checks", ""), "checks");
+  assert.deepEqual(sectionFromAddress("?tab=checks", ""), { section: "checks", focus: "checks" });
+  assert.deepEqual(sectionFromAddress("?repo=acme/widgets&tab=checks", ""), { section: "checks", focus: "checks" });
+  assert.deepEqual(sectionFromAddress("?repo=acme%2Fwidgets&tab=checks", ""), { section: "checks", focus: "checks" });
   // tab=checks takes precedence over section=settings
-  assert.equal(sectionFromAddress("?section=settings&tab=checks", ""), "checks");
+  assert.deepEqual(sectionFromAddress("?section=settings&tab=checks", ""), { section: "checks", focus: "checks" });
 });
 
 test("sectionFromAddress returns settings for notifications", () => {
-  assert.equal(sectionFromAddress("?section=notifications", ""), "settings");
-  assert.equal(sectionFromAddress("", "#notifications"), "settings");
-  assert.equal(sectionFromAddress("?section=settings", ""), "settings");
-  assert.equal(sectionFromAddress("", "#settings"), "settings");
+  assert.deepEqual(sectionFromAddress("?section=notifications", ""), { section: "settings", focus: "notifications" });
+  assert.deepEqual(sectionFromAddress("", "#notifications"), { section: "settings", focus: "notifications" });
+  assert.deepEqual(sectionFromAddress("?section=settings", ""), { section: "settings", focus: null });
+  assert.deepEqual(sectionFromAddress("", "#settings"), { section: "settings", focus: null });
 });
 
 test("sectionFromAddress returns null for unknown sections", () => {
@@ -141,8 +141,10 @@ test("resolveSection: a stored section that is invalid falls back to address or 
   assert.equal(resolveSection(null, "", "", ""), null);
   assert.equal(resolveSection(null, "", "", null), null);
   // Invalid stored section, but address has valid section -> address section wins
+  // Only settings/notifications are valid address sections
   assert.equal(resolveSection(null, "?section=settings", "", "invalid"), "settings");
-  assert.equal(resolveSection(null, "?section=metrics", "", "invalid"), "metrics");
+  assert.equal(resolveSection(null, "?section=notifications", "", "invalid"), "settings");
+  assert.equal(resolveSection(null, "", "#notifications", "invalid"), "settings");
 });
 
 test("validSection validates dashboard sections", () => {

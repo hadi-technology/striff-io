@@ -249,7 +249,7 @@ export function needsSignIn(data) {
  * section of Settings, so its old addresses (?section=notifications, #notifications) land there.
  * The Checks tab is reached via ?tab=checks (used by PR comment deep links).
  *
- * @returns { "settings" | "checks" | null }
+ * @returns {{ section: "settings" | "checks", focus: "notifications" | "checks" | null } | null}
  */
 export function sectionFromAddress(search, hash) {
   const params = new URLSearchParams(search || "");
@@ -257,11 +257,11 @@ export function sectionFromAddress(search, hash) {
   const tab = params.get("tab");
   const fragment = String(hash || "").replace(/^#/, "");
   // tab=checks takes precedence (used by PR comment deep links)
-  if (tab === "checks") return "checks";
+  if (tab === "checks") return { section: "checks", focus: "checks" };
   if (asked === "notifications" || fragment === "notifications") {
-    return "settings";
+    return { section: "settings", focus: "notifications" };
   }
-  if (asked === "settings" || fragment === "settings") return "settings";
+  if (asked === "settings" || fragment === "settings") return { section: "settings", focus: null };
   return null;
 }
 
@@ -285,14 +285,12 @@ export function validSection(value) {
  * @returns {Section | null} The resolved section, or null if no specific section was asked for
  */
 export function resolveSection(linkedRepo, search, hash, storedSection) {
-  const params = new URLSearchParams(search || "");
-  const tab = params.get("tab");
-  const asked = params.get("section");
-  const fragment = String(hash || "").replace(/^#/, "");
+  // First check what the address asks for (notifications, settings, or checks)
+  const asked = sectionFromAddress(search, hash);
 
-  // If there's a linked repo, only tab=checks overrides the default "docs"
+  // If there's a linked repo, only tab=checks (focus=checks) overrides the default "docs"
   if (linkedRepo) {
-    if (tab === "checks") return "checks";
+    if (asked?.focus === "checks") return "checks";
     // Other sections (settings, etc.) don't apply to repo links
     return "docs";
   }
@@ -305,11 +303,10 @@ export function resolveSection(linkedRepo, search, hash, storedSection) {
   }
 
   // Check address for account sections (not checks, which requires a repo)
-  if (asked === "notifications" || fragment === "notifications") return "settings";
-  if (asked === "settings" || fragment === "settings") return "settings";
-  if (asked === "metrics" || fragment === "metrics") return "metrics";
-  if (asked === "billing" || fragment === "billing") return "billing";
-  if (asked === "repos" || fragment === "repos") return "repos";
+  if (asked?.section === "settings") return "settings";
+  if (asked?.section === "metrics") return "metrics";
+  if (asked?.section === "billing") return "billing";
+  if (asked?.section === "repos") return "repos";
 
   // tab=checks without a repo is ignored (checks is a repo view)
   return null;

@@ -276,10 +276,16 @@ export default function Dashboard() {
           setUnreachableRepo(linkedRepo);
           window.history.replaceState({}, "", withLink(window.location.href, { repo: null, doc: null, rule: null }));
         }
-      } else if (askedSection) {
-        // No repo linked, but a section was asked for (e.g., ?section=settings).
-        // Only apply account sections; tab=checks without a repo is ignored (checks is a repo view).
-        setSection(askedSection);
+      } else {
+        // No repo linked: use resolveSection to determine the section (ignores checks without repo).
+        const resolvedSection = resolveSection(null, window.location.search, window.location.hash, null);
+        if (resolvedSection) {
+          setSection(resolvedSection);
+          // For notifications, also set the Settings focus to "notifications"
+          if (resolvedSection === "settings" && askedSection?.focus === "notifications") {
+            setSettingsFocus("notifications");
+          }
+        }
       }
 
       // Fire-and-forget: reports the user's primary email to the backend for each installation.
