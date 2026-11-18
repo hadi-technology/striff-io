@@ -5,8 +5,8 @@ import { BillingSkeleton, DashboardSkeleton } from "./Skeleton";
 import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import SettingsTab from "./SettingsTab";
-import { sectionFromAddress } from "../lib/checkSettings.js";
-import { PENDING_DOC_KEY, PENDING_REPO_KEY, PENDING_RULE_KEY, docFromSearch, findRepo, repoFromSearch, ruleFromSearch, validDocPath, validRepo, validRuleId, withLink } from "../lib/dashboardDeepLink.js";
+import { sectionFromAddress, validSection, sectionFromStorage } from "../lib/checkSettings.js";
+import { PENDING_DOC_KEY, PENDING_REPO_KEY, PENDING_RULE_KEY, PENDING_SECTION_KEY, PENDING_FOCUS_KEY, docFromSearch, findRepo, repoFromSearch, ruleFromSearch, validDocPath, validRepo, validRuleId, withLink } from "../lib/dashboardDeepLink.js";
 import { signInUrl } from "../lib/githubSignIn.js";
 
 /** Where the GitHub App is installed on an account: the first one, or one more. */
@@ -153,12 +153,37 @@ export default function Dashboard() {
    * in. The address keeps carrying them while that repository's documents are open, so a copy of
    * it is a working link; the docs view takes them out when it closes and this takes them out when
    * the repository turns out not to be the reader's, so a reload does not ask again.
+   *
+   * Also handles the section and focus (tab) from the URL or sessionStorage, so the pending state
+   * (repo, doc, rule, section, focus) is stored, restored and applied together in the same place.
    */
-  function takeLinkedRepo(): { repo: string | null; doc: string | null; rule: string | null } {
-    if (new URLSearchParams(window.location.search).has("repo")) {
+  function takeLinkedRepo(): {
+    repo: string | null;
+    doc: string | null;
+    rule: string | null;
+    section: Section | null;
+    focus: "notifications" | "checks" | null;
+  } {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hasRepoParam = searchParams.has("repo");
+    // The section/focus the current URL asks for (from ?section=, ?tab=, or #fragment).
+    const askedSection = sectionFromAddress(window.location.search, window.location.hash);
+
+    if (hasRepoParam) {
       const named = repoFromSearch(window.location.search);
       if (named) {
-        return { repo: named, doc: docFromSearch(window.location.search), rule: ruleFromSearch(window.location.search) };
+        // Repository link: return the repo, doc, rule, and the section/focus from the URL.
+        // For a repo link, only tab=checks should override the default "docs" section.
+        // Other sections (settings, etc.) should not apply to a repo link.
+        const section = askedSection?.focus === "checks" ? "checks" : "docs";
+        const focus = askedSection?.focus === "checks" ? "checks" : null;
+        return {
+          repo: named,
+          doc: docFromSearch(window.location.search),
+          rule: ruleFromSearch(window.location.search),
+          section,
+          focus,
+        };
       }
       window.history.replaceState({}, "", withLink(window.location.href, { repo: null, doc: null, rule: null }));
     }
@@ -166,24 +191,51 @@ export default function Dashboard() {
       const kept = validRepo(window.sessionStorage.getItem(PENDING_REPO_KEY));
       const keptDoc = validDocPath(window.sessionStorage.getItem(PENDING_DOC_KEY));
       const keptRule = validRuleId(window.sessionStorage.getItem(PENDING_RULE_KEY));
+      const keptSection = sectionFromStorage(window.sessionStorage.getItem(PENDING_SECTION_KEY));
+      const keptFocusRaw = window.sessionStorage.getItem(PENDING_FOCUS_KEY);
+      const keptFocus = keptFocusRaw === "notifications" || keptFocusRaw === "checks" ? keptFocusRaw : null;
       window.sessionStorage.removeItem(PENDING_REPO_KEY);
       window.sessionStorage.removeItem(PENDING_DOC_KEY);
       window.sessionStorage.removeItem(PENDING_RULE_KEY);
+      window.sessionStorage.removeItem(PENDING_SECTION_KEY);
+      window.sessionStorage.removeItem(PENDING_FOCUS_KEY);
       if (kept) {
-        // Back from signing in on a bare address: the docs view reads the document from it.
-        window.history.replaceState({}, "", withLink(window.location.href, { repo: kept, doc: keptDoc, rule: keptRule }));
+        // Back from signing in on a bare address: restore the full deep link including section/focus.
+        window.history.replaceState(
+          {},
+          "",
+          withLink(window.location.href, {
+            repo: kept,
+            doc: keptDoc,
+            rule: keptRule,
+          })
+        );
+        // Also add section/focus to the URL if they were stored.
+        if (keptSection || keptFocus) {
+          const url = new URL(window.location.href);
+          if (keptSection) url.searchParams.set("section", keptSection);
+          if (keptFocus) url.searchParams.set("tab", keptFocus);
+          window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+        }
       }
-      return { repo: kept, doc: kept ? keptDoc : null, rule: kept ? keptRule : null };
+      return {
+        repo: kept,
+        doc: kept ? keptDoc : null,
+        rule: kept ? keptRule : null,
+        section: keptSection,
+        focus: keptFocus,
+      };
     } catch {
-      return { repo: null, doc: null, rule: null };
+      return { repo: null, doc: null, rule: null, section: null, focus: null };
     }
   }
 
   async function init() {
     setError("");
     setLoading(true);
-    const { repo: linkedRepo, doc: linkedDoc, rule: linkedRule } = takeLinkedRepo();
+    const { repo: linkedRepo, doc: linkedDoc, rule: linkedRule, section: linkedSection, focus: linkedFocus } = takeLinkedRepo();
     // The section a deep link asks for (from ?section=, ?tab=, or #fragment).
+    // Used for non-repo links (e.g., ?section=settings).
     const askedSection = sectionFromAddress(window.location.search, window.location.hash);
     try {
       // Who is signed in, every installation and every repository under each, in one request.
@@ -203,10 +255,8 @@ export default function Dashboard() {
             window.sessionStorage.setItem(PENDING_REPO_KEY, linkedRepo);
             if (linkedDoc) window.sessionStorage.setItem(PENDING_DOC_KEY, linkedDoc);
             if (linkedRule) window.sessionStorage.setItem(PENDING_RULE_KEY, linkedRule);
-            if (askedSection) {
-              window.sessionStorage.setItem("striff.pendingSection", askedSection.section);
-              if (askedSection.focus) window.sessionStorage.setItem("striff.pendingFocus", askedSection.focus);
-            }
+            if (linkedSection) window.sessionStorage.setItem(PENDING_SECTION_KEY, linkedSection);
+            if (linkedFocus) window.sessionStorage.setItem(PENDING_FOCUS_KEY, linkedFocus);
           } catch {
             // Without storage the reader lands on the dashboard as it opens by default.
           }
@@ -234,9 +284,9 @@ export default function Dashboard() {
         if (found) {
           setAccountId(found.installationId);
           setOpenRepo(found.fullName);
-          // Use the section the link asked for, or default to "docs" for a repository link.
-          setSection(askedSection?.section ?? "docs");
-          if (askedSection?.focus) setSettingsFocus(askedSection.focus);
+          // Use the section from the link (which includes tab=checks handling) or default to "docs" for a repository link.
+          setSection(linkedSection ?? "docs");
+          if (linkedFocus) setSettingsFocus(linkedFocus);
         } else {
           // Said the same way whether the repository exists or not.
           setUnreachableRepo(linkedRepo);
@@ -244,22 +294,11 @@ export default function Dashboard() {
         }
       } else if (askedSection) {
         // No repo linked, but a section was asked for (e.g., ?section=settings).
-        setSection(askedSection.section);
-        if (askedSection.focus) setSettingsFocus(askedSection.focus);
-      }
-
-      // Restore section/focus from sessionStorage after sign-in round trip.
-      try {
-        const keptSection = window.sessionStorage.getItem("striff.pendingSection");
-        const keptFocus = window.sessionStorage.getItem("striff.pendingFocus");
-        window.sessionStorage.removeItem("striff.pendingSection");
-        window.sessionStorage.removeItem("striff.pendingFocus");
-        if (keptSection && !linkedRepo) {
-          setSection(keptSection);
-          if (keptFocus) setSettingsFocus(keptFocus);
+        // Only apply account sections; tab=checks without a repo is ignored (checks is a repo view).
+        if (askedSection.section !== "checks") {
+          setSection(askedSection.section);
+          if (askedSection.focus) setSettingsFocus(askedSection.focus);
         }
-      } catch {
-        // Ignore storage errors.
       }
 
       // Fire-and-forget: reports the user's primary email to the backend for each installation.

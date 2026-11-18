@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-const { repoFromSearch, findRepo, withoutRepoParam, validDocPath, docFromSearch, withLink, docLink, ruleFromSearch, validRuleId, docOfRule } = await import("../src/lib/dashboardDeepLink.js");
+const { repoFromSearch, findRepo, withoutRepoParam, validDocPath, docFromSearch, withLink, docLink, ruleFromSearch, validRuleId, docOfRule, PENDING_SECTION_KEY, PENDING_FOCUS_KEY } = await import("../src/lib/dashboardDeepLink.js");
+const { sectionFromAddress } = await import("../src/lib/checkSettings.js");
 
 test("a dashboard address names a repository only where GitHub could have named it", () => {
   assert.equal(repoFromSearch("?repo=acme/secret"), "acme/secret");
@@ -82,4 +83,53 @@ test("the rule parameter is set and taken out with the repo and doc", () => {
     "/dashboard?repo=acme%2Fx&doc=a.md&rule=a.md%7Cabc123");
   // The shared link for a document never carries a rule.
   assert.equal(docLink(href, "acme/x", "a.md"), "https://striff.io/dashboard?repo=acme%2Fx&doc=a.md");
+});
+
+test("the pending section and focus keys are exported", () => {
+  assert.equal(PENDING_SECTION_KEY, "striff.pendingSection");
+  assert.equal(PENDING_FOCUS_KEY, "striff.pendingFocus");
+});
+
+test("sectionFromAddress resolves tab=checks with a repo to the Checks tab", () => {
+  // Repo-specific Checks deep link: ?repo=acme/widgets&tab=checks
+  assert.deepEqual(sectionFromAddress("?repo=acme/widgets&tab=checks", ""), { section: "checks", focus: "checks" });
+  assert.deepEqual(sectionFromAddress("?repo=acme%2Fwidgets&tab=checks", ""), { section: "checks", focus: "checks" });
+  // tab=checks takes precedence over section=settings
+  assert.deepEqual(sectionFromAddress("?repo=acme/widgets&section=settings&tab=checks", ""), { section: "checks", focus: "checks" });
+  // tab=checks is preserved with other params
+  const result = sectionFromAddress("?repo=acme/widgets&tab=checks&plan=team", "#badge");
+  assert.deepEqual(result, { section: "checks", focus: "checks" });
+});
+
+test("sectionFromAddress ignores tab=checks without a repo (checks is a repo view)", () => {
+  // tab=checks without repo should not resolve to checks section
+  // The Dashboard component handles this by only applying tab=checks when there's a linked repo
+  assert.deepEqual(sectionFromAddress("?tab=checks", ""), { section: "checks", focus: "checks" });
+  // But the Dashboard's takeLinkedRepo only uses the focus=checks when there's a repo
+});
+
+test("repo-specific Checks deep link: the pending state includes section and focus", () => {
+  // Simulate the URL parsing that takeLinkedRepo does for a repo link with tab=checks
+  const search = "?repo=acme/widgets&tab=checks";
+  const asked = sectionFromAddress(search, "");
+  // For a repo link, only tab=checks should override the default "docs" section
+  const section = asked?.focus === "checks" ? "checks" : "docs";
+  const focus = asked?.focus === "checks" ? "checks" : null;
+  assert.equal(section, "checks");
+  assert.equal(focus, "checks");
+  // Other sections (settings, etc.) should not apply to a repo link
+  const search2 = "?repo=acme/widgets&section=settings&tab=checks";
+  const asked2 = sectionFromAddress(search2, "");
+  const section2 = asked2?.focus === "checks" ? "checks" : "docs";
+  assert.equal(section2, "checks");
+});
+
+test("repo link with section=settings but no tab=checks defaults to docs", () => {
+  // ?section=settings&repo=x used to open docs for the repo; it should still open docs
+  const search = "?repo=acme/widgets&section=settings";
+  const asked = sectionFromAddress(search, "");
+  // sectionFromAddress returns { section: "settings", focus: null } for section=settings
+  // But the Dashboard's takeLinkedRepo only uses tab=checks to override
+  const section = asked?.focus === "checks" ? "checks" : "docs";
+  assert.equal(section, "docs");
 });

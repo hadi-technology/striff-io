@@ -267,3 +267,26 @@ test("the permissions link goes to the organization's page for an organization",
   assert.equal(lib.permissionMissing({ pullRequestsPermissionMissing: true }), true);
   assert.equal(lib.permissionMissing({ pullRequestsPermission: "unknown" }), false);
 });
+
+test("validSection validates dashboard sections", () => {
+  assert.equal(lib.validSection("repos"), "repos");
+  assert.equal(lib.validSection("docs"), "docs");
+  assert.equal(lib.validSection("checks"), "checks");
+  assert.equal(lib.validSection("metrics"), "metrics");
+  assert.equal(lib.validSection("billing"), "billing");
+  assert.equal(lib.validSection("settings"), "settings");
+  assert.equal(lib.validSection("invalid"), null);
+  assert.equal(lib.validSection(""), null);
+  assert.equal(lib.validSection(null), null);
+  assert.equal(lib.validSection(undefined), null);
+  assert.equal(lib.validSection(123), null);
+});
+
+test("sectionFromStorage validates and returns section from storage", () => {
+  assert.equal(lib.sectionFromStorage("repos"), "repos");
+  assert.equal(lib.sectionFromStorage("checks"), "checks");
+  assert.equal(lib.sectionFromStorage("invalid"), null);
+  assert.equal(lib.sectionFromStorage(""), null);
+  assert.equal(lib.sectionFromStorage(null), null);
+  assert.equal(lib.sectionFromStorage(undefined), null);
+});

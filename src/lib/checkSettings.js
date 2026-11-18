@@ -264,3 +264,17 @@ export function sectionFromAddress(search, hash) {
   if (asked === "settings" || fragment === "settings") return { section: "settings", focus: null };
   return null;
 }
+
+/** Valid sections in the dashboard. */
+const VALID_SECTIONS = ["repos", "docs", "checks", "metrics", "billing", "settings"];
+
+/** Whether a string is a valid dashboard section. */
+export function validSection(value) {
+  if (typeof value !== "string") return null;
+  return VALID_SECTIONS.includes(value) ? value : null;
+}
+
+/** The section from sessionStorage, validated against the Section union. */
+export function sectionFromStorage(value) {
+  return validSection(value);
+}
