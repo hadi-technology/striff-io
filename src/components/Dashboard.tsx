@@ -226,6 +226,18 @@ export default function Dashboard() {
     // The section a deep link asks for (from ?section=, ?tab=, or #fragment).
     // Used for non-repo links (e.g., ?section=settings).
     const askedSection = sectionFromAddress(window.location.search, window.location.hash);
+    // Apply non-repo section early (before fetch) so it works for signed-out users too.
+    // This ensures ?section=notifications and #notifications behave as before.
+    if (!linkedRepo) {
+      const resolvedSection = resolveSection(null, window.location.search, window.location.hash, null);
+      if (resolvedSection) {
+        setSection(resolvedSection);
+        // For notifications, also set the Settings focus to "notifications"
+        if (resolvedSection === "settings" && askedSection?.focus === "notifications") {
+          setSettingsFocus("notifications");
+        }
+      }
+    }
     try {
       // Who is signed in, every installation and every repository under each, in one request.
       const statusRes = await fetch("/.netlify/functions/dashboard-bootstrap");
@@ -278,16 +290,6 @@ export default function Dashboard() {
           // Said the same way whether the repository exists or not.
           setUnreachableRepo(linkedRepo);
           window.history.replaceState({}, "", withLink(window.location.href, { repo: null, doc: null, rule: null }));
-        }
-      } else {
-        // No repo linked: use resolveSection to determine the section (ignores checks without repo).
-        const resolvedSection = resolveSection(null, window.location.search, window.location.hash, null);
-        if (resolvedSection) {
-          setSection(resolvedSection);
-          // For notifications, also set the Settings focus to "notifications"
-          if (resolvedSection === "settings" && askedSection?.focus === "notifications") {
-            setSettingsFocus("notifications");
-          }
         }
       }
 

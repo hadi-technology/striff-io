@@ -268,10 +268,19 @@ export function sectionFromAddress(search, hash) {
 /** Valid sections in the dashboard. */
 const VALID_SECTIONS = ["repos", "docs", "checks", "metrics", "billing", "settings"];
 
+/** Valid sections that can be stored with a repo link. */
+const STORED_REPO_SECTIONS = ["checks", "docs"];
+
 /** Whether a string is a valid dashboard section. */
 export function validSection(value) {
   if (typeof value !== "string") return null;
   return VALID_SECTIONS.includes(value) ? value : null;
+}
+
+/** Whether a string is a valid section stored with a repo link. */
+export function validStoredRepoSection(value) {
+  if (typeof value !== "string") return null;
+  return STORED_REPO_SECTIONS.includes(value) ? value : null;
 }
 
 /**
@@ -293,7 +302,7 @@ export function resolveSection(linkedRepo, search, hash, storedSection) {
     if (asked?.section === "checks") return "checks";
     // Use valid stored section (checks or docs) if present
     if (storedSection) {
-      const valid = validSection(storedSection);
+      const valid = validStoredRepoSection(storedSection);
       if (valid) return valid;
     }
     // Other sections (settings, etc.) don't apply to repo links
