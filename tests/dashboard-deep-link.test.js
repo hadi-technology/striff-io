@@ -121,37 +121,38 @@ test("resolveSection: repo plus section=settings stays docs", () => {
   assert.equal(resolveSection("acme/widgets", "?repo=acme/widgets", "", null), "docs");
 });
 
+test("resolveSection: repo with stored checks gives checks (sign-in round trip)", () => {
+  // This is the real dashboard path: stored repo + stored section after GitHub sign-in
+  assert.equal(resolveSection("acme/widgets", "", "", "checks"), "checks");
+  assert.equal(resolveSection("acme/widgets", "", "", "docs"), "docs");
+});
+
+test("resolveSection: repo with invalid stored section gives docs", () => {
+  assert.equal(resolveSection("acme/widgets", "", "", "invalid"), "docs");
+  assert.equal(resolveSection("acme/widgets", "", "", ""), "docs");
+  assert.equal(resolveSection("acme/widgets", "", "", null), "docs");
+});
+
 test("resolveSection: tab=checks without a repo is ignored", () => {
   assert.equal(resolveSection(null, "?tab=checks", "", null), null);
   assert.equal(resolveSection(null, "?tab=checks&plan=team", "", null), null);
 });
 
-test("resolveSection: a stored section that is valid is restored", () => {
-  // Only settings and checks are reachable via sectionFromAddress; docs is the default for repo links
-  assert.equal(resolveSection(null, "", "", "checks"), "checks");
-  assert.equal(resolveSection(null, "", "", "settings"), "settings");
-  assert.equal(resolveSection(null, "", "", "docs"), "docs");
+test("resolveSection: no repo linked, settings address gives settings", () => {
+  assert.equal(resolveSection(null, "?section=settings", "", null), "settings");
+  assert.equal(resolveSection(null, "?section=notifications", "", null), "settings");
+  assert.equal(resolveSection(null, "", "#notifications", null), "settings");
 });
 
-test("resolveSection: a stored section that is invalid falls back to address or null", () => {
-  // Invalid stored section, no address section -> null
-  assert.equal(resolveSection(null, "", "", "invalid"), null);
-  assert.equal(resolveSection(null, "", "", ""), null);
-  assert.equal(resolveSection(null, "", "", null), null);
-  // Invalid stored section, but address has valid section -> address section wins
-  // Only settings/notifications are valid address sections
-  assert.equal(resolveSection(null, "?section=settings", "", "invalid"), "settings");
-  assert.equal(resolveSection(null, "?section=notifications", "", "invalid"), "settings");
-  assert.equal(resolveSection(null, "", "#notifications", "invalid"), "settings");
-});
-
-test("validSection validates dashboard sections", () => {
-  assert.equal(validSection("repos"), "repos");
-  assert.equal(validSection("docs"), "docs");
+test("validSection validates sections that can be stored", () => {
+  // Only checks and docs are stored by the dashboard
   assert.equal(validSection("checks"), "checks");
+  assert.equal(validSection("docs"), "docs");
+  // Other sections are not stored but validated for completeness
+  assert.equal(validSection("settings"), "settings");
   assert.equal(validSection("metrics"), "metrics");
   assert.equal(validSection("billing"), "billing");
-  assert.equal(validSection("settings"), "settings");
+  assert.equal(validSection("repos"), "repos");
   assert.equal(validSection("invalid"), null);
   assert.equal(validSection(""), null);
   assert.equal(validSection(null), null);

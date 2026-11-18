@@ -288,21 +288,19 @@ export function resolveSection(linkedRepo, search, hash, storedSection) {
   // First check what the address asks for (notifications, settings, or checks)
   const asked = sectionFromAddress(search, hash);
 
-  // If there's a linked repo, only tab=checks (section=checks) overrides the default "docs"
+  // If there's a linked repo, check address's tab=checks first, then stored section, then default to "docs"
   if (linkedRepo) {
     if (asked?.section === "checks") return "checks";
+    // Use valid stored section (checks or docs) if present
+    if (storedSection) {
+      const valid = validSection(storedSection);
+      if (valid) return valid;
+    }
     // Other sections (settings, etc.) don't apply to repo links
     return "docs";
   }
 
-  // No repo linked: check stored section first (from sign-in round trip)
-  if (storedSection) {
-    const valid = validSection(storedSection);
-    if (valid) return valid;
-    // Invalid stored section falls back to checking the address
-  }
-
-  // Check address for account sections (not checks, which requires a repo)
+  // No repo linked: check address for account sections (not checks, which requires a repo)
   if (asked?.section === "settings") return "settings";
 
   // tab=checks without a repo is ignored (checks is a repo view)
