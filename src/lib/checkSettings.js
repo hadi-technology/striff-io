@@ -265,17 +265,8 @@ export function sectionFromAddress(search, hash) {
   return null;
 }
 
-/** Valid sections in the dashboard. */
-const VALID_SECTIONS = ["repos", "docs", "checks", "metrics", "billing", "settings"];
-
 /** Valid sections that can be stored with a repo link. */
 const STORED_REPO_SECTIONS = ["checks", "docs"];
-
-/** Whether a string is a valid dashboard section. */
-export function validSection(value) {
-  if (typeof value !== "string") return null;
-  return VALID_SECTIONS.includes(value) ? value : null;
-}
 
 /** Whether a string is a valid section stored with a repo link. */
 export function validStoredRepoSection(value) {

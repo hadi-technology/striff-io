@@ -5,7 +5,7 @@ import { BillingSkeleton, DashboardSkeleton } from "./Skeleton";
 import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import SettingsTab from "./SettingsTab";
-import { sectionFromAddress, resolveSection, validSection } from "../lib/checkSettings.js";
+import { sectionFromAddress, resolveSection } from "../lib/checkSettings.js";
 import { PENDING_DOC_KEY, PENDING_REPO_KEY, PENDING_RULE_KEY, PENDING_SECTION_KEY, docFromSearch, findRepo, repoFromSearch, ruleFromSearch, validDocPath, validRepo, validRuleId, withLink } from "../lib/dashboardDeepLink.js";
 import { signInUrl } from "../lib/githubSignIn.js";
 
@@ -185,7 +185,7 @@ export default function Dashboard() {
       const kept = validRepo(window.sessionStorage.getItem(PENDING_REPO_KEY));
       const keptDoc = validDocPath(window.sessionStorage.getItem(PENDING_DOC_KEY));
       const keptRule = validRuleId(window.sessionStorage.getItem(PENDING_RULE_KEY));
-      const keptSection = validSection(window.sessionStorage.getItem(PENDING_SECTION_KEY));
+      const keptSection = window.sessionStorage.getItem(PENDING_SECTION_KEY);
       window.sessionStorage.removeItem(PENDING_REPO_KEY);
       window.sessionStorage.removeItem(PENDING_DOC_KEY);
       window.sessionStorage.removeItem(PENDING_RULE_KEY);

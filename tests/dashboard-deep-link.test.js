@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 const { repoFromSearch, findRepo, withoutRepoParam, validDocPath, docFromSearch, withLink, docLink, ruleFromSearch, validRuleId, docOfRule, PENDING_SECTION_KEY } = await import("../src/lib/dashboardDeepLink.js");
-const { sectionFromAddress, resolveSection, validSection, validStoredRepoSection } = await import("../src/lib/checkSettings.js");
+const { sectionFromAddress, resolveSection, validStoredRepoSection } = await import("../src/lib/checkSettings.js");
 
 test("a dashboard address names a repository only where GitHub could have named it", () => {
   assert.equal(repoFromSearch("?repo=acme/secret"), "acme/secret");
@@ -138,6 +138,13 @@ test("resolveSection: repo with invalid stored section gives docs", () => {
   assert.equal(resolveSection("acme/widgets", "", "", null), "docs");
 });
 
+test("resolveSection: repo with raw invalid stored value validates through resolveSection", () => {
+  // Raw stored value is passed directly to resolveSection, which validates it
+  assert.equal(resolveSection("acme/widgets", "", "", "not-a-section"), "docs");
+  assert.equal(resolveSection("acme/widgets", "", "", "Settings"), "docs"); // wrong case
+  assert.equal(resolveSection("acme/widgets", "", "", "CHECKS"), "docs"); // wrong case
+});
+
 test("resolveSection: tab=checks without a repo is ignored", () => {
   assert.equal(resolveSection(null, "?tab=checks", "", null), null);
   assert.equal(resolveSection(null, "?tab=checks&plan=team", "", null), null);
@@ -147,20 +154,6 @@ test("resolveSection: no repo linked, settings address gives settings", () => {
   assert.equal(resolveSection(null, "?section=settings", "", null), "settings");
   assert.equal(resolveSection(null, "?section=notifications", "", null), "settings");
   assert.equal(resolveSection(null, "", "#notifications", null), "settings");
-});
-
-test("validSection validates all dashboard sections", () => {
-  assert.equal(validSection("checks"), "checks");
-  assert.equal(validSection("docs"), "docs");
-  assert.equal(validSection("settings"), "settings");
-  assert.equal(validSection("metrics"), "metrics");
-  assert.equal(validSection("billing"), "billing");
-  assert.equal(validSection("repos"), "repos");
-  assert.equal(validSection("invalid"), null);
-  assert.equal(validSection(""), null);
-  assert.equal(validSection(null), null);
-  assert.equal(validSection(undefined), null);
-  assert.equal(validSection(123), null);
 });
 
 test("validStoredRepoSection only accepts checks and docs", () => {
