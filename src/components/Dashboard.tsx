@@ -190,6 +190,9 @@ export default function Dashboard() {
       window.sessionStorage.removeItem(PENDING_DOC_KEY);
       window.sessionStorage.removeItem(PENDING_RULE_KEY);
       window.sessionStorage.removeItem(PENDING_SECTION_KEY);
+      // Restore path: use resolveSection with the stored section so the round trip
+      // goes through the same pure function the initial load uses.
+      const section = resolveSection(kept, search, hash, keptSection);
       if (kept) {
         // Back from signing in on a bare address: restore the full deep link including section.
         // Use tab=checks in the URL (not section=checks) so sectionFromAddress reads it back.
@@ -198,7 +201,7 @@ export default function Dashboard() {
           doc: keptDoc,
           rule: keptRule,
         });
-        if (keptSection === "checks") {
+        if (section === "checks") {
           const url = new URL(restoredHref);
           url.searchParams.set("tab", "checks");
           restoredHref = url.pathname + url.search + url.hash;
@@ -209,7 +212,7 @@ export default function Dashboard() {
         repo: kept,
         doc: kept ? keptDoc : null,
         rule: kept ? keptRule : null,
-        section: keptSection,
+        section,
       };
     } catch {
       return { repo: null, doc: null, rule: null, section: null };

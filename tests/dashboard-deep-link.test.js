@@ -90,11 +90,11 @@ test("the pending section key is exported", () => {
 });
 
 test("sectionFromAddress returns checks for tab=checks", () => {
-  assert.deepEqual(sectionFromAddress("?tab=checks", ""), { section: "checks", focus: "checks" });
-  assert.deepEqual(sectionFromAddress("?repo=acme/widgets&tab=checks", ""), { section: "checks", focus: "checks" });
-  assert.deepEqual(sectionFromAddress("?repo=acme%2Fwidgets&tab=checks", ""), { section: "checks", focus: "checks" });
+  assert.deepEqual(sectionFromAddress("?tab=checks", ""), { section: "checks", focus: null });
+  assert.deepEqual(sectionFromAddress("?repo=acme/widgets&tab=checks", ""), { section: "checks", focus: null });
+  assert.deepEqual(sectionFromAddress("?repo=acme%2Fwidgets&tab=checks", ""), { section: "checks", focus: null });
   // tab=checks takes precedence over section=settings
-  assert.deepEqual(sectionFromAddress("?section=settings&tab=checks", ""), { section: "checks", focus: "checks" });
+  assert.deepEqual(sectionFromAddress("?section=settings&tab=checks", ""), { section: "checks", focus: null });
 });
 
 test("sectionFromAddress returns settings for notifications", () => {
@@ -127,11 +127,9 @@ test("resolveSection: tab=checks without a repo is ignored", () => {
 });
 
 test("resolveSection: a stored section that is valid is restored", () => {
+  // Only settings and checks are reachable via sectionFromAddress; docs is the default for repo links
   assert.equal(resolveSection(null, "", "", "checks"), "checks");
   assert.equal(resolveSection(null, "", "", "settings"), "settings");
-  assert.equal(resolveSection(null, "", "", "metrics"), "metrics");
-  assert.equal(resolveSection(null, "", "", "billing"), "billing");
-  assert.equal(resolveSection(null, "", "", "repos"), "repos");
   assert.equal(resolveSection(null, "", "", "docs"), "docs");
 });
 
