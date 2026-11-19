@@ -247,15 +247,62 @@ export function needsSignIn(data) {
 /**
  * The section a dashboard address asks for. The account's Notifications tab is now the Notifications
  * section of Settings, so its old addresses (?section=notifications, #notifications) land there.
+ * The Checks tab is reached via ?tab=checks (used by PR comment deep links).
  *
- * @return {{ section: "settings", focus: "notifications" | "checks" | null } | null}
+ * @returns {{ section: "settings" | "checks", focus: "notifications" | null } | null}
  */
 export function sectionFromAddress(search, hash) {
-  const asked = new URLSearchParams(search || "").get("section");
+  const params = new URLSearchParams(search || "");
+  const asked = params.get("section");
+  const tab = params.get("tab");
   const fragment = String(hash || "").replace(/^#/, "");
+  // tab=checks takes precedence (used by PR comment deep links)
+  if (tab === "checks") return { section: "checks", focus: null };
   if (asked === "notifications" || fragment === "notifications") {
     return { section: "settings", focus: "notifications" };
   }
   if (asked === "settings" || fragment === "settings") return { section: "settings", focus: null };
+  return null;
+}
+
+/** Valid sections that can be stored with a repo link. */
+const STORED_REPO_SECTIONS = ["checks", "docs"];
+
+/** Whether a string is a valid section stored with a repo link. */
+export function validStoredRepoSection(value) {
+  if (typeof value !== "string") return null;
+  return STORED_REPO_SECTIONS.includes(value) ? value : null;
+}
+
+/**
+ * Resolve the dashboard section from a repository link, address, and stored value.
+ * This is a pure function that encapsulates all section resolution logic.
+ *
+ * @param {string | null} linkedRepo - The repository from the link or storage, or null
+ * @param {string} search - The URL search string (e.g., "?repo=x&tab=checks")
+ * @param {string} hash - The URL hash (e.g., "#settings")
+ * @param {string | null} storedSection - The section from sessionStorage, or null
+ * @returns {Section | null} The resolved section, or null if no specific section was asked for
+ */
+export function resolveSection(linkedRepo, search, hash, storedSection) {
+  // First check what the address asks for (notifications, settings, or checks)
+  const asked = sectionFromAddress(search, hash);
+
+  // If there's a linked repo, check address's tab=checks first, then stored section, then default to "docs"
+  if (linkedRepo) {
+    if (asked?.section === "checks") return "checks";
+    // Use valid stored section (checks or docs) if present
+    if (storedSection) {
+      const valid = validStoredRepoSection(storedSection);
+      if (valid) return valid;
+    }
+    // Other sections (settings, etc.) don't apply to repo links
+    return "docs";
+  }
+
+  // No repo linked: check address for account sections (not checks, which requires a repo)
+  if (asked?.section === "settings") return "settings";
+
+  // tab=checks without a repo is ignored (checks is a repo view)
   return null;
 }

@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-const { repoFromSearch, findRepo, withoutRepoParam, validDocPath, docFromSearch, withLink, docLink, ruleFromSearch, validRuleId, docOfRule } = await import("../src/lib/dashboardDeepLink.js");
+const { repoFromSearch, findRepo, withoutRepoParam, validDocPath, docFromSearch, withLink, docLink, ruleFromSearch, validRuleId, docOfRule, PENDING_SECTION_KEY } = await import("../src/lib/dashboardDeepLink.js");
+const { sectionFromAddress, resolveSection, validStoredRepoSection } = await import("../src/lib/checkSettings.js");
 
 test("a dashboard address names a repository only where GitHub could have named it", () => {
   assert.equal(repoFromSearch("?repo=acme/secret"), "acme/secret");
@@ -82,4 +83,89 @@ test("the rule parameter is set and taken out with the repo and doc", () => {
     "/dashboard?repo=acme%2Fx&doc=a.md&rule=a.md%7Cabc123");
   // The shared link for a document never carries a rule.
   assert.equal(docLink(href, "acme/x", "a.md"), "https://striff.io/dashboard?repo=acme%2Fx&doc=a.md");
+});
+
+test("the pending section key is exported", () => {
+  assert.equal(PENDING_SECTION_KEY, "striff.pendingSection");
+});
+
+test("sectionFromAddress returns checks for tab=checks", () => {
+  assert.deepEqual(sectionFromAddress("?tab=checks", ""), { section: "checks", focus: null });
+  assert.deepEqual(sectionFromAddress("?repo=acme/widgets&tab=checks", ""), { section: "checks", focus: null });
+  assert.deepEqual(sectionFromAddress("?repo=acme%2Fwidgets&tab=checks", ""), { section: "checks", focus: null });
+  // tab=checks takes precedence over section=settings
+  assert.deepEqual(sectionFromAddress("?section=settings&tab=checks", ""), { section: "checks", focus: null });
+});
+
+test("sectionFromAddress returns settings for notifications", () => {
+  assert.deepEqual(sectionFromAddress("?section=notifications", ""), { section: "settings", focus: "notifications" });
+  assert.deepEqual(sectionFromAddress("", "#notifications"), { section: "settings", focus: "notifications" });
+  assert.deepEqual(sectionFromAddress("?section=settings", ""), { section: "settings", focus: null });
+  assert.deepEqual(sectionFromAddress("", "#settings"), { section: "settings", focus: null });
+});
+
+test("sectionFromAddress returns null for unknown sections", () => {
+  assert.equal(sectionFromAddress("?section=billing", ""), null);
+  assert.equal(sectionFromAddress("", ""), null);
+});
+
+test("resolveSection: repo plus tab=checks gives checks", () => {
+  assert.equal(resolveSection("acme/widgets", "?repo=acme/widgets&tab=checks", "", null), "checks");
+  assert.equal(resolveSection("acme/widgets", "?repo=acme%2Fwidgets&tab=checks", "", null), "checks");
+  assert.equal(resolveSection("acme/widgets", "?repo=acme/widgets&tab=checks&plan=team", "#badge", null), "checks");
+});
+
+test("resolveSection: repo plus section=settings stays docs", () => {
+  assert.equal(resolveSection("acme/widgets", "?repo=acme/widgets&section=settings", "", null), "docs");
+  assert.equal(resolveSection("acme/widgets", "?repo=acme/widgets&section=billing", "", null), "docs");
+  assert.equal(resolveSection("acme/widgets", "?repo=acme/widgets", "", null), "docs");
+});
+
+test("resolveSection: repo with stored checks gives checks (sign-in round trip)", () => {
+  // This is the real dashboard path: stored repo + stored section after GitHub sign-in
+  assert.equal(resolveSection("acme/widgets", "", "", "checks"), "checks");
+  assert.equal(resolveSection("acme/widgets", "", "", "docs"), "docs");
+});
+
+test("resolveSection: repo with invalid stored section gives docs", () => {
+  // Stored sections that are not checks or docs fall back to docs
+  assert.equal(resolveSection("acme/widgets", "", "", "settings"), "docs");
+  assert.equal(resolveSection("acme/widgets", "", "", "billing"), "docs");
+  assert.equal(resolveSection("acme/widgets", "", "", "metrics"), "docs");
+  assert.equal(resolveSection("acme/widgets", "", "", "repos"), "docs");
+  assert.equal(resolveSection("acme/widgets", "", "", "invalid"), "docs");
+  assert.equal(resolveSection("acme/widgets", "", "", ""), "docs");
+  assert.equal(resolveSection("acme/widgets", "", "", null), "docs");
+});
+
+test("resolveSection: repo with raw invalid stored value validates through resolveSection", () => {
+  // Raw stored value is passed directly to resolveSection, which validates it
+  assert.equal(resolveSection("acme/widgets", "", "", "not-a-section"), "docs");
+  assert.equal(resolveSection("acme/widgets", "", "", "Settings"), "docs"); // wrong case
+  assert.equal(resolveSection("acme/widgets", "", "", "CHECKS"), "docs"); // wrong case
+});
+
+test("resolveSection: tab=checks without a repo is ignored", () => {
+  assert.equal(resolveSection(null, "?tab=checks", "", null), null);
+  assert.equal(resolveSection(null, "?tab=checks&plan=team", "", null), null);
+});
+
+test("resolveSection: no repo linked, settings address gives settings", () => {
+  assert.equal(resolveSection(null, "?section=settings", "", null), "settings");
+  assert.equal(resolveSection(null, "?section=notifications", "", null), "settings");
+  assert.equal(resolveSection(null, "", "#notifications", null), "settings");
+});
+
+test("validStoredRepoSection only accepts checks and docs", () => {
+  assert.equal(validStoredRepoSection("checks"), "checks");
+  assert.equal(validStoredRepoSection("docs"), "docs");
+  assert.equal(validStoredRepoSection("settings"), null);
+  assert.equal(validStoredRepoSection("billing"), null);
+  assert.equal(validStoredRepoSection("metrics"), null);
+  assert.equal(validStoredRepoSection("repos"), null);
+  assert.equal(validStoredRepoSection("invalid"), null);
+  assert.equal(validStoredRepoSection(""), null);
+  assert.equal(validStoredRepoSection(null), null);
+  assert.equal(validStoredRepoSection(undefined), null);
+  assert.equal(validStoredRepoSection(123), null);
 });

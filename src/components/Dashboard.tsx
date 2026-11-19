@@ -5,8 +5,8 @@ import { BillingSkeleton, DashboardSkeleton } from "./Skeleton";
 import { RepoCardBadge, SideBadge } from "./BadgeControl";
 import ChecksTab from "./ChecksTab";
 import SettingsTab from "./SettingsTab";
-import { sectionFromAddress } from "../lib/checkSettings.js";
-import { PENDING_DOC_KEY, PENDING_REPO_KEY, PENDING_RULE_KEY, docFromSearch, findRepo, repoFromSearch, ruleFromSearch, validDocPath, validRepo, validRuleId, withLink } from "../lib/dashboardDeepLink.js";
+import { sectionFromAddress, resolveSection } from "../lib/checkSettings.js";
+import { PENDING_DOC_KEY, PENDING_REPO_KEY, PENDING_RULE_KEY, PENDING_SECTION_KEY, docFromSearch, findRepo, repoFromSearch, ruleFromSearch, validDocPath, validRepo, validRuleId, withLink } from "../lib/dashboardDeepLink.js";
 import { signInUrl } from "../lib/githubSignIn.js";
 
 /** Where the GitHub App is installed on an account: the first one, or one more. */
@@ -141,12 +141,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (window.location.hash === "#badge") setBadgeOpen(true);
-    // The account's old Notifications tab is a section of Settings now; its addresses land there.
-    const asked = sectionFromAddress(window.location.search, window.location.hash);
-    if (asked) {
-      setSection(asked.section);
-      setSettingsFocus(asked.focus);
-    }
   }, []);
 
   useEffect(() => {
@@ -159,12 +153,31 @@ export default function Dashboard() {
    * in. The address keeps carrying them while that repository's documents are open, so a copy of
    * it is a working link; the docs view takes them out when it closes and this takes them out when
    * the repository turns out not to be the reader's, so a reload does not ask again.
+   *
+   * Also handles the section from the URL or sessionStorage, so the pending state
+   * (repo, doc, rule, section) is stored, restored and applied together in the same place.
    */
-  function takeLinkedRepo(): { repo: string | null; doc: string | null; rule: string | null } {
-    if (new URLSearchParams(window.location.search).has("repo")) {
-      const named = repoFromSearch(window.location.search);
+  function takeLinkedRepo(): {
+    repo: string | null;
+    doc: string | null;
+    rule: string | null;
+    section: Section | null;
+  } {
+    const search = window.location.search;
+    const hash = window.location.hash;
+    const hasRepoParam = new URLSearchParams(search).has("repo");
+
+    if (hasRepoParam) {
+      const named = repoFromSearch(search);
       if (named) {
-        return { repo: named, doc: docFromSearch(window.location.search), rule: ruleFromSearch(window.location.search) };
+        // Repository link: resolve section from the address (only tab=checks overrides "docs").
+        const section = resolveSection(named, search, hash, null);
+        return {
+          repo: named,
+          doc: docFromSearch(search),
+          rule: ruleFromSearch(search),
+          section,
+        };
       }
       window.history.replaceState({}, "", withLink(window.location.href, { repo: null, doc: null, rule: null }));
     }
@@ -172,23 +185,59 @@ export default function Dashboard() {
       const kept = validRepo(window.sessionStorage.getItem(PENDING_REPO_KEY));
       const keptDoc = validDocPath(window.sessionStorage.getItem(PENDING_DOC_KEY));
       const keptRule = validRuleId(window.sessionStorage.getItem(PENDING_RULE_KEY));
+      const keptSection = window.sessionStorage.getItem(PENDING_SECTION_KEY);
       window.sessionStorage.removeItem(PENDING_REPO_KEY);
       window.sessionStorage.removeItem(PENDING_DOC_KEY);
       window.sessionStorage.removeItem(PENDING_RULE_KEY);
+      window.sessionStorage.removeItem(PENDING_SECTION_KEY);
+      // Restore path: use resolveSection with the stored section so the round trip
+      // goes through the same pure function the initial load uses.
+      const section = resolveSection(kept, search, hash, keptSection);
       if (kept) {
-        // Back from signing in on a bare address: the docs view reads the document from it.
-        window.history.replaceState({}, "", withLink(window.location.href, { repo: kept, doc: keptDoc, rule: keptRule }));
+        // Back from signing in on a bare address: restore the full deep link including section.
+        // Use tab=checks in the URL (not section=checks) so sectionFromAddress reads it back.
+        let restoredHref = withLink(window.location.href, {
+          repo: kept,
+          doc: keptDoc,
+          rule: keptRule,
+        });
+        if (section === "checks") {
+          const url = new URL(restoredHref);
+          url.searchParams.set("tab", "checks");
+          restoredHref = url.pathname + url.search + url.hash;
+        }
+        window.history.replaceState({}, "", restoredHref);
       }
-      return { repo: kept, doc: kept ? keptDoc : null, rule: kept ? keptRule : null };
+      return {
+        repo: kept,
+        doc: kept ? keptDoc : null,
+        rule: kept ? keptRule : null,
+        section,
+      };
     } catch {
-      return { repo: null, doc: null, rule: null };
+      return { repo: null, doc: null, rule: null, section: null };
     }
   }
 
   async function init() {
     setError("");
     setLoading(true);
-    const { repo: linkedRepo, doc: linkedDoc, rule: linkedRule } = takeLinkedRepo();
+    const { repo: linkedRepo, doc: linkedDoc, rule: linkedRule, section: linkedSection } = takeLinkedRepo();
+    // The section a deep link asks for (from ?section=, ?tab=, or #fragment).
+    // Used for non-repo links (e.g., ?section=settings).
+    const askedSection = sectionFromAddress(window.location.search, window.location.hash);
+    // Apply non-repo section early (before fetch) so it works for signed-out users too.
+    // This ensures ?section=notifications and #notifications behave as before.
+    if (!linkedRepo) {
+      const resolvedSection = resolveSection(null, window.location.search, window.location.hash, null);
+      if (resolvedSection) {
+        setSection(resolvedSection);
+        // For notifications, also set the Settings focus to "notifications"
+        if (resolvedSection === "settings" && askedSection?.focus === "notifications") {
+          setSettingsFocus("notifications");
+        }
+      }
+    }
     try {
       // Who is signed in, every installation and every repository under each, in one request.
       const statusRes = await fetch("/.netlify/functions/dashboard-bootstrap");
@@ -207,6 +256,7 @@ export default function Dashboard() {
             window.sessionStorage.setItem(PENDING_REPO_KEY, linkedRepo);
             if (linkedDoc) window.sessionStorage.setItem(PENDING_DOC_KEY, linkedDoc);
             if (linkedRule) window.sessionStorage.setItem(PENDING_RULE_KEY, linkedRule);
+            if (linkedSection) window.sessionStorage.setItem(PENDING_SECTION_KEY, linkedSection);
           } catch {
             // Without storage the reader lands on the dashboard as it opens by default.
           }
@@ -234,7 +284,8 @@ export default function Dashboard() {
         if (found) {
           setAccountId(found.installationId);
           setOpenRepo(found.fullName);
-          setSection("docs");
+          // Use the section from the link (which includes tab=checks handling) or default to "docs" for a repository link.
+          setSection(linkedSection ?? "docs");
         } else {
           // Said the same way whether the repository exists or not.
           setUnreachableRepo(linkedRepo);

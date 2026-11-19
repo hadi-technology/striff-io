@@ -15,6 +15,8 @@ export const PENDING_REPO_KEY = "striff.pendingRepo";
 export const PENDING_DOC_KEY = "striff.pendingDoc";
 /** The same for the rule a deep link named. */
 export const PENDING_RULE_KEY = "striff.pendingRule";
+/** The section a deep link asked for. */
+export const PENDING_SECTION_KEY = "striff.pendingSection";
 
 /**
  * The repository a dashboard address names, or null where it names none GitHub could have.
