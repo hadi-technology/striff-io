@@ -513,9 +513,9 @@ const structuredData = JSON.stringify([
         <div class="prob-top">
           <div class="prob-copy" data-reveal>
             <p class="prob-kicker">The problem</p>
-            <h2 class="prob-title">Your team writes down its architecture rules. Nothing checks that new code follows them.</h2>
+            <h2 class="prob-title">Your docs say one thing. Your code does another.</h2>
             <p class="prob-lede">
-              Architecture rules are the decisions a team records about how its software is built, such as "the billing module never calls the web layer". AI coding agents now write much of the code, and no reviewer re-reads those documents on every pull request. The code drifts from them without anyone noticing. This is <a href="/spec-drift/">spec drift</a>.
+              When your team can generate a new feature in an afternoon, a wrong boundary gets built in an afternoon too, and every agent that reads the codebase afterwards copies it. Your docs said where the boundary was, such as "the billing module never calls the web layer". Nobody checked. This is <a href="/spec-drift/">spec drift</a>.
             </p>
           </div>
           <figure class="gs" data-reveal aria-hidden="true">
@@ -594,7 +594,7 @@ const structuredData = JSON.stringify([
           <li class="prob-ch is-violet" data-ch>
             <div class="prob-ch-head"><span class="prob-ch-n">3</span><span class="prob-ch-tag">What it costs</span></div>
             <h3>A broken rule is a line to fix now and a refactor later.</h3>
-            <div class="prob-stat"><b>20&ndash;61%</b><span>of a project's maintenance effort goes to its five worst architectural problems.</span></div>
+            <a class="prob-stat prob-stat-link" href="/blog/what-a-broken-architecture-rule-costs/#after-the-merge-it-starts-charging-interest"><b>20&ndash;61%</b><span>of a project's maintenance effort goes to its five worst architectural problems.</span></a>
             <div class="prob-viz prob-curve" role="img" aria-label="Cost of the same broken rule, caught in the pull request or months later">
               <svg viewBox="0 0 360 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
                   <defs>

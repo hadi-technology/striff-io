@@ -8392,6 +8392,10 @@ div.dv-mdx { display: block; margin: 0 0 0.75rem; }
 .prob-stat b { display: block; font-size: clamp(2.8rem, 5vw, 4.4rem); line-height: 1; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
   background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--c) 65%, #fff)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .prob-stat span { display: block; margin-top: 0.35rem; max-width: 24rem; font-size: 0.98rem; line-height: 1.5; color: #cbd5e1; }
+/* The cost stat links to the studies it comes from. */
+.prob-stat-link { display: block; color: inherit; text-decoration: none; }
+.prob-stat-link span { text-decoration: underline; text-decoration-color: rgba(203, 213, 225, 0.4); text-underline-offset: 3px; }
+.prob-stat-link:hover span, .prob-stat-link:focus-visible span { color: #fff; text-decoration-color: currentColor; }
 .prob-viz { padding: 1.2rem 1.3rem; border-radius: 1rem; background: rgba(255, 255, 255, 0.045); border: 1px solid rgba(148, 163, 184, 0.16); }
 .prob-viz-title { margin: 0 0 0.8rem; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #94a3b8; }
 .prob-viz-cap { margin: 0.9rem 0 0; font-size: 0.88rem; line-height: 1.5; color: #aab6c9; }
